@@ -1,0 +1,81 @@
+Arbor School - PreU
+
+- MVP
+  - Vision
+    - Deliver a simple, mastery-based web app that raises PAES scores and gets students into target careers/universities.
+    - North Star: % of students hitting target score by exam date.
+  - Users & Goals
+    - Primary: 4º medio students (and late 3º) targeting PAES.
+    - Inputs: target careers/universities, target PAES date, baseline confidence, available study time.
+  - Content Partnership
+    - Source: Carez & Córdova (preguntas, solucionarios, guías y clases).
+    - License: non-exclusive use; clear versioning; content update cadence.
+    - Alignment: PAES blueprint; tagging to Knowledge Graph (KG).
+  - Knowledge Graph (KG)
+    - Nodes: atomic skills; edges: prerequisites.
+    - Mastery rule: 90%+ accuracy on targeted checks ⇒ node mastered.
+    - Evidence sources: diagnostic, simulations, targeted quizzes, practice history.
+    - State per node: {Not started, Learning, Nearly mastered, Mastered} (using accuracy in most recent tests for this).
+    - Decay/review: spaced repetition surfaces “Nearly mastered” before it decays.
+  - Onboarding (frictionless)
+    - Capture: name, course level, target careers/universities, target exam date, available days/wk & minutes/day.
+    - Output: main dashboard + CTA to take initial diagnostic.
+  - Dashboard (student home)
+    - “Take Diagnostic” (first-run); else “Start Today’s Plan”.
+    - Goal tracker: Current projected score vs required cutoffs per chosen careers.
+    - Today’s plan: 3–6 items mixing “easy wins” + prerequisite gaps + quick review.
+    - Streak/consistency widget (lightweight).
+  - Diagnostics & Simulations (PAES-style)
+    - Diagnostic (once at start; repeat optional after X weeks).
+    - Full simulations: timed, blueprint-weighted; repeat anytime.
+    - Outputs: total score, by-area, KG heatmap deltas, predicted next score range.
+  - Mastery Plan Generator
+    - Prioritization: EASY WINS FIRST (high impact, low effort, near-mastery nodes and easy nodes first), then prerequisite blockers, then broad review.
+    - Methods: spaced repetition, interleaving, retrieval practice, mixed difficulty.
+    - Plan sizing: auto-calc daily/weekly practice required to hit target by date (show “minutes/day” slider & effect on ETA).
+    - Targeted tests: quick checks to confirm ≥90% on node clusters.
+  - Practice Modes
+    - Targeted (by node/cluster).
+    - Mixed Review (SPACED).
+    - Timed Sets (exam conditioning).
+    - “Challenge me” (slightly above current level).
+  - Progress & Reports
+    - KG heatmap: mastered / nearly / learning / not started.
+    - Next 3 Recommendations (why it matters + estimated score lift).
+    - Trend: simulations over time; projected next simulation score.
+  - Goals & Career Planner
+    - University/career cutoffs: last-year “puntajes de corte” lookup.
+    - Gap-to-goal: show delta points to each target; suggest weekly plan to close gap.
+    - What-if: adjust practice minutes/day or days/week → see new ETA.
+  - Data Integrations
+    - Annual import: PAES university/career cutoffs (Chile).
+    - Official trial dates/venues (if public): list + reminders.
+    - Content ingestion: standardized item format + tagging to KG + difficulty.
+  - Admin / Content Ops
+    - Question Bank: item, solution, tags {KG-node, blueprint-area, difficulty}.
+    - Versioning & quality flags; banned/duplicate checks.
+    - Simple CMS for playlists/sets tied to KG clusters.
+  - Feedback & Nudges
+    - Smart reminders: “Finish Today’s Plan (12 min)” / “Retake quick check”.
+    - Gentle gamification: streaks, mastery milestones; no noisy leaderboards.
+  - Privacy & Compliance
+    - Student data minimal; opt-in for reminders; export/delete controls.
+    - Clear data usage for predictions and progress.
+  - MVP Scope (ship this first)
+    - Onboarding → Diagnostic → Dashboard with Today’s Plan.
+    - KG engine (basic): node states, 90% mastery checks, easy-wins ranking.
+    - Practice: targeted sets + mixed review + one full simulation.
+    - Progress: KG heatmap + next-3 recs + simple goal gap.
+    - Cutoffs: static last-year import (manual CSV ok).
+    - Admin: basic item upload + tagging + set builder.
+    - Reminders: email/push 1× daily configurable.
+  - Metrics
+    - Activation: % completing diagnostic in 48h.
+    - Engagement: study minutes/week; plan completion rate.
+    - Learning: nodes mastered/week; time-to-master; score increase per hour dedicated.
+    - Outcomes: simulation score delta; % hitting target score by date.
+    - Retention: weekly active; day-7/30 retention.
+  - Risks & Mitigations
+    - Content mismatch → tight blueprint mapping + QA passes.
+    - Overcomplex UI → ruthless MVP; 1 clear CTA per screen.
+    - Data uncertainty → show score ranges + confidence; don’t overpromise.
