@@ -89,11 +89,9 @@ jobs:
 
       - name: Update domain mapping
         run: |
-          gcloud run domain-mappings describe preu.arbor.school \
-            --region=${{ env.REGION }} \
+          gcloud beta run domain-mappings describe preu.arbor.school \
             --platform=managed || \
-          gcloud run domain-mappings create \
+          gcloud beta run domain-mappings create \
             --service=${{ env.SERVICE_NAME }} \
             --domain=preu.arbor.school \
-            --region=${{ env.REGION }} \
             --platform=managed
