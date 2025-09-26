@@ -32,7 +32,7 @@ export default function Home() {
                 con aprendizaje personalizado
               </span>
             </h1>
-            <p className="text-lg sm:text-xl text-cool-gray max-w-3xl mx-auto mb-10">
+            <p className="text-lg sm:text-xl text-charcoal/80 max-w-3xl mx-auto mb-10">
               Una plataforma de preparación para la PAES que se adapta a tu
               nivel, identifica tus fortalezas y debilidades, y crea un plan
               personalizado para que alcances el puntaje que necesitas.
@@ -62,7 +62,7 @@ export default function Home() {
               <h3 className="text-xl font-serif font-bold mb-4">
                 Diagnóstico Inicial
               </h3>
-              <p className="text-cool-gray">
+              <p className="text-charcoal/70">
                 Toma un diagnóstico completo que identifica tu nivel actual en
                 cada área de la PAES y mapea tus fortalezas y debilidades.
               </p>
@@ -75,7 +75,7 @@ export default function Home() {
               <h3 className="text-xl font-serif font-bold mb-4">
                 Plan Personalizado
               </h3>
-              <p className="text-cool-gray">
+              <p className="text-charcoal/70">
                 Recibe un plan de estudio adaptado a tu disponibilidad de
                 tiempo, fecha objetivo de la PAES, y las carreras que deseas
                 estudiar.
@@ -89,7 +89,7 @@ export default function Home() {
               <h3 className="text-xl font-serif font-bold mb-4">
                 Practica y Domina
               </h3>
-              <p className="text-cool-gray">
+              <p className="text-charcoal/70">
                 Trabaja en ejercicios específicos que maximizan tu aprendizaje,
                 priorizando victorias rápidas y cerrando las brechas
                 fundamentales.
@@ -106,19 +106,19 @@ export default function Home() {
               <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-6">
                 Enfocado en dominio, no en horas
               </h2>
-              <p className="text-lg text-cool-gray mb-6">
+              <p className="text-lg text-charcoal/80 mb-6">
                 Arbor PreU utiliza un sistema basado en grafos de conocimiento
                 que mapea todas las habilidades necesarias para la PAES.
                 Alcanzas el dominio cuando logras más del 90% de precisión en
                 cada habilidad.
               </p>
-              <p className="text-lg text-cool-gray mb-6">
+              <p className="text-lg text-charcoal/80 mb-6">
                 Nuestro sistema identifica automáticamente:
               </p>
               <ul className="space-y-3 mb-8">
                 <li className="flex items-start gap-3">
                   <span className="text-accent text-xl">✓</span>
-                  <span className="text-cool-gray">
+                  <span className="text-charcoal/70">
                     <strong className="text-charcoal">
                       Victorias rápidas:
                     </strong>{" "}
@@ -127,7 +127,7 @@ export default function Home() {
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-accent text-xl">✓</span>
-                  <span className="text-cool-gray">
+                  <span className="text-charcoal/70">
                     <strong className="text-charcoal">
                       Prerequisitos bloqueadores:
                     </strong>{" "}
@@ -136,7 +136,7 @@ export default function Home() {
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-accent text-xl">✓</span>
-                  <span className="text-cool-gray">
+                  <span className="text-charcoal/70">
                     <strong className="text-charcoal">Repaso espaciado:</strong>{" "}
                     revisión inteligente para evitar olvidar lo aprendido
                   </span>
@@ -159,13 +159,13 @@ export default function Home() {
                 </div>
                 <div className="mt-6 pt-6 border-t border-gray-200">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm text-cool-gray">
+                    <span className="text-sm text-charcoal/60">
                       Puntaje proyectado
                     </span>
                     <span className="text-2xl font-bold text-primary">748</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-cool-gray">
+                    <span className="text-sm text-charcoal/60">
                       Meta para Ingeniería
                     </span>
                     <span className="text-lg font-medium text-charcoal">
@@ -188,7 +188,7 @@ export default function Home() {
             <div className="bg-off-white rounded-lg p-8 mb-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-2xl font-serif font-bold">Hoy</h3>
-                <span className="text-cool-gray">~25 minutos</span>
+                <span className="text-charcoal/70">~25 minutos</span>
               </div>
               <div className="space-y-4">
                 <div className="flex items-center gap-4 p-4 bg-white rounded-md shadow-sm">
@@ -197,11 +197,11 @@ export default function Home() {
                   </div>
                   <div className="flex-1">
                     <p className="font-medium">Victoria rápida</p>
-                    <p className="text-sm text-cool-gray">
+                    <p className="text-sm text-charcoal/60">
                       Ecuaciones cuadráticas - 5 ejercicios
                     </p>
                   </div>
-                  <span className="text-sm text-cool-gray">8 min</span>
+                  <span className="text-sm text-charcoal/60">8 min</span>
                 </div>
                 <div className="flex items-center gap-4 p-4 bg-white rounded-md shadow-sm">
                   <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
@@ -209,11 +209,11 @@ export default function Home() {
                   </div>
                   <div className="flex-1">
                     <p className="font-medium">Prerequisito</p>
-                    <p className="text-sm text-cool-gray">
+                    <p className="text-sm text-charcoal/60">
                       Factorización - Mini lección + práctica
                     </p>
                   </div>
-                  <span className="text-sm text-cool-gray">12 min</span>
+                  <span className="text-sm text-charcoal/60">12 min</span>
                 </div>
                 <div className="flex items-center gap-4 p-4 bg-white rounded-md shadow-sm">
                   <div className="w-10 h-10 bg-cool-gray/20 rounded-full flex items-center justify-center">
@@ -221,11 +221,11 @@ export default function Home() {
                   </div>
                   <div className="flex-1">
                     <p className="font-medium">Repaso</p>
-                    <p className="text-sm text-cool-gray">
+                    <p className="text-sm text-charcoal/60">
                       Comprensión de textos argumentativos
                     </p>
                   </div>
-                  <span className="text-sm text-cool-gray">5 min</span>
+                  <span className="text-sm text-charcoal/60">5 min</span>
                 </div>
               </div>
             </div>
@@ -306,7 +306,7 @@ export default function Home() {
           <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-6">
             Contenido alineado 100% con la PAES
           </h2>
-          <p className="text-lg text-cool-gray max-w-3xl mx-auto mb-12">
+          <p className="text-lg text-charcoal/80 max-w-3xl mx-auto mb-12">
             Trabajamos con Carez & Córdova para traerte preguntas, soluciones
             detalladas, guías y clases alineadas con el temario oficial de la
             PAES. Cada pregunta está etiquetada a nuestro grafo de conocimiento
@@ -315,19 +315,19 @@ export default function Home() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-4xl mx-auto">
             <div className="bg-white rounded-lg p-6 shadow-sm">
               <p className="text-3xl font-bold text-primary mb-2">1000+</p>
-              <p className="text-cool-gray">Preguntas de práctica</p>
+              <p className="text-charcoal/70">Preguntas de práctica</p>
             </div>
             <div className="bg-white rounded-lg p-6 shadow-sm">
               <p className="text-3xl font-bold text-primary mb-2">87</p>
-              <p className="text-cool-gray">Habilidades mapeadas</p>
+              <p className="text-charcoal/70">Habilidades mapeadas</p>
             </div>
             <div className="bg-white rounded-lg p-6 shadow-sm">
               <p className="text-3xl font-bold text-primary mb-2">90%</p>
-              <p className="text-cool-gray">Umbral de dominio</p>
+              <p className="text-charcoal/70">Umbral de dominio</p>
             </div>
             <div className="bg-white rounded-lg p-6 shadow-sm">
               <p className="text-3xl font-bold text-primary mb-2">100%</p>
-              <p className="text-cool-gray">Alineado con PAES</p>
+              <p className="text-charcoal/70">Alineado con PAES</p>
             </div>
           </div>
         </div>
@@ -338,7 +338,7 @@ export default function Home() {
           <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-6">
             Comienza tu preparación hoy
           </h2>
-          <p className="text-lg text-cool-gray mb-10">
+          <p className="text-lg text-charcoal/80 mb-10">
             Únete a los estudiantes que están alcanzando sus metas con Arbor
             PreU. Toma el diagnóstico gratuito y descubre tu plan personalizado.
           </p>
