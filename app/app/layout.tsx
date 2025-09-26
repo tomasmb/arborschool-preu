@@ -15,7 +15,8 @@ const merriweather = Merriweather({
 
 export const metadata: Metadata = {
   title: "Arbor PreU - Alcanza tu puntaje PAES",
-  description: "Plataforma de preparación para la PAES con aprendizaje personalizado basado en dominio de habilidades.",
+  description:
+    "Plataforma de preparación para la PAES con aprendizaje personalizado basado en dominio de habilidades.",
 };
 
 export default function RootLayout({

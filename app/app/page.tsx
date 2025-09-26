@@ -119,7 +119,9 @@ export default function Home() {
                 <li className="flex items-start gap-3">
                   <span className="text-accent text-xl">✓</span>
                   <span className="text-cool-gray">
-                    <strong className="text-charcoal">Victorias rápidas:</strong>{" "}
+                    <strong className="text-charcoal">
+                      Victorias rápidas:
+                    </strong>{" "}
                     habilidades que estás cerca de dominar
                   </span>
                 </li>
@@ -245,9 +247,8 @@ export default function Home() {
               </h2>
               <p className="text-lg opacity-90 mb-6">
                 Ve cómo cada sesión de práctica te acerca a tu meta. Nuestro
-                sistema actualiza tu puntaje proyectado y te muestra
-                exactamente cuántos puntos puedes ganar enfocándote en las
-                áreas correctas.
+                sistema actualiza tu puntaje proyectado y te muestra exactamente
+                cuántos puntos puedes ganar enfocándote en las áreas correctas.
               </p>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
@@ -308,9 +309,8 @@ export default function Home() {
           <p className="text-lg text-cool-gray max-w-3xl mx-auto mb-12">
             Trabajamos con Carez & Córdova para traerte preguntas, soluciones
             detalladas, guías y clases alineadas con el temario oficial de la
-            PAES. Cada pregunta está etiquetada a nuestro grafo de
-            conocimiento para asegurar que practiques exactamente lo que
-            necesitas.
+            PAES. Cada pregunta está etiquetada a nuestro grafo de conocimiento
+            para asegurar que practiques exactamente lo que necesitas.
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-4xl mx-auto">
             <div className="bg-white rounded-lg p-6 shadow-sm">
