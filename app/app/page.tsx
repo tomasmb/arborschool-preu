@@ -238,45 +238,47 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-20 bg-primary text-white">
+      <section className="py-20 bg-gradient-to-br from-primary to-primary/90 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-6">
+              <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-6 text-white">
                 Sigue tu progreso en tiempo real
               </h2>
-              <p className="text-lg opacity-90 mb-6">
+              <p className="text-lg text-white/90 mb-6">
                 Ve cómo cada sesión de práctica te acerca a tu meta. Nuestro
                 sistema actualiza tu puntaje proyectado y te muestra exactamente
                 cuántos puntos puedes ganar enfocándote en las áreas correctas.
               </p>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
-                  <span className="text-accent text-xl">→</span>
-                  <span>Mapa de calor de tu dominio de habilidades</span>
+                  <span className="text-accent text-xl font-bold">→</span>
+                  <span className="text-white/90">
+                    Mapa de calor de tu dominio de habilidades
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <span className="text-accent text-xl">→</span>
-                  <span>
+                  <span className="text-accent text-xl font-bold">→</span>
+                  <span className="text-white/90">
                     Proyección de puntaje basada en simulaciones reales
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <span className="text-accent text-xl">→</span>
-                  <span>
+                  <span className="text-accent text-xl font-bold">→</span>
+                  <span className="text-white/90">
                     Recomendaciones de las 3 áreas con mayor impacto en tu
                     puntaje
                   </span>
                 </li>
               </ul>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-8 border border-white/20">
-              <h3 className="text-xl font-serif font-bold mb-6">
+            <div className="bg-white/15 backdrop-blur-sm rounded-lg p-8 border border-white/30">
+              <h3 className="text-xl font-serif font-bold mb-6 text-white">
                 Tus próximos pasos
               </h3>
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span>Habilidades dominadas</span>
+                  <span className="text-white/90">Habilidades dominadas</span>
                   <span className="text-2xl font-bold text-accent">24/87</span>
                 </div>
                 <div className="w-full bg-white/20 rounded-full h-2">
@@ -285,11 +287,11 @@ export default function Home() {
                     style={{ width: "28%" }}
                   ></div>
                 </div>
-                <div className="mt-6 pt-6 border-t border-white/20">
-                  <p className="text-sm opacity-90 mb-2">
+                <div className="mt-6 pt-6 border-t border-white/30">
+                  <p className="text-sm text-white/80 mb-2">
                     Si practicas 30 min/día:
                   </p>
-                  <p className="text-lg">
+                  <p className="text-lg text-white">
                     Alcanzarás tu meta de{" "}
                     <span className="font-bold text-accent">780 puntos</span> en{" "}
                     <span className="font-bold">12 semanas</span>
