@@ -51,7 +51,7 @@ export default function Home() {
 
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl sm:text-4xl font-serif font-bold text-center mb-16">
+          <h2 className="text-3xl sm:text-4xl font-serif font-bold text-center mb-16 text-primary">
             ¿Cómo funciona Arbor PreU?
           </h2>
           <div className="grid md:grid-cols-3 gap-12">
@@ -59,7 +59,7 @@ export default function Home() {
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <span className="text-3xl font-bold text-primary">1</span>
               </div>
-              <h3 className="text-xl font-serif font-bold mb-4">
+              <h3 className="text-xl font-serif font-bold mb-4 text-primary">
                 Diagnóstico Inicial
               </h3>
               <p className="text-charcoal/70">
@@ -72,7 +72,7 @@ export default function Home() {
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <span className="text-3xl font-bold text-primary">2</span>
               </div>
-              <h3 className="text-xl font-serif font-bold mb-4">
+              <h3 className="text-xl font-serif font-bold mb-4 text-primary">
                 Plan Personalizado
               </h3>
               <p className="text-charcoal/70">
@@ -86,7 +86,7 @@ export default function Home() {
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <span className="text-3xl font-bold text-primary">3</span>
               </div>
-              <h3 className="text-xl font-serif font-bold mb-4">
+              <h3 className="text-xl font-serif font-bold mb-4 text-primary">
                 Practica y Domina
               </h3>
               <p className="text-charcoal/70">
@@ -103,7 +103,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-6">
+              <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-6 text-primary">
                 Enfocado en dominio, no en horas
               </h2>
               <p className="text-lg text-charcoal/80 mb-6">
@@ -181,7 +181,7 @@ export default function Home() {
 
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl sm:text-4xl font-serif font-bold text-center mb-16">
+          <h2 className="text-3xl sm:text-4xl font-serif font-bold text-center mb-16 text-primary">
             Tu plan diario personalizado
           </h2>
           <div className="max-w-3xl mx-auto">
@@ -242,7 +242,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-6 !text-white">
+              <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-6 text-white">
                 Sigue tu progreso en tiempo real
               </h2>
               <p className="text-lg text-white mb-6">
@@ -273,7 +273,7 @@ export default function Home() {
               </ul>
             </div>
             <div className="bg-white/15 backdrop-blur-sm rounded-lg p-8 border border-white/30">
-              <h3 className="text-xl font-serif font-bold mb-6 !text-white">
+              <h3 className="text-xl font-serif font-bold mb-6 text-white">
                 Tus próximos pasos
               </h3>
               <div className="space-y-4">
@@ -305,7 +305,7 @@ export default function Home() {
 
       <section className="py-20 bg-off-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-6">
+          <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-6 text-primary">
             Contenido alineado 100% con la PAES
           </h2>
           <p className="text-lg text-charcoal/80 max-w-3xl mx-auto mb-12">
@@ -337,7 +337,7 @@ export default function Home() {
 
       <section className="py-20 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-6">
+          <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-6 text-primary">
             Comienza tu preparación hoy
           </h2>
           <p className="text-lg text-charcoal/80 mb-10">
