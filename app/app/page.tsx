@@ -245,7 +245,7 @@ export default function Home() {
               <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-6 text-white">
                 Sigue tu progreso en tiempo real
               </h2>
-              <p className="text-lg text-white/90 mb-6">
+              <p className="text-lg text-white mb-6">
                 Ve cómo cada sesión de práctica te acerca a tu meta. Nuestro
                 sistema actualiza tu puntaje proyectado y te muestra exactamente
                 cuántos puntos puedes ganar enfocándote en las áreas correctas.
@@ -253,19 +253,19 @@ export default function Home() {
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
                   <span className="text-accent text-xl font-bold">→</span>
-                  <span className="text-white/90">
+                  <span className="text-white">
                     Mapa de calor de tu dominio de habilidades
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-accent text-xl font-bold">→</span>
-                  <span className="text-white/90">
+                  <span className="text-white">
                     Proyección de puntaje basada en simulaciones reales
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-accent text-xl font-bold">→</span>
-                  <span className="text-white/90">
+                  <span className="text-white">
                     Recomendaciones de las 3 áreas con mayor impacto en tu
                     puntaje
                   </span>
@@ -278,7 +278,7 @@ export default function Home() {
               </h3>
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-white/90">Habilidades dominadas</span>
+                  <span className="text-white">Habilidades dominadas</span>
                   <span className="text-2xl font-bold text-accent">24/87</span>
                 </div>
                 <div className="w-full bg-white/20 rounded-full h-2">
@@ -288,7 +288,7 @@ export default function Home() {
                   ></div>
                 </div>
                 <div className="mt-6 pt-6 border-t border-white/30">
-                  <p className="text-sm text-white/80 mb-2">
+                  <p className="text-sm text-white mb-2">
                     Si practicas 30 min/día:
                   </p>
                   <p className="text-lg text-white">
