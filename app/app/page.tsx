@@ -242,7 +242,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-6 text-white">
+              <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-6 !text-white">
                 Sigue tu progreso en tiempo real
               </h2>
               <p className="text-lg text-white mb-6">
@@ -273,7 +273,7 @@ export default function Home() {
               </ul>
             </div>
             <div className="bg-white/15 backdrop-blur-sm rounded-lg p-8 border border-white/30">
-              <h3 className="text-xl font-serif font-bold mb-6 text-white">
+              <h3 className="text-xl font-serif font-bold mb-6 !text-white">
                 Tus próximos pasos
               </h3>
               <div className="space-y-4">
