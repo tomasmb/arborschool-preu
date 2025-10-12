@@ -1,0 +1,4929 @@
+[
+  {
+    "id": "NUM",
+    "name": "Números",
+    "exam_level": [
+      "M1",
+      "M2"
+    ],
+    "axis": "Números",
+    "concept": null,
+    "representation": null,
+    "task": null,
+    "description": "Conjunto de conocimientos sobre números, sus conjuntos, operaciones y propiedades.",
+    "prerequisites": [],
+    "co_requisites": [],
+    "encompassed_by": [],
+    "diagnostic_links": [],
+    "skills": [],
+    "contexts": [],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L274-L309",
+      "901139083042794†L263-L287"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.WEIGHTED_MEAN",
+    "name": "Calcular el promedio ponderado",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "weighted_mean",
+    "representation": "numeric",
+    "task": "weighted_average",
+    "description": "Calcular el promedio ponderado de un conjunto de datos cuando cada valor tiene un peso o frecuencia asociada, como mezclar colores o promediar notas con distintos valores.",
+    "prerequisites": [
+      "PROB.MEAN"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "mezclas",
+      "estadística descriptiva"
+    ],
+    "status": "official",
+    "source_refs": [
+      "257788131130209†L380-L421"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.TRIMMED_MEAN",
+    "name": "Promedio con exclusión basada en desviación estándar",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "trimmed_mean",
+    "representation": "numeric",
+    "task": "trim_mean",
+    "description": "Recalcular un promedio excluyendo aquellos valores que se encuentran fuera del intervalo [media – desviación estándar, media + desviación estándar] y luego promediar los valores restantes.",
+    "prerequisites": [
+      "PROB.MEAN",
+      "PROB.STDDEV"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB.DISPERSION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Argumentar"
+    ],
+    "contexts": [
+      "evaluación",
+      "estadística"
+    ],
+    "status": "official",
+    "source_refs": [
+      "241539054414704†L2470-L2495"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.BAYES",
+    "name": "Aplicar el teorema de Bayes",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "conditional_probability",
+    "representation": "numeric",
+    "task": "bayes_theorem",
+    "description": "Calcular probabilidades a posteriori utilizando el teorema de Bayes a partir de probabilidades condicionadas y de sucesos totales.",
+    "prerequisites": [
+      "PROB.CONDITIONAL_PROB"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB.CONDITIONAL"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Argumentar"
+    ],
+    "contexts": [
+      "diagnóstico",
+      "selección"
+    ],
+    "status": "official",
+    "source_refs": [
+      "241539054414704†L2626-L2685"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.INDEPENDENCE_TEST",
+    "name": "Prueba de independencia de eventos",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "independence",
+    "representation": "numeric",
+    "task": "independence_check",
+    "description": "Verificar si dos eventos son independientes comprobando si P(A∩B)=P(A)P(B) o si P(A|B)=P(A).",
+    "prerequisites": [
+      "PROB.SIMPLE_PROB",
+      "PROB.MULTIPLICATIVE_RULE",
+      "PROB.CONDITIONAL_PROB"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB.CONDITIONAL"
+    ],
+    "diagnostic_links": [
+      "PROB.BINOMIAL_MODEL"
+    ],
+    "skills": [
+      "Argumentar",
+      "Resolver"
+    ],
+    "contexts": [
+      "modelos",
+      "experimentos"
+    ],
+    "status": "official",
+    "source_refs": [
+      "241539054414704†L2626-L2685"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.LIN_SLOPE_TWO_POINTS",
+    "name": "Pendiente a partir de dos puntos",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "linear_function",
+    "representation": "numeric",
+    "task": "slope_from_two_points",
+    "description": "Calcular la pendiente m = (y2−y1)/(x2−x1) de una recta a partir de dos puntos, e interpretarla en contextos de tasa de cambio.",
+    "prerequisites": [
+      "GEO.COORDINATE_PLANE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.LINEAR_FUNCTION"
+    ],
+    "diagnostic_links": [
+      "ALG.LIN_FUNC_GRAPH",
+      "ALG.SYS_GRAPHIC"
+    ],
+    "skills": [
+      "Representar",
+      "Resolver",
+      "Argumentar"
+    ],
+    "contexts": [
+      "tasas",
+      "gráficos"
+    ],
+    "status": "official",
+    "source_refs": [
+      "241539054414704†L1174-L1188"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.LIN_POINT_SLOPE",
+    "name": "Forma punto–pendiente y ecuación de la recta",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "linear_function",
+    "representation": "symbolic",
+    "task": "write_equation_point_slope",
+    "description": "Construir la ecuación de una recta usando la forma punto–pendiente a partir de un punto dado y la pendiente o de dos puntos.",
+    "prerequisites": [
+      "ALG.LIN_SLOPE_TWO_POINTS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.LINEAR_FUNCTION"
+    ],
+    "diagnostic_links": [
+      "ALG.LIN_FUNC_MODEL",
+      "ALG.SYS_MODEL"
+    ],
+    "skills": [
+      "Representar",
+      "Modelar"
+    ],
+    "contexts": [
+      "modelación",
+      "geometría analítica"
+    ],
+    "status": "official",
+    "source_refs": [
+      "241539054414704†L1174-L1188"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.LIN_PARALLEL_PERP",
+    "name": "Rectas paralelas y perpendiculares (condiciones de pendiente)",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "linear_function",
+    "representation": "symbolic",
+    "task": "classify_parallel_perpendicular",
+    "description": "Decidir si dos rectas son paralelas o perpendiculares basándose en sus pendientes y construir ecuaciones de rectas con estas restricciones.",
+    "prerequisites": [
+      "ALG.LIN_POINT_SLOPE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.LINEAR_FUNCTION"
+    ],
+    "diagnostic_links": [
+      "ALG.SYS_CLASSIFY"
+    ],
+    "skills": [
+      "Argumentar",
+      "Representar"
+    ],
+    "contexts": [
+      "geometría analítica"
+    ],
+    "status": "official",
+    "source_refs": [
+      "241539054414704†L881-L918"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.COORD_DISTANCE",
+    "name": "Distancia entre dos puntos en el plano",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Geometría",
+    "concept": "coordinate_plane",
+    "representation": "numeric",
+    "task": "distance_formula",
+    "description": "Aplicar la fórmula de distancia para calcular la longitud del segmento entre dos puntos en el plano cartesiano.",
+    "prerequisites": [
+      "GEO.COORDINATE_PLANE",
+      "GEO.PYTHAGORAS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO.TRANSFORM"
+    ],
+    "diagnostic_links": [
+      "ALG.LIN_SLOPE_TWO_POINTS"
+    ],
+    "skills": [
+      "Resolver",
+      "Argumentar"
+    ],
+    "contexts": [
+      "geometría analítica"
+    ],
+    "status": "official",
+    "source_refs": [
+      "241539054414704†L2330-L2346"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.COORD_MIDPOINT",
+    "name": "Punto medio de un segmento",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Geometría",
+    "concept": "coordinate_plane",
+    "representation": "numeric",
+    "task": "midpoint_formula",
+    "description": "Calcular el punto medio entre dos puntos en el plano cartesiano y emplearlo en problemas de geometría analítica.",
+    "prerequisites": [
+      "GEO.COORDINATE_PLANE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO.TRANSFORM"
+    ],
+    "diagnostic_links": [
+      "ALG.LIN_FUNC_GRAPH"
+    ],
+    "skills": [
+      "Representar",
+      "Resolver"
+    ],
+    "contexts": [
+      "geometría",
+      "coordenadas"
+    ],
+    "status": "official",
+    "source_refs": [
+      "241539054414704†L2330-L2346"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.ANGLE_PARALLEL",
+    "name": "Ángulos formados por rectas paralelas y transversales",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Geometría",
+    "concept": "angles_parallel_lines",
+    "representation": "conceptual",
+    "task": "determine_angle",
+    "description": "Determinar las medidas de ángulos formados por dos rectas paralelas y una transversal empleando propiedades de ángulos correspondientes, alternos y colaterales.",
+    "prerequisites": [],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Argumentar",
+      "Resolver"
+    ],
+    "contexts": [
+      "paralelismo",
+      "geometría"
+    ],
+    "status": "official",
+    "source_refs": [
+      "241539054414704†L881-L918"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.SIMILARITY_APPLICATION",
+    "name": "Aplicar triángulos semejantes en medición indirecta",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Geometría",
+    "concept": "similar_triangles",
+    "representation": "contextual",
+    "task": "similar_triangle_problem",
+    "description": "Utilizar relaciones de semejanza de triángulos para determinar longitudes o alturas desconocidas en problemas prácticos como medición mediante espejos o sombras.",
+    "prerequisites": [
+      "GEO.HOMOTHECY_PROBLEM"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Modelar",
+      "Resolver"
+    ],
+    "contexts": [
+      "medición",
+      "geometría"
+    ],
+    "status": "official",
+    "source_refs": [
+      "241539054414704†L1787-L1816"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.VECTOR_INTEGER_MAGNITUDE",
+    "name": "Contar vectores de coordenadas enteras con magnitud fija",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Geometría",
+    "concept": "vector_magnitude",
+    "representation": "numeric",
+    "task": "count_integer_vectors",
+    "description": "Determinar cuántos pares de números enteros (a,b) satisfacen a^2 + b^2 = n^2 para un valor dado n, empleando ternas pitagóricas y simetrías.",
+    "prerequisites": [
+      "GEO.PYTHAGORAS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Argumentar"
+    ],
+    "contexts": [
+      "vectores",
+      "números enteros"
+    ],
+    "status": "official",
+    "source_refs": [
+      "241539054414704†L2330-L2346"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.POLY_FACTOR_SOLVE",
+    "name": "Resolver ecuaciones polinómicas factorizables",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "polynomial_equation",
+    "representation": "symbolic",
+    "task": "solve_polynomial",
+    "description": "Resolver ecuaciones polinómicas de grado mayor a dos mediante factorización en binomios o trinomios y análisis de las raíces resultantes.",
+    "prerequisites": [
+      "ALG.QUAD_EQN_SOLVE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Argumentar"
+    ],
+    "contexts": [
+      "álgebra"
+    ],
+    "status": "official",
+    "source_refs": [
+      "241539054414704†L1318-L1361"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.QUAD_DISCRIMINANT",
+    "name": "Usar el discriminante para clasificar soluciones de ecuaciones cuadráticas",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "quadratic_discriminant",
+    "representation": "symbolic",
+    "task": "discriminant",
+    "description": "Calcular el discriminante (b^2 − 4ac) de una ecuación cuadrática para determinar si las soluciones son reales distintas, reales coincidentes o complejas.",
+    "prerequisites": [
+      "ALG.QUAD_EQN_SOLVE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.QUAD_FUNCTION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Argumentar",
+      "Resolver"
+    ],
+    "contexts": [
+      "ecuaciones"
+    ],
+    "status": "official",
+    "source_refs": [
+      "241539054414704†L1383-L1419"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.SIMILARITY_RATIO_COMPOSE",
+    "name": "Componer razones de semejanza",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Geometría",
+    "concept": "similarity_ratio_composition",
+    "representation": "symbolic",
+    "task": "compose_ratios",
+    "description": "Determinar la razón de semejanza resultante al componer dos homotecias sucesivas multiplicando sus razones dadas.",
+    "prerequisites": [
+      "GEO.HOMOTHECY_SCALE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO.HOMOTHETIA"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Argumentar"
+    ],
+    "contexts": [
+      "homotecia"
+    ],
+    "status": "official",
+    "source_refs": [
+      "241539054414704†L1757-L1777"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.HOMOTHECY_AREA",
+    "name": "Escalamiento de área en homotecia",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Geometría",
+    "concept": "homothety_area",
+    "representation": "numeric",
+    "task": "area_scaling",
+    "description": "Reconocer que el área de una figura homotética escala con el cuadrado de la razón de homotecia y calcular áreas de figuras homotéticas a partir de la original.",
+    "prerequisites": [
+      "GEO.HOMOTHECY_SCALE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO.HOMOTHETIA"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Argumentar",
+      "Modelar"
+    ],
+    "contexts": [
+      "geometría"
+    ],
+    "status": "official",
+    "source_refs": [
+      "241539054414704†L2112-L2146"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG",
+    "name": "Álgebra y funciones",
+    "exam_level": [
+      "M1",
+      "M2"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": null,
+    "representation": null,
+    "task": null,
+    "description": "Conjunto de conocimientos sobre expresiones algebraicas, ecuaciones, sistemas y funciones.",
+    "prerequisites": [],
+    "co_requisites": [],
+    "encompassed_by": [],
+    "diagnostic_links": [],
+    "skills": [],
+    "contexts": [],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L329-L396",
+      "901139083042794†L312-L338"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO",
+    "name": "Geometría",
+    "exam_level": [
+      "M1",
+      "M2"
+    ],
+    "axis": "Geometría",
+    "concept": null,
+    "representation": null,
+    "task": null,
+    "description": "Conjunto de conocimientos sobre figuras geométricas, cuerpos, transformaciones y relaciones métricas.",
+    "prerequisites": [],
+    "co_requisites": [],
+    "encompassed_by": [],
+    "diagnostic_links": [],
+    "skills": [],
+    "contexts": [],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L410-L449",
+      "901139083042794†L353-L386"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB",
+    "name": "Probabilidad y estadística",
+    "exam_level": [
+      "M1",
+      "M2"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": null,
+    "representation": null,
+    "task": null,
+    "description": "Conjunto de conocimientos sobre representación de datos, medidas de posición y dispersión, reglas de probabilidad y modelos.",
+    "prerequisites": [],
+    "co_requisites": [],
+    "encompassed_by": [],
+    "diagnostic_links": [],
+    "skills": [],
+    "contexts": [],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L459-L495",
+      "901139083042794†L404-L435"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "NUM.INT_RAT",
+    "name": "Números enteros y racionales",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Números",
+    "concept": "integers_and_rationals",
+    "representation": "conceptual",
+    "task": "overview",
+    "description": "Estudia la identificación, orden y operaciones básicas en los conjuntos de números enteros y racionales.",
+    "prerequisites": [],
+    "co_requisites": [],
+    "encompassed_by": [
+      "NUM"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "aritmética básica",
+      "problemas cotidianos"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L274-L287"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "NUM.PERCENTAGE",
+    "name": "Porcentaje",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Números",
+    "concept": "percentage",
+    "representation": "conceptual",
+    "task": "overview",
+    "description": "Introduce el concepto de porcentaje y su cálculo en diversos contextos.",
+    "prerequisites": [],
+    "co_requisites": [],
+    "encompassed_by": [
+      "NUM"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Modelar",
+      "Resolver"
+    ],
+    "contexts": [
+      "finanzas",
+      "descuentos",
+      "aumentos"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L288-L297"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "NUM.POW_ROOT",
+    "name": "Potencias y raíces enésimas",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Números",
+    "concept": "powers_and_roots",
+    "representation": "conceptual",
+    "task": "overview",
+    "description": "Estudia las propiedades de las potencias con base racional y exponente racional, así como la descomposición y propiedades de las raíces enésimas.",
+    "prerequisites": [],
+    "co_requisites": [],
+    "encompassed_by": [
+      "NUM"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "aritmética avanzada",
+      "cálculo de áreas",
+      "ciencias"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L298-L309"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "NUM.REAL",
+    "name": "Números reales",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Números",
+    "concept": "real_numbers",
+    "representation": "conceptual",
+    "task": "overview",
+    "description": "Introduce el conjunto de los números reales, incluyendo los irracionales, y sus operaciones.",
+    "prerequisites": [
+      "NUM.INT_RAT",
+      "NUM.POW_ROOT"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "NUM"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "aritmética",
+      "geometría"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L263-L274"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "NUM.FINANCE",
+    "name": "Matemática financiera",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Números",
+    "concept": "financial_math",
+    "representation": "conceptual",
+    "task": "overview",
+    "description": "Problemas de interés simple y compuesto y créditos en contextos financieros como AFP, jubilación y crédito hipotecario.",
+    "prerequisites": [
+      "NUM.PERCENTAGE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "NUM"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Modelar",
+      "Resolver"
+    ],
+    "contexts": [
+      "finanzas",
+      "economía"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L275-L280"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "NUM.LOG",
+    "name": "Logaritmos",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Números",
+    "concept": "logarithms",
+    "representation": "conceptual",
+    "task": "overview",
+    "description": "Introduce la relación entre potencias, raíces y logaritmos, sus propiedades y aplicaciones.",
+    "prerequisites": [
+      "NUM.POW_ROOT"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "NUM"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "ciencias",
+      "escala Richter",
+      "pH"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L281-L287"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.EXPR",
+    "name": "Expresiones algebraicas",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "algebraic_expressions",
+    "representation": "conceptual",
+    "task": "overview",
+    "description": "Agrupa los conocimientos sobre productos notables, factoraciones y desarrollo de expresiones, así como la operatoria con polinomios.",
+    "prerequisites": [],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Representar"
+    ],
+    "contexts": [
+      "álgebra"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L331-L339"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.PROPORTION",
+    "name": "Proporcionalidad",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "proportionality",
+    "representation": "conceptual",
+    "task": "overview",
+    "description": "Estudia la proporción directa e inversa y sus diferentes representaciones, así como su aplicación a problemas.",
+    "prerequisites": [],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Modelar",
+      "Representar"
+    ],
+    "contexts": [
+      "tasas",
+      "mapas"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L345-L351"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.LIN",
+    "name": "Ecuaciones e inecuaciones de primer grado",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "linear_equations_inequalities",
+    "representation": "conceptual",
+    "task": "overview",
+    "description": "Incluye la resolución de ecuaciones lineales e inecuaciones de una variable y su aplicación a problemas.",
+    "prerequisites": [
+      "ALG.EXPR"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "problemas verbales"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L352-L363"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.SYSTEMS",
+    "name": "Sistemas de ecuaciones lineales (2x2)",
+    "exam_level": [
+      "M1",
+      "M2"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "linear_systems_2x2",
+    "representation": "conceptual",
+    "task": "overview",
+    "description": "Engloba la resolución de sistemas de dos ecuaciones lineales con dos incógnitas y la identificación de casos con solución única, múltiples o inexistente.",
+    "prerequisites": [
+      "ALG.LIN"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "problemas de mezcla",
+      "intersección de líneas"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L364-L374",
+      "901139083042794†L312-L317"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.LINEAR_FUNCTION",
+    "name": "Función lineal y afín",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "linear_function",
+    "representation": "conceptual",
+    "task": "overview",
+    "description": "Comprende el concepto de función lineal y afín, sus representaciones mediante tablas y gráficos y su uso en la modelación de situaciones.",
+    "prerequisites": [
+      "ALG.LIN"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Modelar",
+      "Representar",
+      "Resolver"
+    ],
+    "contexts": [
+      "velocidad constante",
+      "relaciones lineales"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L375-L382"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.QUAD_FUNCTION",
+    "name": "Función cuadrática",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "quadratic_function",
+    "representation": "conceptual",
+    "task": "overview",
+    "description": "Incluye la resolución de ecuaciones de segundo grado, el análisis de tablas y gráficos de funciones cuadráticas y la identificación de vértices y ceros.",
+    "prerequisites": [
+      "ALG.EXPR",
+      "NUM.POW_ROOT"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Representar",
+      "Modelar"
+    ],
+    "contexts": [
+      "trayectorias",
+      "áreas"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L383-L396"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.POWER_EXP_LOG_FUNCTION",
+    "name": "Función potencia, exponencial y logarítmica",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "power_exponential_log_functions",
+    "representation": "conceptual",
+    "task": "overview",
+    "description": "Contiene el estudio de las funciones potencia, exponencial y logarítmica, sus gráficos y aplicaciones a la modelación de fenómenos de crecimiento y decrecimiento.",
+    "prerequisites": [
+      "NUM.POW_ROOT",
+      "NUM.LOG"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Modelar",
+      "Representar",
+      "Resolver"
+    ],
+    "contexts": [
+      "población",
+      "radioactividad",
+      "escala Richter"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L318-L330"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.TRIG_FUNCTION",
+    "name": "Funciones trigonométricas (seno y coseno)",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "trig_functions",
+    "representation": "conceptual",
+    "task": "overview",
+    "description": "Estudia las funciones trigonométricas seno y coseno, sus gráficos, parámetros y aplicaciones a situaciones periódicas.",
+    "prerequisites": [
+      "GEO.TRIG_RATIOS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Modelar",
+      "Representar",
+      "Resolver"
+    ],
+    "contexts": [
+      "ondas",
+      "ciclos naturales"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L331-L338"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.SUFFICIENCY",
+    "name": "Razonamiento de suficiencia de datos",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "data_sufficiency",
+    "representation": "conceptual",
+    "task": "metacognitive",
+    "description": "Evalúa si la información proporcionada es suficiente para responder a una pregunta o resolver un problema, típico del formato de la PAES M2.",
+    "prerequisites": [],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Argumentar"
+    ],
+    "contexts": [
+      "evaluación de información"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L95-L103"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.FIGURES",
+    "name": "Figuras geométricas",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Geometría",
+    "concept": "plane_figures",
+    "representation": "conceptual",
+    "task": "overview",
+    "description": "Incluye el Teorema de Pitágoras y el cálculo de perímetros y áreas de triángulos, paralelogramos, trapecios y círculos.",
+    "prerequisites": [],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "medición",
+      "diseño"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L410-L425"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.SOLIDS",
+    "name": "Cuerpos geométricos",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Geometría",
+    "concept": "solid_geometry",
+    "representation": "conceptual",
+    "task": "overview",
+    "description": "Estudia el área de superficies y el volumen de paralelepípedos y cubos y su aplicación a problemas.",
+    "prerequisites": [],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "arquitectura",
+      "embalaje"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L426-L435"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.TRANSFORM",
+    "name": "Transformaciones isométricas",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Geometría",
+    "concept": "isometric_transformations",
+    "representation": "conceptual",
+    "task": "overview",
+    "description": "Incluye los puntos y vectores en el plano cartesiano, así como las traslaciones, rotaciones y reflexiones de figuras.",
+    "prerequisites": [],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Representar",
+      "Resolver"
+    ],
+    "contexts": [
+      "geometría analítica"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L436-L449"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.HOMOTHETIA",
+    "name": "Homotecia de figuras planas",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Geometría",
+    "concept": "homothety",
+    "representation": "conceptual",
+    "task": "overview",
+    "description": "Introduce las transformaciones de homotecia (semejanza), su factor de escala y su aplicación en mapas y planos.",
+    "prerequisites": [
+      "ALG.PROPORTION"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Modelar",
+      "Representar"
+    ],
+    "contexts": [
+      "cartografía",
+      "dibujo técnico"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L353-L358"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.TRIG_RATIOS",
+    "name": "Razones trigonométricas en triángulos rectángulos",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Geometría",
+    "concept": "trig_ratios_right_triangles",
+    "representation": "conceptual",
+    "task": "overview",
+    "description": "Define las razones trigonométricas seno, coseno y tangente como relaciones entre los lados de un triángulo rectángulo y su uso para encontrar lados o ángulos.",
+    "prerequisites": [
+      "GEO.FIGURES"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "levantamiento",
+      "medición indirecta"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L359-L367"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.CIRCLE_RELATIONS",
+    "name": "Relaciones métricas en la circunferencia",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Geometría",
+    "concept": "circle_metric_relations",
+    "representation": "conceptual",
+    "task": "overview",
+    "description": "Estudia las relaciones entre ángulos centrales e inscritos, arcos, cuerdas, secantes y tangentes en la circunferencia y su aplicación a problemas.",
+    "prerequisites": [
+      "GEO.FIGURES"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "geometría plana",
+      "trazado de circunferencias"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L369-L386"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.DATA",
+    "name": "Representación de datos en tablas y gráficos",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "data_representation",
+    "representation": "conceptual",
+    "task": "overview",
+    "description": "Incluye la construcción e interpretación de tablas de frecuencia absoluta y relativa y diversos tipos de gráficos para representar datos.",
+    "prerequisites": [],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Representar",
+      "Modelar"
+    ],
+    "contexts": [
+      "estadística descriptiva"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L463-L475"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.POSITION",
+    "name": "Medidas de posición",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "position_measures",
+    "representation": "conceptual",
+    "task": "overview",
+    "description": "Incluye el cálculo de cuartiles y percentiles de uno o más grupos de datos y la representación de una distribución mediante el diagrama de caja.",
+    "prerequisites": [
+      "PROB.DATA"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Representar"
+    ],
+    "contexts": [
+      "estadística"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L476-L485"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.PROB_RULES",
+    "name": "Reglas de las probabilidades",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "probability_rules",
+    "representation": "conceptual",
+    "task": "overview",
+    "description": "Estudia la probabilidad de un evento y las reglas aditiva y multiplicativa para eventos mutuamente excluyentes e independientes.",
+    "prerequisites": [],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "juegos de azar",
+      "experimentos"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L486-L494"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.DISPERSION",
+    "name": "Medidas de dispersión",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "dispersion_measures",
+    "representation": "conceptual",
+    "task": "overview",
+    "description": "Incluye el cálculo del rango, varianza y desviación estándar de uno o más grupos de datos y la comparación de su dispersión.",
+    "prerequisites": [
+      "PROB.POSITION"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "análisis de datos"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L404-L410"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.CONDITIONAL",
+    "name": "Probabilidad condicional",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "conditional_probability",
+    "representation": "conceptual",
+    "task": "overview",
+    "description": "Estudia la probabilidad de un evento condicionado a la ocurrencia de otro y sus propiedades, incluyendo la independencia de eventos.",
+    "prerequisites": [
+      "PROB.PROB_RULES"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "experimentos",
+      "estadística"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L411-L415"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.PERM_COMB",
+    "name": "Permutación y combinatoria",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "permutation_combination",
+    "representation": "conceptual",
+    "task": "overview",
+    "description": "Introduce la teoría de permutaciones y combinaciones y su aplicación a problemas de conteo.",
+    "prerequisites": [],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "probabilidad",
+      "combinatoria"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L417-L421"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.MODELS",
+    "name": "Modelos probabilísticos",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "probability_models",
+    "representation": "conceptual",
+    "task": "overview",
+    "description": "Incluye la aplicación de los modelos binomial y normal a la resolución de problemas de probabilidad.",
+    "prerequisites": [
+      "PROB.DISPERSION",
+      "PROB.PERM_COMB"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "estadística inferencial"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L423-L435"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.DATA_SUFF",
+    "name": "Suficiencia de datos",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "data_sufficiency",
+    "representation": "conceptual",
+    "task": "metacognitive",
+    "description": "Habilidad para determinar si la información proporcionada es suficiente para responder una pregunta; combina conceptos de probabilidad y álgebra.",
+    "prerequisites": [
+      "ALG.SUFFICIENCY"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Argumentar"
+    ],
+    "contexts": [
+      "evaluación de información"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L95-L103"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "NUM.INT_ORDER",
+    "name": "Ordenar y comparar números enteros",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Números",
+    "concept": "integers",
+    "representation": "number_line",
+    "task": "order_compare",
+    "description": "Ubicar números enteros en la recta numérica y compararlos usando relaciones de mayor, menor o igual.",
+    "prerequisites": [],
+    "co_requisites": [],
+    "encompassed_by": [
+      "NUM.INT_RAT"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Representar",
+      "Resolver"
+    ],
+    "contexts": [
+      "ordenamiento",
+      "evaluación"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L274-L283"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "NUM.INT_OPERATIONS",
+    "name": "Operar con números enteros",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Números",
+    "concept": "integers",
+    "representation": "symbolic",
+    "task": "operations",
+    "description": "Realizar adición, sustracción, multiplicación y división con números enteros, incluyendo el manejo de signos.",
+    "prerequisites": [
+      "NUM.INT_ORDER"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "NUM.INT_RAT"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver"
+    ],
+    "contexts": [
+      "aritmética básica",
+      "problemas cotidianos"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L279-L283"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "NUM.RAT_ORDER",
+    "name": "Ordenar y comparar números racionales",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Números",
+    "concept": "rationals",
+    "representation": "number_line",
+    "task": "order_compare",
+    "description": "Comparar y ordenar fracciones y números decimales utilizando representaciones equivalentes y la recta numérica.",
+    "prerequisites": [
+      "NUM.INT_ORDER"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "NUM.INT_RAT"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Representar",
+      "Resolver"
+    ],
+    "contexts": [
+      "mediciones",
+      "estadísticas"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L282-L287"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "NUM.RAT_OPERATIONS",
+    "name": "Operar con números racionales",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Números",
+    "concept": "rationals",
+    "representation": "symbolic",
+    "task": "operations",
+    "description": "Sumar, restar, multiplicar y dividir fracciones y números decimales, simplificando resultados cuando corresponde.",
+    "prerequisites": [
+      "NUM.RAT_ORDER",
+      "NUM.INT_OPERATIONS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "NUM.INT_RAT"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver"
+    ],
+    "contexts": [
+      "finanzas",
+      "cocina",
+      "medición"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L282-L287"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "NUM.RAT_SIMPLIFY",
+    "name": "Simplificar fracciones y convertir formas",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Números",
+    "concept": "rationals",
+    "representation": "symbolic",
+    "task": "simplify_convert",
+    "description": "Simplificar fracciones utilizando factores comunes y convertir entre fracciones impropias, mixtas y decimales periódicos.",
+    "prerequisites": [
+      "NUM.RAT_OPERATIONS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "NUM.INT_RAT"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Representar",
+      "Resolver"
+    ],
+    "contexts": [
+      "cálculos",
+      "mediciones"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L282-L287"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "NUM.PERCENTAGE_CALC",
+    "name": "Calcular un porcentaje de una cantidad",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Números",
+    "concept": "percentage",
+    "representation": "symbolic",
+    "task": "compute_percentage",
+    "description": "Determinar una parte proporcional de una cantidad aplicando un porcentaje dado.",
+    "prerequisites": [
+      "NUM.RAT_OPERATIONS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "NUM.PERCENTAGE"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver"
+    ],
+    "contexts": [
+      "descuentos",
+      "propinas",
+      "impuestos"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L288-L297"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "NUM.PERCENTAGE_IDENTIFY",
+    "name": "Calcular qué porcentaje es una cantidad de otra",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Números",
+    "concept": "percentage",
+    "representation": "symbolic",
+    "task": "determine_percentage",
+    "description": "Dado un total y una parte, determinar el porcentaje que la parte representa del total.",
+    "prerequisites": [
+      "NUM.PERCENTAGE_CALC"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "NUM.PERCENTAGE"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "estadística",
+      "finanzas"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L288-L297"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "NUM.PERCENTAGE_CHANGE",
+    "name": "Incrementar o disminuir una cantidad en un porcentaje",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Números",
+    "concept": "percentage",
+    "representation": "symbolic",
+    "task": "percentage_change",
+    "description": "Aumentar o disminuir una cantidad en un porcentaje dado y calcular el valor resultante.",
+    "prerequisites": [
+      "NUM.PERCENTAGE_CALC"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "NUM.PERCENTAGE"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver"
+    ],
+    "contexts": [
+      "finanzas",
+      "ventas",
+      "inflación"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L288-L297"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "NUM.PERCENTAGE_REVERSE",
+    "name": "Calcular el valor original dado un valor final y un porcentaje",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Números",
+    "concept": "percentage",
+    "representation": "symbolic",
+    "task": "reverse_percentage",
+    "description": "Dado un valor final y el porcentaje de incremento o descuento aplicado, encontrar el valor original.",
+    "prerequisites": [
+      "NUM.PERCENTAGE_CALC"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "NUM.PERCENTAGE"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver"
+    ],
+    "contexts": [
+      "finanzas",
+      "descuentos"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L288-L297"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "NUM.POWERS_BASE",
+    "name": "Propiedades de las potencias de base racional",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Números",
+    "concept": "exponent_properties",
+    "representation": "symbolic",
+    "task": "apply_properties",
+    "description": "Aplicar las propiedades de las potencias (producto, cociente, potencia de potencia, potencia de producto) con base y exponente racional.",
+    "prerequisites": [
+      "NUM.RAT_OPERATIONS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "NUM.POW_ROOT"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Argumentar"
+    ],
+    "contexts": [
+      "álgebra",
+      "cálculos científicos"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L300-L304"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "NUM.ROOTS_SIMPLIFY",
+    "name": "Descomponer y simplificar raíces enésimas",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Números",
+    "concept": "nth_roots",
+    "representation": "symbolic",
+    "task": "simplify_roots",
+    "description": "Descomponer una raíz enésima en factores y simplificarla utilizando propiedades de los radicales.",
+    "prerequisites": [
+      "NUM.POWERS_BASE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "NUM.POW_ROOT"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver"
+    ],
+    "contexts": [
+      "álgebra",
+      "física"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L304-L306"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "NUM.POW_ROOT_PROBLEM",
+    "name": "Resolver problemas con potencias y raíces",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Números",
+    "concept": "powers_and_roots",
+    "representation": "contextual",
+    "task": "problem_solve",
+    "description": "Aplicar propiedades de potencias y raíces para resolver problemas en contextos variados, incluyendo cálculos con números reales.",
+    "prerequisites": [
+      "NUM.POWERS_BASE",
+      "NUM.ROOTS_SIMPLIFY"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "NUM.POW_ROOT"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "geometría",
+      "física",
+      "ciencias"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L307-L309"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "NUM.REAL_IDENTIFY",
+    "name": "Identificar números reales e irracionales",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Números",
+    "concept": "real_numbers",
+    "representation": "number_line",
+    "task": "identify",
+    "description": "Distinguir entre números racionales e irracionales y ubicarlos en la recta numérica.",
+    "prerequisites": [
+      "NUM.RAT_ORDER"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "NUM.REAL"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Representar",
+      "Resolver"
+    ],
+    "contexts": [
+      "medición",
+      "geometría"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L263-L274"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "NUM.REAL_OPERATIONS",
+    "name": "Operar con números reales",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Números",
+    "concept": "real_numbers",
+    "representation": "symbolic",
+    "task": "operations",
+    "description": "Realizar operaciones con números reales, incluyendo irracionales, y simplificar expresiones con radicales.",
+    "prerequisites": [
+      "NUM.REAL_IDENTIFY",
+      "NUM.RAT_OPERATIONS",
+      "NUM.ROOTS_SIMPLIFY"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "NUM.REAL"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver"
+    ],
+    "contexts": [
+      "álgebra",
+      "cálculos"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L263-L274"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "NUM.RATIONALIZE",
+    "name": "Racionalizar denominadores",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Números",
+    "concept": "real_numbers",
+    "representation": "symbolic",
+    "task": "rationalize_denominator",
+    "description": "Transformar una fracción con radical en el denominador en una expresión equivalente con denominador racional.",
+    "prerequisites": [
+      "NUM.REAL_OPERATIONS",
+      "NUM.ROOTS_SIMPLIFY"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "NUM.REAL"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver"
+    ],
+    "contexts": [
+      "álgebra",
+      "cálculo"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L263-L274"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "NUM.FINANCE_SIMPLE",
+    "name": "Calcular interés simple",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Números",
+    "concept": "financial_math",
+    "representation": "symbolic",
+    "task": "compute_simple_interest",
+    "description": "Usar la fórmula de interés simple para calcular el monto final o la tasa de interés a partir de capital, tiempo y tasa.",
+    "prerequisites": [
+      "NUM.PERCENTAGE_CALC"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "NUM.FINANCE"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "finanzas",
+      "economía"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L275-L280"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "NUM.FINANCE_COMPOUND",
+    "name": "Calcular interés compuesto",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Números",
+    "concept": "financial_math",
+    "representation": "symbolic",
+    "task": "compute_compound_interest",
+    "description": "Aplicar la fórmula de interés compuesto para calcular montos finales, tasas efectivas y número de periodos.",
+    "prerequisites": [
+      "NUM.FINANCE_SIMPLE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "NUM.FINANCE"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "inversiones",
+      "hipotecas"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L275-L280"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "NUM.FINANCE_LOANS",
+    "name": "Resolver problemas de créditos o préstamos",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Números",
+    "concept": "financial_math",
+    "representation": "contextual",
+    "task": "loan_problem_solve",
+    "description": "Plantear y resolver problemas relacionados con créditos hipotecarios, consumo y jubilación, calculando pagos, intereses y saldos.",
+    "prerequisites": [
+      "NUM.FINANCE_COMPOUND"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "NUM.FINANCE"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Modelar",
+      "Resolver"
+    ],
+    "contexts": [
+      "finanzas",
+      "vida cotidiana"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L275-L280"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "NUM.LOG_DEFINITION",
+    "name": "Definición de logaritmo y relación con la potencia",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Números",
+    "concept": "logarithms",
+    "representation": "symbolic",
+    "task": "define_logarithm",
+    "description": "Comprender el logaritmo como el exponente al cual se debe elevar una base para obtener un número dado y su relación inversa con las potencias.",
+    "prerequisites": [
+      "NUM.POWERS_BASE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "NUM.LOG"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Argumentar",
+      "Resolver"
+    ],
+    "contexts": [
+      "matemática",
+      "ciencias"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L281-L287"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "NUM.LOG_PROPERTIES",
+    "name": "Propiedades de los logaritmos",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Números",
+    "concept": "logarithms",
+    "representation": "symbolic",
+    "task": "apply_properties",
+    "description": "Aplicar las propiedades de los logaritmos (producto, cociente, potencia, cambio de base) para simplificar y reescribir expresiones.",
+    "prerequisites": [
+      "NUM.LOG_DEFINITION"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "NUM.LOG"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Argumentar"
+    ],
+    "contexts": [
+      "álgebra",
+      "cálculo"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L281-L287"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "NUM.LOG_SOLVE",
+    "name": "Resolver ecuaciones logarítmicas simples",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Números",
+    "concept": "logarithms",
+    "representation": "symbolic",
+    "task": "solve_log_equations",
+    "description": "Resolver ecuaciones que involucran logaritmos aplicando definiciones y propiedades para despejar la incógnita.",
+    "prerequisites": [
+      "NUM.LOG_PROPERTIES"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "NUM.LOG"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver"
+    ],
+    "contexts": [
+      "álgebra",
+      "ciencias"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L281-L287"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "NUM.LOG_APPLIED",
+    "name": "Aplicaciones de logaritmos en contextos",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Números",
+    "concept": "logarithms",
+    "representation": "contextual",
+    "task": "apply_logs_in_context",
+    "description": "Resolver problemas que utilizan logaritmos en contextos de ciencias naturales y escalas como pH o magnitudes de terremotos.",
+    "prerequisites": [
+      "NUM.LOG_PROPERTIES"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "NUM.LOG"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Modelar",
+      "Resolver"
+    ],
+    "contexts": [
+      "química",
+      "geología",
+      "acústica"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L281-L287"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.EXPR_PRODUCTS",
+    "name": "Aplicar productos notables",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "algebraic_expressions",
+    "representation": "symbolic",
+    "task": "apply_identities",
+    "description": "Usar identidades algebraicas como el cuadrado de una suma, la diferencia de cuadrados y cubos para expandir o factorizar expresiones.",
+    "prerequisites": [
+      "NUM.POWERS_BASE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.EXPR"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Argumentar"
+    ],
+    "contexts": [
+      "álgebra"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L331-L339"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.EXPR_EXPAND",
+    "name": "Desarrollar y simplificar expresiones algebraicas",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "algebraic_expressions",
+    "representation": "symbolic",
+    "task": "expand_simplify",
+    "description": "Aplicar la propiedad distributiva y combinar términos semejantes para desarrollar y simplificar expresiones algebraicas.",
+    "prerequisites": [
+      "ALG.EXPR_PRODUCTS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.EXPR"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver"
+    ],
+    "contexts": [
+      "álgebra"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L331-L339"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.EXPR_FACTOR",
+    "name": "Factorizar expresiones algebraicas",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "algebraic_expressions",
+    "representation": "symbolic",
+    "task": "factorize",
+    "description": "Descomponer expresiones algebraicas en factores usando factor común, agrupación, diferencia de cuadrados y trinomios cuadráticos.",
+    "prerequisites": [
+      "ALG.EXPR_PRODUCTS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.EXPR"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver"
+    ],
+    "contexts": [
+      "álgebra"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L333-L339"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.EXPR_OPERATE",
+    "name": "Operar expresiones algebraicas",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "algebraic_expressions",
+    "representation": "symbolic",
+    "task": "operate_expressions",
+    "description": "Realizar sumas, restas y multiplicaciones de polinomios, manejando términos semejantes y ordenando los resultados.",
+    "prerequisites": [
+      "ALG.EXPR_EXPAND"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.EXPR"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver"
+    ],
+    "contexts": [
+      "álgebra",
+      "modelación"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L331-L339"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.DIRECT_PROPORTION",
+    "name": "Proporción directa y representación",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "proportionality",
+    "representation": "multiple",
+    "task": "direct_proportion",
+    "description": "Interpretar y resolver problemas de proporción directa representando la relación mediante expresiones algebraicas, tablas y gráficos.",
+    "prerequisites": [
+      "NUM.RAT_OPERATIONS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.PROPORTION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Modelar",
+      "Representar",
+      "Resolver"
+    ],
+    "contexts": [
+      "velocidades",
+      "conversiones"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L345-L351"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.INVERSE_PROPORTION",
+    "name": "Proporción inversa y representación",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "proportionality",
+    "representation": "multiple",
+    "task": "inverse_proportion",
+    "description": "Interpretar y resolver problemas de proporción inversa representando la relación mediante expresiones, tablas y gráficos.",
+    "prerequisites": [
+      "NUM.RAT_OPERATIONS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.PROPORTION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Modelar",
+      "Representar",
+      "Resolver"
+    ],
+    "contexts": [
+      "trabajo",
+      "flujo"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L345-L351"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.LIN_SOLVE",
+    "name": "Resolver ecuaciones lineales de primer grado",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "linear_equations",
+    "representation": "symbolic",
+    "task": "solve_linear_equation",
+    "description": "Despejar la variable en ecuaciones lineales de una variable utilizando operaciones inversas y propiedades de igualdad.",
+    "prerequisites": [
+      "ALG.EXPR_OPERATE",
+      "NUM.RAT_OPERATIONS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.LIN"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver"
+    ],
+    "contexts": [
+      "problemas verbales"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L352-L358"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.LIN_MODEL",
+    "name": "Plantear y resolver problemas con ecuaciones lineales",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "linear_equations",
+    "representation": "contextual",
+    "task": "model_linear_problem",
+    "description": "Traducir situaciones verbales a ecuaciones lineales y resolverlas para encontrar la incógnita.",
+    "prerequisites": [
+      "ALG.LIN_SOLVE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.LIN"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Modelar",
+      "Resolver"
+    ],
+    "contexts": [
+      "economía",
+      "geometría"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L352-L358"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.LIN_INEQ_SOLVE",
+    "name": "Resolver inecuaciones lineales de una variable",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "linear_inequalities",
+    "representation": "symbolic",
+    "task": "solve_linear_inequality",
+    "description": "Resolver inecuaciones lineales y representar sus soluciones en la recta numérica.",
+    "prerequisites": [
+      "ALG.LIN_SOLVE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.LIN"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Representar"
+    ],
+    "contexts": [
+      "probabilidad",
+      "condiciones"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L360-L362"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.LIN_INEQ_MODEL",
+    "name": "Plantear y resolver problemas con inecuaciones lineales",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "linear_inequalities",
+    "representation": "contextual",
+    "task": "model_linear_inequality",
+    "description": "Modelar situaciones que requieren inecuaciones lineales para expresar restricciones y resolver para las variables.",
+    "prerequisites": [
+      "ALG.LIN_INEQ_SOLVE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.LIN"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Modelar",
+      "Resolver"
+    ],
+    "contexts": [
+      "optimización",
+      "negocios"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L360-L363"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.SYS_SUBSTITUTION",
+    "name": "Resolver un sistema de ecuaciones lineales por sustitución",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "linear_systems",
+    "representation": "symbolic",
+    "task": "solve_system_substitution",
+    "description": "Resolver sistemas 2x2 despejando una variable en una ecuación y sustituyendo en la otra.",
+    "prerequisites": [
+      "ALG.LIN_SOLVE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.SYSTEMS"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver"
+    ],
+    "contexts": [
+      "intersección de líneas"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L364-L374"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.SYS_ELIMINATION",
+    "name": "Resolver un sistema de ecuaciones lineales por eliminación",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "linear_systems",
+    "representation": "symbolic",
+    "task": "solve_system_elimination",
+    "description": "Resolver sistemas 2x2 sumando o restando ecuaciones para eliminar una incógnita y despejar la otra.",
+    "prerequisites": [
+      "ALG.LIN_SOLVE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.SYSTEMS"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver"
+    ],
+    "contexts": [
+      "combinación de ecuaciones"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L364-L374"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.SYS_GRAPHIC",
+    "name": "Resolver un sistema de ecuaciones lineales gráficamente",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "linear_systems",
+    "representation": "graphical",
+    "task": "solve_system_graphic",
+    "description": "Graficar cada ecuación de un sistema 2x2 en el plano cartesiano y determinar la intersección como solución.",
+    "prerequisites": [
+      "ALG.LINEAR_FUNC_GRAPH",
+      "GEO.TRANSFORM"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.SYSTEMS"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Representar",
+      "Resolver"
+    ],
+    "contexts": [
+      "visualización"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L364-L374"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.SYS_MODEL",
+    "name": "Resolver problemas mediante un sistema de ecuaciones 2x2",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "linear_systems",
+    "representation": "contextual",
+    "task": "solve_system_problem",
+    "description": "Modelar situaciones de la vida real con sistemas de dos ecuaciones lineales y resolverlas utilizando métodos algebraicos o gráficos.",
+    "prerequisites": [
+      "ALG.SYS_SUBSTITUTION",
+      "ALG.SYS_ELIMINATION"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.SYSTEMS"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Modelar",
+      "Resolver"
+    ],
+    "contexts": [
+      "negocios",
+      "mezclas",
+      "movimiento"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L364-L374"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.SYS_CLASSIFY",
+    "name": "Clasificar sistemas de ecuaciones 2x2 según el número de soluciones",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "linear_systems",
+    "representation": "conceptual",
+    "task": "classify_systems",
+    "description": "Determinar si un sistema 2x2 tiene una única solución, infinitas soluciones o no tiene solución analizando las pendientes y constantes o el determinante.",
+    "prerequisites": [
+      "ALG.SYS_SUBSTITUTION",
+      "ALG.SYS_ELIMINATION"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.SYSTEMS"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Argumentar",
+      "Resolver"
+    ],
+    "contexts": [
+      "geometría analítica",
+      "álgebra"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L315-L317"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.LIN_FUNC_CONCEPT",
+    "name": "Concepto de función lineal y afín",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "linear_function",
+    "representation": "symbolic",
+    "task": "define_function",
+    "description": "Entender las funciones lineales (y=mx) y afines (y=mx+b), identificar sus parámetros m y b y su dominio y rango.",
+    "prerequisites": [
+      "ALG.LIN_SOLVE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.LINEAR_FUNCTION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Argumentar",
+      "Representar"
+    ],
+    "contexts": [
+      "modelación"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L375-L381"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.LIN_FUNC_GRAPH",
+    "name": "Representar funciones lineales y afines",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "linear_function",
+    "representation": "graphical",
+    "task": "graph_function",
+    "description": "Construir tablas de valores y graficar funciones lineales y afines en el plano cartesiano, identificando pendiente, interceptos y dirección.",
+    "prerequisites": [
+      "ALG.LIN_FUNC_CONCEPT",
+      "GEO.TRANSFORM"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.LINEAR_FUNCTION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Representar",
+      "Resolver"
+    ],
+    "contexts": [
+      "movimiento",
+      "crecimiento lineal"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L377-L381"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.LIN_FUNC_TABLE",
+    "name": "Interpretar tablas de funciones lineales",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "linear_function",
+    "representation": "tabular",
+    "task": "interpret_table",
+    "description": "Analizar tablas de valores para funciones lineales y afines, determinando la pendiente y el intercepto de la relación.",
+    "prerequisites": [
+      "ALG.LIN_FUNC_CONCEPT"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.LINEAR_FUNCTION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Representar",
+      "Argumentar"
+    ],
+    "contexts": [
+      "datos",
+      "crecimiento"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L377-L381"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.LIN_FUNC_MODEL",
+    "name": "Resolver problemas utilizando funciones lineales y afines",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "linear_function",
+    "representation": "contextual",
+    "task": "model_linear_function",
+    "description": "Modelar situaciones de tasa constante usando funciones lineales y afines, interpretar los parámetros en el contexto y resolver para variables desconocidas.",
+    "prerequisites": [
+      "ALG.LIN_FUNC_CONCEPT"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.LINEAR_FUNCTION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Modelar",
+      "Resolver"
+    ],
+    "contexts": [
+      "finanzas",
+      "física"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L381-L382"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.LIN_FUNC_SOLVE",
+    "name": "Resolver ecuaciones derivadas de funciones lineales",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "linear_function",
+    "representation": "symbolic",
+    "task": "solve_linear_function_eq",
+    "description": "Encontrar valores de x o y en funciones lineales y afines, calcular interceptos y resolver ecuaciones asociadas.",
+    "prerequisites": [
+      "ALG.LIN_FUNC_CONCEPT"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.LINEAR_FUNCTION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver"
+    ],
+    "contexts": [
+      "algebra",
+      "física"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L375-L381"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.QUAD_EQN_SOLVE",
+    "name": "Resolver ecuaciones cuadráticas",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "quadratic_function",
+    "representation": "symbolic",
+    "task": "solve_quadratic_equation",
+    "description": "Aplicar factorización, completación de cuadrados y fórmula cuadrática para resolver ecuaciones de segundo grado.",
+    "prerequisites": [
+      "ALG.EXPR_FACTOR",
+      "NUM.POWERS_BASE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.QUAD_FUNCTION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver"
+    ],
+    "contexts": [
+      "física",
+      "trazos parabólicos"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L383-L386"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.QUAD_GRAPH",
+    "name": "Representar la función cuadrática y analizar los parámetros",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "quadratic_function",
+    "representation": "graphical",
+    "task": "graph_quadratic_function",
+    "description": "Construir tablas de valores y graficar funciones cuadráticas, identificando cómo afectan los coeficientes a la concavidad y anchura.",
+    "prerequisites": [
+      "ALG.QUAD_EQN_SOLVE",
+      "GEO.TRANSFORM"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.QUAD_FUNCTION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Representar",
+      "Argumentar"
+    ],
+    "contexts": [
+      "física",
+      "ingeniería"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L388-L389"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.QUAD_FEATURES",
+    "name": "Identificar vértice, ceros y puntos especiales de la parábola",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "quadratic_function",
+    "representation": "graphical",
+    "task": "identify_parabola_features",
+    "description": "Determinar el vértice, los ceros y la intersección con los ejes de una función cuadrática a partir de su ecuación o gráfica.",
+    "prerequisites": [
+      "ALG.QUAD_EQN_SOLVE",
+      "ALG.QUAD_GRAPH"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.QUAD_FUNCTION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Representar",
+      "Argumentar",
+      "Resolver"
+    ],
+    "contexts": [
+      "máximos y mínimos",
+      "trayectorias"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L391-L393"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.QUAD_MODEL",
+    "name": "Resolver problemas utilizando funciones cuadráticas",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "quadratic_function",
+    "representation": "contextual",
+    "task": "model_quadratic_problem",
+    "description": "Modelar y resolver problemas que involucran funciones cuadráticas, interpretando el significado de sus parámetros en contextos diversos.",
+    "prerequisites": [
+      "ALG.QUAD_FEATURES"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.QUAD_FUNCTION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Modelar",
+      "Resolver"
+    ],
+    "contexts": [
+      "física",
+      "economía"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L394-L396"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.POWER_FUNC_GRAPH",
+    "name": "Graficar y analizar la función potencia",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "power_function",
+    "representation": "graphical",
+    "task": "graph_power_function",
+    "description": "Representar gráficamente funciones potencia (f(x)=x^n) y analizar la influencia del exponente en su comportamiento.",
+    "prerequisites": [
+      "NUM.POWERS_BASE",
+      "GEO.TRANSFORM"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.POWER_EXP_LOG_FUNCTION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Representar",
+      "Argumentar"
+    ],
+    "contexts": [
+      "física",
+      "economía"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L318-L330"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.POWER_FUNC_SOLVE",
+    "name": "Resolver ecuaciones con funciones potencia",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "power_function",
+    "representation": "symbolic",
+    "task": "solve_power_function",
+    "description": "Resolver ecuaciones de la forma x^n=a y otras que involucran potencias, utilizando exponentes fraccionarios cuando corresponda.",
+    "prerequisites": [
+      "ALG.POWER_FUNC_GRAPH"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.POWER_EXP_LOG_FUNCTION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Argumentar"
+    ],
+    "contexts": [
+      "álgebra",
+      "ciencias"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L318-L330"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.POWER_FUNC_MODEL",
+    "name": "Aplicar funciones potencia en contextos",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "power_function",
+    "representation": "contextual",
+    "task": "model_power_function",
+    "description": "Modelar fenómenos como la relación entre área y longitud, o escalas físicas, utilizando funciones potencia.",
+    "prerequisites": [
+      "ALG.POWER_FUNC_GRAPH"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.POWER_EXP_LOG_FUNCTION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Modelar",
+      "Resolver"
+    ],
+    "contexts": [
+      "biología",
+      "física"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L318-L330"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.EXP_FUNC_GRAPH",
+    "name": "Graficar y analizar la función exponencial",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "exponential_function",
+    "representation": "graphical",
+    "task": "graph_exponential_function",
+    "description": "Dibujar la gráfica de f(x)=a^x para a>0 y a≠1, identificando su crecimiento o decrecimiento y las características del dominio y rango.",
+    "prerequisites": [
+      "NUM.POWERS_BASE",
+      "GEO.TRANSFORM"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.POWER_EXP_LOG_FUNCTION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Representar",
+      "Argumentar"
+    ],
+    "contexts": [
+      "crecimiento poblacional",
+      "finanzas"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L318-L330"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.EXP_FUNC_SOLVE",
+    "name": "Resolver ecuaciones exponenciales simples",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "exponential_function",
+    "representation": "symbolic",
+    "task": "solve_exponential_equation",
+    "description": "Resolver ecuaciones de la forma a^x=b, convirtiendo a la misma base o aplicando logaritmos.",
+    "prerequisites": [
+      "ALG.EXP_FUNC_GRAPH",
+      "NUM.LOG_DEFINITION"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.POWER_EXP_LOG_FUNCTION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Argumentar"
+    ],
+    "contexts": [
+      "finanzas",
+      "ciencias"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L318-L330"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.EXP_FUNC_MODEL",
+    "name": "Resolver problemas de crecimiento o decrecimiento exponencial",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "exponential_function",
+    "representation": "contextual",
+    "task": "model_exponential_problem",
+    "description": "Modelar situaciones de crecimiento y decrecimiento exponencial, calculando cantidades futuras o determinando tiempos y tasas.",
+    "prerequisites": [
+      "ALG.EXP_FUNC_GRAPH"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.POWER_EXP_LOG_FUNCTION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Modelar",
+      "Resolver"
+    ],
+    "contexts": [
+      "poblaciones",
+      "depreciación"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L318-L330"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.LOG_FUNC_GRAPH",
+    "name": "Graficar y analizar la función logarítmica",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "logarithmic_function",
+    "representation": "graphical",
+    "task": "graph_logarithmic_function",
+    "description": "Representar gráficamente f(x)=log_a(x), identificando su dominio, rango, asíntota vertical y comportamiento para bases a>0, a≠1.",
+    "prerequisites": [
+      "NUM.LOG_DEFINITION",
+      "GEO.TRANSFORM"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.POWER_EXP_LOG_FUNCTION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Representar",
+      "Argumentar"
+    ],
+    "contexts": [
+      "ciencias",
+      "ingeniería"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L318-L330"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.LOG_FUNC_SOLVE",
+    "name": "Resolver ecuaciones logarítmicas simples",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "logarithmic_function",
+    "representation": "symbolic",
+    "task": "solve_logarithmic_equation",
+    "description": "Despejar la variable en ecuaciones que involucran logaritmos aplicando las propiedades y la definición de logaritmo.",
+    "prerequisites": [
+      "NUM.LOG_PROPERTIES",
+      "ALG.LOG_FUNC_GRAPH"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.POWER_EXP_LOG_FUNCTION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver"
+    ],
+    "contexts": [
+      "cálculo",
+      "modelación"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L318-L330"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.LOG_FUNC_MODEL",
+    "name": "Resolver problemas utilizando funciones logarítmicas",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "logarithmic_function",
+    "representation": "contextual",
+    "task": "model_logarithmic_problem",
+    "description": "Modelar y resolver problemas que requieren funciones logarítmicas para describir fenómenos como escalas, crecimiento y atenuación.",
+    "prerequisites": [
+      "ALG.LOG_FUNC_GRAPH"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.POWER_EXP_LOG_FUNCTION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Modelar",
+      "Resolver"
+    ],
+    "contexts": [
+      "geología",
+      "química"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L318-L330"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.TRIG_FUNC_GRAPH",
+    "name": "Graficar las funciones seno y coseno",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "trig_functions",
+    "representation": "graphical",
+    "task": "graph_trig_function",
+    "description": "Dibujar las funciones f(x)=\\sin(x) y f(x)=\\cos(x), identificando sus amplitudes, períodos, fases y valores especiales.",
+    "prerequisites": [
+      "GEO.TRIG_RATIOS",
+      "GEO.TRANSFORM"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.TRIG_FUNCTION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Representar",
+      "Argumentar"
+    ],
+    "contexts": [
+      "ondas",
+      "ciclos"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L331-L338"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.TRIG_FUNC_IDENTIFY",
+    "name": "Identificar amplitud y período en funciones trigonométricas",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "trig_functions",
+    "representation": "graphical",
+    "task": "identify_trig_parameters",
+    "description": "Determinar la amplitud y el período de funciones seno y coseno a partir de su ecuación o gráfica.",
+    "prerequisites": [
+      "ALG.TRIG_FUNC_GRAPH"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.TRIG_FUNCTION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Representar",
+      "Argumentar"
+    ],
+    "contexts": [
+      "señales"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L331-L338"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "ALG.TRIG_FUNC_MODEL",
+    "name": "Resolver problemas usando funciones seno y coseno",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Álgebra y funciones",
+    "concept": "trig_functions",
+    "representation": "contextual",
+    "task": "model_trig_function",
+    "description": "Aplicar las funciones seno y coseno para modelar fenómenos periódicos y resolver problemas de amplitud, frecuencia y fase.",
+    "prerequisites": [
+      "ALG.TRIG_FUNC_GRAPH"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "ALG.TRIG_FUNCTION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Modelar",
+      "Resolver"
+    ],
+    "contexts": [
+      "música",
+      "astronomía"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L331-L338"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.PYTHAGORAS",
+    "name": "Aplicar el Teorema de Pitágoras",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Geometría",
+    "concept": "right_triangle",
+    "representation": "symbolic",
+    "task": "apply_pythagoras",
+    "description": "Calcular la longitud de un lado de un triángulo rectángulo utilizando el Teorema de Pitágoras.",
+    "prerequisites": [
+      "NUM.RAT_OPERATIONS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO.FIGURES"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Argumentar"
+    ],
+    "contexts": [
+      "geometría plana",
+      "física"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L413-L415"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.TRIANGLE_PERIMETER",
+    "name": "Calcular el perímetro de un triángulo",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Geometría",
+    "concept": "triangle",
+    "representation": "symbolic",
+    "task": "compute_perimeter",
+    "description": "Sumar las longitudes de los lados de un triángulo para hallar su perímetro.",
+    "prerequisites": [
+      "NUM.RAT_OPERATIONS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO.FIGURES"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver"
+    ],
+    "contexts": [
+      "medición"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L416-L424"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.TRIANGLE_AREA",
+    "name": "Calcular el área de un triángulo",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Geometría",
+    "concept": "triangle",
+    "representation": "symbolic",
+    "task": "compute_area",
+    "description": "Usar la fórmula de 1/2 base por altura para calcular el área de un triángulo, aplicándola a problemas de contexto.",
+    "prerequisites": [
+      "NUM.RAT_OPERATIONS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO.FIGURES"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "arquitectura",
+      "ingeniería"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L416-L424"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.PARALLELOGRAM_PERIMETER",
+    "name": "Calcular el perímetro de un paralelogramo",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Geometría",
+    "concept": "parallelogram",
+    "representation": "symbolic",
+    "task": "compute_perimeter",
+    "description": "Sumar las longitudes de los lados adyacentes multiplicados por dos para obtener el perímetro de paralelogramos y rectángulos.",
+    "prerequisites": [
+      "NUM.RAT_OPERATIONS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO.FIGURES"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver"
+    ],
+    "contexts": [
+      "construcción"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L416-L424"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.PARALLELOGRAM_AREA",
+    "name": "Calcular el área de un paralelogramo",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Geometría",
+    "concept": "parallelogram",
+    "representation": "symbolic",
+    "task": "compute_area",
+    "description": "Calcular el área de paralelogramos y rectángulos multiplicando base por altura.",
+    "prerequisites": [
+      "NUM.RAT_OPERATIONS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO.FIGURES"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "diseño",
+      "construcción"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L416-L424"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.TRAPEZOID_PERIMETER",
+    "name": "Calcular el perímetro de un trapecio",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Geometría",
+    "concept": "trapezoid",
+    "representation": "symbolic",
+    "task": "compute_perimeter",
+    "description": "Sumar las longitudes de los cuatro lados del trapecio para obtener su perímetro.",
+    "prerequisites": [
+      "NUM.RAT_OPERATIONS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO.FIGURES"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver"
+    ],
+    "contexts": [
+      "geometría"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L416-L424"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.TRAPEZOID_AREA",
+    "name": "Calcular el área de un trapecio",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Geometría",
+    "concept": "trapezoid",
+    "representation": "symbolic",
+    "task": "compute_area",
+    "description": "Utilizar la fórmula de área de un trapecio (promedio de las bases por altura) para calcular su superficie.",
+    "prerequisites": [
+      "NUM.RAT_OPERATIONS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO.FIGURES"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "diseño",
+      "agrimensura"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L416-L424"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.CIRCLE_CIRCUMFERENCE",
+    "name": "Calcular la circunferencia de un círculo",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Geometría",
+    "concept": "circle",
+    "representation": "symbolic",
+    "task": "compute_circumference",
+    "description": "Calcular el perímetro de un círculo utilizando la fórmula 2πr o πd.",
+    "prerequisites": [
+      "NUM.RAT_OPERATIONS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO.FIGURES"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver"
+    ],
+    "contexts": [
+      "física",
+      "ingeniería"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L418-L424"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.CIRCLE_AREA",
+    "name": "Calcular el área de un círculo",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Geometría",
+    "concept": "circle",
+    "representation": "symbolic",
+    "task": "compute_area",
+    "description": "Usar la fórmula πr^2 para calcular el área de un círculo y aplicar el cálculo en problemas contextuales.",
+    "prerequisites": [
+      "NUM.RAT_OPERATIONS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO.FIGURES"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "agrimensura",
+      "ingeniería"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L419-L425"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.CUBOID_SURFACE",
+    "name": "Calcular el área de la superficie de un paralelepípedo y un cubo",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Geometría",
+    "concept": "solid_geometry",
+    "representation": "symbolic",
+    "task": "compute_surface_area",
+    "description": "Calcular el área total de las superficies de paralelepípedos y cubos sumando el área de todas sus caras.",
+    "prerequisites": [
+      "NUM.RAT_OPERATIONS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO.SOLIDS"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "embalaje",
+      "arquitectura"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L426-L435"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.CUBOID_VOLUME",
+    "name": "Calcular el volumen de un paralelepípedo y un cubo",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Geometría",
+    "concept": "solid_geometry",
+    "representation": "symbolic",
+    "task": "compute_volume",
+    "description": "Multiplicar las dimensiones de un paralelepípedo o elevar la arista de un cubo al cubo para hallar su volumen.",
+    "prerequisites": [
+      "NUM.RAT_OPERATIONS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO.SOLIDS"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "construcción",
+      "ingeniería"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L426-L435"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.COORDINATE_PLANE",
+    "name": "Ubicar puntos y vectores en el plano cartesiano",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Geometría",
+    "concept": "coordinate_plane",
+    "representation": "graphical",
+    "task": "plot_points",
+    "description": "Identificar las coordenadas de puntos y vectores en el plano cartesiano, calcular distancias y pendientes entre puntos.",
+    "prerequisites": [
+      "NUM.RAT_OPERATIONS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO.TRANSFORM"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Representar",
+      "Argumentar"
+    ],
+    "contexts": [
+      "geometría analítica",
+      "física"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L436-L449"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.TRANSLATE",
+    "name": "Trasladar figuras en el plano",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Geometría",
+    "concept": "translation",
+    "representation": "graphical",
+    "task": "translate_figures",
+    "description": "Aplicar un vector de traslación a puntos y figuras en el plano cartesiano para obtener su imagen.",
+    "prerequisites": [
+      "GEO.COORDINATE_PLANE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO.TRANSFORM"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Representar",
+      "Resolver"
+    ],
+    "contexts": [
+      "animación",
+      "ingeniería"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L439-L448"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.ROTATE",
+    "name": "Rotar figuras en el plano",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Geometría",
+    "concept": "rotation",
+    "representation": "graphical",
+    "task": "rotate_figures",
+    "description": "Rotar figuras alrededor del origen o un punto dado por ángulos de 90°, 180° u otros, determinando las coordenadas de la imagen.",
+    "prerequisites": [
+      "GEO.COORDINATE_PLANE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO.TRANSFORM"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Representar",
+      "Resolver"
+    ],
+    "contexts": [
+      "diseño gráfico",
+      "geometría"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L439-L448"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.REFLECT",
+    "name": "Reflejar figuras en el plano",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Geometría",
+    "concept": "reflection",
+    "representation": "graphical",
+    "task": "reflect_figures",
+    "description": "Reflejar puntos y figuras respecto a ejes o rectas dadas en el plano cartesiano.",
+    "prerequisites": [
+      "GEO.COORDINATE_PLANE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO.TRANSFORM"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Representar",
+      "Resolver"
+    ],
+    "contexts": [
+      "simetría",
+      "arte"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L439-L448"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.HOMOTHECY_SCALE",
+    "name": "Entender el factor de escala de una homotecia",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Geometría",
+    "concept": "homothety",
+    "representation": "symbolic",
+    "task": "scale_factor",
+    "description": "Interpretar la razón de una homotecia y determinar cómo afecta las longitudes y áreas de una figura.",
+    "prerequisites": [
+      "ALG.DIRECT_PROPORTION"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO.HOMOTHETIA"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Modelar",
+      "Argumentar"
+    ],
+    "contexts": [
+      "planos",
+      "mapas"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L353-L358"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.HOMOTHECY_APPLY",
+    "name": "Aplicar una homotecia a una figura",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Geometría",
+    "concept": "homothety",
+    "representation": "graphical",
+    "task": "apply_homothety",
+    "description": "Dado un factor de escala y un centro de homotecia, obtener la imagen de una figura en el plano.",
+    "prerequisites": [
+      "GEO.HOMOTHECY_SCALE",
+      "GEO.COORDINATE_PLANE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO.HOMOTHETIA"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Representar",
+      "Resolver"
+    ],
+    "contexts": [
+      "arquitectura",
+      "cartografía"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L353-L358"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.HOMOTHECY_PROBLEM",
+    "name": "Resolver problemas de figuras semejantes mediante homotecia",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Geometría",
+    "concept": "homothety",
+    "representation": "contextual",
+    "task": "solve_homothety_problem",
+    "description": "Aplicar la homotecia para resolver problemas de escalas, planos y mapas, determinando distancias reales a partir de representaciones y viceversa.",
+    "prerequisites": [
+      "GEO.HOMOTHECY_SCALE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO.HOMOTHETIA"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Modelar",
+      "Resolver"
+    ],
+    "contexts": [
+      "cartografía",
+      "ingeniería civil"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L353-L358"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.TRIG_DEFINE",
+    "name": "Definir seno, coseno y tangente en un triángulo rectángulo",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Geometría",
+    "concept": "trig_ratios",
+    "representation": "symbolic",
+    "task": "define_trig_ratios",
+    "description": "Relacionar las razones trigonométricas con las longitudes de los lados de un triángulo rectángulo.",
+    "prerequisites": [
+      "GEO.PYTHAGORAS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO.TRIG_RATIOS"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Argumentar",
+      "Resolver"
+    ],
+    "contexts": [
+      "topografía",
+      "física"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L359-L367"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.TRIG_SOLVE",
+    "name": "Calcular lados o ángulos usando razones trigonométricas",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Geometría",
+    "concept": "trig_ratios",
+    "representation": "symbolic",
+    "task": "solve_trig_ratios",
+    "description": "Utilizar seno, coseno o tangente para encontrar lados o ángulos desconocidos en triángulos rectángulos.",
+    "prerequisites": [
+      "GEO.TRIG_DEFINE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO.TRIG_RATIOS"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "trigonometría",
+      "navegación"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L359-L367"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.TRIG_CONTEXT",
+    "name": "Resolver problemas aplicando trigonometría en triángulos rectángulos",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Geometría",
+    "concept": "trig_ratios",
+    "representation": "contextual",
+    "task": "solve_trig_context",
+    "description": "Modelar y resolver problemas de contextos como alturas inaccesibles, distancias desconocidas y pendientes usando trigonometría.",
+    "prerequisites": [
+      "GEO.TRIG_SOLVE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO.TRIG_RATIOS"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Modelar",
+      "Resolver"
+    ],
+    "contexts": [
+      "ingeniería",
+      "astronomía"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L359-L367"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.CIRCLE_ANGLES_ARCS",
+    "name": "Ángulos y arcos en la circunferencia",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Geometría",
+    "concept": "circle_relations",
+    "representation": "symbolic",
+    "task": "angles_arcs",
+    "description": "Relacionar la medida de un arco con la medida de ángulos centrales e inscritos en una circunferencia.",
+    "prerequisites": [
+      "GEO.CIRCLE_CIRCUMFERENCE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO.CIRCLE_RELATIONS"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Argumentar"
+    ],
+    "contexts": [
+      "astronomía",
+      "dibujo técnico"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L369-L375"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.CIRCLE_CHORDS_SECANTS",
+    "name": "Propiedades de cuerdas y secantes en la circunferencia",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Geometría",
+    "concept": "circle_relations",
+    "representation": "symbolic",
+    "task": "chords_secants",
+    "description": "Aplicar propiedades de cuerdas y secantes en una circunferencia para hallar longitudes y relaciones métricas.",
+    "prerequisites": [
+      "GEO.CIRCLE_ANGLES_ARCS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO.CIRCLE_RELATIONS"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Argumentar"
+    ],
+    "contexts": [
+      "geometría"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L375-L380"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "GEO.CIRCLE_PROBLEM",
+    "name": "Resolver problemas de relaciones métricas en la circunferencia",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Geometría",
+    "concept": "circle_relations",
+    "representation": "contextual",
+    "task": "solve_circle_relations",
+    "description": "Modelar y resolver situaciones que involucran arcos, ángulos, cuerdas, secantes y tangentes, aplicando propiedades métricas de la circunferencia.",
+    "prerequisites": [
+      "GEO.CIRCLE_CHORDS_SECANTS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "GEO.CIRCLE_RELATIONS"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Modelar",
+      "Resolver"
+    ],
+    "contexts": [
+      "diseño",
+      "navegación"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L381-L386"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.FREQ_TABLE",
+    "name": "Usar tablas de frecuencia absoluta y relativa",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "frequency_tables",
+    "representation": "tabular",
+    "task": "construct_frequency_table",
+    "description": "Construir tablas de frecuencias absolutas y relativas para organizar datos y determinar frecuencias y porcentajes.",
+    "prerequisites": [
+      "NUM.RAT_OPERATIONS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB.DATA"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Representar",
+      "Resolver"
+    ],
+    "contexts": [
+      "estadística descriptiva"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L463-L468"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.GRAPH_TYPES",
+    "name": "Representar datos mediante gráficos",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "data_graphs",
+    "representation": "graphical",
+    "task": "construct_graph",
+    "description": "Crear e interpretar distintos tipos de gráficos (barras, líneas, sectores) para representar datos.",
+    "prerequisites": [
+      "PROB.FREQ_TABLE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB.DATA"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Representar",
+      "Modelar"
+    ],
+    "contexts": [
+      "análisis de datos"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L468-L470"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.MEAN",
+    "name": "Calcular la media de un conjunto de datos",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "mean",
+    "representation": "numeric",
+    "task": "compute_mean",
+    "description": "Determinar el promedio de una colección de datos sumando todos los valores y dividiendo entre el número de observaciones.",
+    "prerequisites": [
+      "NUM.RAT_OPERATIONS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB.DATA"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "economía",
+      "ciencias"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L472-L473"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.QUARTILES_PERCENTILES",
+    "name": "Calcular cuartiles y percentiles",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "quartiles_percentiles",
+    "representation": "numeric",
+    "task": "compute_quartiles",
+    "description": "Determinar cuartiles y percentiles en conjuntos de datos ordenados, interpretando su significado en la distribución.",
+    "prerequisites": [
+      "PROB.FREQ_TABLE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB.POSITION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Representar"
+    ],
+    "contexts": [
+      "salud",
+      "educación"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L476-L479"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.BOXPLOT",
+    "name": "Interpretar un diagrama de caja",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "boxplot",
+    "representation": "graphical",
+    "task": "interpret_boxplot",
+    "description": "Leer e interpretar diagramas de caja para comprender la distribución, dispersión y posibles valores atípicos de un conjunto de datos.",
+    "prerequisites": [
+      "PROB.QUARTILES_PERCENTILES"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB.POSITION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Representar",
+      "Argumentar"
+    ],
+    "contexts": [
+      "análisis de datos"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L480-L482"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.SIMPLE_PROB",
+    "name": "Calcular la probabilidad de un evento simple",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "probability",
+    "representation": "numeric",
+    "task": "compute_simple_probability",
+    "description": "Determinar la probabilidad de un suceso en experimentos aleatorios con espacio muestral finito y eventos equiprobables.",
+    "prerequisites": [
+      "NUM.RAT_OPERATIONS"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB.PROB_RULES"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "juegos de azar",
+      "experimentos"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L486-L490"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.ADDITIVE_RULE",
+    "name": "Aplicar la regla aditiva de probabilidad",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "probability",
+    "representation": "numeric",
+    "task": "apply_additive_rule",
+    "description": "Calcular la probabilidad de la unión de eventos mutuamente excluyentes sumando las probabilidades individuales.",
+    "prerequisites": [
+      "PROB.SIMPLE_PROB"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB.PROB_RULES"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Argumentar"
+    ],
+    "contexts": [
+      "experimentos"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L492-L493"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.MULTIPLICATIVE_RULE",
+    "name": "Aplicar la regla multiplicativa de probabilidad",
+    "exam_level": [
+      "M1"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "probability",
+    "representation": "numeric",
+    "task": "apply_multiplicative_rule",
+    "description": "Determinar la probabilidad de la intersección de eventos independientes multiplicando sus probabilidades individuales.",
+    "prerequisites": [
+      "PROB.SIMPLE_PROB"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB.PROB_RULES"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Argumentar"
+    ],
+    "contexts": [
+      "experimentos",
+      "modelación"
+    ],
+    "status": "official",
+    "source_refs": [
+      "651905134113634†L492-L494"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.RANGE",
+    "name": "Calcular el rango de un conjunto de datos",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "dispersion",
+    "representation": "numeric",
+    "task": "compute_range",
+    "description": "Restar el valor mínimo del máximo en un conjunto de datos para obtener el rango como medida de dispersión.",
+    "prerequisites": [
+      "PROB.MEAN"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB.DISPERSION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver"
+    ],
+    "contexts": [
+      "análisis de datos"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L404-L410"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.VARIANCE",
+    "name": "Calcular la varianza de un conjunto de datos",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "dispersion",
+    "representation": "numeric",
+    "task": "compute_variance",
+    "description": "Calcular la varianza utilizando la fórmula que mide el promedio de los cuadrados de las desviaciones respecto a la media.",
+    "prerequisites": [
+      "PROB.MEAN"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB.DISPERSION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Argumentar"
+    ],
+    "contexts": [
+      "estadística"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L404-L410"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.STDDEV",
+    "name": "Calcular la desviación estándar",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "dispersion",
+    "representation": "numeric",
+    "task": "compute_standard_deviation",
+    "description": "Obtener la desviación estándar como raíz cuadrada de la varianza para medir la dispersión de los datos.",
+    "prerequisites": [
+      "PROB.VARIANCE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB.DISPERSION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Argumentar"
+    ],
+    "contexts": [
+      "estadística"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L404-L410"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.COMPARE_DISPERSION",
+    "name": "Comparar la dispersión de dos conjuntos de datos",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "dispersion",
+    "representation": "contextual",
+    "task": "compare_dispersion",
+    "description": "Analizar y comparar la dispersión de dos o más conjuntos de datos utilizando rango, varianza y desviación estándar.",
+    "prerequisites": [
+      "PROB.VARIANCE",
+      "PROB.STDDEV"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB.DISPERSION"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Argumentar",
+      "Modelar"
+    ],
+    "contexts": [
+      "análisis de resultados",
+      "control de calidad"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L404-L410"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.CONDITIONAL_PROB",
+    "name": "Calcular probabilidades condicionales",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "conditional_probability",
+    "representation": "numeric",
+    "task": "compute_conditional_probability",
+    "description": "Calcular la probabilidad de un evento dado que ha ocurrido otro, aplicando la definición de probabilidad condicional.",
+    "prerequisites": [
+      "PROB.SIMPLE_PROB"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB.CONDITIONAL"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Argumentar"
+    ],
+    "contexts": [
+      "experimentos",
+      "datos"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L411-L415"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.CONDITIONAL_PROB_PROBLEM",
+    "name": "Resolver problemas de probabilidad condicional",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "conditional_probability",
+    "representation": "contextual",
+    "task": "solve_conditional_prob_problem",
+    "description": "Utilizar tablas, diagramas de árbol u otras herramientas para modelar y resolver problemas que involucran eventos condicionados.",
+    "prerequisites": [
+      "PROB.CONDITIONAL_PROB"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB.CONDITIONAL"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Modelar",
+      "Resolver"
+    ],
+    "contexts": [
+      "epidemiología",
+      "experimentos"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L411-L415"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.PERMUTATION",
+    "name": "Calcular permutaciones (nPr)",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "combinatorics",
+    "representation": "symbolic",
+    "task": "compute_permutations",
+    "description": "Calcular el número de arreglos ordenados de elementos distintos utilizando factoriales y la notación de permutaciones.",
+    "prerequisites": [
+      "NUM.POWERS_BASE"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB.PERM_COMB"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver"
+    ],
+    "contexts": [
+      "conteo",
+      "probabilidad"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L417-L421"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.COMBINATION",
+    "name": "Calcular combinaciones (nCr)",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "combinatorics",
+    "representation": "symbolic",
+    "task": "compute_combinations",
+    "description": "Calcular el número de selecciones de un grupo de elementos donde el orden no importa, usando la fórmula de combinaciones.",
+    "prerequisites": [
+      "PROB.PERMUTATION"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB.PERM_COMB"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver"
+    ],
+    "contexts": [
+      "muestreo",
+      "probabilidad"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L417-L421"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.PERM_COMB_PROBLEM",
+    "name": "Resolver problemas utilizando permutaciones o combinaciones",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "combinatorics",
+    "representation": "contextual",
+    "task": "solve_permutation_combination_problem",
+    "description": "Aplicar permutaciones y combinaciones para contar el número de maneras de organizar o seleccionar objetos en situaciones reales.",
+    "prerequisites": [
+      "PROB.PERMUTATION",
+      "PROB.COMBINATION"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB.PERM_COMB"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Modelar",
+      "Resolver"
+    ],
+    "contexts": [
+      "probabilidad",
+      "combinatoria"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L417-L421"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.BINOMIAL_MODEL",
+    "name": "Aplicar la distribución binomial",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "binomial_distribution",
+    "representation": "numeric",
+    "task": "apply_binomial_distribution",
+    "description": "Calcular la probabilidad de obtener un número específico de éxitos en ensayos de Bernoulli usando la fórmula binomial y parámetros n y p.",
+    "prerequisites": [
+      "PROB.PERMUTATION",
+      "PROB.SIMPLE_PROB"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB.MODELS"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Resolver",
+      "Modelar"
+    ],
+    "contexts": [
+      "encuestas",
+      "experimentos"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L423-L425"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.NORMAL_MODEL",
+    "name": "Entender la distribución normal y sus propiedades",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "normal_distribution",
+    "representation": "conceptual",
+    "task": "understand_normal_distribution",
+    "description": "Reconocer las características de la distribución normal, su forma de campana y la interpretación de la media y desviación estándar.",
+    "prerequisites": [
+      "PROB.STDDEV",
+      "PROB.MEAN"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB.MODELS"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Argumentar",
+      "Modelar"
+    ],
+    "contexts": [
+      "estadística",
+      "análisis de datos"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L423-L435"
+    ],
+    "examples": 0
+  },
+  {
+    "id": "PROB.MODEL_PROBLEM",
+    "name": "Resolver problemas con modelos binomial y normal",
+    "exam_level": [
+      "M2"
+    ],
+    "axis": "Probabilidad y estadística",
+    "concept": "probability_models",
+    "representation": "contextual",
+    "task": "solve_prob_model_problem",
+    "description": "Aplicar la distribución binomial y la distribución normal para modelar situaciones y calcular probabilidades en diferentes contextos.",
+    "prerequisites": [
+      "PROB.BINOMIAL_MODEL",
+      "PROB.NORMAL_MODEL"
+    ],
+    "co_requisites": [],
+    "encompassed_by": [
+      "PROB.MODELS"
+    ],
+    "diagnostic_links": [],
+    "skills": [
+      "Modelar",
+      "Resolver"
+    ],
+    "contexts": [
+      "biología",
+      "economía"
+    ],
+    "status": "official",
+    "source_refs": [
+      "901139083042794†L423-L435"
+    ],
+    "examples": 0
+  }
+]
