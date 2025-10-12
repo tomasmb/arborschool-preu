@@ -1,0 +1,75 @@
+**==Learning Method (CLAVE)==**
+
+- Goal
+  - Build courses from a Knowledge Graph (KG) where each atom is taught and mastery is proven before moving on.
+- Atom
+  - Each atom is taught with exactly 1 article and 1 PP100 question set.
+  - PP100 both teaches (with instructional feedback) and proves mastery.
+  - PP100 algorithm (simple)
+    - Levels: Easy → Medium → Hard; start at Easy.
+    - State: level, total_correct, streak per level.
+    - Next item: from current level for this atom, prefer never-seen, else least-recently-seen.
+    - If correct: increment streak and total; if not at Hard and streak ≥ 2, move up a level and reset streaks.
+    - If wrong: reset streak at current level; move down a level if not at Easy.
+    - Stop (mastery): total_correct == 11, with at least 3 correct at Hard, and last question correct at Hard.
+- Optimized Diagnostic Placement
+  - Run a short test to map mastered vs unmastered atoms.
+  - Test higher atoms first; if one is mastered, mark all its chained prerequisites mastered.
+- Learning Loop per Atom
+  - Teach the atom with the article.
+  - Run PP100 for that atom.
+  - If mastery is proven, move to the next atom in the plan.
+  - If mastery is not proven, run a prerequisite diagnosis from this atom down its chained prerequisites until all blocking gaps are found.
+  - Use the identified gaps to create a gap-fill mini plan, complete it, then reteach and reassess the failed atom.
+- Dynamic Lesson Plan
+  - Plan updates after every PP100 outcome and each mastered-at date.
+  - Signals
+    - Knowledge gap detection from prerequisite diagnosis when mastery is not proven.
+    - Spaced repetition using the date an atom was mastered.
+    - PP100 sturdiness from accuracy and questions-to-master.
+  - Planning Rules
+    - High accuracy with few items: advance; schedule a standard or longer first review.
+    - Modest accuracy or many items: add an early reinforcement review; add a quick targeted probe if errors cluster.
+    - Not mastered: diagnose prerequisites, add gap-fill atoms, then reteach and reassess the original atom.
+- Interleaving
+  - Macro interleaving
+    - Naturally occurs by teaching different atoms over time.
+  - Micro interleaving inside reviews
+    - Mixed consolidation sessions interleave items from multiple recently mastered, non-confusable atoms.
+- Interference Control
+  - Maintain a small set of confusable pairs in the KG.
+  - Avoid scheduling confusable atoms back to back in new learning and exclude confusable pairs from the same consolidation set.
+- Implicit Review and Propagation Rules
+  - On mastery of an atom
+    - Credit its direct prerequisites for review load so they may require fewer explicit reviews.
+  - On failure of an atom
+    - Mark all dependents unmastered until revalidated by reassessment.
+  - Notes
+    - Failure propagation is immediate and boolean.
+    - Mastery credit is local to direct prerequisites only.
+- Priority Policy for Planning
+  - Use test blueprints to score candidate next atoms
+    - Base score on how many test items this atom unlocks now.
+    - Add decayed contribution from items unlocked further up the graph.
+  - Prefer higher scoring atoms if prerequisites are ready and no interference rule is violated.
+- Spaced Repetition
+  - After an atom is mastered, schedule reviews based on mastery date and PP100 sturdiness.
+  - Reviews are interleaved across multiple non-confusable atoms.
+- Review Test Construction (for spaced repetition and consolidation)
+  - Objectives
+    - Prove continued mastery of already mastered atoms.
+    - Deliver spaced repetition on due atoms, mixing recent and older mastery dates as scheduled.
+    - Apply interleaving by placing different atoms side by side, excluding confusable pairs.
+    - Include layering when possible by composing multi-skill problems that use several atoms together.
+  - Selection rules
+    - Build each review as a set of items drawn from 2 to 5 due atoms, chosen by SR due date and sturdiness.
+    - For each included atom, pull a small, varied pool that covers typical errors and recent misses.
+    - If layering is available among the chosen atoms, insert 1 to 2 composite items near the end.
+  - Pass criteria
+    - If all included atoms meet their review thresholds, extend their next intervals per SR.
+    - If any atom fails its review threshold, schedule an early reinforcement review for that atom and consider a targeted probe before advancing new learning.
+- Initial Placement
+  - Start with the optimized diagnostic test to place the student at the right atom in the KG.
+- KG Edges Needed (minimum)
+  - Prerequisite edges: used for diagnosis, gap-fill, and propagation.
+  - Confusable pair edges: used to avoid harmful sequencing and to build safe interleaved review sets.
