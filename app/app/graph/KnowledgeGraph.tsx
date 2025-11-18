@@ -2,23 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import type { GraphData, NodeObject } from "react-force-graph-2d";
 
 const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), {
   ssr: false,
 });
-
-interface GraphData<N, L> {
-  nodes: N[];
-  links: L[];
-}
-
-interface NodeObject {
-  id?: string | number;
-  x?: number;
-  y?: number;
-  vx?: number;
-  vy?: number;
-}
 
 interface KnowledgeNode {
   id: string;
@@ -40,7 +28,8 @@ interface KnowledgeNode {
   examples: number;
 }
 
-interface GraphNode extends NodeObject {
+// Custom node properties (without NodeObject base)
+interface CustomNodeData {
   id: string;
   name: string;
   axis: string;
@@ -48,6 +37,9 @@ interface GraphNode extends NodeObject {
   val: number;
   color?: string;
 }
+
+// Node type used in the graph (merges with NodeObject)
+type GraphNode = NodeObject<CustomNodeData>;
 
 interface GraphLink {
   source: string;
@@ -68,8 +60,7 @@ export default function KnowledgeGraph() {
   >({ nodes: [], links: [] });
   const [selectedNode, setSelectedNode] = useState<KnowledgeNode | null>(null);
   const [loading, setLoading] = useState(true);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const fgRef = useRef<any>(null);
+  const fgRef = useRef(undefined);
 
   useEffect(() => {
     fetch("/paes_math_kg.json")
