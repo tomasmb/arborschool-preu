@@ -2,11 +2,23 @@
 
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import type { ForceGraphMethods, GraphData, NodeObject } from "force-graph";
 
 const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), {
   ssr: false,
 });
+
+interface GraphData<N, L> {
+  nodes: N[];
+  links: L[];
+}
+
+interface NodeObject {
+  id?: string | number;
+  x?: number;
+  y?: number;
+  vx?: number;
+  vy?: number;
+}
 
 interface KnowledgeNode {
   id: string;
@@ -56,7 +68,8 @@ export default function KnowledgeGraph() {
   >({ nodes: [], links: [] });
   const [selectedNode, setSelectedNode] = useState<KnowledgeNode | null>(null);
   const [loading, setLoading] = useState(true);
-  const fgRef = useRef<ForceGraphMethods>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const fgRef = useRef<any>(null);
 
   useEffect(() => {
     fetch("/paes_math_kg.json")
@@ -144,7 +157,7 @@ export default function KnowledgeGraph() {
           ref={fgRef}
           graphData={graphData}
           nodeLabel="name"
-          nodeColor={(node) => (node as GraphNode).color}
+          nodeColor={(node) => (node as GraphNode).color || "#6B7280"}
           nodeVal={(node) => (node as GraphNode).val}
           linkDirectionalArrowLength={3.5}
           linkDirectionalArrowRelPos={1}
