@@ -55,9 +55,10 @@ const axisColors: Record<string, string> = {
 };
 
 export default function KnowledgeGraph() {
-  const [graphData, setGraphData] = useState<
-    GraphData<GraphNode, GraphLink>
-  >({ nodes: [], links: [] });
+  const [graphData, setGraphData] = useState<GraphData<GraphNode, GraphLink>>({
+    nodes: [],
+    links: [],
+  });
   const [selectedNode, setSelectedNode] = useState<KnowledgeNode | null>(null);
   const [loading, setLoading] = useState(true);
   const fgRef = useRef(undefined);
@@ -200,7 +201,9 @@ export default function KnowledgeGraph() {
 
             <div>
               <h3 className="font-semibold text-gray-700 mb-1">Descripción</h3>
-              <p className="text-sm text-gray-600">{selectedNode.description}</p>
+              <p className="text-sm text-gray-600">
+                {selectedNode.description}
+              </p>
             </div>
 
             <div>
