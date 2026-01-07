@@ -1,0 +1,121 @@
+/**
+ * Basic styles for the MCQ Renderer demo
+ * Add any custom styles here to match your application's design
+ */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.5;
+  background-color: #f5f5f5;
+  color: #1f2937;
+}
+
+/* Container styles */
+.mcq-demo-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* Header styles */
+.mcq-demo-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.mcq-demo-header h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.mcq-demo-header p {
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+/* Question card styles */
+.mcq-question-card {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.mcq-question-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* Navigation buttons */
+.mcq-navigation {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.mcq-nav-button {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mcq-nav-button:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.mcq-nav-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mcq-question-counter {
+  font-size: 0.875rem;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+}
+
+/* Debug panel */
+.mcq-debug-panel {
+  background: #1f2937;
+  color: #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 0.75rem;
+  overflow-x: auto;
+}
+
+.mcq-debug-panel h3 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: #9ca3af;
+}
+
+.mcq-debug-panel pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
