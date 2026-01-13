@@ -1,70 +1,200 @@
 @import "tailwindcss";
 
 :root {
+  /* Core palette */
   --color-primary: #0b3a5b;
-  --color-charcoal: #222426;
-  --color-cool-gray: #6b7280;
-  --color-off-white: #f7f7f7;
-  --color-accent: #daa520;
+  --color-primary-light: #134b73;
+  --color-primary-dark: #072a42;
+  --color-charcoal: #1a1d1e;
+  --color-cool-gray: #64748b;
+  --color-light-gray: #94a3b8;
+  
+  /* Distinct background tiers */
+  --color-white: #ffffff;
+  --color-off-white: #f1f5f9;
+  --color-light-bg: #e2e8f0;
+  --color-cream: #fffbf5;
+  
+  /* Modern warm gold - more contemporary */
+  --color-accent: #d97706;
+  --color-accent-light: #f59e0b;
+  --color-accent-dark: #b45309;
 
-  --radius-sm: 4px;
-  --radius-md: 8px;
+  /* Semantic colors */
+  --color-success: #059669;
+  --color-error: #dc2626;
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 10px;
   --radius-lg: 16px;
+  --radius-xl: 24px;
 
-  --space-xs: 4px;
-  --space-sm: 8px;
-  --space-md: 16px;
-  --space-lg: 24px;
-  --space-xl: 32px;
-
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.15);
+  /* Shadows - more layered and modern */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 10px -2px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 20px 40px -4px rgba(0, 0, 0, 0.12), 0 8px 16px -4px rgba(0, 0, 0, 0.06);
+  --shadow-glow: 0 0 40px rgba(217, 119, 6, 0.15);
 }
 
 @theme inline {
   --color-primary: #0b3a5b;
-  --color-charcoal: #222426;
-  --color-cool-gray: #6b7280;
-  --color-off-white: #f7f7f7;
-  --color-accent: #daa520;
-  --font-serif: Merriweather, serif;
-  --font-sans: Inter, sans-serif;
+  --color-primary-light: #134b73;
+  --color-charcoal: #1a1d1e;
+  --color-cool-gray: #64748b;
+  --color-light-gray: #94a3b8;
+  --color-white: #ffffff;
+  --color-off-white: #f1f5f9;
+  --color-light-bg: #e2e8f0;
+  --color-cream: #fffbf5;
+  --color-accent: #d97706;
+  --color-accent-light: #f59e0b;
+  --color-success: #059669;
+  --color-error: #dc2626;
+}
+
+/* Base styles */
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--color-off-white);
+  background: var(--color-cream);
   color: var(--color-charcoal);
-  font-family: var(--font-sans);
+  font-family: var(--font-sans), Inter, system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: var(--font-serif);
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif), Merriweather, Georgia, serif;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 
+/* Ensure font-serif class works */
+.font-serif {
+  font-family: var(--font-serif), Merriweather, Georgia, serif;
+}
+
+.font-sans {
+  font-family: var(--font-sans), Inter, system-ui, -apple-system, sans-serif;
+}
+
+/* Component layer */
 @layer components {
+  /* Primary button - navy */
   .btn-primary {
-    @apply inline-flex items-center justify-center px-6 py-3 rounded-md text-white font-medium transition-all;
-    background: var(--color-primary);
-    box-shadow: var(--shadow-sm);
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-lg text-white font-semibold;
+    @apply transition-all duration-200 ease-out;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255,255,255,0.1);
   }
+  
   .btn-primary:hover {
-    filter: brightness(1.05);
-    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255,255,255,0.1);
+    background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary) 100%);
   }
-  .btn-cta {
-    @apply inline-flex items-center justify-center px-6 py-3 rounded-md font-medium transition-all;
-    background: var(--color-accent);
-    color: #111;
+  
+  .btn-primary:active {
+    transform: translateY(0);
     box-shadow: var(--shadow-sm);
   }
-  .btn-cta:hover {
-    filter: brightness(1.1);
-    box-shadow: var(--shadow-md);
+
+  /* CTA button - accent gold */
+  .btn-cta {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-lg font-semibold;
+    @apply transition-all duration-200 ease-out;
+    background: linear-gradient(135deg, var(--color-accent-light) 0%, var(--color-accent) 100%);
+    color: #1a1d1e;
+    box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255,255,255,0.25);
   }
+  
+  .btn-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg), var(--shadow-glow), inset 0 1px 0 rgba(255,255,255,0.25);
+    background: linear-gradient(135deg, var(--color-accent-light) 20%, var(--color-accent) 100%);
+  }
+  
+  .btn-cta:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Ghost/outline button */
+  .btn-ghost {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-lg font-semibold;
+    @apply transition-all duration-200 ease-out;
+    @apply border-2 border-primary text-primary bg-transparent;
+  }
+  
+  .btn-ghost:hover {
+    @apply bg-primary text-white;
+    transform: translateY(-1px);
+  }
+
+  /* Card styles */
+  .card {
+    @apply rounded-xl bg-white border border-gray-200;
+    box-shadow: var(--shadow-md);
+    transition: all 0.2s ease-out;
+  }
+  
+  .card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+    border-color: transparent;
+  }
+
+  /* Section backgrounds - more distinct contrast */
+  .section-white {
+    background: var(--color-white);
+  }
+
+  .section-light {
+    background: var(--color-off-white);
+  }
+
+  .section-cream {
+    background: var(--color-cream);
+  }
+
+  .section-navy {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  }
+
+  /* Decorative elements - more visible */
+  .dot-pattern {
+    background-image: radial-gradient(circle, var(--color-cool-gray) 1.5px, transparent 1.5px);
+    background-size: 20px 20px;
+    opacity: 0.08;
+  }
+}
+
+/* Utility animations */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease-out forwards;
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
 }

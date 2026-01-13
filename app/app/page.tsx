@@ -1,370 +1,578 @@
+"use client";
+
 import Image from "next/image";
+import { useState } from "react";
+
+/**
+ * Browser frame component for displaying app mockups
+ */
+function BrowserFrame({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl overflow-hidden shadow-2xl border border-gray-300 bg-white">
+      {/* Browser chrome */}
+      <div className="bg-gray-200 px-4 py-3 flex items-center gap-3 border-b border-gray-300">
+        <div className="flex gap-2">
+          <div className="w-3 h-3 rounded-full bg-[#ff5f57]"></div>
+          <div className="w-3 h-3 rounded-full bg-[#febc2e]"></div>
+          <div className="w-3 h-3 rounded-full bg-[#28c840]"></div>
+        </div>
+        <div className="flex-1 flex justify-center">
+          <div className="bg-white border border-gray-300 rounded-lg px-4 py-1.5 text-xs text-gray-600 flex items-center gap-2 shadow-sm">
+            <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            preu.arbor.school
+          </div>
+        </div>
+        <div className="w-16"></div>
+      </div>
+      {/* Content */}
+      <div className="bg-white">{children}</div>
+    </div>
+  );
+}
+
+/**
+ * Email signup form component
+ */
+function WaitlistForm({ variant = "default" }: { variant?: "default" | "inline" }) {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!email || !email.includes("@")) {
+      setStatus("error");
+      return;
+    }
+
+    // TODO: Connect to real waitlist backend
+    console.log("Waitlist signup:", email);
+    setStatus("success");
+    setEmail("");
+  };
+
+  if (status === "success") {
+    return (
+      <div className="text-center py-6 px-4 rounded-xl bg-success/5 border border-success/20">
+        <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-3">
+          <svg className="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <p className="font-bold text-lg text-charcoal mb-1">¡Estás en la lista!</p>
+        <p className="text-cool-gray">Te avisaremos apenas lancemos.</p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="w-full">
+      <div className="flex flex-col sm:flex-row gap-3">
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            setStatus("idle");
+          }}
+          placeholder="tu@email.com"
+          className="flex-1 px-5 py-4 rounded-xl border-2 border-gray-200 bg-white text-charcoal placeholder:text-gray-400 focus:outline-none focus:border-accent focus:ring-4 focus:ring-accent/10 transition-all text-base"
+        />
+        <button 
+          type="submit" 
+          className="btn-cta px-8 py-4 text-base whitespace-nowrap"
+        >
+          Unirme a la lista
+        </button>
+      </div>
+      {status === "error" && (
+        <p className="text-error text-sm mt-2 flex items-center gap-1">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Ingresa un email válido
+        </p>
+      )}
+    </form>
+  );
+}
+
+/**
+ * Scroll to waitlist section
+ */
+function scrollToWaitlist() {
+  document.getElementById("waitlist")?.scrollIntoView({ behavior: "smooth" });
+}
 
 export default function Home() {
   return (
-    <main className="min-h-screen">
-      <nav className="border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+    <main className="min-h-screen overflow-hidden">
+      {/* Navigation */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-3">
               <Image
                 src="/logo-arbor.svg"
                 alt="Arbor School"
-                width={40}
-                height={40}
-                className="text-primary"
+                width={36}
+                height={36}
               />
               <span className="text-xl font-serif font-bold text-primary">
                 Arbor PreU
               </span>
             </div>
-            <button className="btn-primary">Comenzar Ahora</button>
+            <div className="flex items-center gap-4">
+              <span className="hidden sm:inline-flex text-sm font-medium text-accent bg-accent/10 px-3 py-1.5 rounded-full">
+                Próximamente
+              </span>
+              <button onClick={scrollToWaitlist} className="btn-primary text-sm px-4 py-2">
+                Acceso anticipado
+              </button>
+            </div>
           </div>
         </div>
       </nav>
 
-      <section className="relative overflow-hidden bg-gradient-to-b from-white to-off-white py-20 sm:py-32">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="text-4xl sm:text-6xl font-serif font-bold tracking-tight mb-6">
+      {/* Hero Section */}
+      <section className="relative pt-32 pb-20 sm:pt-40 sm:pb-32 overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white via-white to-off-white"></div>
+        <div className="absolute top-20 left-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-primary/10 rounded-full blur-3xl"></div>
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-4xl mx-auto">
+            <div className="inline-flex items-center gap-2 text-sm font-medium text-accent bg-accent/10 px-4 py-2 rounded-full mb-8">
+              <span className="w-2 h-2 bg-accent rounded-full animate-pulse-subtle"></span>
+              Estamos construyendo algo nuevo
+            </div>
+            
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-serif font-bold tracking-tight text-charcoal mb-8">
               Alcanza tu puntaje PAES
               <span className="block text-accent mt-2">
-                con aprendizaje personalizado
+                dominando un concepto a la vez
               </span>
             </h1>
-            <p className="text-lg sm:text-xl text-charcoal/80 max-w-3xl mx-auto mb-10">
-              Una plataforma de preparación para la PAES que se adapta a tu
-              nivel, identifica tus fortalezas y debilidades, y crea un plan
-              personalizado para que alcances el puntaje que necesitas.
+            
+            <p className="text-xl sm:text-2xl text-cool-gray max-w-2xl mx-auto mb-12 leading-relaxed">
+              No más horas perdidas. Te enseñamos exactamente lo que te falta y
+              no avanzas hasta que lo domines.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="btn-cta text-lg px-8 py-4">
-                Comenzar Diagnóstico Gratuito
-              </button>
-              <button className="btn-primary text-lg px-8 py-4">
-                Conocer Más
-              </button>
+            
+            <button 
+              onClick={scrollToWaitlist}
+              className="btn-cta text-lg px-10 py-5 shadow-lg"
+            >
+              Tomar el Diagnóstico
+              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+            </button>
+            
+            <p className="text-sm text-cool-gray mt-4">
+              Gratis · Sin tarjeta de crédito
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section className="py-24 bg-off-white relative">
+        <div className="absolute inset-0 dot-pattern"></div>
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-20">
+            <h2 className="text-4xl sm:text-5xl font-serif font-bold text-charcoal mb-6">
+              Así funciona
+            </h2>
+            <p className="text-xl text-cool-gray max-w-2xl mx-auto">
+              Un método probado para maximizar tu puntaje en el menor tiempo posible
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
+            {/* Step 1 */}
+            <div className="relative group">
+              <div className="card p-8 h-full">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform">
+                  <span className="text-2xl font-bold text-white">1</span>
+                </div>
+                <h3 className="text-2xl font-serif font-bold text-charcoal mb-4">
+                  Diagnóstico
+                </h3>
+                <p className="text-cool-gray text-lg leading-relaxed">
+                  En minutos descubrimos qué conceptos ya dominas y cuáles te
+                  faltan. Sin rodeos.
+                </p>
+              </div>
+            </div>
+
+            {/* Step 2 */}
+            <div className="relative group">
+              <div className="card p-8 h-full">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform">
+                  <span className="text-2xl font-bold text-white">2</span>
+                </div>
+                <h3 className="text-2xl font-serif font-bold text-charcoal mb-4">
+                  Plan Inteligente
+                </h3>
+                <p className="text-cool-gray text-lg leading-relaxed">
+                  Tu plan prioriza lo que más impacta tu puntaje, ordenado para
+                  que nunca te falten los conocimientos previos.
+                </p>
+              </div>
+            </div>
+
+            {/* Step 3 */}
+            <div className="relative group">
+              <div className="card p-8 h-full">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-accent to-accent-light flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform">
+                  <span className="text-2xl font-bold text-white">3</span>
+                </div>
+                <h3 className="text-2xl font-serif font-bold text-charcoal mb-4">
+                  Aprende y Domina
+                </h3>
+                <p className="text-cool-gray text-lg leading-relaxed">
+                  Lección corta, práctica adaptativa. Solo avanzas cuando
+                  demuestras que lo dominaste.
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl sm:text-4xl font-serif font-bold text-center mb-16 text-primary">
-            ¿Cómo funciona Arbor PreU?
-          </h2>
-          <div className="grid md:grid-cols-3 gap-12">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span className="text-3xl font-bold text-primary">1</span>
-              </div>
-              <h3 className="text-xl font-serif font-bold mb-4 text-primary">
-                Diagnóstico Inicial
-              </h3>
-              <p className="text-charcoal/70">
-                Toma un diagnóstico completo que identifica tu nivel actual en
-                cada área de la PAES y mapea tus fortalezas y debilidades.
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span className="text-3xl font-bold text-primary">2</span>
-              </div>
-              <h3 className="text-xl font-serif font-bold mb-4 text-primary">
-                Plan Personalizado
-              </h3>
-              <p className="text-charcoal/70">
-                Recibe un plan de estudio adaptado a tu disponibilidad de
-                tiempo, fecha objetivo de la PAES, y las carreras que deseas
-                estudiar.
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span className="text-3xl font-bold text-primary">3</span>
-              </div>
-              <h3 className="text-xl font-serif font-bold mb-4 text-primary">
-                Practica y Domina
-              </h3>
-              <p className="text-charcoal/70">
-                Trabaja en ejercicios específicos que maximizan tu aprendizaje,
-                priorizando victorias rápidas y cerrando las brechas
-                fundamentales.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20 bg-off-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
+      {/* Mastery Section */}
+      <section className="py-24 bg-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-accent/10 to-transparent"></div>
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div>
-              <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-6 text-primary">
-                Enfocado en dominio, no en horas
+              <h2 className="text-4xl sm:text-5xl font-serif font-bold text-charcoal mb-8">
+                Dominio, <span className="text-accent">no horas</span>
               </h2>
-              <p className="text-lg text-charcoal/80 mb-6">
-                Arbor PreU utiliza un sistema basado en grafos de conocimiento
-                que mapea todas las habilidades necesarias para la PAES.
-                Alcanzas el dominio cuando logras más del 90% de precisión en
-                cada habilidad.
+              <p className="text-xl text-cool-gray mb-10 leading-relaxed">
+                Avanzas cuando demuestras que aprendiste. La práctica empieza
+                fácil y sube de nivel a medida que aciertas.
               </p>
-              <p className="text-lg text-charcoal/80 mb-6">
-                Nuestro sistema identifica automáticamente:
-              </p>
-              <ul className="space-y-3 mb-8">
-                <li className="flex items-start gap-3">
-                  <span className="text-accent text-xl">✓</span>
-                  <span className="text-charcoal/70">
-                    <strong className="text-charcoal">
-                      Victorias rápidas:
-                    </strong>{" "}
-                    habilidades que estás cerca de dominar
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-accent text-xl">✓</span>
-                  <span className="text-charcoal/70">
-                    <strong className="text-charcoal">
-                      Prerequisitos bloqueadores:
-                    </strong>{" "}
-                    conceptos fundamentales que necesitas primero
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-accent text-xl">✓</span>
-                  <span className="text-charcoal/70">
-                    <strong className="text-charcoal">Repaso espaciado:</strong>{" "}
-                    revisión inteligente para evitar olvidar lo aprendido
-                  </span>
-                </li>
-              </ul>
-            </div>
-            <div className="bg-white rounded-lg shadow-lg p-8">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-primary/5 rounded-md">
-                  <span className="font-medium">Comprensión Lectora</span>
-                  <span className="text-accent font-bold">87%</span>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-accent/10 rounded-md">
-                  <span className="font-medium">Matemática M1</span>
-                  <span className="text-accent font-bold">92%</span>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-primary/5 rounded-md">
-                  <span className="font-medium">Ciencias</span>
-                  <span className="text-cool-gray font-bold">65%</span>
-                </div>
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm text-charcoal/60">
-                      Puntaje proyectado
-                    </span>
-                    <span className="text-2xl font-bold text-primary">748</span>
+              
+              <div className="space-y-6">
+                <div className="flex gap-4 items-start group">
+                  <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0 group-hover:bg-accent/20 transition-colors">
+                    <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-charcoal/60">
-                      Meta para Ingeniería
-                    </span>
-                    <span className="text-lg font-medium text-charcoal">
-                      780
-                    </span>
+                  <div>
+                    <h4 className="font-bold text-charcoal text-lg mb-1">Victorias rápidas</h4>
+                    <p className="text-cool-gray">
+                      Priorizamos conceptos que estás cerca de dominar—puntos
+                      fáciles que suben tu puntaje rápido.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4 items-start group">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                    <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-charcoal text-lg mb-1">Sin huecos</h4>
+                    <p className="text-cool-gray">
+                      Si te trabas, detectamos qué concepto previo te falta y lo
+                      trabajamos primero.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4 items-start group">
+                  <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center shrink-0 group-hover:bg-success/20 transition-colors">
+                    <svg className="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-charcoal text-lg mb-1">Repaso inteligente</h4>
+                    <p className="text-cool-gray">
+                      Te recordamos practicar justo antes de que se te olvide.
+                      Así el conocimiento se queda.
+                    </p>
                   </div>
                 </div>
               </div>
+            </div>
+            
+            <div>
+              <p className="text-sm font-semibold text-primary/60 mb-4 text-center uppercase tracking-wide">
+                Así verás tu progreso
+              </p>
+              <BrowserFrame>
+                <div className="p-6 sm:p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="font-serif font-bold text-charcoal">Tu Dashboard</h3>
+                    <span className="text-xs font-medium text-accent bg-accent/10 px-2 py-1 rounded-full">
+                      En vivo
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-4 bg-off-white rounded-xl border border-gray-200 hover:border-success/50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 rounded-full bg-success"></div>
+                        <span className="font-medium text-charcoal">Comprensión Lectora</span>
+                      </div>
+                      <span className="text-lg font-bold text-success">87%</span>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-accent/10 rounded-xl border-2 border-accent shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 rounded-full bg-accent"></div>
+                        <span className="font-medium text-charcoal">Matemática M1</span>
+                      </div>
+                      <span className="text-lg font-bold text-accent">92%</span>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-off-white rounded-xl border border-gray-200 hover:border-cool-gray/50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 rounded-full bg-cool-gray"></div>
+                        <span className="font-medium text-charcoal">Ciencias</span>
+                      </div>
+                      <span className="text-lg font-bold text-cool-gray">65%</span>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6 pt-6 border-t border-gray-100">
+                    <div className="flex justify-between items-end">
+                      <div>
+                        <p className="text-sm text-cool-gray mb-1">Puntaje proyectado</p>
+                        <p className="text-4xl font-bold text-charcoal">748</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-cool-gray mb-1">Tu meta</p>
+                        <p className="text-2xl font-bold text-accent">780</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </BrowserFrame>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="py-20 bg-white">
+      {/* Daily Plan Section */}
+      <section className="py-24 bg-off-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl sm:text-4xl font-serif font-bold text-center mb-16 text-primary">
-            Tu plan diario personalizado
-          </h2>
+          <div className="text-center mb-16">
+            <h2 className="text-4xl sm:text-5xl font-serif font-bold text-charcoal mb-6">
+              Cada día sabes qué hacer
+            </h2>
+            <p className="text-xl text-cool-gray max-w-2xl mx-auto">
+              Tu plan se actualiza después de cada sesión, siempre enfocado en
+              maximizar tu puntaje
+            </p>
+          </div>
+          
           <div className="max-w-3xl mx-auto">
-            <div className="bg-off-white rounded-lg p-8 mb-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-serif font-bold">Hoy</h3>
-                <span className="text-charcoal/70">~25 minutos</span>
+            <p className="text-sm font-semibold text-primary/60 mb-4 text-center uppercase tracking-wide">
+              Así se verá tu plan diario
+            </p>
+            <BrowserFrame>
+              <div className="p-6 sm:p-8">
+                <div className="flex justify-between items-center mb-8">
+                  <div>
+                    <h3 className="text-2xl font-serif font-bold text-charcoal">Hoy</h3>
+                    <p className="text-cool-gray">Martes 13 de enero</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-3xl font-bold text-charcoal">25<span className="text-lg font-normal text-cool-gray ml-1">min</span></p>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4 p-5 bg-accent/10 rounded-xl border-2 border-accent hover:border-accent transition-colors group cursor-pointer shadow-sm">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent to-accent-light flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-bold text-charcoal">Victoria rápida</p>
+                        <span className="text-xs font-bold text-white bg-accent px-2 py-0.5 rounded-full">+12 pts</span>
+                      </div>
+                      <p className="text-charcoal/70">
+                        Ecuaciones cuadráticas – 5 ejercicios
+                      </p>
+                    </div>
+                    <span className="text-sm font-semibold text-charcoal/60">8 min</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-4 p-5 bg-off-white rounded-xl border border-gray-200 hover:border-primary transition-colors group cursor-pointer">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-bold text-charcoal mb-1">Nuevo concepto</p>
+                      <p className="text-charcoal/70">
+                        Factorización – Lección + práctica
+                      </p>
+                    </div>
+                    <span className="text-sm font-semibold text-charcoal/60">12 min</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-4 p-5 bg-off-white rounded-xl border border-gray-200 hover:border-success transition-colors group cursor-pointer">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-success to-emerald-400 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-bold text-charcoal mb-1">Repaso</p>
+                      <p className="text-charcoal/70">
+                        Comprensión de textos – No olvidar
+                      </p>
+                    </div>
+                    <span className="text-sm font-semibold text-charcoal/60">5 min</span>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-4">
-                <div className="flex items-center gap-4 p-4 bg-white rounded-md shadow-sm">
-                  <div className="w-10 h-10 bg-accent/20 rounded-full flex items-center justify-center">
-                    <span className="font-bold text-accent">⚡</span>
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium">Victoria rápida</p>
-                    <p className="text-sm text-charcoal/60">
-                      Ecuaciones cuadráticas - 5 ejercicios
-                    </p>
-                  </div>
-                  <span className="text-sm text-charcoal/60">8 min</span>
-                </div>
-                <div className="flex items-center gap-4 p-4 bg-white rounded-md shadow-sm">
-                  <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
-                    <span className="font-bold text-primary">📚</span>
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium">Prerequisito</p>
-                    <p className="text-sm text-charcoal/60">
-                      Factorización - Mini lección + práctica
-                    </p>
-                  </div>
-                  <span className="text-sm text-charcoal/60">12 min</span>
-                </div>
-                <div className="flex items-center gap-4 p-4 bg-white rounded-md shadow-sm">
-                  <div className="w-10 h-10 bg-cool-gray/20 rounded-full flex items-center justify-center">
-                    <span className="font-bold text-cool-gray">🔄</span>
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium">Repaso</p>
-                    <p className="text-sm text-charcoal/60">
-                      Comprensión de textos argumentativos
-                    </p>
-                  </div>
-                  <span className="text-sm text-charcoal/60">5 min</span>
-                </div>
-              </div>
-            </div>
-            <div className="text-center">
-              <button className="btn-cta text-lg px-8 py-4">
-                Comenzar Plan de Hoy
-              </button>
-            </div>
+            </BrowserFrame>
           </div>
         </div>
       </section>
 
-      <section className="py-20 bg-gradient-to-br from-primary to-primary/90 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
+      {/* Progress Tracking - Dark Section */}
+      <section className="py-24 section-navy relative overflow-hidden">
+        <div className="absolute inset-0 dot-pattern opacity-5"></div>
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl"></div>
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div>
-              <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-6 text-white">
-                Sigue tu progreso en tiempo real
+              <h2 className="text-4xl sm:text-5xl font-serif font-bold text-white mb-8">
+                Progreso que se siente
               </h2>
-              <p className="text-lg text-white mb-6">
-                Ve cómo cada sesión de práctica te acerca a tu meta. Nuestro
-                sistema actualiza tu puntaje proyectado y te muestra exactamente
-                cuántos puntos puedes ganar enfocándote en las áreas correctas.
+              <p className="text-xl text-white/80 mb-10 leading-relaxed">
+                Cada concepto que dominas te acerca a tu meta. Sin estimaciones
+                vagas—sabes exactamente dónde estás.
               </p>
-              <ul className="space-y-3">
-                <li className="flex items-start gap-3">
-                  <span className="text-accent text-xl font-bold">→</span>
-                  <span className="text-white">
-                    Mapa de calor de tu dominio de habilidades
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-accent text-xl font-bold">→</span>
-                  <span className="text-white">
-                    Proyección de puntaje basada en simulaciones reales
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-accent text-xl font-bold">→</span>
-                  <span className="text-white">
-                    Recomendaciones de las 3 áreas con mayor impacto en tu
-                    puntaje
-                  </span>
-                </li>
-              </ul>
-            </div>
-            <div className="bg-white/15 backdrop-blur-sm rounded-lg p-8 border border-white/30">
-              <h3 className="text-xl font-serif font-bold mb-6 text-white">
-                Tus próximos pasos
-              </h3>
+              
               <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-white">Habilidades dominadas</span>
-                  <span className="text-2xl font-bold text-accent">24/87</span>
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-accent"></div>
+                  <span className="text-white/90">Ve qué conceptos dominaste y cuáles te faltan</span>
                 </div>
-                <div className="w-full bg-white/20 rounded-full h-2">
-                  <div
-                    className="bg-accent rounded-full h-2"
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-accent"></div>
+                  <span className="text-white/90">Puntaje proyectado actualizado cada sesión</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-accent"></div>
+                  <span className="text-white/90">Tiempo estimado para alcanzar tu meta</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+              <h3 className="text-xl font-serif font-bold text-white mb-8">
+                Tu progreso
+              </h3>
+              
+              <div className="mb-8">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-white/80">Conceptos dominados</span>
+                  <span className="text-2xl font-bold text-accent">24<span className="text-white/60 font-normal">/87</span></span>
+                </div>
+                <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
+                  <div 
+                    className="bg-gradient-to-r from-accent to-accent-light rounded-full h-3 transition-all duration-1000"
                     style={{ width: "28%" }}
                   ></div>
                 </div>
-                <div className="mt-6 pt-6 border-t border-white/30">
-                  <p className="text-sm text-white mb-2">
-                    Si practicas 30 min/día:
-                  </p>
-                  <p className="text-lg text-white">
-                    Alcanzarás tu meta de{" "}
-                    <span className="font-bold text-accent">780 puntos</span> en{" "}
-                    <span className="font-bold">12 semanas</span>
-                  </p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 mb-8">
+                <div className="bg-white/5 rounded-xl p-4 text-center">
+                  <p className="text-3xl font-bold text-white">748</p>
+                  <p className="text-sm text-white/60">Puntaje actual</p>
                 </div>
+                <div className="bg-accent/20 rounded-xl p-4 text-center border border-accent/30">
+                  <p className="text-3xl font-bold text-accent">780</p>
+                  <p className="text-sm text-white/60">Tu meta</p>
+                </div>
+              </div>
+              
+              <div className="pt-6 border-t border-white/10">
+                <p className="text-white/60 text-sm mb-2">Con 30 min/día:</p>
+                <p className="text-white text-lg">
+                  Alcanzas tu meta en <span className="font-bold text-accent">12 semanas</span>
+                </p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="py-20 bg-off-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-6 text-primary">
-            Contenido alineado 100% con la PAES
-          </h2>
-          <p className="text-lg text-charcoal/80 max-w-3xl mx-auto mb-12">
-            Trabajamos con Carez & Córdova para traerte preguntas, soluciones
-            detalladas, guías y clases alineadas con el temario oficial de la
-            PAES. Cada pregunta está etiquetada a nuestro grafo de conocimiento
-            para asegurar que practiques exactamente lo que necesitas.
-          </p>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-4xl mx-auto">
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <p className="text-3xl font-bold text-primary mb-2">1000+</p>
-              <p className="text-charcoal/70">Preguntas de práctica</p>
-            </div>
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <p className="text-3xl font-bold text-primary mb-2">87</p>
-              <p className="text-charcoal/70">Habilidades mapeadas</p>
-            </div>
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <p className="text-3xl font-bold text-primary mb-2">90%</p>
-              <p className="text-charcoal/70">Umbral de dominio</p>
-            </div>
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <p className="text-3xl font-bold text-primary mb-2">100%</p>
-              <p className="text-charcoal/70">Alineado con PAES</p>
-            </div>
+      {/* Waitlist Section */}
+      <section id="waitlist" className="py-24 bg-white relative overflow-hidden">
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-accent/10 rounded-full blur-3xl"></div>
+        
+        <div className="relative max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="inline-flex items-center gap-2 text-sm font-medium text-primary bg-primary/10 px-4 py-2 rounded-full mb-8">
+            <span className="w-2 h-2 bg-primary rounded-full animate-pulse-subtle"></span>
+            Lanzamiento próximo
           </div>
-        </div>
-      </section>
-
-      <section className="py-20 bg-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-6 text-primary">
-            Comienza tu preparación hoy
+          
+          <h2 className="text-4xl sm:text-5xl font-serif font-bold text-charcoal mb-6">
+            Sé de los primeros
           </h2>
-          <p className="text-lg text-charcoal/80 mb-10">
-            Únete a los estudiantes que están alcanzando sus metas con Arbor
-            PreU. Toma el diagnóstico gratuito y descubre tu plan personalizado.
+          <p className="text-xl text-cool-gray mb-10">
+            Estamos terminando los últimos detalles. Déjanos tu email y serás de
+            los primeros en probar Arbor PreU.
           </p>
-          <button className="btn-cta text-lg px-10 py-4">
-            Comenzar Diagnóstico Gratuito
-          </button>
+          
+          <div className="max-w-lg mx-auto">
+            <WaitlistForm />
+          </div>
+          
+          <p className="text-sm text-cool-gray mt-6">
+            Sin spam, solo el aviso cuando lancemos.
+          </p>
         </div>
       </section>
 
-      <footer className="bg-charcoal text-white py-12">
+      {/* Footer */}
+      <footer className="bg-charcoal text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-3">
-              <Image
-                src="/logo-arbor.svg"
-                alt="Arbor School"
-                width={32}
-                height={32}
-                className="brightness-0 invert"
-              />
-              <span className="text-lg font-serif font-bold">Arbor PreU</span>
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <Image
+                  src="/logo-arbor.svg"
+                  alt="Arbor School"
+                  width={40}
+                  height={40}
+                  className="brightness-0 invert"
+                />
+                <span className="text-2xl font-serif font-bold">Arbor PreU</span>
+              </div>
+              <p className="text-white/60 max-w-sm">
+                Preparación PAES basada en dominio. Aprende lo que te falta,
+                demuestra que lo sabes, avanza.
+              </p>
             </div>
-            <div className="text-cool-gray text-sm">
-              © 2025 Arbor School. Todos los derechos reservados.
+            
+            <div className="md:text-right">
+              <p className="text-white/40 text-sm">
+                © 2026 Arbor School. Todos los derechos reservados.
+              </p>
             </div>
           </div>
         </div>
