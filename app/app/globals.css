@@ -8,13 +8,13 @@
   --color-charcoal: #1a1d1e;
   --color-cool-gray: #64748b;
   --color-light-gray: #94a3b8;
-  
+
   /* Distinct background tiers */
   --color-white: #ffffff;
   --color-off-white: #f1f5f9;
   --color-light-bg: #e2e8f0;
   --color-cream: #fffbf5;
-  
+
   /* Modern warm gold - more contemporary */
   --color-accent: #d97706;
   --color-accent-light: #f59e0b;
@@ -32,9 +32,12 @@
 
   /* Shadows - more layered and modern */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 10px -2px rgba(0, 0, 0, 0.04);
-  --shadow-xl: 0 20px 40px -4px rgba(0, 0, 0, 0.12), 0 8px 16px -4px rgba(0, 0, 0, 0.06);
+  --shadow-md:
+    0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+  --shadow-lg:
+    0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 10px -2px rgba(0, 0, 0, 0.04);
+  --shadow-xl:
+    0 20px 40px -4px rgba(0, 0, 0, 0.12), 0 8px 16px -4px rgba(0, 0, 0, 0.06);
   --shadow-glow: 0 0 40px rgba(217, 119, 6, 0.15);
 }
 
@@ -62,13 +65,23 @@ html {
 body {
   background: var(--color-cream);
   color: var(--color-charcoal);
-  font-family: var(--font-sans), Inter, system-ui, -apple-system, sans-serif;
+  font-family:
+    var(--font-sans),
+    Inter,
+    system-ui,
+    -apple-system,
+    sans-serif;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--font-serif), Merriweather, Georgia, serif;
   line-height: 1.2;
   letter-spacing: -0.02em;
@@ -80,7 +93,12 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .font-sans {
-  font-family: var(--font-sans), Inter, system-ui, -apple-system, sans-serif;
+  font-family:
+    var(--font-sans),
+    Inter,
+    system-ui,
+    -apple-system,
+    sans-serif;
 }
 
 /* Component layer */
@@ -89,16 +107,28 @@ h1, h2, h3, h4, h5, h6 {
   .btn-primary {
     @apply inline-flex items-center justify-center px-6 py-3 rounded-lg text-white font-semibold;
     @apply transition-all duration-200 ease-out;
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
-    box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255,255,255,0.1);
+    background: linear-gradient(
+      135deg,
+      var(--color-primary) 0%,
+      var(--color-primary-dark) 100%
+    );
+    box-shadow:
+      var(--shadow-md),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
-  
+
   .btn-primary:hover {
     transform: translateY(-1px);
-    box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255,255,255,0.1);
-    background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary) 100%);
+    box-shadow:
+      var(--shadow-lg),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    background: linear-gradient(
+      135deg,
+      var(--color-primary-light) 0%,
+      var(--color-primary) 100%
+    );
   }
-  
+
   .btn-primary:active {
     transform: translateY(0);
     box-shadow: var(--shadow-sm);
@@ -108,17 +138,30 @@ h1, h2, h3, h4, h5, h6 {
   .btn-cta {
     @apply inline-flex items-center justify-center px-6 py-3 rounded-lg font-semibold;
     @apply transition-all duration-200 ease-out;
-    background: linear-gradient(135deg, var(--color-accent-light) 0%, var(--color-accent) 100%);
+    background: linear-gradient(
+      135deg,
+      var(--color-accent-light) 0%,
+      var(--color-accent) 100%
+    );
     color: #1a1d1e;
-    box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255,255,255,0.25);
+    box-shadow:
+      var(--shadow-md),
+      inset 0 1px 0 rgba(255, 255, 255, 0.25);
   }
-  
+
   .btn-cta:hover {
     transform: translateY(-2px);
-    box-shadow: var(--shadow-lg), var(--shadow-glow), inset 0 1px 0 rgba(255,255,255,0.25);
-    background: linear-gradient(135deg, var(--color-accent-light) 20%, var(--color-accent) 100%);
+    box-shadow:
+      var(--shadow-lg),
+      var(--shadow-glow),
+      inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    background: linear-gradient(
+      135deg,
+      var(--color-accent-light) 20%,
+      var(--color-accent) 100%
+    );
   }
-  
+
   .btn-cta:active {
     transform: translateY(0);
     box-shadow: var(--shadow-sm);
@@ -130,7 +173,7 @@ h1, h2, h3, h4, h5, h6 {
     @apply transition-all duration-200 ease-out;
     @apply border-2 border-primary text-primary bg-transparent;
   }
-  
+
   .btn-ghost:hover {
     @apply bg-primary text-white;
     transform: translateY(-1px);
@@ -142,7 +185,7 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: var(--shadow-md);
     transition: all 0.2s ease-out;
   }
-  
+
   .card:hover {
     box-shadow: var(--shadow-lg);
     transform: translateY(-2px);
@@ -163,12 +206,20 @@ h1, h2, h3, h4, h5, h6 {
   }
 
   .section-navy {
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    background: linear-gradient(
+      135deg,
+      var(--color-primary) 0%,
+      var(--color-primary-dark) 100%
+    );
   }
 
   /* Decorative elements - more visible */
   .dot-pattern {
-    background-image: radial-gradient(circle, var(--color-cool-gray) 1.5px, transparent 1.5px);
+    background-image: radial-gradient(
+      circle,
+      var(--color-cool-gray) 1.5px,
+      transparent 1.5px
+    );
     background-size: 20px 20px;
     opacity: 0.08;
   }
@@ -187,8 +238,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @keyframes pulse-subtle {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
 .animate-fade-in-up {

@@ -18,8 +18,18 @@ function BrowserFrame({ children }: { children: React.ReactNode }) {
         </div>
         <div className="flex-1 flex justify-center">
           <div className="bg-white border border-gray-300 rounded-lg px-4 py-1.5 text-xs text-gray-600 flex items-center gap-2 shadow-sm">
-            <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            <svg
+              className="w-3 h-3 text-green-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+              />
             </svg>
             preu.arbor.school
           </div>
@@ -35,7 +45,11 @@ function BrowserFrame({ children }: { children: React.ReactNode }) {
 /**
  * Email signup form component
  */
-function WaitlistForm({ variant = "default" }: { variant?: "default" | "inline" }) {
+function WaitlistForm({
+  variant = "default",
+}: {
+  variant?: "default" | "inline";
+}) {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
 
@@ -57,11 +71,23 @@ function WaitlistForm({ variant = "default" }: { variant?: "default" | "inline" 
     return (
       <div className="text-center py-6 px-4 rounded-xl bg-success/5 border border-success/20">
         <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-3">
-          <svg className="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          <svg
+            className="w-6 h-6 text-success"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 13l4 4L19 7"
+            />
           </svg>
         </div>
-        <p className="font-bold text-lg text-charcoal mb-1">¡Estás en la lista!</p>
+        <p className="font-bold text-lg text-charcoal mb-1">
+          ¡Estás en la lista!
+        </p>
         <p className="text-cool-gray">Te avisaremos apenas lancemos.</p>
       </div>
     );
@@ -80,8 +106,8 @@ function WaitlistForm({ variant = "default" }: { variant?: "default" | "inline" 
           placeholder="tu@email.com"
           className="flex-1 px-5 py-4 rounded-xl border-2 border-gray-200 bg-white text-charcoal placeholder:text-gray-400 focus:outline-none focus:border-accent focus:ring-4 focus:ring-accent/10 transition-all text-base"
         />
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           className="btn-cta px-8 py-4 text-base whitespace-nowrap"
         >
           Unirme a la lista
@@ -89,8 +115,18 @@ function WaitlistForm({ variant = "default" }: { variant?: "default" | "inline" 
       </div>
       {status === "error" && (
         <p className="text-error text-sm mt-2 flex items-center gap-1">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
           </svg>
           Ingresa un email válido
         </p>
@@ -128,7 +164,10 @@ export default function Home() {
               <span className="hidden sm:inline-flex text-sm font-medium text-accent bg-accent/10 px-3 py-1.5 rounded-full">
                 Próximamente
               </span>
-              <button onClick={scrollToWaitlist} className="btn-primary text-sm px-4 py-2">
+              <button
+                onClick={scrollToWaitlist}
+                className="btn-primary text-sm px-4 py-2"
+              >
                 Acceso anticipado
               </button>
             </div>
@@ -142,36 +181,46 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-b from-white via-white to-off-white"></div>
         <div className="absolute top-20 left-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl"></div>
         <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-primary/10 rounded-full blur-3xl"></div>
-        
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto">
             <div className="inline-flex items-center gap-2 text-sm font-medium text-accent bg-accent/10 px-4 py-2 rounded-full mb-8">
               <span className="w-2 h-2 bg-accent rounded-full animate-pulse-subtle"></span>
               Estamos construyendo algo nuevo
             </div>
-            
+
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-serif font-bold tracking-tight text-charcoal mb-8">
               Alcanza tu puntaje PAES
               <span className="block text-accent mt-2">
                 dominando un concepto a la vez
               </span>
             </h1>
-            
+
             <p className="text-xl sm:text-2xl text-cool-gray max-w-2xl mx-auto mb-12 leading-relaxed">
               No más horas perdidas. Te enseñamos exactamente lo que te falta y
               no avanzas hasta que lo domines.
             </p>
-            
-            <button 
+
+            <button
               onClick={scrollToWaitlist}
               className="btn-cta text-lg px-10 py-5 shadow-lg"
             >
               Tomar el Diagnóstico
-              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              <svg
+                className="w-5 h-5 ml-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                />
               </svg>
             </button>
-            
+
             <p className="text-sm text-cool-gray mt-4">
               Gratis · Sin tarjeta de crédito
             </p>
@@ -182,17 +231,18 @@ export default function Home() {
       {/* How It Works */}
       <section className="py-24 bg-off-white relative">
         <div className="absolute inset-0 dot-pattern"></div>
-        
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-20">
             <h2 className="text-4xl sm:text-5xl font-serif font-bold text-charcoal mb-6">
               Así funciona
             </h2>
             <p className="text-xl text-cool-gray max-w-2xl mx-auto">
-              Un método probado para maximizar tu puntaje en el menor tiempo posible
+              Un método probado para maximizar tu puntaje en el menor tiempo
+              posible
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
             {/* Step 1 */}
             <div className="relative group">
@@ -248,7 +298,7 @@ export default function Home() {
       {/* Mastery Section */}
       <section className="py-24 bg-white relative overflow-hidden">
         <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-accent/10 to-transparent"></div>
-        
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div>
@@ -259,16 +309,28 @@ export default function Home() {
                 Avanzas cuando demuestras que aprendiste. La práctica empieza
                 fácil y sube de nivel a medida que aciertas.
               </p>
-              
+
               <div className="space-y-6">
                 <div className="flex gap-4 items-start group">
                   <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0 group-hover:bg-accent/20 transition-colors">
-                    <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    <svg
+                      className="w-5 h-5 text-accent"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                      />
                     </svg>
                   </div>
                   <div>
-                    <h4 className="font-bold text-charcoal text-lg mb-1">Victorias rápidas</h4>
+                    <h4 className="font-bold text-charcoal text-lg mb-1">
+                      Victorias rápidas
+                    </h4>
                     <p className="text-cool-gray">
                       Priorizamos conceptos que estás cerca de dominar—puntos
                       fáciles que suben tu puntaje rápido.
@@ -278,12 +340,24 @@ export default function Home() {
 
                 <div className="flex gap-4 items-start group">
                   <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                    <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    <svg
+                      className="w-5 h-5 text-primary"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                      />
                     </svg>
                   </div>
                   <div>
-                    <h4 className="font-bold text-charcoal text-lg mb-1">Sin huecos</h4>
+                    <h4 className="font-bold text-charcoal text-lg mb-1">
+                      Sin huecos
+                    </h4>
                     <p className="text-cool-gray">
                       Si te trabas, detectamos qué concepto previo te falta y lo
                       trabajamos primero.
@@ -293,12 +367,24 @@ export default function Home() {
 
                 <div className="flex gap-4 items-start group">
                   <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center shrink-0 group-hover:bg-success/20 transition-colors">
-                    <svg className="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    <svg
+                      className="w-5 h-5 text-success"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
                     </svg>
                   </div>
                   <div>
-                    <h4 className="font-bold text-charcoal text-lg mb-1">Repaso inteligente</h4>
+                    <h4 className="font-bold text-charcoal text-lg mb-1">
+                      Repaso inteligente
+                    </h4>
                     <p className="text-cool-gray">
                       Te recordamos practicar justo antes de que se te olvide.
                       Así el conocimiento se queda.
@@ -307,7 +393,7 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            
+
             <div>
               <p className="text-sm font-semibold text-primary/60 mb-4 text-center uppercase tracking-wide">
                 Así verás tu progreso
@@ -315,40 +401,54 @@ export default function Home() {
               <BrowserFrame>
                 <div className="p-6 sm:p-8">
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="font-serif font-bold text-charcoal">Tu Dashboard</h3>
+                    <h3 className="font-serif font-bold text-charcoal">
+                      Tu Dashboard
+                    </h3>
                     <span className="text-xs font-medium text-accent bg-accent/10 px-2 py-1 rounded-full">
                       En vivo
                     </span>
                   </div>
-                  
+
                   <div className="space-y-3">
                     <div className="flex items-center justify-between p-4 bg-off-white rounded-xl border border-gray-200 hover:border-success/50 transition-colors">
                       <div className="flex items-center gap-3">
                         <div className="w-3 h-3 rounded-full bg-success"></div>
-                        <span className="font-medium text-charcoal">Comprensión Lectora</span>
+                        <span className="font-medium text-charcoal">
+                          Comprensión Lectora
+                        </span>
                       </div>
-                      <span className="text-lg font-bold text-success">87%</span>
+                      <span className="text-lg font-bold text-success">
+                        87%
+                      </span>
                     </div>
                     <div className="flex items-center justify-between p-4 bg-accent/10 rounded-xl border-2 border-accent shadow-sm">
                       <div className="flex items-center gap-3">
                         <div className="w-3 h-3 rounded-full bg-accent"></div>
-                        <span className="font-medium text-charcoal">Matemática M1</span>
+                        <span className="font-medium text-charcoal">
+                          Matemática M1
+                        </span>
                       </div>
                       <span className="text-lg font-bold text-accent">92%</span>
                     </div>
                     <div className="flex items-center justify-between p-4 bg-off-white rounded-xl border border-gray-200 hover:border-cool-gray/50 transition-colors">
                       <div className="flex items-center gap-3">
                         <div className="w-3 h-3 rounded-full bg-cool-gray"></div>
-                        <span className="font-medium text-charcoal">Ciencias</span>
+                        <span className="font-medium text-charcoal">
+                          Ciencias
+                        </span>
                       </div>
-                      <span className="text-lg font-bold text-cool-gray">65%</span>
+                      <span className="text-lg font-bold text-cool-gray">
+                        65%
+                      </span>
                     </div>
                   </div>
-                  
+
                   <div className="mt-6 pt-6 border-t border-gray-100">
                     <div className="flex justify-between items-end">
                       <div>
-                        <p className="text-sm text-cool-gray mb-1">Puntaje proyectado</p>
+                        <p className="text-sm text-cool-gray mb-1">
+                          Puntaje proyectado
+                        </p>
                         <p className="text-4xl font-bold text-charcoal">748</p>
                       </div>
                       <div className="text-right">
@@ -376,7 +476,7 @@ export default function Home() {
               maximizar tu puntaje
             </p>
           </div>
-          
+
           <div className="max-w-3xl mx-auto">
             <p className="text-sm font-semibold text-primary/60 mb-4 text-center uppercase tracking-wide">
               Así se verá tu plan diario
@@ -385,52 +485,99 @@ export default function Home() {
               <div className="p-6 sm:p-8">
                 <div className="flex justify-between items-center mb-8">
                   <div>
-                    <h3 className="text-2xl font-serif font-bold text-charcoal">Hoy</h3>
+                    <h3 className="text-2xl font-serif font-bold text-charcoal">
+                      Hoy
+                    </h3>
                     <p className="text-cool-gray">Martes 13 de enero</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-3xl font-bold text-charcoal">25<span className="text-lg font-normal text-cool-gray ml-1">min</span></p>
+                    <p className="text-3xl font-bold text-charcoal">
+                      25
+                      <span className="text-lg font-normal text-cool-gray ml-1">
+                        min
+                      </span>
+                    </p>
                   </div>
                 </div>
-                
+
                 <div className="space-y-4">
                   <div className="flex items-center gap-4 p-5 bg-accent/10 rounded-xl border-2 border-accent hover:border-accent transition-colors group cursor-pointer shadow-sm">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent to-accent-light flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      <svg
+                        className="w-6 h-6 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
                       </svg>
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <p className="font-bold text-charcoal">Victoria rápida</p>
-                        <span className="text-xs font-bold text-white bg-accent px-2 py-0.5 rounded-full">+12 pts</span>
+                        <p className="font-bold text-charcoal">
+                          Victoria rápida
+                        </p>
+                        <span className="text-xs font-bold text-white bg-accent px-2 py-0.5 rounded-full">
+                          +12 pts
+                        </span>
                       </div>
                       <p className="text-charcoal/70">
                         Ecuaciones cuadráticas – 5 ejercicios
                       </p>
                     </div>
-                    <span className="text-sm font-semibold text-charcoal/60">8 min</span>
+                    <span className="text-sm font-semibold text-charcoal/60">
+                      8 min
+                    </span>
                   </div>
-                  
+
                   <div className="flex items-center gap-4 p-5 bg-off-white rounded-xl border border-gray-200 hover:border-primary transition-colors group cursor-pointer">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      <svg
+                        className="w-6 h-6 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                        />
                       </svg>
                     </div>
                     <div className="flex-1">
-                      <p className="font-bold text-charcoal mb-1">Nuevo concepto</p>
+                      <p className="font-bold text-charcoal mb-1">
+                        Nuevo concepto
+                      </p>
                       <p className="text-charcoal/70">
                         Factorización – Lección + práctica
                       </p>
                     </div>
-                    <span className="text-sm font-semibold text-charcoal/60">12 min</span>
+                    <span className="text-sm font-semibold text-charcoal/60">
+                      12 min
+                    </span>
                   </div>
-                  
+
                   <div className="flex items-center gap-4 p-5 bg-off-white rounded-xl border border-gray-200 hover:border-success transition-colors group cursor-pointer">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-success to-emerald-400 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      <svg
+                        className="w-6 h-6 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                        />
                       </svg>
                     </div>
                     <div className="flex-1">
@@ -439,7 +586,9 @@ export default function Home() {
                         Comprensión de textos – No olvidar
                       </p>
                     </div>
-                    <span className="text-sm font-semibold text-charcoal/60">5 min</span>
+                    <span className="text-sm font-semibold text-charcoal/60">
+                      5 min
+                    </span>
                   </div>
                 </div>
               </div>
@@ -452,7 +601,7 @@ export default function Home() {
       <section className="py-24 section-navy relative overflow-hidden">
         <div className="absolute inset-0 dot-pattern opacity-5"></div>
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl"></div>
-        
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div>
@@ -463,41 +612,49 @@ export default function Home() {
                 Cada concepto que dominas te acerca a tu meta. Sin estimaciones
                 vagas—sabes exactamente dónde estás.
               </p>
-              
+
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full bg-accent"></div>
-                  <span className="text-white/90">Ve qué conceptos dominaste y cuáles te faltan</span>
+                  <span className="text-white/90">
+                    Ve qué conceptos dominaste y cuáles te faltan
+                  </span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full bg-accent"></div>
-                  <span className="text-white/90">Puntaje proyectado actualizado cada sesión</span>
+                  <span className="text-white/90">
+                    Puntaje proyectado actualizado cada sesión
+                  </span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full bg-accent"></div>
-                  <span className="text-white/90">Tiempo estimado para alcanzar tu meta</span>
+                  <span className="text-white/90">
+                    Tiempo estimado para alcanzar tu meta
+                  </span>
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
               <h3 className="text-xl font-serif font-bold text-white mb-8">
                 Tu progreso
               </h3>
-              
+
               <div className="mb-8">
                 <div className="flex justify-between items-center mb-3">
                   <span className="text-white/80">Conceptos dominados</span>
-                  <span className="text-2xl font-bold text-accent">24<span className="text-white/60 font-normal">/87</span></span>
+                  <span className="text-2xl font-bold text-accent">
+                    24<span className="text-white/60 font-normal">/87</span>
+                  </span>
                 </div>
                 <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
-                  <div 
+                  <div
                     className="bg-gradient-to-r from-accent to-accent-light rounded-full h-3 transition-all duration-1000"
                     style={{ width: "28%" }}
                   ></div>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4 mb-8">
                 <div className="bg-white/5 rounded-xl p-4 text-center">
                   <p className="text-3xl font-bold text-white">748</p>
@@ -508,11 +665,12 @@ export default function Home() {
                   <p className="text-sm text-white/60">Tu meta</p>
                 </div>
               </div>
-              
+
               <div className="pt-6 border-t border-white/10">
                 <p className="text-white/60 text-sm mb-2">Con 30 min/día:</p>
                 <p className="text-white text-lg">
-                  Alcanzas tu meta en <span className="font-bold text-accent">12 semanas</span>
+                  Alcanzas tu meta en{" "}
+                  <span className="font-bold text-accent">12 semanas</span>
                 </p>
               </div>
             </div>
@@ -521,15 +679,18 @@ export default function Home() {
       </section>
 
       {/* Waitlist Section */}
-      <section id="waitlist" className="py-24 bg-white relative overflow-hidden">
+      <section
+        id="waitlist"
+        className="py-24 bg-white relative overflow-hidden"
+      >
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-accent/10 rounded-full blur-3xl"></div>
-        
+
         <div className="relative max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-flex items-center gap-2 text-sm font-medium text-primary bg-primary/10 px-4 py-2 rounded-full mb-8">
             <span className="w-2 h-2 bg-primary rounded-full animate-pulse-subtle"></span>
             Lanzamiento próximo
           </div>
-          
+
           <h2 className="text-4xl sm:text-5xl font-serif font-bold text-charcoal mb-6">
             Sé de los primeros
           </h2>
@@ -537,11 +698,11 @@ export default function Home() {
             Estamos terminando los últimos detalles. Déjanos tu email y serás de
             los primeros en probar Arbor PreU.
           </p>
-          
+
           <div className="max-w-lg mx-auto">
             <WaitlistForm />
           </div>
-          
+
           <p className="text-sm text-cool-gray mt-6">
             Sin spam, solo el aviso cuando lancemos.
           </p>
@@ -561,14 +722,16 @@ export default function Home() {
                   height={40}
                   className="brightness-0 invert"
                 />
-                <span className="text-2xl font-serif font-bold">Arbor PreU</span>
+                <span className="text-2xl font-serif font-bold">
+                  Arbor PreU
+                </span>
               </div>
               <p className="text-white/60 max-w-sm">
                 Preparación PAES basada en dominio. Aprende lo que te falta,
                 demuestra que lo sabes, avanza.
               </p>
             </div>
-            
+
             <div className="md:text-right">
               <p className="text-white/40 text-sm">
                 © 2026 Arbor School. Todos los derechos reservados.
