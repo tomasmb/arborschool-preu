@@ -216,19 +216,20 @@ resource "google_cloud_run_service_iam_member" "public" {
   member   = "allUsers"
 }
 
-# NOTE: Domain mapping requires domain verification in Google Search Console
-# Re-enable after verifying domain ownership at:
-# https://www.google.com/webmasters/verification/verification?domain=arbor.school
-#
-# resource "google_cloud_run_domain_mapping" "preu" {
-#   location = var.region
-#   name     = "preu.arbor.school"
-#
-#   metadata {
-#     namespace = var.project_id
-#   }
-#
-#   spec {
-#     route_name = google_cloud_run_v2_service.preu.name
-#   }
-# }
+resource "google_cloud_run_domain_mapping" "preu" {
+  location = var.region
+  name     = "preu.arbor.school"
+
+  metadata {
+    namespace = var.project_id
+  }
+
+  spec {
+    route_name = google_cloud_run_v2_service.preu.name
+  }
+
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes  = [metadata, spec]
+  }
+}
