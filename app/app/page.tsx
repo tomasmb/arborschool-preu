@@ -45,11 +45,7 @@ function BrowserFrame({ children }: { children: React.ReactNode }) {
 /**
  * Email signup form component
  */
-function WaitlistForm({
-  variant = "default",
-}: {
-  variant?: "default" | "inline";
-}) {
+function WaitlistForm() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
 

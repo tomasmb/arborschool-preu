@@ -6,6 +6,10 @@ terraform {
       source  = "hashicorp/google"
       version = "~> 6.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
   }
 
   backend "gcs" {
@@ -19,11 +23,113 @@ provider "google" {
   region  = var.region
 }
 
+# ------------------------------------------------------------------------------
+# DATABASE - Cloud SQL PostgreSQL
+# ------------------------------------------------------------------------------
+
+# Generate a random password for the database
+resource "random_password" "db_password" {
+  length  = 32
+  special = false
+}
+
+# Cloud SQL PostgreSQL instance
+resource "google_sql_database_instance" "preu" {
+  name             = "preu-postgres"
+  database_version = "POSTGRES_15"
+  region           = var.region
+
+  settings {
+    tier              = var.db_tier
+    edition           = "ENTERPRISE"
+    availability_type = "ZONAL"
+    disk_size         = 10
+    disk_type         = "PD_SSD"
+    disk_autoresize   = true
+
+    backup_configuration {
+      enabled                        = true
+      point_in_time_recovery_enabled = true
+      start_time                     = "03:00"
+      backup_retention_settings {
+        retained_backups = 7
+      }
+    }
+
+    ip_configuration {
+      ipv4_enabled = true
+      # Allow Cloud Run to connect via Cloud SQL Auth Proxy
+      authorized_networks {
+        name  = "allow-all"
+        value = "0.0.0.0/0"
+      }
+    }
+
+    database_flags {
+      name  = "max_connections"
+      value = "100"
+    }
+  }
+
+  deletion_protection = true
+}
+
+# Create the main database
+resource "google_sql_database" "preu" {
+  name     = "preu"
+  instance = google_sql_database_instance.preu.name
+}
+
+# Create the database user
+resource "google_sql_user" "preu" {
+  name     = "preu_app"
+  instance = google_sql_database_instance.preu.name
+  password = random_password.db_password.result
+}
+
 resource "google_artifact_registry_repository" "preu" {
   location      = var.region
   repository_id = "preu"
   description   = "Docker repository for Arbor PreU"
   format        = "DOCKER"
+}
+
+# ------------------------------------------------------------------------------
+# IAM & SECRETS
+# ------------------------------------------------------------------------------
+
+# Service account for Cloud Run
+resource "google_service_account" "cloud_run" {
+  account_id   = "preu-cloud-run"
+  display_name = "PreU Cloud Run Service Account"
+}
+
+# Grant Cloud Run SA access to Cloud SQL
+resource "google_project_iam_member" "cloud_run_sql" {
+  project = var.project_id
+  role    = "roles/cloudsql.client"
+  member  = "serviceAccount:${google_service_account.cloud_run.email}"
+}
+
+# Grant Cloud Run SA access to Secret Manager
+resource "google_project_iam_member" "cloud_run_secrets" {
+  project = var.project_id
+  role    = "roles/secretmanager.secretAccessor"
+  member  = "serviceAccount:${google_service_account.cloud_run.email}"
+}
+
+# Store database password in Secret Manager
+resource "google_secret_manager_secret" "db_password" {
+  secret_id = "preu-db-password"
+
+  replication {
+    auto {}
+  }
+}
+
+resource "google_secret_manager_secret_version" "db_password" {
+  secret      = google_secret_manager_secret.db_password.id
+  secret_data = random_password.db_password.result
 }
 
 resource "google_cloud_run_v2_service" "preu" {
@@ -46,12 +152,49 @@ resource "google_cloud_run_v2_service" "preu" {
         }
         cpu_idle = true
       }
+
+      # Database connection via Cloud SQL Auth Proxy (built into Cloud Run)
+      env {
+        name  = "DB_HOST"
+        value = "/cloudsql/${google_sql_database_instance.preu.connection_name}"
+      }
+      env {
+        name  = "DB_NAME"
+        value = google_sql_database.preu.name
+      }
+      env {
+        name  = "DB_USER"
+        value = google_sql_user.preu.name
+      }
+      env {
+        name = "DB_PASSWORD"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.db_password.secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      volume_mounts {
+        name       = "cloudsql"
+        mount_path = "/cloudsql"
+      }
+    }
+
+    volumes {
+      name = "cloudsql"
+      cloud_sql_instance {
+        instances = [google_sql_database_instance.preu.connection_name]
+      }
     }
 
     scaling {
       min_instance_count = 0
       max_instance_count = 10
     }
+
+    service_account = google_service_account.cloud_run.email
   }
 
   traffic {
@@ -59,7 +202,11 @@ resource "google_cloud_run_v2_service" "preu" {
     percent = 100
   }
 
-  depends_on = [google_artifact_registry_repository.preu]
+  depends_on = [
+    google_artifact_registry_repository.preu,
+    google_sql_database_instance.preu,
+    google_secret_manager_secret_version.db_password
+  ]
 }
 
 resource "google_cloud_run_service_iam_member" "public" {
@@ -69,15 +216,19 @@ resource "google_cloud_run_service_iam_member" "public" {
   member   = "allUsers"
 }
 
-resource "google_cloud_run_domain_mapping" "preu" {
-  location = var.region
-  name     = "preu.arbor.school"
-
-  metadata {
-    namespace = var.project_id
-  }
-
-  spec {
-    route_name = google_cloud_run_v2_service.preu.name
-  }
-}
+# NOTE: Domain mapping requires domain verification in Google Search Console
+# Re-enable after verifying domain ownership at:
+# https://www.google.com/webmasters/verification/verification?domain=arbor.school
+#
+# resource "google_cloud_run_domain_mapping" "preu" {
+#   location = var.region
+#   name     = "preu.arbor.school"
+#
+#   metadata {
+#     namespace = var.project_id
+#   }
+#
+#   spec {
+#     route_name = google_cloud_run_v2_service.preu.name
+#   }
+# }

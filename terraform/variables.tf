@@ -9,3 +9,9 @@ variable "region" {
   type        = string
   default     = "us-central1"
 }
+
+variable "db_tier" {
+  description = "Cloud SQL instance tier (db-f1-micro is cheapest ~$9/mo)"
+  type        = string
+  default     = "db-f1-micro"
+}

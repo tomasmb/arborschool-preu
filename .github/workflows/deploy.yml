@@ -14,6 +14,9 @@ env:
   REGION: us-central1
   SERVICE_NAME: preu
   REGISTRY: us-central1-docker.pkg.dev
+  DB_INSTANCE: preu-postgres
+  DB_NAME: preu
+  DB_USER: preu_app
 
 jobs:
   build-and-deploy:
@@ -85,4 +88,10 @@ jobs:
             --memory=512Mi \
             --min-instances=0 \
             --max-instances=10 \
-            --set-env-vars="NODE_ENV=production"
+            --service-account=preu-cloud-run@${{ env.PROJECT_ID }}.iam.gserviceaccount.com \
+            --add-cloudsql-instances=${{ env.PROJECT_ID }}:${{ env.REGION }}:${{ env.DB_INSTANCE }} \
+            --set-env-vars="NODE_ENV=production" \
+            --set-env-vars="DB_HOST=/cloudsql/${{ env.PROJECT_ID }}:${{ env.REGION }}:${{ env.DB_INSTANCE }}" \
+            --set-env-vars="DB_NAME=${{ env.DB_NAME }}" \
+            --set-env-vars="DB_USER=${{ env.DB_USER }}" \
+            --set-secrets="DB_PASSWORD=preu-db-password:latest"
