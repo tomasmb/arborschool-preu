@@ -24,6 +24,42 @@ interface ParsedQuestion {
 }
 
 /**
+ * Serialize a DOM node to HTML string, preserving MathML
+ */
+function serializeNodeToHtml(node: Node): string {
+  if (node.nodeType === Node.TEXT_NODE) {
+    return node.textContent || "";
+  }
+
+  if (node.nodeType === Node.ELEMENT_NODE) {
+    const el = node as Element;
+    const tagName = el.localName || el.tagName.toLowerCase();
+
+    // Preserve MathML elements as-is
+    if (tagName === "math" || el.namespaceURI === "http://www.w3.org/1998/Math/MathML") {
+      return new XMLSerializer().serializeToString(el);
+    }
+
+    // Handle images
+    if (tagName === "img") {
+      const src = el.getAttribute("src") || "";
+      const alt = el.getAttribute("alt") || "Imagen";
+      return `<img src="${src}" alt="${alt}" class="max-w-full rounded-lg my-4" />`;
+    }
+
+    // Recursively process children
+    let content = "";
+    el.childNodes.forEach((child) => {
+      content += serializeNodeToHtml(child);
+    });
+
+    return content;
+  }
+
+  return "";
+}
+
+/**
  * Parse QTI XML to extract question content and options
  */
 function parseQtiXml(xmlString: string): ParsedQuestion {
@@ -38,24 +74,19 @@ function parseQtiXml(xmlString: string): ParsedQuestion {
     "correctResponse value, qti-correct-response qti-value"
   );
 
-  // Build question HTML
+  // Build question HTML preserving MathML
   let html = "";
   if (itemBody) {
     const paragraphs = itemBody.querySelectorAll(":scope > p");
     paragraphs.forEach((p) => {
-      const img = p.querySelector("img");
-      if (img) {
-        const src = img.getAttribute("src") || "";
-        const alt = img.getAttribute("alt") || "Imagen";
-        html += `<p class="my-4"><img src="${src}" alt="${alt}" class="max-w-full rounded-lg" /></p>`;
-      } else {
-        html += `<p class="mb-4">${p.textContent}</p>`;
-      }
+      const content = serializeNodeToHtml(p);
+      html += `<p class="mb-4">${content}</p>`;
     });
   }
 
   if (prompt) {
-    html += `<p class="font-semibold mt-4">${prompt.textContent}</p>`;
+    const content = serializeNodeToHtml(prompt);
+    html += `<p class="font-semibold mt-4">${content}</p>`;
   }
 
   // Parse options
@@ -64,15 +95,9 @@ function parseQtiXml(xmlString: string): ParsedQuestion {
 
   choices.forEach((choice, index) => {
     const identifier = choice.getAttribute("identifier") || letters[index];
-    let text = "";
 
-    // Handle MathML in options
-    const mathElement = choice.querySelector("math, m\\:math");
-    if (mathElement) {
-      text = parseMathML(mathElement);
-    } else {
-      text = choice.textContent?.trim() || `Opción ${letters[index]}`;
-    }
+    // Serialize option content, preserving MathML
+    const text = serializeNodeToHtml(choice).trim() || `Opción ${letters[index]}`;
 
     options.push({
       letter: letters[index],
@@ -96,45 +121,6 @@ function parseQtiXml(xmlString: string): ParsedQuestion {
   }
 
   return { html, options, correctAnswer };
-}
-
-/**
- * Parse MathML to readable text
- */
-function parseMathML(mathElement: Element): string {
-  let result = "";
-  const children = mathElement.children;
-
-  for (const child of Array.from(children)) {
-    const tagName = child.localName || child.tagName.replace("m:", "");
-
-    switch (tagName) {
-      case "mi":
-      case "mn":
-      case "mo":
-        result += child.textContent;
-        break;
-      case "mfrac": {
-        const num = child.children[0]?.textContent || "";
-        const den = child.children[1]?.textContent || "";
-        result += `(${num}/${den})`;
-        break;
-      }
-      case "msup": {
-        const base = child.children[0]?.textContent || "";
-        const exp = child.children[1]?.textContent || "";
-        result += `${base}^${exp}`;
-        break;
-      }
-      case "msqrt":
-        result += `√(${child.textContent})`;
-        break;
-      default:
-        result += child.textContent;
-    }
-  }
-
-  return result || mathElement.textContent || "";
 }
 
 /**
@@ -266,7 +252,10 @@ export function QuestionScreen({
               >
                 {option.letter}
               </span>
-              <span className="text-left text-charcoal">{option.text}</span>
+              <span 
+                className="text-left text-charcoal"
+                dangerouslySetInnerHTML={{ __html: option.text }}
+              />
             </button>
           ))}
         </div>
