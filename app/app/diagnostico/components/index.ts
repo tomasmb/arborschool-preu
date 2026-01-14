@@ -7,3 +7,4 @@ export { TransitionScreen } from "./TransitionScreen";
 export { ResultsScreen } from "./ResultsScreen";
 export { SignupScreen } from "./SignupScreen";
 export { ThankYouScreen } from "./ThankYouScreen";
+export { Confetti } from "./Confetti";

@@ -7,7 +7,10 @@ import {
   type MSTQuestion,
 } from "@/lib/diagnostic/config";
 
-// Atom info from API
+// ============================================================================
+// TYPES
+// ============================================================================
+
 export interface QuestionAtom {
   atomId: string;
   relevance: "primary" | "secondary";
@@ -29,6 +32,10 @@ interface ParsedQuestion {
   correctAnswer: string | null;
   atoms: QuestionAtom[];
 }
+
+// ============================================================================
+// QTI PARSING UTILITIES
+// ============================================================================
 
 /**
  * Serialize a DOM node to HTML string, preserving MathML
@@ -105,8 +112,6 @@ function parseQtiXml(xmlString: string): ParsedQuestion {
 
   choices.forEach((choice, index) => {
     const identifier = choice.getAttribute("identifier") || letters[index];
-
-    // Serialize option content, preserving MathML
     const text =
       serializeNodeToHtml(choice).trim() || `Opción ${letters[index]}`;
 
@@ -134,9 +139,79 @@ function parseQtiXml(xmlString: string): ParsedQuestion {
   return { html, options, correctAnswer, atoms: [] };
 }
 
-/**
- * Question display with answer options - fetches real content from DB
- */
+// ============================================================================
+// OPTION BUTTON COMPONENT
+// ============================================================================
+
+function OptionButton({
+  letter,
+  text,
+  isSelected,
+  onClick,
+  index,
+}: {
+  letter: string;
+  text: string;
+  isSelected: boolean;
+  onClick: () => void;
+  index: number;
+}) {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), 100 + index * 50);
+    return () => clearTimeout(timer);
+  }, [index]);
+
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-4 p-4 sm:p-5 rounded-xl border-2 transition-all duration-300
+        transform ${isVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"}
+        ${
+          isSelected
+            ? "border-primary bg-primary/5 shadow-lg scale-[1.02] ring-4 ring-primary/10"
+            : "border-gray-200 bg-white hover:border-primary/50 hover:bg-off-white hover:shadow-md"
+        }`}
+    >
+      <span
+        className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-lg shrink-0 
+          transition-all duration-300
+          ${
+            isSelected
+              ? "bg-gradient-to-br from-primary to-primary-light text-white shadow-md scale-110"
+              : "bg-off-white text-charcoal group-hover:bg-primary/10"
+          }`}
+      >
+        {letter}
+      </span>
+      <span
+        className="text-left text-charcoal flex-1"
+        dangerouslySetInnerHTML={{ __html: text }}
+      />
+      {isSelected && (
+        <svg
+          className="w-6 h-6 text-primary shrink-0 animate-scale-in"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M5 13l4 4L19 7"
+          />
+        </svg>
+      )}
+    </button>
+  );
+}
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
+
 export function QuestionScreen({
   question,
   questionIndex,
@@ -151,6 +226,7 @@ export function QuestionScreen({
   const [parsedQuestion, setParsedQuestion] = useState<ParsedQuestion | null>(
     null
   );
+  const [isExiting, setIsExiting] = useState(false);
 
   const canProceed = selectedAnswer !== null || isDontKnow;
 
@@ -159,6 +235,7 @@ export function QuestionScreen({
     const fetchQuestion = async () => {
       setLoading(true);
       setError(null);
+      setIsExiting(false);
 
       try {
         const params = new URLSearchParams({
@@ -171,16 +248,13 @@ export function QuestionScreen({
 
         if (data.success && data.question?.qtiXml) {
           const parsed = parseQtiXml(data.question.qtiXml);
-          // Use DB correctAnswer if available, fallback to parsed XML
           if (data.question.correctAnswer) {
             parsed.correctAnswer = data.question.correctAnswer;
           }
-          // Include atoms from API response
           parsed.atoms = data.question.atoms || [];
           setParsedQuestion(parsed);
         } else {
           setError(data.error || "No se pudo cargar la pregunta");
-          // Use fallback
           setParsedQuestion(getFallbackQuestion(questionIndex));
         }
       } catch (err) {
@@ -196,7 +270,13 @@ export function QuestionScreen({
   }, [question.exam, question.questionNumber, questionIndex]);
 
   const handleNext = () => {
-    onNext(parsedQuestion?.correctAnswer || null, parsedQuestion?.atoms || []);
+    setIsExiting(true);
+    setTimeout(() => {
+      onNext(
+        parsedQuestion?.correctAnswer || null,
+        parsedQuestion?.atoms || []
+      );
+    }, 200);
   };
 
   if (loading) {
@@ -204,8 +284,11 @@ export function QuestionScreen({
       <div className="max-w-3xl mx-auto px-4 py-8">
         <div className="card p-6 sm:p-10 flex items-center justify-center min-h-[400px]">
           <div className="text-center">
-            <div className="animate-spin w-10 h-10 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
-            <p className="text-cool-gray">Cargando pregunta...</p>
+            <div className="relative w-16 h-16 mx-auto mb-4">
+              <div className="absolute inset-0 rounded-full border-4 border-primary/20" />
+              <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+            </div>
+            <p className="text-cool-gray font-medium">Cargando pregunta...</p>
           </div>
         </div>
       </div>
@@ -215,18 +298,24 @@ export function QuestionScreen({
   const options = parsedQuestion?.options || getFallbackOptions();
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
-      <div className="card p-6 sm:p-10">
+    <div
+      className={`max-w-3xl mx-auto px-4 py-8 transition-all duration-300
+        ${isExiting ? "opacity-0 translate-x-8" : "opacity-100 translate-x-0"}`}
+    >
+      <div className="card p-6 sm:p-10 relative overflow-hidden">
+        {/* Decorative corner gradient */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/5 to-transparent rounded-bl-full" />
+
         {/* Question metadata */}
-        <div className="flex items-center gap-2 mb-6 text-sm text-cool-gray">
-          <span className="px-2 py-1 bg-off-white rounded-md font-medium">
+        <div className="flex flex-wrap items-center gap-2 mb-6 text-sm relative">
+          <span className="px-3 py-1.5 bg-gradient-to-r from-primary/10 to-primary/5 text-primary rounded-lg font-medium border border-primary/10">
             {AXIS_NAMES[question.axis]}
           </span>
-          <span className="px-2 py-1 bg-off-white rounded-md font-medium">
+          <span className="px-3 py-1.5 bg-gradient-to-r from-accent/10 to-accent/5 text-accent-dark rounded-lg font-medium border border-accent/10">
             {SKILL_NAMES[question.skill]}
           </span>
           {error && (
-            <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-md text-xs">
+            <span className="px-3 py-1.5 bg-amber-100 text-amber-700 rounded-lg text-xs font-medium">
               Modo demo
             </span>
           )}
@@ -246,45 +335,33 @@ export function QuestionScreen({
           )}
         </div>
 
-        {/* Options */}
+        {/* Options with staggered animation */}
         <div className="space-y-3 mb-8">
-          {options.map((option) => (
-            <button
+          {options.map((option, index) => (
+            <OptionButton
               key={option.letter}
+              letter={option.letter}
+              text={option.text}
+              isSelected={selectedAnswer === option.letter}
               onClick={() => onSelectAnswer(option.letter)}
-              className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-200
-                ${
-                  selectedAnswer === option.letter
-                    ? "border-primary bg-primary/5 shadow-md"
-                    : "border-gray-200 bg-white hover:border-primary/50 hover:bg-off-white"
-                }`}
-            >
-              <span
-                className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shrink-0 transition-colors
-                ${selectedAnswer === option.letter ? "bg-primary text-white" : "bg-off-white text-charcoal"}`}
-              >
-                {option.letter}
-              </span>
-              <span
-                className="text-left text-charcoal"
-                dangerouslySetInnerHTML={{ __html: option.text }}
-              />
-            </button>
+              index={index}
+            />
           ))}
         </div>
 
         {/* Don't know button */}
         <button
           onClick={onSelectDontKnow}
-          className={`w-full flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-dashed transition-all duration-200
+          className={`w-full flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-dashed 
+            transition-all duration-300
             ${
               isDontKnow
-                ? "border-amber-500 bg-amber-50 text-amber-700"
-                : "border-gray-300 text-cool-gray hover:border-amber-400 hover:bg-amber-50/50"
+                ? "border-amber-500 bg-amber-50 text-amber-700 shadow-md scale-[1.01]"
+                : "border-gray-300 text-cool-gray hover:border-amber-400 hover:bg-amber-50/50 hover:text-amber-600"
             }`}
         >
           <svg
-            className="w-5 h-5"
+            className={`w-5 h-5 transition-transform duration-300 ${isDontKnow ? "rotate-12" : ""}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -304,16 +381,16 @@ export function QuestionScreen({
           <button
             onClick={handleNext}
             disabled={!canProceed}
-            className={`px-8 py-4 rounded-xl font-semibold flex items-center gap-2 transition-all duration-200
+            className={`group px-8 py-4 rounded-xl font-semibold flex items-center gap-2 transition-all duration-300
               ${
                 canProceed
-                  ? "btn-primary"
+                  ? "btn-primary shadow-lg hover:shadow-xl hover:scale-105"
                   : "bg-gray-100 text-gray-400 cursor-not-allowed"
               }`}
           >
             Siguiente
             <svg
-              className="w-5 h-5"
+              className={`w-5 h-5 transition-transform duration-300 ${canProceed ? "group-hover:translate-x-1" : ""}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -332,9 +409,10 @@ export function QuestionScreen({
   );
 }
 
-/**
- * Fallback question content when DB fetch fails
- */
+// ============================================================================
+// FALLBACK DATA
+// ============================================================================
+
 function getFallbackQuestion(index: number): ParsedQuestion {
   const questionBank = [
     {
@@ -381,8 +459,8 @@ function getFallbackQuestion(index: number): ParsedQuestion {
       text,
       identifier: letters[i],
     })),
-    correctAnswer: null, // Unknown in fallback mode
-    atoms: [], // No atoms in fallback mode
+    correctAnswer: null,
+    atoms: [],
   };
 }
 

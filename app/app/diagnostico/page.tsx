@@ -460,9 +460,14 @@ export default function DiagnosticoPage() {
       stage === 1 ? questionIndex + 1 : 8 + questionIndex + 1;
 
     return (
-      <div className="min-h-screen bg-gradient-to-b from-cream to-off-white">
+      <div className="min-h-screen relative overflow-hidden">
+        {/* Background decorations */}
+        <div className="fixed inset-0 bg-gradient-to-b from-cream via-white to-off-white" />
+        <div className="fixed top-20 right-0 w-80 h-80 bg-accent/5 rounded-full blur-3xl" />
+        <div className="fixed bottom-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+
         {/* Header */}
-        <header className="bg-white border-b border-gray-100 sticky top-0 z-10">
+        <header className="relative z-20 bg-white/80 backdrop-blur-lg border-b border-gray-100 sticky top-0">
           <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Image src="/logo-arbor.svg" alt="Arbor" width={32} height={32} />
@@ -480,9 +485,9 @@ export default function DiagnosticoPage() {
                 </span>
                 /{totalQuestions}
               </div>
-              <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div className="w-28 h-2.5 bg-gray-100 rounded-full overflow-hidden shadow-inner">
                 <div
-                  className="h-full bg-primary rounded-full transition-all duration-300"
+                  className="h-full bg-gradient-to-r from-primary to-primary-light rounded-full transition-all duration-500 ease-out"
                   style={{
                     width: `${(currentQuestionNumber / totalQuestions) * 100}%`,
                   }}
@@ -492,11 +497,17 @@ export default function DiagnosticoPage() {
 
             {/* Timer */}
             <div
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-mono
-              ${timeRemaining < 300 ? "bg-red-100 text-red-600" : "bg-off-white text-charcoal"}`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-mono font-medium transition-all duration-300
+              ${
+                timeRemaining < 300
+                  ? "bg-red-100 text-red-600 animate-pulse"
+                  : timeRemaining < 600
+                    ? "bg-amber-50 text-amber-600"
+                    : "bg-off-white text-charcoal shadow-sm"
+              }`}
             >
               <svg
-                className="w-4 h-4"
+                className={`w-4 h-4 ${timeRemaining < 300 ? "animate-bounce-subtle" : ""}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -513,25 +524,27 @@ export default function DiagnosticoPage() {
           </div>
 
           {/* Stage indicator */}
-          <div className="bg-off-white py-1.5 text-center text-sm text-cool-gray">
-            Etapa {stage} de 2
+          <div className="bg-gradient-to-r from-off-white to-white py-2 text-center text-sm text-cool-gray border-t border-gray-50">
+            <span className="font-medium">Etapa {stage} de 2</span>
             {stage === 2 && route && (
-              <span className="ml-2 text-accent">
+              <span className="ml-2 text-accent font-medium">
                 — Preguntas adaptadas a tu nivel
               </span>
             )}
           </div>
         </header>
 
-        <QuestionScreen
-          question={question}
-          questionIndex={questionIndex}
-          selectedAnswer={selectedAnswer}
-          isDontKnow={isDontKnow}
-          onSelectAnswer={handleSelectAnswer}
-          onSelectDontKnow={handleSelectDontKnow}
-          onNext={handleNext}
-        />
+        <div className="relative z-10">
+          <QuestionScreen
+            question={question}
+            questionIndex={questionIndex}
+            selectedAnswer={selectedAnswer}
+            isDontKnow={isDontKnow}
+            onSelectAnswer={handleSelectAnswer}
+            onSelectDontKnow={handleSelectDontKnow}
+            onNext={handleNext}
+          />
+        </div>
       </div>
     );
   }
