@@ -10,7 +10,7 @@ import { eq } from "drizzle-orm";
 
 /**
  * POST /api/diagnostic/signup
- * Creates a user with email and links their test attempt
+ * Creates a user with email and optionally links their test attempt
  * Also creates atom mastery records based on diagnostic results
  */
 export async function POST(request: NextRequest) {
@@ -18,9 +18,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { email, attemptId, atomResults } = body;
 
-    if (!email || !attemptId) {
+    // Email is always required
+    if (!email) {
       return NextResponse.json(
-        { success: false, error: "Missing email or attemptId" },
+        { success: false, error: "Missing email" },
         { status: 400 }
       );
     }
@@ -58,17 +59,22 @@ export async function POST(request: NextRequest) {
       userId = newUser.id;
     }
 
-    // Link test attempt to user
-    await db
-      .update(testAttempts)
-      .set({ userId })
-      .where(eq(testAttempts.id, attemptId));
+    // Only link test attempt if we have a valid (non-local) attemptId
+    const hasValidAttempt = attemptId && !attemptId.startsWith("local-");
 
-    // Link all responses to user
-    await db
-      .update(studentResponses)
-      .set({ userId })
-      .where(eq(studentResponses.testAttemptId, attemptId));
+    if (hasValidAttempt) {
+      // Link test attempt to user
+      await db
+        .update(testAttempts)
+        .set({ userId })
+        .where(eq(testAttempts.id, attemptId));
+
+      // Link all responses to user
+      await db
+        .update(studentResponses)
+        .set({ userId })
+        .where(eq(studentResponses.testAttemptId, attemptId));
+    }
 
     // Create atom mastery records if provided
     if (atomResults && Array.isArray(atomResults)) {
@@ -99,7 +105,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       userId,
-      message: "Account created and diagnostic linked",
+      message: hasValidAttempt
+        ? "Account created and diagnostic linked"
+        : "Account created - diagnostic data saved locally",
     });
   } catch (error) {
     console.error("Failed to signup:", error);
