@@ -245,7 +245,10 @@ export default function DiagnosticoPage() {
     // Save response to API
     if (attemptId && !attemptId.startsWith("local-")) {
       try {
-        const questionId = buildQuestionId(question.exam, question.questionNumber);
+        const questionId = buildQuestionId(
+          question.exam,
+          question.questionNumber
+        );
         await fetch("/api/diagnostic/response", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -426,12 +429,7 @@ export default function DiagnosticoPage() {
         <header className="bg-white border-b border-gray-100 sticky top-0 z-10">
           <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Image
-                src="/logo-arbor.svg"
-                alt="Arbor"
-                width={32}
-                height={32}
-              />
+              <Image src="/logo-arbor.svg" alt="Arbor" width={32} height={32} />
               <span className="font-serif font-bold text-primary hidden sm:inline">
                 Diagnóstico PAES M1
               </span>

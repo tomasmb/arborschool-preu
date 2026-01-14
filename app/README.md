@@ -58,12 +58,12 @@ Open [http://localhost:3000](http://localhost:3000)
 
 ## Database Commands
 
-| Command | Description |
-|---------|-------------|
-| `npm run db:generate` | Generate migration from schema changes |
-| `npm run db:migrate` | Apply pending migrations |
-| `npm run db:push` | Push schema directly (no migration file) |
-| `npm run db:studio` | Open Drizzle Studio GUI |
+| Command               | Description                              |
+| --------------------- | ---------------------------------------- |
+| `npm run db:generate` | Generate migration from schema changes   |
+| `npm run db:migrate`  | Apply pending migrations                 |
+| `npm run db:push`     | Push schema directly (no migration file) |
+| `npm run db:studio`   | Open Drizzle Studio GUI                  |
 
 ## Project Structure
 
@@ -93,5 +93,6 @@ Deployed automatically to Google Cloud Run on push to `main`.
 ### Environment Variables (Production)
 
 Set via Cloud Run secrets:
+
 - `DATABASE_URL` - PostgreSQL connection string
 - `DB_PASSWORD` - Database password (from Secret Manager)

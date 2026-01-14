@@ -36,7 +36,10 @@ function serializeNodeToHtml(node: Node): string {
     const tagName = el.localName || el.tagName.toLowerCase();
 
     // Preserve MathML elements as-is
-    if (tagName === "math" || el.namespaceURI === "http://www.w3.org/1998/Math/MathML") {
+    if (
+      tagName === "math" ||
+      el.namespaceURI === "http://www.w3.org/1998/Math/MathML"
+    ) {
       return new XMLSerializer().serializeToString(el);
     }
 
@@ -97,7 +100,8 @@ function parseQtiXml(xmlString: string): ParsedQuestion {
     const identifier = choice.getAttribute("identifier") || letters[index];
 
     // Serialize option content, preserving MathML
-    const text = serializeNodeToHtml(choice).trim() || `Opción ${letters[index]}`;
+    const text =
+      serializeNodeToHtml(choice).trim() || `Opción ${letters[index]}`;
 
     options.push({
       letter: letters[index],
@@ -252,7 +256,7 @@ export function QuestionScreen({
               >
                 {option.letter}
               </span>
-              <span 
+              <span
                 className="text-left text-charcoal"
                 dangerouslySetInnerHTML={{ __html: option.text }}
               />

@@ -133,12 +133,8 @@
           "name": "atoms_subject_id_subjects_id_fk",
           "tableFrom": "atoms",
           "tableTo": "subjects",
-          "columnsFrom": [
-            "subject_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["subject_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -210,12 +206,8 @@
           "name": "lessons_atom_id_atoms_id_fk",
           "tableFrom": "lessons",
           "tableTo": "atoms",
-          "columnsFrom": [
-            "atom_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["atom_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -223,12 +215,8 @@
           "name": "lessons_question_set_id_question_sets_id_fk",
           "tableFrom": "lessons",
           "tableTo": "question_sets",
-          "columnsFrom": [
-            "question_set_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["question_set_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -238,9 +226,7 @@
         "lessons_atom_id_unique": {
           "name": "lessons_atom_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "atom_id"
-          ]
+          "columns": ["atom_id"]
         }
       },
       "policies": {},
@@ -299,12 +285,8 @@
           "name": "question_atoms_question_id_questions_id_fk",
           "tableFrom": "question_atoms",
           "tableTo": "questions",
-          "columnsFrom": [
-            "question_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["question_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -312,12 +294,8 @@
           "name": "question_atoms_atom_id_atoms_id_fk",
           "tableFrom": "question_atoms",
           "tableTo": "atoms",
-          "columnsFrom": [
-            "atom_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["atom_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -325,10 +303,7 @@
       "compositePrimaryKeys": {
         "question_atoms_question_id_atom_id_pk": {
           "name": "question_atoms_question_id_atom_id_pk",
-          "columns": [
-            "question_id",
-            "atom_id"
-          ]
+          "columns": ["question_id", "atom_id"]
         }
       },
       "uniqueConstraints": {},
@@ -407,12 +382,8 @@
           "name": "question_sets_atom_id_atoms_id_fk",
           "tableFrom": "question_sets",
           "tableTo": "atoms",
-          "columnsFrom": [
-            "atom_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["atom_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -422,9 +393,7 @@
         "question_sets_atom_id_unique": {
           "name": "question_sets_atom_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "atom_id"
-          ]
+          "columns": ["atom_id"]
         }
       },
       "policies": {},
@@ -587,12 +556,8 @@
           "name": "questions_question_set_id_question_sets_id_fk",
           "tableFrom": "questions",
           "tableTo": "question_sets",
-          "columnsFrom": [
-            "question_set_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["question_set_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -669,12 +634,8 @@
           "name": "standards_subject_id_subjects_id_fk",
           "tableFrom": "standards",
           "tableTo": "subjects",
-          "columnsFrom": [
-            "subject_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["subject_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -799,12 +760,8 @@
           "name": "test_questions_test_id_tests_id_fk",
           "tableFrom": "test_questions",
           "tableTo": "tests",
-          "columnsFrom": [
-            "test_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["test_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -812,12 +769,8 @@
           "name": "test_questions_question_id_questions_id_fk",
           "tableFrom": "test_questions",
           "tableTo": "questions",
-          "columnsFrom": [
-            "question_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["question_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -825,10 +778,7 @@
       "compositePrimaryKeys": {
         "test_questions_test_id_question_id_pk": {
           "name": "test_questions_test_id_question_id_pk",
-          "columns": [
-            "test_id",
-            "question_id"
-          ]
+          "columns": ["test_id", "question_id"]
         }
       },
       "uniqueConstraints": {},
@@ -922,12 +872,8 @@
           "name": "tests_subject_id_subjects_id_fk",
           "tableFrom": "tests",
           "tableTo": "subjects",
-          "columnsFrom": [
-            "subject_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["subject_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1054,12 +1000,8 @@
           "name": "atom_mastery_user_id_users_id_fk",
           "tableFrom": "atom_mastery",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1067,12 +1009,8 @@
           "name": "atom_mastery_atom_id_atoms_id_fk",
           "tableFrom": "atom_mastery",
           "tableTo": "atoms",
-          "columnsFrom": [
-            "atom_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["atom_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1080,10 +1018,7 @@
       "compositePrimaryKeys": {
         "atom_mastery_user_id_atom_id_pk": {
           "name": "atom_mastery_user_id_atom_id_pk",
-          "columns": [
-            "user_id",
-            "atom_id"
-          ]
+          "columns": ["user_id", "atom_id"]
         }
       },
       "uniqueConstraints": {},
@@ -1196,12 +1131,8 @@
           "name": "student_responses_user_id_users_id_fk",
           "tableFrom": "student_responses",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1209,12 +1140,8 @@
           "name": "student_responses_question_id_questions_id_fk",
           "tableFrom": "student_responses",
           "tableTo": "questions",
-          "columnsFrom": [
-            "question_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["question_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1222,12 +1149,8 @@
           "name": "student_responses_test_attempt_id_test_attempts_id_fk",
           "tableFrom": "student_responses",
           "tableTo": "test_attempts",
-          "columnsFrom": [
-            "test_attempt_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["test_attempt_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1334,12 +1257,8 @@
           "name": "test_attempts_user_id_users_id_fk",
           "tableFrom": "test_attempts",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1347,12 +1266,8 @@
           "name": "test_attempts_test_id_tests_id_fk",
           "tableFrom": "test_attempts",
           "tableTo": "tests",
-          "columnsFrom": [
-            "test_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["test_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1434,9 +1349,7 @@
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -1448,10 +1361,7 @@
     "public.atom_relevance": {
       "name": "atom_relevance",
       "schema": "public",
-      "values": [
-        "primary",
-        "secondary"
-      ]
+      "values": ["primary", "secondary"]
     },
     "public.atom_type": {
       "name": "atom_type",
@@ -1468,75 +1378,42 @@
     "public.difficulty_level": {
       "name": "difficulty_level",
       "schema": "public",
-      "values": [
-        "low",
-        "medium",
-        "high"
-      ]
+      "values": ["low", "medium", "high"]
     },
     "public.mastery_source": {
       "name": "mastery_source",
       "schema": "public",
-      "values": [
-        "diagnostic",
-        "practice_test",
-        "pp100"
-      ]
+      "values": ["diagnostic", "practice_test", "pp100"]
     },
     "public.mastery_status": {
       "name": "mastery_status",
       "schema": "public",
-      "values": [
-        "not_started",
-        "in_progress",
-        "mastered",
-        "frozen"
-      ]
+      "values": ["not_started", "in_progress", "mastered", "frozen"]
     },
     "public.question_set_status": {
       "name": "question_set_status",
       "schema": "public",
-      "values": [
-        "pending",
-        "generated",
-        "reviewed"
-      ]
+      "values": ["pending", "generated", "reviewed"]
     },
     "public.question_source": {
       "name": "question_source",
       "schema": "public",
-      "values": [
-        "official",
-        "alternate",
-        "question_set"
-      ]
+      "values": ["official", "alternate", "question_set"]
     },
     "public.skill_type": {
       "name": "skill_type",
       "schema": "public",
-      "values": [
-        "representar",
-        "resolver_problemas",
-        "modelar",
-        "argumentar"
-      ]
+      "values": ["representar", "resolver_problemas", "modelar", "argumentar"]
     },
     "public.test_type": {
       "name": "test_type",
       "schema": "public",
-      "values": [
-        "official",
-        "diagnostic",
-        "practice"
-      ]
+      "values": ["official", "diagnostic", "practice"]
     },
     "public.user_role": {
       "name": "user_role",
       "schema": "public",
-      "values": [
-        "student",
-        "admin"
-      ]
+      "values": ["student", "admin"]
     }
   },
   "schemas": {},
