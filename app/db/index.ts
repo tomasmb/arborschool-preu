@@ -12,26 +12,47 @@ import * as schema from "./schema";
  * Uses lazy initialization to avoid connection issues in serverless environments.
  */
 
-// Build connection string based on environment
-function getConnectionString(): string {
+// Build connection options based on environment
+interface ConnectionConfig {
+  connectionString?: string;
+  host?: string;
+  port?: number;
+  database?: string;
+  username?: string;
+  password?: string;
+}
+
+function getConnectionConfig(): ConnectionConfig {
   // If DATABASE_URL is provided directly, use it
   if (process.env.DATABASE_URL) {
-    return process.env.DATABASE_URL;
+    return { connectionString: process.env.DATABASE_URL };
   }
 
   // Otherwise, build from individual components
   const user = process.env.DB_USER || "preu_app";
-  const password = process.env.DB_PASSWORD;
+  const password = process.env.DB_PASSWORD || "";
   const host = process.env.DB_HOST || "localhost";
   const database = process.env.DB_NAME || "preu";
   const port = process.env.DB_PORT || "5432";
 
   // Cloud Run uses Unix socket via Cloud SQL Auth Proxy
+  // postgres.js requires host to be the socket path directly
   if (host.startsWith("/cloudsql/")) {
-    return `postgresql://${user}:${password}@localhost/${database}?host=${host}`;
+    return {
+      host,
+      database,
+      username: user,
+      password,
+    };
   }
 
-  return `postgresql://${user}:${password}@${host}:${port}/${database}`;
+  return {
+    host,
+    port: parseInt(port, 10),
+    database,
+    username: user,
+    password,
+  };
 }
 
 // Singleton instances for connection reuse
@@ -44,12 +65,28 @@ let drizzleInstance: ReturnType<typeof drizzle<typeof schema>> | null = null;
  */
 export function getDb() {
   if (!drizzleInstance) {
-    const connectionString = getConnectionString();
-    client = postgres(connectionString, {
-      max: 10,
-      idle_timeout: 20,
-      connect_timeout: 10,
-    });
+    const config = getConnectionConfig();
+
+    // postgres.js accepts either a connection string or an options object
+    if (config.connectionString) {
+      client = postgres(config.connectionString, {
+        max: 10,
+        idle_timeout: 20,
+        connect_timeout: 10,
+      });
+    } else {
+      client = postgres({
+        host: config.host,
+        port: config.port,
+        database: config.database,
+        username: config.username,
+        password: config.password,
+        max: 10,
+        idle_timeout: 20,
+        connect_timeout: 10,
+      });
+    }
+
     drizzleInstance = drizzle(client, { schema });
   }
   return drizzleInstance;

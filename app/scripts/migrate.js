@@ -13,10 +13,10 @@ const postgres = require("postgres");
 const fs = require("fs");
 const path = require("path");
 
-// Build connection string from environment
-function getConnectionString() {
+// Build connection config from environment
+function getConnectionConfig() {
   if (process.env.DATABASE_URL) {
-    return process.env.DATABASE_URL;
+    return { connectionString: process.env.DATABASE_URL };
   }
 
   const user = process.env.DB_USER || "preu_app";
@@ -26,27 +26,48 @@ function getConnectionString() {
   const port = process.env.DB_PORT || "5432";
 
   // Cloud Run uses Unix socket via Cloud SQL Auth Proxy
+  // postgres.js requires host to be the socket path directly
   if (host.startsWith("/cloudsql/")) {
-    return `postgresql://${user}:${password}@localhost/${database}?host=${host}`;
+    return { host, database, username: user, password };
   }
 
-  return `postgresql://${user}:${password}@${host}:${port}/${database}`;
+  return { host, port: parseInt(port, 10), database, username: user, password };
 }
 
 async function runMigrations() {
   console.log("[migrate] Starting database migration check...");
 
-  const connectionString = getConnectionString();
+  const config = getConnectionConfig();
 
-  // Mask password in logs
-  const maskedUrl = connectionString.replace(/:[^:@]+@/, ":***@");
-  console.log("[migrate] Connecting to:", maskedUrl);
+  // Log connection info (mask password)
+  if (config.connectionString) {
+    const maskedUrl = config.connectionString.replace(/:[^:@]+@/, ":***@");
+    console.log("[migrate] Connecting to:", maskedUrl);
+  } else {
+    console.log(
+      "[migrate] Connecting to:",
+      config.host,
+      "database:",
+      config.database
+    );
+  }
 
-  const sql = postgres(connectionString, {
-    max: 1,
-    connect_timeout: 10, // 10 second timeout
-    idle_timeout: 5,
-  });
+  const sql = config.connectionString
+    ? postgres(config.connectionString, {
+        max: 1,
+        connect_timeout: 10,
+        idle_timeout: 5,
+      })
+    : postgres({
+        host: config.host,
+        port: config.port,
+        database: config.database,
+        username: config.username,
+        password: config.password,
+        max: 1,
+        connect_timeout: 10,
+        idle_timeout: 5,
+      });
 
   try {
     // Quick connection test
