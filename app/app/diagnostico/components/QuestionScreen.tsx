@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import {
   AXIS_NAMES,
   SKILL_NAMES,
@@ -11,61 +14,131 @@ interface QuestionScreenProps {
   isDontKnow: boolean;
   onSelectAnswer: (answer: string) => void;
   onSelectDontKnow: () => void;
-  onNext: () => void;
+  onNext: (correctAnswer: string | null) => void;
 }
 
-// Mock question content generator (replace with DB fetch in production)
-function getQuestionContent(question: MSTQuestion, index: number) {
-  const questionBank = [
-    {
-      text: "Si f(x) = 2x² - 3x + 1, ¿cuál es el valor de f(2)?",
-      options: ["3", "5", "7", "9"],
-      image: null,
-    },
-    {
-      text: "Un rectángulo tiene un perímetro de 24 cm. Si su largo es el doble de su ancho, ¿cuál es su área?",
-      options: ["32 cm²", "36 cm²", "40 cm²", "48 cm²"],
-      image: null,
-    },
-    {
-      text: "¿Cuál de las siguientes expresiones es equivalente a (x + 2)(x - 3)?",
-      options: ["x² - x - 6", "x² + x - 6", "x² - 5x - 6", "x² - x + 6"],
-      image: null,
-    },
-    {
-      text: "En una urna hay 4 bolas rojas y 6 bolas azules. Si se extrae una bola al azar, ¿cuál es la probabilidad de que sea roja?",
-      options: ["2/5", "3/5", "2/3", "4/6"],
-      image: null,
-    },
-    {
-      text: "Si el 30% de un número es 45, ¿cuál es el número?",
-      options: ["135", "150", "165", "180"],
-      image: null,
-    },
-    {
-      text: "Un triángulo tiene ángulos que miden x°, 2x° y 3x°. ¿Cuál es el valor de x?",
-      options: ["20°", "30°", "36°", "45°"],
-      image: null,
-    },
-    {
-      text: "¿Cuál es la pendiente de la recta que pasa por los puntos (1, 3) y (4, 9)?",
-      options: ["2", "3", "4", "6"],
-      image: null,
-    },
-    {
-      text: "Si √(x + 5) = 4, ¿cuál es el valor de x?",
-      options: ["9", "11", "16", "21"],
-      image: null,
-    },
-  ];
-
-  // Use question axis/skill combo to get more variety
-  void question;
-  return questionBank[index % questionBank.length];
+interface ParsedQuestion {
+  html: string;
+  options: Array<{ letter: string; text: string; identifier: string }>;
+  correctAnswer: string | null;
 }
 
 /**
- * Question display with answer options
+ * Parse QTI XML to extract question content and options
+ */
+function parseQtiXml(xmlString: string): ParsedQuestion {
+  const parser = new DOMParser();
+  const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+
+  // Extract question content
+  const itemBody = xmlDoc.querySelector("itemBody, qti-item-body");
+  const prompt = xmlDoc.querySelector("prompt, qti-prompt");
+  const choices = xmlDoc.querySelectorAll("simpleChoice, qti-simple-choice");
+  const correctResponse = xmlDoc.querySelector(
+    "correctResponse value, qti-correct-response qti-value"
+  );
+
+  // Build question HTML
+  let html = "";
+  if (itemBody) {
+    const paragraphs = itemBody.querySelectorAll(":scope > p");
+    paragraphs.forEach((p) => {
+      const img = p.querySelector("img");
+      if (img) {
+        const src = img.getAttribute("src") || "";
+        const alt = img.getAttribute("alt") || "Imagen";
+        html += `<p class="my-4"><img src="${src}" alt="${alt}" class="max-w-full rounded-lg" /></p>`;
+      } else {
+        html += `<p class="mb-4">${p.textContent}</p>`;
+      }
+    });
+  }
+
+  if (prompt) {
+    html += `<p class="font-semibold mt-4">${prompt.textContent}</p>`;
+  }
+
+  // Parse options
+  const letters = ["A", "B", "C", "D"];
+  const options: ParsedQuestion["options"] = [];
+
+  choices.forEach((choice, index) => {
+    const identifier = choice.getAttribute("identifier") || letters[index];
+    let text = "";
+
+    // Handle MathML in options
+    const mathElement = choice.querySelector("math, m\\:math");
+    if (mathElement) {
+      text = parseMathML(mathElement);
+    } else {
+      text = choice.textContent?.trim() || `Opción ${letters[index]}`;
+    }
+
+    options.push({
+      letter: letters[index],
+      text,
+      identifier,
+    });
+  });
+
+  // Get correct answer identifier
+  const correctAnswerIdentifier = correctResponse?.textContent || null;
+
+  // Map identifier to letter
+  let correctAnswer: string | null = null;
+  if (correctAnswerIdentifier) {
+    const correctOption = options.find(
+      (o) => o.identifier === correctAnswerIdentifier
+    );
+    if (correctOption) {
+      correctAnswer = correctOption.letter;
+    }
+  }
+
+  return { html, options, correctAnswer };
+}
+
+/**
+ * Parse MathML to readable text
+ */
+function parseMathML(mathElement: Element): string {
+  let result = "";
+  const children = mathElement.children;
+
+  for (const child of Array.from(children)) {
+    const tagName = child.localName || child.tagName.replace("m:", "");
+
+    switch (tagName) {
+      case "mi":
+      case "mn":
+      case "mo":
+        result += child.textContent;
+        break;
+      case "mfrac": {
+        const num = child.children[0]?.textContent || "";
+        const den = child.children[1]?.textContent || "";
+        result += `(${num}/${den})`;
+        break;
+      }
+      case "msup": {
+        const base = child.children[0]?.textContent || "";
+        const exp = child.children[1]?.textContent || "";
+        result += `${base}^${exp}`;
+        break;
+      }
+      case "msqrt":
+        result += `√(${child.textContent})`;
+        break;
+      default:
+        result += child.textContent;
+    }
+  }
+
+  return result || mathElement.textContent || "";
+}
+
+/**
+ * Question display with answer options - fetches real content from DB
  */
 export function QuestionScreen({
   question,
@@ -76,9 +149,71 @@ export function QuestionScreen({
   onSelectDontKnow,
   onNext,
 }: QuestionScreenProps) {
-  const options = ["A", "B", "C", "D"];
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [parsedQuestion, setParsedQuestion] = useState<ParsedQuestion | null>(
+    null
+  );
+
   const canProceed = selectedAnswer !== null || isDontKnow;
-  const questionContent = getQuestionContent(question, questionIndex);
+
+  // Fetch question content from API
+  useEffect(() => {
+    const fetchQuestion = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const params = new URLSearchParams({
+          exam: question.exam,
+          questionNumber: question.questionNumber,
+        });
+
+        const response = await fetch(`/api/diagnostic/question?${params}`);
+        const data = await response.json();
+
+        if (data.success && data.question?.qtiXml) {
+          const parsed = parseQtiXml(data.question.qtiXml);
+          // Use DB correctAnswer if available, fallback to parsed XML
+          if (data.question.correctAnswer) {
+            parsed.correctAnswer = data.question.correctAnswer;
+          }
+          setParsedQuestion(parsed);
+        } else {
+          setError(data.error || "No se pudo cargar la pregunta");
+          // Use fallback
+          setParsedQuestion(getFallbackQuestion(questionIndex));
+        }
+      } catch (err) {
+        console.error("Error fetching question:", err);
+        setError("Error de conexión");
+        setParsedQuestion(getFallbackQuestion(questionIndex));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchQuestion();
+  }, [question.exam, question.questionNumber, questionIndex]);
+
+  const handleNext = () => {
+    onNext(parsedQuestion?.correctAnswer || null);
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-8">
+        <div className="card p-6 sm:p-10 flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin w-10 h-10 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
+            <p className="text-cool-gray">Cargando pregunta...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const options = parsedQuestion?.options || getFallbackOptions();
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
@@ -91,44 +226,47 @@ export function QuestionScreen({
           <span className="px-2 py-1 bg-off-white rounded-md font-medium">
             {SKILL_NAMES[question.skill]}
           </span>
+          {error && (
+            <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-md text-xs">
+              Modo demo
+            </span>
+          )}
         </div>
 
         {/* Question content */}
         <div className="prose prose-lg max-w-none mb-8">
-          <p className="text-charcoal text-lg leading-relaxed">
-            {questionContent.text}
-          </p>
-          {questionContent.image && (
-            <div className="my-6 p-4 bg-off-white rounded-xl text-center">
-              <span className="text-cool-gray text-sm">
-                [Imagen: {questionContent.image}]
-              </span>
-            </div>
+          {parsedQuestion?.html ? (
+            <div
+              className="text-charcoal text-lg leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: parsedQuestion.html }}
+            />
+          ) : (
+            <p className="text-charcoal text-lg leading-relaxed">
+              Pregunta {questionIndex + 1}
+            </p>
           )}
         </div>
 
         {/* Options */}
         <div className="space-y-3 mb-8">
-          {options.map((letter, idx) => (
+          {options.map((option) => (
             <button
-              key={letter}
-              onClick={() => onSelectAnswer(letter)}
+              key={option.letter}
+              onClick={() => onSelectAnswer(option.letter)}
               className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-200
                 ${
-                  selectedAnswer === letter
+                  selectedAnswer === option.letter
                     ? "border-primary bg-primary/5 shadow-md"
                     : "border-gray-200 bg-white hover:border-primary/50 hover:bg-off-white"
                 }`}
             >
               <span
                 className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shrink-0 transition-colors
-                ${selectedAnswer === letter ? "bg-primary text-white" : "bg-off-white text-charcoal"}`}
+                ${selectedAnswer === option.letter ? "bg-primary text-white" : "bg-off-white text-charcoal"}`}
               >
-                {letter}
+                {option.letter}
               </span>
-              <span className="text-left text-charcoal">
-                {questionContent.options[idx]}
-              </span>
+              <span className="text-left text-charcoal">{option.text}</span>
             </button>
           ))}
         </div>
@@ -162,7 +300,7 @@ export function QuestionScreen({
         {/* Next button */}
         <div className="mt-8 flex justify-end">
           <button
-            onClick={onNext}
+            onClick={handleNext}
             disabled={!canProceed}
             className={`px-8 py-4 rounded-xl font-semibold flex items-center gap-2 transition-all duration-200
               ${
@@ -190,4 +328,65 @@ export function QuestionScreen({
       </div>
     </div>
   );
+}
+
+/**
+ * Fallback question content when DB fetch fails
+ */
+function getFallbackQuestion(index: number): ParsedQuestion {
+  const questionBank = [
+    {
+      html: "<p>Si f(x) = 2x² - 3x + 1, ¿cuál es el valor de f(2)?</p>",
+      options: ["3", "5", "7", "9"],
+    },
+    {
+      html: "<p>Un rectángulo tiene un perímetro de 24 cm. Si su largo es el doble de su ancho, ¿cuál es su área?</p>",
+      options: ["32 cm²", "36 cm²", "40 cm²", "48 cm²"],
+    },
+    {
+      html: "<p>¿Cuál de las siguientes expresiones es equivalente a (x + 2)(x - 3)?</p>",
+      options: ["x² - x - 6", "x² + x - 6", "x² - 5x - 6", "x² - x + 6"],
+    },
+    {
+      html: "<p>En una urna hay 4 bolas rojas y 6 bolas azules. Si se extrae una bola al azar, ¿cuál es la probabilidad de que sea roja?</p>",
+      options: ["2/5", "3/5", "2/3", "4/6"],
+    },
+    {
+      html: "<p>Si el 30% de un número es 45, ¿cuál es el número?</p>",
+      options: ["135", "150", "165", "180"],
+    },
+    {
+      html: "<p>Un triángulo tiene ángulos que miden x°, 2x° y 3x°. ¿Cuál es el valor de x?</p>",
+      options: ["20°", "30°", "36°", "45°"],
+    },
+    {
+      html: "<p>¿Cuál es la pendiente de la recta que pasa por los puntos (1, 3) y (4, 9)?</p>",
+      options: ["2", "3", "4", "6"],
+    },
+    {
+      html: "<p>Si √(x + 5) = 4, ¿cuál es el valor de x?</p>",
+      options: ["9", "11", "16", "21"],
+    },
+  ];
+
+  const q = questionBank[index % questionBank.length];
+  const letters = ["A", "B", "C", "D"];
+
+  return {
+    html: q.html,
+    options: q.options.map((text, i) => ({
+      letter: letters[i],
+      text,
+      identifier: letters[i],
+    })),
+    correctAnswer: null, // Unknown in fallback mode
+  };
+}
+
+function getFallbackOptions() {
+  return ["A", "B", "C", "D"].map((letter) => ({
+    letter,
+    text: `Opción ${letter}`,
+    identifier: letter,
+  }));
 }

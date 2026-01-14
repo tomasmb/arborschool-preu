@@ -222,17 +222,18 @@ export default function DiagnosticoPage() {
   };
 
   // Submit response and advance
-  const handleNext = async () => {
+  const handleNext = async (correctAnswer: string | null) => {
     const question = getCurrentQuestion();
     const responseTime = Math.floor(
       (Date.now() - questionStartTime.current) / 1000
     );
 
-    // Determine correctness (mock - in production check against DB)
+    // Determine correctness - check against real correct answer from DB
     const isCorrect =
       !isDontKnow &&
       selectedAnswer !== null &&
-      (questionIndex + stage) % 3 !== 0;
+      correctAnswer !== null &&
+      selectedAnswer === correctAnswer;
 
     const response: Response = {
       question,
