@@ -23,6 +23,9 @@ export async function GET(request: Request) {
     // Extract numeric question number (Q28 -> 28)
     const qNum = parseInt(questionNumber.replace(/\D/g, ""), 10);
 
+    // Normalize exam name to lowercase for DB matching
+    const examNormalized = exam.toLowerCase();
+
     // Query by source test and question number
     const result = await db
       .select({
@@ -34,7 +37,7 @@ export async function GET(request: Request) {
       .from(questions)
       .where(
         and(
-          eq(questions.sourceTestId, exam),
+          eq(questions.sourceTestId, examNormalized),
           eq(questions.sourceQuestionNumber, qNum)
         )
       )
@@ -49,12 +52,18 @@ export async function GET(request: Request) {
 
     const question = result[0];
 
+    // Convert "ChoiceA" -> "A", "ChoiceB" -> "B", etc.
+    let correctAnswer = question.correctAnswer;
+    if (correctAnswer?.startsWith("Choice")) {
+      correctAnswer = correctAnswer.replace("Choice", "");
+    }
+
     return NextResponse.json({
       success: true,
       question: {
         id: question.id,
         qtiXml: question.qtiXml,
-        correctAnswer: question.correctAnswer,
+        correctAnswer,
         title: question.title,
       },
     });
