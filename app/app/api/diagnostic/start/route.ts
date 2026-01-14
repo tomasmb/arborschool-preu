@@ -16,14 +16,34 @@ export async function POST() {
       })
       .returning({ id: testAttempts.id });
 
+    if (!attempt?.id) {
+      console.error("Database insert returned no ID");
+      return NextResponse.json(
+        { success: false, error: "Database error: no ID returned" },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
       success: true,
       attemptId: attempt.id,
     });
   } catch (error) {
-    console.error("Failed to start diagnostic:", error);
+    // Log detailed error for debugging
+    console.error("Failed to start diagnostic:", {
+      error,
+      message: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+
     return NextResponse.json(
-      { success: false, error: "Failed to start diagnostic" },
+      {
+        success: false,
+        error:
+          process.env.NODE_ENV === "development"
+            ? `Database error: ${error instanceof Error ? error.message : "Unknown"}`
+            : "Failed to start diagnostic",
+      },
       { status: 500 }
     );
   }

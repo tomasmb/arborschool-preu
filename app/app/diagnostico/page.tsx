@@ -234,12 +234,16 @@ export default function DiagnosticoPage() {
     try {
       const response = await fetch("/api/diagnostic/start", { method: "POST" });
       const data = await response.json();
-      if (data.success) {
-        setAttemptId(data.attemptId);
-        localStorage.setItem(ATTEMPT_STORAGE_KEY, data.attemptId);
+
+      if (!data.success || !data.attemptId) {
+        throw new Error(data.error || "Failed to create test attempt");
       }
+
+      setAttemptId(data.attemptId);
+      localStorage.setItem(ATTEMPT_STORAGE_KEY, data.attemptId);
     } catch (error) {
       console.error("Failed to start test:", error);
+      // Create local fallback ID so test can proceed
       const localId = `local-${Date.now()}`;
       setAttemptId(localId);
       localStorage.setItem(ATTEMPT_STORAGE_KEY, localId);
