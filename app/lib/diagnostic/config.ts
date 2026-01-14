@@ -53,7 +53,7 @@ export const MST_QUESTIONS = {
   // Stage 1: Routing questions (R1)
   R1: [
     {
-      exam: "Prueba-invierno-2025",
+      exam: "prueba-invierno-2025",
       questionNumber: "Q28",
       axis: "ALG" as Axis,
       skill: "RES" as Skill,
@@ -81,7 +81,7 @@ export const MST_QUESTIONS = {
       difficulty: 0.55,
     },
     {
-      exam: "Prueba-invierno-2025",
+      exam: "prueba-invierno-2025",
       questionNumber: "Q46",
       axis: "GEO" as Axis,
       skill: "ARG" as Skill,
@@ -113,7 +113,7 @@ export const MST_QUESTIONS = {
   // Stage 2: Route A - Easier questions for lower performers
   A2: [
     {
-      exam: "Prueba-invierno-2025",
+      exam: "prueba-invierno-2025",
       questionNumber: "Q40",
       axis: "ALG" as Axis,
       skill: "RES" as Skill,
@@ -141,7 +141,7 @@ export const MST_QUESTIONS = {
       difficulty: 0.3,
     },
     {
-      exam: "Prueba-invierno-2025",
+      exam: "prueba-invierno-2025",
       questionNumber: "Q6",
       axis: "NUM" as Axis,
       skill: "RES" as Skill,
@@ -201,7 +201,7 @@ export const MST_QUESTIONS = {
       difficulty: 0.55,
     },
     {
-      exam: "Prueba-invierno-2025",
+      exam: "prueba-invierno-2025",
       questionNumber: "Q22",
       axis: "NUM" as Axis,
       skill: "MOD" as Skill,
@@ -222,7 +222,7 @@ export const MST_QUESTIONS = {
       difficulty: 0.55,
     },
     {
-      exam: "Prueba-invierno-2025",
+      exam: "prueba-invierno-2025",
       questionNumber: "Q65",
       axis: "PROB" as Axis,
       skill: "REP" as Skill,
@@ -247,14 +247,14 @@ export const MST_QUESTIONS = {
       difficulty: 0.55,
     },
     {
-      exam: "Prueba-invierno-2025",
+      exam: "prueba-invierno-2025",
       questionNumber: "Q33",
       axis: "ALG" as Axis,
       skill: "MOD" as Skill,
       difficulty: 0.6,
     },
     {
-      exam: "Prueba-invierno-2025",
+      exam: "prueba-invierno-2025",
       questionNumber: "Q56",
       axis: "NUM" as Axis,
       skill: "ARG" as Skill,
@@ -268,14 +268,14 @@ export const MST_QUESTIONS = {
       difficulty: 0.55,
     },
     {
-      exam: "Prueba-invierno-2025",
+      exam: "prueba-invierno-2025",
       questionNumber: "Q50",
       axis: "GEO" as Axis,
       skill: "REP" as Skill,
       difficulty: 0.55,
     },
     {
-      exam: "Prueba-invierno-2025",
+      exam: "prueba-invierno-2025",
       questionNumber: "Q61",
       axis: "PROB" as Axis,
       skill: "ARG" as Skill,
@@ -309,9 +309,10 @@ export function getStage2Questions(route: Route): MSTQuestion[] {
 
 /**
  * Build question ID from exam and number
+ * Normalizes exam name to lowercase to match database storage
  */
 export function buildQuestionId(exam: string, questionNumber: string): string {
-  return `${exam}-${questionNumber}`;
+  return `${exam.toLowerCase()}-${questionNumber}`;
 }
 
 /**

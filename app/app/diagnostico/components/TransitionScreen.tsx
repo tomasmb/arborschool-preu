@@ -34,12 +34,12 @@ function StatCard({
 
   return (
     <div
-      className={`p-5 rounded-xl transition-all duration-500 transform
+      className={`p-5 rounded-xl transition-all duration-500 transform min-h-[100px] flex flex-col justify-center
         ${isVisible ? "opacity-100 scale-100" : "opacity-0 scale-90"}
         ${isPrimary ? "bg-gradient-to-br from-accent/20 to-accent/10 border-2 border-accent/30 shadow-lg" : "bg-gradient-to-br from-off-white to-white border border-gray-100"}`}
     >
       <div
-        className={`text-3xl font-bold mb-1 ${isPrimary ? "text-accent" : "text-primary"}`}
+        className={`text-xl sm:text-2xl font-bold mb-1 leading-tight break-words ${isPrimary ? "text-accent" : "text-primary"}`}
       >
         {value}
       </div>

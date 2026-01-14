@@ -38,7 +38,7 @@ interface ParsedQuestion {
 // ============================================================================
 
 /**
- * Serialize a DOM node to HTML string, preserving MathML
+ * Serialize a DOM node to HTML string, preserving MathML and tables
  */
 function serializeNodeToHtml(node: Node): string {
   if (node.nodeType === Node.TEXT_NODE) {
@@ -64,7 +64,56 @@ function serializeNodeToHtml(node: Node): string {
       return `<img src="${src}" alt="${alt}" class="max-w-full rounded-lg my-4" />`;
     }
 
-    // Recursively process children
+    // Preserve table structure with styling
+    if (tagName === "table") {
+      let content = "";
+      el.childNodes.forEach((child) => {
+        content += serializeNodeToHtml(child);
+      });
+      return `<table class="w-full border-collapse border border-gray-300 my-4 text-sm">${content}</table>`;
+    }
+
+    // Preserve table elements
+    if (["thead", "tbody", "tfoot"].includes(tagName)) {
+      let content = "";
+      el.childNodes.forEach((child) => {
+        content += serializeNodeToHtml(child);
+      });
+      const bgClass = tagName === "thead" ? ' class="bg-gray-100"' : "";
+      return `<${tagName}${bgClass}>${content}</${tagName}>`;
+    }
+
+    if (tagName === "tr") {
+      let content = "";
+      el.childNodes.forEach((child) => {
+        content += serializeNodeToHtml(child);
+      });
+      return `<tr class="border-b border-gray-200">${content}</tr>`;
+    }
+
+    if (tagName === "th" || tagName === "td") {
+      const colspan = el.getAttribute("colspan");
+      const rowspan = el.getAttribute("rowspan");
+      let attrs = `class="border border-gray-300 px-3 py-2 ${tagName === "th" ? "font-semibold text-left" : ""}"`;
+      if (colspan) attrs += ` colspan="${colspan}"`;
+      if (rowspan) attrs += ` rowspan="${rowspan}"`;
+      let content = "";
+      el.childNodes.forEach((child) => {
+        content += serializeNodeToHtml(child);
+      });
+      return `<${tagName} ${attrs}>${content}</${tagName}>`;
+    }
+
+    // Handle div containers
+    if (tagName === "div") {
+      let content = "";
+      el.childNodes.forEach((child) => {
+        content += serializeNodeToHtml(child);
+      });
+      return `<div class="my-4">${content}</div>`;
+    }
+
+    // Recursively process children for other elements
     let content = "";
     el.childNodes.forEach((child) => {
       content += serializeNodeToHtml(child);
@@ -91,13 +140,38 @@ function parseQtiXml(xmlString: string): ParsedQuestion {
     "correctResponse value, qti-correct-response qti-value"
   );
 
-  // Build question HTML preserving MathML
+  // Build question HTML preserving MathML, tables, and other content
   let html = "";
   if (itemBody) {
-    const paragraphs = itemBody.querySelectorAll(":scope > p");
-    paragraphs.forEach((p) => {
-      const content = serializeNodeToHtml(p);
-      html += `<p class="mb-4">${content}</p>`;
+    // Process all direct children except choice-interaction elements
+    itemBody.childNodes.forEach((child) => {
+      if (child.nodeType === Node.ELEMENT_NODE) {
+        const el = child as Element;
+        const tagName = el.localName || el.tagName.toLowerCase();
+        // Skip QTI interaction elements - these are handled separately
+        if (
+          tagName === "qti-choice-interaction" ||
+          tagName === "choiceinteraction"
+        ) {
+          return;
+        }
+      }
+      const content = serializeNodeToHtml(child);
+      if (content.trim()) {
+        // Wrap loose text/content in paragraph if not already wrapped
+        if (
+          child.nodeType === Node.ELEMENT_NODE &&
+          ["p", "div", "table"].includes(
+            (
+              (child as Element).localName || (child as Element).tagName
+            ).toLowerCase()
+          )
+        ) {
+          html += content;
+        } else if (content.trim()) {
+          html += `<p class="mb-4">${content}</p>`;
+        }
+      }
     });
   }
 
