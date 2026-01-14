@@ -115,6 +115,15 @@ function serializeNodeToHtml(node: Node): string {
       return `<div class="my-4">${content}</div>`;
     }
 
+    // Preserve paragraph structure
+    if (tagName === "p") {
+      let content = "";
+      el.childNodes.forEach((child) => {
+        content += serializeNodeToHtml(child);
+      });
+      return `<p class="mb-4">${content}</p>`;
+    }
+
     // Recursively process children for other elements
     let content = "";
     el.childNodes.forEach((child) => {
