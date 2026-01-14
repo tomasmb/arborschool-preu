@@ -64,7 +64,51 @@ interface Results {
 // ============================================================================
 
 const ATTEMPT_STORAGE_KEY = "arbor_diagnostic_attempt";
+const RESPONSES_STORAGE_KEY = "arbor_diagnostic_responses";
 const TOTAL_TIME_SECONDS = 30 * 60; // 30 minutes
+
+// ============================================================================
+// LOCAL STORAGE BACKUP HELPERS
+// ============================================================================
+
+interface StoredResponse {
+  questionId: string;
+  selectedAnswer: string | null;
+  isCorrect: boolean;
+  responseTimeSeconds: number;
+  stage: 1 | 2;
+  questionIndex: number;
+  answeredAt: string;
+}
+
+function saveResponseToLocalStorage(response: StoredResponse) {
+  try {
+    const existing = localStorage.getItem(RESPONSES_STORAGE_KEY);
+    const responses: StoredResponse[] = existing ? JSON.parse(existing) : [];
+    responses.push(response);
+    localStorage.setItem(RESPONSES_STORAGE_KEY, JSON.stringify(responses));
+  } catch (error) {
+    console.error("Failed to save response to localStorage:", error);
+  }
+}
+
+function getStoredResponses(): StoredResponse[] {
+  try {
+    const stored = localStorage.getItem(RESPONSES_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
+function clearStoredResponses() {
+  try {
+    localStorage.removeItem(RESPONSES_STORAGE_KEY);
+    localStorage.removeItem(ATTEMPT_STORAGE_KEY);
+  } catch (error) {
+    console.error("Failed to clear localStorage:", error);
+  }
+}
 
 // ============================================================================
 // MAIN PAGE COMPONENT
@@ -248,13 +292,22 @@ export default function DiagnosticoPage() {
       atoms,
     };
 
-    // Save response to API
+    const questionId = buildQuestionId(question.exam, question.questionNumber);
+
+    // Always save to localStorage as backup (in case API fails or is local)
+    saveResponseToLocalStorage({
+      questionId,
+      selectedAnswer: selectedAnswer || "skip",
+      isCorrect,
+      responseTimeSeconds: responseTime,
+      stage,
+      questionIndex,
+      answeredAt: new Date().toISOString(),
+    });
+
+    // Also save response to API if we have a valid attempt
     if (attemptId && !attemptId.startsWith("local-")) {
       try {
-        const questionId = buildQuestionId(
-          question.exam,
-          question.questionNumber
-        );
         await fetch("/api/diagnostic/response", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -269,7 +322,8 @@ export default function DiagnosticoPage() {
           }),
         });
       } catch (error) {
-        console.error("Failed to save response:", error);
+        console.error("Failed to save response to API:", error);
+        // Response is still saved in localStorage as backup
       }
     }
 
@@ -416,15 +470,43 @@ export default function DiagnosticoPage() {
 
     try {
       const atomResults = computeAtomResults();
+      const storedResponses = getStoredResponses();
+      const isLocalAttempt = !attemptId || attemptId.startsWith("local-");
+
+      // Build signup payload with all available data
+      const signupPayload = {
+        email,
+        attemptId: isLocalAttempt ? null : attemptId,
+        atomResults,
+        // Include diagnostic results for local attempts
+        diagnosticData: isLocalAttempt
+          ? {
+              responses: storedResponses,
+              results: results
+                ? {
+                    paesMin: results.paesMin,
+                    paesMax: results.paesMax,
+                    level: results.level,
+                    route,
+                    totalCorrect: [...r1Responses, ...stage2Responses].filter(
+                      (r) => r.isCorrect
+                    ).length,
+                  }
+                : null,
+            }
+          : null,
+      };
 
       const response = await fetch("/api/diagnostic/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, attemptId, atomResults }),
+        body: JSON.stringify(signupPayload),
       });
       const data = await response.json();
 
       if (data.success) {
+        // Clear localStorage backup after successful signup
+        clearStoredResponses();
         setSignupStatus("success");
         setScreen("thankyou");
       } else {

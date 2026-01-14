@@ -8,15 +8,41 @@ import {
 } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
+interface StoredResponse {
+  questionId: string;
+  selectedAnswer: string;
+  isCorrect: boolean;
+  responseTimeSeconds: number;
+  stage: number;
+  questionIndex: number;
+  answeredAt: string;
+}
+
+interface DiagnosticData {
+  responses: StoredResponse[];
+  results: {
+    paesMin: number;
+    paesMax: number;
+    level: string;
+    route: string;
+    totalCorrect: number;
+  } | null;
+}
+
 /**
  * POST /api/diagnostic/signup
- * Creates a user with email and optionally links their test attempt
- * Also creates atom mastery records based on diagnostic results
+ * Creates a user with email and links/creates their test attempt
+ * Handles both server-tracked and local-only attempts
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, attemptId, atomResults } = body;
+    const { email, attemptId, atomResults, diagnosticData } = body as {
+      email: string;
+      attemptId: string | null;
+      atomResults?: Array<{ atomId: string; mastered: boolean }>;
+      diagnosticData?: DiagnosticData;
+    };
 
     // Email is always required
     if (!email) {
@@ -45,10 +71,8 @@ export async function POST(request: NextRequest) {
     let userId: string;
 
     if (existingUsers.length > 0) {
-      // User exists, use their ID
       userId = existingUsers[0].id;
     } else {
-      // Create new user
       const [newUser] = await db
         .insert(users)
         .values({
@@ -59,27 +83,63 @@ export async function POST(request: NextRequest) {
       userId = newUser.id;
     }
 
-    // Only link test attempt if we have a valid (non-local) attemptId
-    const hasValidAttempt = attemptId && !attemptId.startsWith("local-");
+    let finalAttemptId = attemptId;
 
-    if (hasValidAttempt) {
-      // Link test attempt to user
+    // If we have a valid server attempt, link it to the user
+    if (attemptId && !attemptId.startsWith("local-")) {
       await db
         .update(testAttempts)
         .set({ userId })
         .where(eq(testAttempts.id, attemptId));
 
-      // Link all responses to user
       await db
         .update(studentResponses)
         .set({ userId })
         .where(eq(studentResponses.testAttemptId, attemptId));
     }
+    // If we have diagnostic data from a local attempt, create the records now
+    else if (diagnosticData && diagnosticData.responses.length > 0) {
+      // Create a new test attempt
+      const [newAttempt] = await db
+        .insert(testAttempts)
+        .values({
+          userId,
+          startedAt: new Date(diagnosticData.responses[0].answeredAt),
+          completedAt: new Date(),
+          totalQuestions: 16,
+          correctAnswers: diagnosticData.results?.totalCorrect ?? 0,
+          stage1Score: diagnosticData.responses.filter(
+            (r) => r.stage === 1 && r.isCorrect
+          ).length,
+          stage2Difficulty: diagnosticData.results?.route ?? "B",
+        })
+        .returning({ id: testAttempts.id });
+
+      finalAttemptId = newAttempt.id;
+
+      // Insert all responses
+      for (const response of diagnosticData.responses) {
+        try {
+          await db.insert(studentResponses).values({
+            userId,
+            testAttemptId: newAttempt.id,
+            questionId: response.questionId || null,
+            selectedAnswer: response.selectedAnswer,
+            isCorrect: response.isCorrect,
+            responseTimeSeconds: response.responseTimeSeconds,
+            stage: response.stage,
+            questionIndex: response.questionIndex,
+            answeredAt: new Date(response.answeredAt),
+          });
+        } catch (err) {
+          console.warn(`Failed to insert response:`, err);
+        }
+      }
+    }
 
     // Create atom mastery records if provided
     if (atomResults && Array.isArray(atomResults)) {
       for (const result of atomResults) {
-        // Upsert atom mastery - if exists, only update if not already mastered
         try {
           await db
             .insert(atomMastery)
@@ -96,7 +156,6 @@ export async function POST(request: NextRequest) {
             })
             .onConflictDoNothing();
         } catch {
-          // Ignore individual atom mastery errors (foreign key constraints)
           console.warn(`Could not create mastery for atom ${result.atomId}`);
         }
       }
@@ -105,9 +164,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       userId,
-      message: hasValidAttempt
-        ? "Account created and diagnostic linked"
-        : "Account created - diagnostic data saved locally",
+      attemptId: finalAttemptId,
+      message: "Account created and diagnostic saved",
     });
   } catch (error) {
     console.error("Failed to signup:", error);
