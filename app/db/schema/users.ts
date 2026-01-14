@@ -71,18 +71,15 @@ export const atomMastery = pgTable(
 
 // ------------------------------------------------------------------------------
 // TEST ATTEMPTS - Records of student test sessions
+// Supports anonymous attempts (userId nullable) that can be linked later
 // ------------------------------------------------------------------------------
 
 export const testAttempts = pgTable(
   "test_attempts",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
-      .references(() => users.id, { onDelete: "cascade" })
-      .notNull(),
-    testId: varchar("test_id", { length: 100 })
-      .references(() => tests.id)
-      .notNull(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+    testId: varchar("test_id", { length: 100 }).references(() => tests.id),
     startedAt: timestamp("started_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -99,28 +96,31 @@ export const testAttempts = pgTable(
 
 // ------------------------------------------------------------------------------
 // STUDENT RESPONSES - Individual question answers
+// Supports anonymous responses (userId nullable) linked via testAttemptId
 // ------------------------------------------------------------------------------
 
 export const studentResponses = pgTable(
   "student_responses",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
-      .references(() => users.id, { onDelete: "cascade" })
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+    questionId: varchar("question_id", { length: 100 }).references(
+      () => questions.id
+    ),
+    testAttemptId: uuid("test_attempt_id")
+      .references(() => testAttempts.id)
       .notNull(),
-    questionId: varchar("question_id", { length: 100 })
-      .references(() => questions.id)
-      .notNull(),
-    testAttemptId: uuid("test_attempt_id").references(() => testAttempts.id),
     selectedAnswer: varchar("selected_answer", { length: 50 }).notNull(),
     isCorrect: boolean("is_correct").notNull(),
     responseTimeSeconds: integer("response_time_seconds"),
+    stage: integer("stage").default(1),
+    questionIndex: integer("question_index"),
     answeredAt: timestamp("answered_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
   (table) => [
     index("idx_student_responses_user").on(table.userId),
-    index("idx_student_responses_question").on(table.questionId),
+    index("idx_student_responses_attempt").on(table.testAttemptId),
   ]
 );

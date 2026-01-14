@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
 
 /**
  * Browser frame component for displaying app mockups
@@ -43,99 +42,42 @@ function BrowserFrame({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Email signup form component
+ * CTA Button component for diagnostic
  */
-function WaitlistForm() {
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!email || !email.includes("@")) {
-      setStatus("error");
-      return;
-    }
-
-    // TODO: Connect to real waitlist backend
-    console.log("Waitlist signup:", email);
-    setStatus("success");
-    setEmail("");
-  };
-
-  if (status === "success") {
-    return (
-      <div className="text-center py-6 px-4 rounded-xl bg-success/5 border border-success/20">
-        <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-3">
-          <svg
-            className="w-6 h-6 text-success"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
-        </div>
-        <p className="font-bold text-lg text-charcoal mb-1">
-          ¡Estás en la lista!
-        </p>
-        <p className="text-cool-gray">Te avisaremos apenas lancemos.</p>
-      </div>
-    );
-  }
-
+function DiagnosticCTA() {
   return (
-    <form onSubmit={handleSubmit} className="w-full">
-      <div className="flex flex-col sm:flex-row gap-3">
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => {
-            setEmail(e.target.value);
-            setStatus("idle");
-          }}
-          placeholder="tu@email.com"
-          className="flex-1 px-5 py-4 rounded-xl border-2 border-gray-200 bg-white text-charcoal placeholder:text-gray-400 focus:outline-none focus:border-accent focus:ring-4 focus:ring-accent/10 transition-all text-base"
-        />
-        <button
-          type="submit"
-          className="btn-cta px-8 py-4 text-base whitespace-nowrap"
+    <div className="text-center">
+      <button
+        onClick={goToDiagnostic}
+        className="btn-cta px-10 py-5 text-lg shadow-lg mb-4"
+      >
+        Comenzar Diagnóstico Gratis
+        <svg
+          className="w-5 h-5 ml-2"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
         >
-          Unirme a la lista
-        </button>
-      </div>
-      {status === "error" && (
-        <p className="text-error text-sm mt-2 flex items-center gap-1">
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          Ingresa un email válido
-        </p>
-      )}
-    </form>
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M13 7l5 5m0 0l-5 5m5-5H6"
+          />
+        </svg>
+      </button>
+      <p className="text-cool-gray text-sm">
+        16 preguntas · Resultados inmediatos · Guarda tu progreso
+      </p>
+    </div>
   );
 }
 
 /**
- * Scroll to waitlist section
+ * Navigate to diagnostic test
  */
-function scrollToWaitlist() {
-  document.getElementById("waitlist")?.scrollIntoView({ behavior: "smooth" });
+function goToDiagnostic() {
+  window.location.href = "/diagnostico";
 }
 
 export default function Home() {
@@ -157,14 +99,14 @@ export default function Home() {
               </span>
             </div>
             <div className="flex items-center gap-4">
-              <span className="hidden sm:inline-flex text-sm font-medium text-accent bg-accent/10 px-3 py-1.5 rounded-full">
-                Próximamente
+              <span className="hidden sm:inline-flex text-sm font-medium text-success bg-success/10 px-3 py-1.5 rounded-full">
+                ¡Disponible!
               </span>
               <button
-                onClick={scrollToWaitlist}
-                className="btn-primary text-sm px-4 py-2"
+                onClick={goToDiagnostic}
+                className="btn-cta text-sm px-4 py-2"
               >
-                Acceso anticipado
+                Hacer Diagnóstico
               </button>
             </div>
           </div>
@@ -180,9 +122,9 @@ export default function Home() {
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto">
-            <div className="inline-flex items-center gap-2 text-sm font-medium text-accent bg-accent/10 px-4 py-2 rounded-full mb-8">
-              <span className="w-2 h-2 bg-accent rounded-full animate-pulse-subtle"></span>
-              Estamos construyendo algo nuevo
+            <div className="inline-flex items-center gap-2 text-sm font-medium text-success bg-success/10 px-4 py-2 rounded-full mb-8">
+              <span className="w-2 h-2 bg-success rounded-full animate-pulse-subtle"></span>
+              Diagnóstico PAES M1 disponible
             </div>
 
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-serif font-bold tracking-tight text-charcoal mb-8">
@@ -198,10 +140,10 @@ export default function Home() {
             </p>
 
             <button
-              onClick={scrollToWaitlist}
+              onClick={goToDiagnostic}
               className="btn-cta text-lg px-10 py-5 shadow-lg"
             >
-              Tomar el Diagnóstico
+              Tomar el Diagnóstico Gratis
               <svg
                 className="w-5 h-5 ml-2"
                 fill="none"
@@ -212,13 +154,13 @@ export default function Home() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"
                 />
               </svg>
             </button>
 
             <p className="text-sm text-cool-gray mt-4">
-              Gratis · Sin tarjeta de crédito
+              16 preguntas · 30 minutos · Resultados inmediatos
             </p>
           </div>
         </div>
@@ -674,33 +616,33 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Waitlist Section */}
+      {/* CTA Section */}
       <section
-        id="waitlist"
+        id="cta"
         className="py-24 bg-white relative overflow-hidden"
       >
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-accent/10 rounded-full blur-3xl"></div>
 
         <div className="relative max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center gap-2 text-sm font-medium text-primary bg-primary/10 px-4 py-2 rounded-full mb-8">
-            <span className="w-2 h-2 bg-primary rounded-full animate-pulse-subtle"></span>
-            Lanzamiento próximo
+          <div className="inline-flex items-center gap-2 text-sm font-medium text-success bg-success/10 px-4 py-2 rounded-full mb-8">
+            <span className="w-2 h-2 bg-success rounded-full animate-pulse-subtle"></span>
+            Disponible ahora
           </div>
 
           <h2 className="text-4xl sm:text-5xl font-serif font-bold text-charcoal mb-6">
-            Sé de los primeros
+            Descubre tu nivel real
           </h2>
           <p className="text-xl text-cool-gray mb-10">
-            Estamos terminando los últimos detalles. Déjanos tu email y serás de
-            los primeros en probar Arbor PreU.
+            En 30 minutos sabrás exactamente qué conceptos dominas y cuáles
+            necesitas trabajar para alcanzar tu puntaje meta.
           </p>
 
           <div className="max-w-lg mx-auto">
-            <WaitlistForm />
+            <DiagnosticCTA />
           </div>
 
           <p className="text-sm text-cool-gray mt-6">
-            Sin spam, solo el aviso cuando lancemos.
+            Tu diagnóstico se guarda automáticamente al final.
           </p>
         </div>
       </section>
