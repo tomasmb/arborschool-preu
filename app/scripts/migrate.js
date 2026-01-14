@@ -4,6 +4,9 @@
  * Database migration script for production
  * Runs pending migrations using the postgres driver directly
  * This is executed before the Next.js server starts
+ * 
+ * IMPORTANT: This script should NOT block server startup on failures.
+ * If migrations fail, log the error and let the server start anyway.
  */
 
 const postgres = require("postgres");
@@ -34,13 +37,22 @@ async function runMigrations() {
   console.log("[migrate] Starting database migration check...");
 
   const connectionString = getConnectionString();
+  
+  // Mask password in logs
+  const maskedUrl = connectionString.replace(/:[^:@]+@/, ':***@');
+  console.log("[migrate] Connecting to:", maskedUrl);
+
   const sql = postgres(connectionString, {
     max: 1,
-    connect_timeout: 30,
+    connect_timeout: 10,  // 10 second timeout
     idle_timeout: 5,
   });
 
   try {
+    // Quick connection test
+    await sql`SELECT 1`;
+    console.log("[migrate] Database connected successfully");
+
     // Create migrations tracking table if it doesn't exist
     await sql`
       CREATE TABLE IF NOT EXISTS _drizzle_migrations (
@@ -56,7 +68,7 @@ async function runMigrations() {
 
     // Get migration files
     const migrationsDir = path.join(__dirname, "../db/migrations");
-
+    
     if (!fs.existsSync(migrationsDir)) {
       console.log("[migrate] No migrations directory found, skipping");
       await sql.end();
@@ -95,7 +107,7 @@ async function runMigrations() {
             err.code === "42701" || // column already exists
             err.code === "42710" || // object already exists
             err.code === "42P07" || // relation already exists
-            err.code === "42P16" // invalid table definition (often means already correct)
+            err.code === "42P16"    // invalid table definition (often means already correct)
           ) {
             console.log(`[migrate] Skipping (already applied): ${err.message}`);
           } else {
@@ -119,8 +131,14 @@ async function runMigrations() {
     await sql.end();
   } catch (error) {
     console.error("[migrate] Migration failed:", error.message);
-    await sql.end();
-    process.exit(1);
+    console.error("[migrate] Will continue server startup anyway");
+    try {
+      await sql.end();
+    } catch (e) {
+      // Ignore close errors
+    }
+    // DON'T exit with error - let the server start anyway
+    // The app might still work for some operations
   }
 }
 

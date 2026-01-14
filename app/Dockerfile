@@ -47,5 +47,5 @@ EXPOSE 8080
 ENV PORT=8080
 ENV HOSTNAME="0.0.0.0"
 
-# Run migrations then start the server
-CMD ["sh", "-c", "node scripts/migrate.js && node server.js"]
+# Run migrations then start the server (migrations are non-blocking)
+CMD ["sh", "-c", "node scripts/migrate.js; node server.js"]
