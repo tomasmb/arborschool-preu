@@ -1,36 +1,97 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Arbor PreU - App
 
-## Getting Started
+Next.js application for PAES preparation with adaptive diagnostic testing.
 
-First, run the development server:
+## Prerequisites
+
+- Node.js 20+
+- PostgreSQL 15+
+
+## Local Development Setup
+
+### 1. Database Setup
+
+```bash
+# Install PostgreSQL (macOS)
+brew install postgresql@15
+brew services start postgresql@15
+
+# Create database and user
+createdb preu
+createuser preu_app
+
+# Grant permissions
+psql -d preu -c "GRANT ALL PRIVILEGES ON DATABASE preu TO preu_app;"
+psql -d preu -c "GRANT ALL ON SCHEMA public TO preu_app;"
+```
+
+### 2. Environment Configuration
+
+```bash
+# Copy environment template
+cp env.example .env.local
+```
+
+### 3. Install Dependencies
+
+```bash
+npm install
+```
+
+### 4. Run Migrations
+
+```bash
+# Apply all pending migrations
+npm run db:migrate
+
+# Or push schema directly (development only)
+npm run db:push
+```
+
+### 5. Start Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Database Commands
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | Description |
+|---------|-------------|
+| `npm run db:generate` | Generate migration from schema changes |
+| `npm run db:migrate` | Apply pending migrations |
+| `npm run db:push` | Push schema directly (no migration file) |
+| `npm run db:studio` | Open Drizzle Studio GUI |
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+app/
+├── app/                 # Next.js App Router pages
+│   ├── api/            # API routes
+│   ├── diagnostico/    # Diagnostic test feature
+│   └── graph/          # Knowledge graph visualization
+├── db/                  # Database layer
+│   ├── migrations/     # SQL migration files
+│   └── schema/         # Drizzle schema definitions
+├── lib/                 # Shared utilities
+│   └── diagnostic/     # MST engine configuration
+└── public/             # Static assets
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deployment
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Deployed automatically to Google Cloud Run on push to `main`.
 
-## Deploy on Vercel
+### Migration Workflow
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Automatic**: Migrations run automatically before deploy when migration files change
+- **Manual**: Run migrations manually via GitHub Actions → "Run Database Migrations"
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Environment Variables (Production)
+
+Set via Cloud Run secrets:
+- `DATABASE_URL` - PostgreSQL connection string
+- `DB_PASSWORD` - Database password (from Secret Manager)
