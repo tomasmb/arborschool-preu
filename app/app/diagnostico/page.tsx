@@ -22,6 +22,7 @@ import {
   ResultsScreen,
   SignupScreen,
   ThankYouScreen,
+  type QuestionAtom,
 } from "./components";
 
 // ============================================================================
@@ -41,6 +42,7 @@ interface Response {
   selectedAnswer: string | null;
   isCorrect: boolean;
   responseTime: number;
+  atoms: QuestionAtom[];
 }
 
 interface Results {
@@ -222,7 +224,10 @@ export default function DiagnosticoPage() {
   };
 
   // Submit response and advance
-  const handleNext = async (correctAnswer: string | null) => {
+  const handleNext = async (
+    correctAnswer: string | null,
+    atoms: QuestionAtom[]
+  ) => {
     const question = getCurrentQuestion();
     const responseTime = Math.floor(
       (Date.now() - questionStartTime.current) / 1000
@@ -240,6 +245,7 @@ export default function DiagnosticoPage() {
       selectedAnswer,
       isCorrect,
       responseTime,
+      atoms,
     };
 
     // Save response to API
@@ -370,6 +376,34 @@ export default function DiagnosticoPage() {
     setScreen("results");
   };
 
+  // Compute atom mastery results from all responses
+  const computeAtomResults = () => {
+    const allResponses = [...r1Responses, ...stage2Responses];
+    const atomMap = new Map<string, boolean>();
+
+    // For each response, mark atoms based on correctness
+    // Primary atoms: mastered if correct, not mastered if incorrect
+    allResponses.forEach((response) => {
+      response.atoms
+        .filter((atom) => atom.relevance === "primary")
+        .forEach((atom) => {
+          // Only mark as mastered if correct; don't overwrite mastered with not mastered
+          const current = atomMap.get(atom.atomId);
+          if (current === undefined) {
+            atomMap.set(atom.atomId, response.isCorrect);
+          } else if (response.isCorrect && !current) {
+            // If already marked not mastered but this response is correct, keep not mastered
+            // Conservative: need to get it right to be mastered
+          }
+        });
+    });
+
+    return Array.from(atomMap.entries()).map(([atomId, mastered]) => ({
+      atomId,
+      mastered,
+    }));
+  };
+
   // Handle email signup
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -379,10 +413,12 @@ export default function DiagnosticoPage() {
     setSignupError("");
 
     try {
+      const atomResults = computeAtomResults();
+
       const response = await fetch("/api/diagnostic/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, attemptId }),
+        body: JSON.stringify({ email, attemptId, atomResults }),
       });
       const data = await response.json();
 

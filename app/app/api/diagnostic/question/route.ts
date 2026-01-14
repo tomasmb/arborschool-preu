@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { questions } from "@/db/schema";
+import { questions, questionAtoms } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 
 /**
  * GET /api/diagnostic/question
  * Fetch question content by exam and question number
+ * Includes atoms associated with the question for mastery tracking
  */
 export async function GET(request: Request) {
   try {
@@ -52,6 +53,15 @@ export async function GET(request: Request) {
 
     const question = result[0];
 
+    // Fetch atoms linked to this question
+    const atoms = await db
+      .select({
+        atomId: questionAtoms.atomId,
+        relevance: questionAtoms.relevance,
+      })
+      .from(questionAtoms)
+      .where(eq(questionAtoms.questionId, question.id));
+
     // Convert "ChoiceA" -> "A", "ChoiceB" -> "B", etc.
     let correctAnswer = question.correctAnswer;
     if (correctAnswer?.startsWith("Choice")) {
@@ -65,6 +75,10 @@ export async function GET(request: Request) {
         qtiXml: question.qtiXml,
         correctAnswer,
         title: question.title,
+        atoms: atoms.map((a) => ({
+          atomId: a.atomId,
+          relevance: a.relevance,
+        })),
       },
     });
   } catch (error) {

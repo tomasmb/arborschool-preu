@@ -7,6 +7,12 @@ import {
   type MSTQuestion,
 } from "@/lib/diagnostic/config";
 
+// Atom info from API
+export interface QuestionAtom {
+  atomId: string;
+  relevance: "primary" | "secondary";
+}
+
 interface QuestionScreenProps {
   question: MSTQuestion;
   questionIndex: number;
@@ -14,13 +20,14 @@ interface QuestionScreenProps {
   isDontKnow: boolean;
   onSelectAnswer: (answer: string) => void;
   onSelectDontKnow: () => void;
-  onNext: (correctAnswer: string | null) => void;
+  onNext: (correctAnswer: string | null, atoms: QuestionAtom[]) => void;
 }
 
 interface ParsedQuestion {
   html: string;
   options: Array<{ letter: string; text: string; identifier: string }>;
   correctAnswer: string | null;
+  atoms: QuestionAtom[];
 }
 
 /**
@@ -124,7 +131,7 @@ function parseQtiXml(xmlString: string): ParsedQuestion {
     }
   }
 
-  return { html, options, correctAnswer };
+  return { html, options, correctAnswer, atoms: [] };
 }
 
 /**
@@ -168,6 +175,8 @@ export function QuestionScreen({
           if (data.question.correctAnswer) {
             parsed.correctAnswer = data.question.correctAnswer;
           }
+          // Include atoms from API response
+          parsed.atoms = data.question.atoms || [];
           setParsedQuestion(parsed);
         } else {
           setError(data.error || "No se pudo cargar la pregunta");
@@ -187,7 +196,7 @@ export function QuestionScreen({
   }, [question.exam, question.questionNumber, questionIndex]);
 
   const handleNext = () => {
-    onNext(parsedQuestion?.correctAnswer || null);
+    onNext(parsedQuestion?.correctAnswer || null, parsedQuestion?.atoms || []);
   };
 
   if (loading) {
@@ -373,6 +382,7 @@ function getFallbackQuestion(index: number): ParsedQuestion {
       identifier: letters[i],
     })),
     correctAnswer: null, // Unknown in fallback mode
+    atoms: [], // No atoms in fallback mode
   };
 }
 
