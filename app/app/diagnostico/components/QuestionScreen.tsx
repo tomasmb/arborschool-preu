@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import {
   AXIS_NAMES,
   SKILL_NAMES,
@@ -24,6 +25,7 @@ interface QuestionScreenProps {
   onSelectAnswer: (answer: string) => void;
   onSelectDontKnow: () => void;
   onNext: (correctAnswer: string | null, atoms: QuestionAtom[]) => void;
+  onFatalError: () => void;
 }
 
 interface ParsedQuestion {
@@ -294,15 +296,18 @@ export function QuestionScreen({
   onSelectAnswer,
   onSelectDontKnow,
   onNext,
+  onFatalError,
 }: QuestionScreenProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const [parsedQuestion, setParsedQuestion] = useState<ParsedQuestion | null>(
     null
   );
   const [isExiting, setIsExiting] = useState(false);
 
   const canProceed = selectedAnswer !== null || isDontKnow;
+  const MAX_RETRIES = 2;
 
   // Fetch question content from API
   useEffect(() => {
@@ -327,21 +332,23 @@ export function QuestionScreen({
           }
           parsed.atoms = data.question.atoms || [];
           setParsedQuestion(parsed);
+          setError(null);
         } else {
+          console.error("API error:", data.error);
           setError(data.error || "No se pudo cargar la pregunta");
-          setParsedQuestion(getFallbackQuestion(questionIndex));
+          setParsedQuestion(null);
         }
       } catch (err) {
         console.error("Error fetching question:", err);
         setError("Error de conexión");
-        setParsedQuestion(getFallbackQuestion(questionIndex));
+        setParsedQuestion(null);
       } finally {
         setLoading(false);
       }
     };
 
     fetchQuestion();
-  }, [question.exam, question.questionNumber, questionIndex]);
+  }, [question.exam, question.questionNumber, retryCount]);
 
   const handleNext = () => {
     setIsExiting(true);
@@ -351,6 +358,14 @@ export function QuestionScreen({
         parsedQuestion?.atoms || []
       );
     }, 200);
+  };
+
+  const handleRetry = () => {
+    if (retryCount < MAX_RETRIES) {
+      setRetryCount((prev) => prev + 1);
+    } else {
+      onFatalError();
+    }
   };
 
   if (loading) {
@@ -369,7 +384,93 @@ export function QuestionScreen({
     );
   }
 
-  const options = parsedQuestion?.options || getFallbackOptions();
+  // Show error state when question fails to load
+  if (error && !parsedQuestion) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-8">
+        <div className="card p-8 sm:p-12 text-center">
+          {/* Error icon */}
+          <div className="relative inline-block mb-6">
+            <div className="absolute inset-0 bg-amber-500/20 rounded-full blur-xl" />
+            <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-amber-100 to-amber-50 border border-amber-200">
+              <svg
+                className="w-10 h-10 text-amber-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+          </div>
+
+          <h2 className="text-2xl sm:text-3xl font-serif font-bold text-charcoal mb-3">
+            Estamos en mantenimiento
+          </h2>
+          <p className="text-cool-gray mb-8 max-w-md mx-auto">
+            No pudimos cargar las preguntas del diagnóstico. Estamos trabajando
+            para solucionarlo lo antes posible.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            {retryCount < MAX_RETRIES ? (
+              <button
+                onClick={handleRetry}
+                className="btn-primary px-8 py-3 flex items-center justify-center gap-2"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+                Reintentar
+              </button>
+            ) : null}
+            <Link
+              href="/"
+              className="btn-ghost px-8 py-3 flex items-center justify-center gap-2"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                />
+              </svg>
+              Volver al inicio
+            </Link>
+          </div>
+
+          {retryCount > 0 && retryCount < MAX_RETRIES && (
+            <p className="text-sm text-cool-gray mt-6">
+              Intento {retryCount} de {MAX_RETRIES}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  const options = parsedQuestion?.options || [];
 
   return (
     <div
@@ -388,11 +489,6 @@ export function QuestionScreen({
           <span className="px-3 py-1.5 bg-gradient-to-r from-accent/10 to-accent/5 text-accent-dark rounded-lg font-medium border border-accent/10">
             {SKILL_NAMES[question.skill]}
           </span>
-          {error && (
-            <span className="px-3 py-1.5 bg-amber-100 text-amber-700 rounded-lg text-xs font-medium">
-              Modo demo
-            </span>
-          )}
         </div>
 
         {/* Question content */}
@@ -481,67 +577,4 @@ export function QuestionScreen({
       </div>
     </div>
   );
-}
-
-// ============================================================================
-// FALLBACK DATA
-// ============================================================================
-
-function getFallbackQuestion(index: number): ParsedQuestion {
-  const questionBank = [
-    {
-      html: "<p>Si f(x) = 2x² - 3x + 1, ¿cuál es el valor de f(2)?</p>",
-      options: ["3", "5", "7", "9"],
-    },
-    {
-      html: "<p>Un rectángulo tiene un perímetro de 24 cm. Si su largo es el doble de su ancho, ¿cuál es su área?</p>",
-      options: ["32 cm²", "36 cm²", "40 cm²", "48 cm²"],
-    },
-    {
-      html: "<p>¿Cuál de las siguientes expresiones es equivalente a (x + 2)(x - 3)?</p>",
-      options: ["x² - x - 6", "x² + x - 6", "x² - 5x - 6", "x² - x + 6"],
-    },
-    {
-      html: "<p>En una urna hay 4 bolas rojas y 6 bolas azules. Si se extrae una bola al azar, ¿cuál es la probabilidad de que sea roja?</p>",
-      options: ["2/5", "3/5", "2/3", "4/6"],
-    },
-    {
-      html: "<p>Si el 30% de un número es 45, ¿cuál es el número?</p>",
-      options: ["135", "150", "165", "180"],
-    },
-    {
-      html: "<p>Un triángulo tiene ángulos que miden x°, 2x° y 3x°. ¿Cuál es el valor de x?</p>",
-      options: ["20°", "30°", "36°", "45°"],
-    },
-    {
-      html: "<p>¿Cuál es la pendiente de la recta que pasa por los puntos (1, 3) y (4, 9)?</p>",
-      options: ["2", "3", "4", "6"],
-    },
-    {
-      html: "<p>Si √(x + 5) = 4, ¿cuál es el valor de x?</p>",
-      options: ["9", "11", "16", "21"],
-    },
-  ];
-
-  const q = questionBank[index % questionBank.length];
-  const letters = ["A", "B", "C", "D"];
-
-  return {
-    html: q.html,
-    options: q.options.map((text, i) => ({
-      letter: letters[i],
-      text,
-      identifier: letters[i],
-    })),
-    correctAnswer: null,
-    atoms: [],
-  };
-}
-
-function getFallbackOptions() {
-  return ["A", "B", "C", "D"].map((letter) => ({
-    letter,
-    text: `Opción ${letter}`,
-    identifier: letter,
-  }));
 }
