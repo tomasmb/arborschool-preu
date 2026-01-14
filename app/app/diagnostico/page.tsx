@@ -384,7 +384,9 @@ export default function DiagnosticoPage() {
     // For each response, mark atoms based on correctness
     // Primary atoms: mastered if correct, not mastered if incorrect
     allResponses.forEach((response) => {
-      response.atoms
+      // Safety check: atoms may be undefined if API didn't return them
+      const atoms = response.atoms || [];
+      atoms
         .filter((atom) => atom.relevance === "primary")
         .forEach((atom) => {
           // Only mark as mastered if correct; don't overwrite mastered with not mastered
