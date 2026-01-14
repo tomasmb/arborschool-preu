@@ -19,84 +19,9 @@ env:
   DB_USER: preu_app
 
 jobs:
-  # Run migrations before deploying (if there are migration changes)
-  migrate:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-
-      - name: Check for migration changes
-        id: migration-check
-        run: |
-          if git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -q "app/db/migrations/.*\.sql"; then
-            echo "has_migrations=true" >> $GITHUB_OUTPUT
-            echo "Migration files changed - will run migrations"
-          else
-            echo "has_migrations=false" >> $GITHUB_OUTPUT
-            echo "No migration changes detected - skipping migrations"
-          fi
-
-      - name: Set up Node.js
-        if: steps.migration-check.outputs.has_migrations == 'true'
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: app/package-lock.json
-
-      - name: Install dependencies
-        if: steps.migration-check.outputs.has_migrations == 'true'
-        working-directory: ./app
-        run: npm ci
-
-      - name: Authenticate to Google Cloud
-        if: steps.migration-check.outputs.has_migrations == 'true'
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-
-      - name: Set up Cloud SDK
-        if: steps.migration-check.outputs.has_migrations == 'true'
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Install Cloud SQL Auth Proxy
-        if: steps.migration-check.outputs.has_migrations == 'true'
-        run: |
-          curl -o cloud-sql-proxy https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.14.2/cloud-sql-proxy.linux.amd64
-          chmod +x cloud-sql-proxy
-
-      - name: Get database password
-        if: steps.migration-check.outputs.has_migrations == 'true'
-        id: db-password
-        run: |
-          PASSWORD=$(gcloud secrets versions access latest --secret=preu-db-password)
-          echo "::add-mask::$PASSWORD"
-          echo "password=$PASSWORD" >> $GITHUB_OUTPUT
-
-      - name: Start Cloud SQL Proxy
-        if: steps.migration-check.outputs.has_migrations == 'true'
-        run: |
-          ./cloud-sql-proxy --port 5432 ${{ env.PROJECT_ID }}:${{ env.REGION }}:${{ env.DB_INSTANCE }} &
-          sleep 5
-
-      - name: Run migrations
-        if: steps.migration-check.outputs.has_migrations == 'true'
-        working-directory: ./app
-        env:
-          DATABASE_URL: postgresql://${{ env.DB_USER }}:${{ steps.db-password.outputs.password }}@127.0.0.1:5432/${{ env.DB_NAME }}
-        run: npm run db:migrate
-
-  # Build and deploy after migrations complete
+  # Build and deploy
+  # Note: Migrations run automatically on container startup via scripts/migrate.js
   build-and-deploy:
-    needs: migrate
     runs-on: ubuntu-latest
     permissions:
       contents: read
