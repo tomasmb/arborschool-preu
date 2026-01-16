@@ -602,87 +602,9 @@ export function ResultsScreen({
             </div>
           </div>
 
-          {/* Study Plan Section - Atom Diagnoses */}
-          {results.atomDiagnoses && results.atomDiagnoses.filter(a => a.status !== "dominated").length > 0 && (
-            <div
-              className={`mb-10 transition-all duration-700 delay-800
-              ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-            >
-              <h2 className="text-2xl font-serif font-bold text-charcoal mb-6 text-center">
-                📚 Tu Plan de Estudio
-              </h2>
-
-              {/* Study stats */}
-              <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="card p-4 text-center bg-emerald-50 border-emerald-200">
-                  <div className="text-2xl font-bold text-emerald-600">
-                    {results.atomDiagnoses.filter(a => a.status === "dominated").length}
-                  </div>
-                  <div className="text-xs text-emerald-700 font-medium">Dominados</div>
-                </div>
-                <div className="card p-4 text-center bg-amber-50 border-amber-200">
-                  <div className="text-2xl font-bold text-amber-600">
-                    {results.atomDiagnoses.filter(a => a.status === "gap").length}
-                  </div>
-                  <div className="text-xs text-amber-700 font-medium">Por Aprender</div>
-                </div>
-                <div className="card p-4 text-center bg-red-50 border-red-200">
-                  <div className="text-2xl font-bold text-red-600">
-                    {results.atomDiagnoses.filter(a => a.status === "misconception").length}
-                  </div>
-                  <div className="text-xs text-red-700 font-medium">A Corregir</div>
-                </div>
-              </div>
-
-              {/* Time estimate */}
-              <div className="text-center mb-6 p-4 bg-primary/5 rounded-xl border border-primary/10">
-                <span className="text-cool-gray">⏱️ Tiempo estimado: </span>
-                <span className="font-bold text-primary">
-                  {Math.ceil(results.atomDiagnoses.filter(a => a.status !== "dominated").length * 15 / 60)}h {results.atomDiagnoses.filter(a => a.status !== "dominated").length * 15 % 60}min
-                </span>
-              </div>
-
-              {/* Atoms list */}
-              <div className="card p-6 max-h-80 overflow-y-auto">
-                <div className="space-y-3">
-                  {/* Misconceptions first (highest priority) */}
-                  {results.atomDiagnoses
-                    .filter(a => a.status === "misconception")
-                    .slice(0, 5)
-                    .map((atom, index) => (
-                      <div key={atom.atomId} className="flex items-start gap-3 p-3 rounded-lg bg-red-50 border border-red-100">
-                        <span className="text-lg">🔧</span>
-                        <div className="flex-1">
-                          <div className="font-medium text-charcoal text-sm">{atom.atomTitle}</div>
-                          <div className="text-xs text-red-600 font-medium">Corregir error conceptual</div>
-                        </div>
-                      </div>
-                    ))}
-
-                  {/* Gaps second */}
-                  {results.atomDiagnoses
-                    .filter(a => a.status === "gap")
-                    .slice(0, 5)
-                    .map((atom, index) => (
-                      <div key={atom.atomId} className="flex items-start gap-3 p-3 rounded-lg bg-amber-50 border border-amber-100">
-                        <span className="text-lg">📖</span>
-                        <div className="flex-1">
-                          <div className="font-medium text-charcoal text-sm">{atom.atomTitle}</div>
-                          <div className="text-xs text-amber-600 font-medium">Aprender desde cero</div>
-                        </div>
-                      </div>
-                    ))}
-
-                  {/* Show more indicator */}
-                  {results.atomDiagnoses.filter(a => a.status !== "dominated").length > 10 && (
-                    <div className="text-center text-sm text-cool-gray py-2">
-                      +{results.atomDiagnoses.filter(a => a.status !== "dominated").length - 10} temas más...
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Study Plan Section - TEMPORARILY DISABLED FOR REVIEW
+          TODO: Re-enable after design review with team
+          */}
 
           {/* CTA Section */}
           <div
@@ -731,6 +653,6 @@ export function ResultsScreen({
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 }
