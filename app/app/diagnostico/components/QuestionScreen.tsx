@@ -15,6 +15,7 @@ import {
 export interface QuestionAtom {
   atomId: string;
   relevance: "primary" | "secondary";
+  title?: string;  // Atom title for display in study plan
 }
 
 interface QuestionScreenProps {
@@ -253,19 +254,17 @@ function OptionButton({
       onClick={onClick}
       className={`w-full flex items-center gap-4 p-4 sm:p-5 rounded-xl border-2 transition-all duration-300
         transform ${isVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"}
-        ${
-          isSelected
-            ? "border-primary bg-primary/5 shadow-lg scale-[1.02] ring-4 ring-primary/10"
-            : "border-gray-200 bg-white hover:border-primary/50 hover:bg-off-white hover:shadow-md"
+        ${isSelected
+          ? "border-primary bg-primary/5 shadow-lg scale-[1.02] ring-4 ring-primary/10"
+          : "border-gray-200 bg-white hover:border-primary/50 hover:bg-off-white hover:shadow-md"
         }`}
     >
       <span
         className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-lg shrink-0 
           transition-all duration-300
-          ${
-            isSelected
-              ? "bg-gradient-to-br from-primary to-primary-light text-white shadow-md scale-110"
-              : "bg-off-white text-charcoal group-hover:bg-primary/10"
+          ${isSelected
+            ? "bg-gradient-to-br from-primary to-primary-light text-white shadow-md scale-110"
+            : "bg-off-white text-charcoal group-hover:bg-primary/10"
           }`}
       >
         {letter}
@@ -533,10 +532,9 @@ export function QuestionScreen({
           onClick={onSelectDontKnow}
           className={`w-full flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-dashed 
             transition-all duration-300
-            ${
-              isDontKnow
-                ? "border-amber-500 bg-amber-50 text-amber-700 shadow-md scale-[1.01]"
-                : "border-gray-300 text-cool-gray hover:border-amber-400 hover:bg-amber-50/50 hover:text-amber-600"
+            ${isDontKnow
+              ? "border-amber-500 bg-amber-50 text-amber-700 shadow-md scale-[1.01]"
+              : "border-gray-300 text-cool-gray hover:border-amber-400 hover:bg-amber-50/50 hover:text-amber-600"
             }`}
         >
           <svg
@@ -561,10 +559,9 @@ export function QuestionScreen({
             onClick={handleNext}
             disabled={!canProceed}
             className={`group px-8 py-4 rounded-xl font-semibold flex items-center gap-2 transition-all duration-300
-              ${
-                canProceed
-                  ? "btn-primary shadow-lg hover:shadow-xl hover:scale-105"
-                  : "bg-gray-100 text-gray-400 cursor-not-allowed"
+              ${canProceed
+                ? "btn-primary shadow-lg hover:shadow-xl hover:scale-105"
+                : "bg-gray-100 text-gray-400 cursor-not-allowed"
               }`}
           >
             Siguiente

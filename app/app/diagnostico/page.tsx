@@ -47,6 +47,14 @@ interface Response {
   atoms: QuestionAtom[];
 }
 
+// Atom diagnosis for study plan
+interface AtomDiagnosis {
+  atomId: string;
+  atomTitle: string;
+  status: "dominated" | "gap" | "misconception";
+  instructionType: "teach" | "correct" | null;
+}
+
 interface Results {
   paesMin: number;
   paesMax: number;
@@ -59,6 +67,7 @@ interface Results {
     Skill,
     { correct: number; total: number; percentage: number }
   >;
+  atomDiagnoses: AtomDiagnosis[];
 }
 
 // ============================================================================
@@ -420,12 +429,16 @@ export default function DiagnosticoPage() {
     }));
     const skillPerf = calculateSkillPerformance(skillData);
 
+    // Compute atom diagnoses for study plan
+    const atomDiagnoses = computeAtomDiagnoses(allResponses);
+
     setResults({
       paesMin: paesResult.min,
       paesMax: paesResult.max,
       level: paesResult.level,
       axisPerformance: axisPerf,
       skillPerformance: skillPerf,
+      atomDiagnoses,
     });
 
     if (timerRef.current) {
@@ -436,34 +449,87 @@ export default function DiagnosticoPage() {
     setScreen("results");
   };
 
-  // Compute atom mastery results from all responses
-  const computeAtomResults = () => {
-    const allResponses = [...r1Responses, ...stage2Responses];
-    const atomMap = new Map<string, boolean>();
+  // Compute atom diagnoses from responses (used by showResults)
+  const computeAtomDiagnoses = (allResponses: Response[]): AtomDiagnosis[] => {
+    const atomMap = new Map<string, AtomDiagnosis>();
+    const statusPriority = { dominated: 1, gap: 2, misconception: 3 };
 
-    // For each response, mark atoms based on correctness
-    // Primary atoms: mastered if correct, not mastered if incorrect
     allResponses.forEach((response) => {
-      // Safety check: atoms may be undefined if API didn't return them
       const atoms = response.atoms || [];
       atoms
         .filter((atom) => atom.relevance === "primary")
         .forEach((atom) => {
-          // Only mark as mastered if correct; don't overwrite mastered with not mastered
-          const current = atomMap.get(atom.atomId);
-          if (current === undefined) {
-            atomMap.set(atom.atomId, response.isCorrect);
-          } else if (response.isCorrect && !current) {
-            // If already marked not mastered but this response is correct, keep not mastered
-            // Conservative: need to get it right to be mastered
+          let status: AtomDiagnosis["status"];
+          let instructionType: AtomDiagnosis["instructionType"];
+
+          if (response.isCorrect) {
+            status = "dominated";
+            instructionType = null;
+          } else if (response.selectedAnswer === null) {
+            status = "gap";
+            instructionType = "teach";
+          } else {
+            status = "misconception";
+            instructionType = "correct";
+          }
+
+          const existing = atomMap.get(atom.atomId);
+          if (!existing || statusPriority[status] > statusPriority[existing.status]) {
+            atomMap.set(atom.atomId, {
+              atomId: atom.atomId,
+              atomTitle: atom.title || atom.atomId,
+              status,
+              instructionType,
+            });
           }
         });
     });
 
-    return Array.from(atomMap.entries()).map(([atomId, mastered]) => ({
-      atomId,
-      mastered,
-    }));
+    return Array.from(atomMap.values());
+  };
+
+  // Compute atom mastery results from all responses with detailed diagnosis
+  const computeAtomResults = (): AtomDiagnosis[] => {
+    const allResponses = [...r1Responses, ...stage2Responses];
+    const atomMap = new Map<string, AtomDiagnosis>();
+
+    // Priority: misconception > gap > dominated (keep worst status)
+    const statusPriority = { dominated: 1, gap: 2, misconception: 3 };
+
+    allResponses.forEach((response) => {
+      const atoms = response.atoms || [];
+      atoms
+        .filter((atom) => atom.relevance === "primary")
+        .forEach((atom) => {
+          // Determine status based on response
+          let status: AtomDiagnosis["status"];
+          let instructionType: AtomDiagnosis["instructionType"];
+
+          if (response.isCorrect) {
+            status = "dominated";
+            instructionType = null;
+          } else if (response.selectedAnswer === null) {
+            // "Don't know" response
+            status = "gap";
+            instructionType = "teach";
+          } else {
+            status = "misconception";
+            instructionType = "correct";
+          }
+
+          const existing = atomMap.get(atom.atomId);
+          if (!existing || statusPriority[status] > statusPriority[existing.status]) {
+            atomMap.set(atom.atomId, {
+              atomId: atom.atomId,
+              atomTitle: atom.title || atom.atomId,
+              status,
+              instructionType,
+            });
+          }
+        });
+    });
+
+    return Array.from(atomMap.values());
   };
 
   // Handle email signup
@@ -487,19 +553,19 @@ export default function DiagnosticoPage() {
         // Include diagnostic results for local attempts
         diagnosticData: isLocalAttempt
           ? {
-              responses: storedResponses,
-              results: results
-                ? {
-                    paesMin: results.paesMin,
-                    paesMax: results.paesMax,
-                    level: results.level,
-                    route,
-                    totalCorrect: [...r1Responses, ...stage2Responses].filter(
-                      (r) => r.isCorrect
-                    ).length,
-                  }
-                : null,
-            }
+            responses: storedResponses,
+            results: results
+              ? {
+                paesMin: results.paesMin,
+                paesMax: results.paesMax,
+                level: results.level,
+                route,
+                totalCorrect: [...r1Responses, ...stage2Responses].filter(
+                  (r) => r.isCorrect
+                ).length,
+              }
+              : null,
+          }
           : null,
       };
 
@@ -588,13 +654,12 @@ export default function DiagnosticoPage() {
             {/* Timer */}
             <div
               className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-mono font-medium transition-all duration-300
-              ${
-                timeRemaining < 300
+              ${timeRemaining < 300
                   ? "bg-red-100 text-red-600 animate-pulse"
                   : timeRemaining < 600
                     ? "bg-amber-50 text-amber-600"
                     : "bg-off-white text-charcoal shadow-sm"
-              }`}
+                }`}
             >
               <svg
                 className={`w-4 h-4 ${timeRemaining < 300 ? "animate-bounce-subtle" : ""}`}
