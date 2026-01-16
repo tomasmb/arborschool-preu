@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { questions, questionAtoms } from "@/db/schema";
+import { questions, questionAtoms, atoms } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 
 /**
@@ -53,13 +53,15 @@ export async function GET(request: Request) {
 
     const question = result[0];
 
-    // Fetch atoms linked to this question
-    const atoms = await db
+    // Fetch atoms linked to this question with their titles
+    const atomsResult = await db
       .select({
         atomId: questionAtoms.atomId,
         relevance: questionAtoms.relevance,
+        title: atoms.title,
       })
       .from(questionAtoms)
+      .leftJoin(atoms, eq(questionAtoms.atomId, atoms.id))
       .where(eq(questionAtoms.questionId, question.id));
 
     // Convert "ChoiceA" -> "A", "ChoiceB" -> "B", etc.
@@ -75,9 +77,10 @@ export async function GET(request: Request) {
         qtiXml: question.qtiXml,
         correctAnswer,
         title: question.title,
-        atoms: atoms.map((a) => ({
+        atoms: atomsResult.map((a) => ({
           atomId: a.atomId,
           relevance: a.relevance,
+          title: a.title || a.atomId,  // Fallback to atomId if no title
         })),
       },
     });
