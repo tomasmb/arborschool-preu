@@ -4,11 +4,18 @@
  * Types for calculating optimal learning routes based on question unlock potential.
  */
 
+// Re-export shared mastery types from the canonical source
+export type {
+  MasteryState as AtomMasteryState,
+  MasterySource,
+  AtomWithPrereqs as AtomWithPrereqsBase,
+} from "../atomMastery";
+
 // ============================================================================
 // CORE DATA TYPES
 // ============================================================================
 
-/** Atom with its prerequisite dependencies */
+/** Atom with its prerequisite dependencies and metadata for unlock algorithm */
 export interface AtomWithPrereqs {
   id: string;
   axis: string;
@@ -25,13 +32,6 @@ export interface QuestionWithAtoms {
   primaryAtomIds: string[];
   /** Atoms that help but aren't strictly required (secondary relevance) */
   secondaryAtomIds: string[];
-}
-
-/** Student's current mastery state for an atom */
-export interface AtomMasteryState {
-  atomId: string;
-  mastered: boolean;
-  source: "direct" | "inferred" | "not_tested";
 }
 
 // ============================================================================

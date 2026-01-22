@@ -1,36 +1,53 @@
 /**
  * Atom Mastery Computation with Transitivity
  *
- * Computes full atom mastery mapping for a student based on diagnostic results.
- * Uses transitivity: if a student masters an advanced atom, they likely master
- * all its prerequisites too.
+ * Single source of truth for computing atom mastery with transitivity.
+ * Used by both:
+ * - Signup flow (saving to DB)
+ * - Learning routes algorithm (calculating unlock potential)
  *
- * Rule: If atom X is mastered → all prerequisites of X are also mastered (recursively)
- * Rule: If atom X is not mastered → only X is marked as not mastered (no cascade)
- * Rule: Atoms not directly tested and not inferred → marked as not_started
+ * Rules:
+ * - If atom X is mastered → all prerequisites of X are also mastered (recursively)
+ * - If atom X is not mastered → only X is marked as not mastered (no cascade)
+ * - Atoms not directly tested and not inferred → marked as not_started
+ * - Direct test results are NEVER overridden by inferred mastery
  */
 
 import { db } from "@/db";
 import { atoms } from "@/db/schema";
 
-interface AtomWithPrereqs {
+// ============================================================================
+// TYPES
+// ============================================================================
+
+export interface AtomWithPrereqs {
   id: string;
   prerequisiteIds: string[] | null;
 }
 
-interface DirectResult {
+export interface DirectResult {
   atomId: string;
   mastered: boolean;
 }
 
-interface FullMasteryResult {
+export type MasterySource = "direct" | "inferred" | "not_tested";
+
+export interface MasteryState {
   atomId: string;
   mastered: boolean;
-  source: "direct" | "inferred" | "not_tested";
+  source: MasterySource;
 }
+
+/** @deprecated Use MasteryState instead */
+export type FullMasteryResult = MasteryState;
+
+// ============================================================================
+// DATA LOADING
+// ============================================================================
 
 /**
  * Fetches all atoms from the database with their prerequisite IDs.
+ * Returns as array (for backward compatibility).
  */
 export async function fetchAllAtoms(): Promise<AtomWithPrereqs[]> {
   const allAtoms = await db
@@ -41,6 +58,23 @@ export async function fetchAllAtoms(): Promise<AtomWithPrereqs[]> {
     .from(atoms);
 
   return allAtoms;
+}
+
+/**
+ * Fetches all atoms as a Map for O(1) lookups.
+ */
+export async function fetchAllAtomsAsMap(): Promise<Map<string, AtomWithPrereqs>> {
+  const allAtoms = await fetchAllAtoms();
+  const atomMap = new Map<string, AtomWithPrereqs>();
+
+  for (const atom of allAtoms) {
+    atomMap.set(atom.id, {
+      id: atom.id,
+      prerequisiteIds: atom.prerequisiteIds || [],
+    });
+  }
+
+  return atomMap;
 }
 
 /**
@@ -161,7 +195,130 @@ export function computeFullAtomMastery(
  */
 export async function computeFullMasteryWithTransitivity(
   directResults: DirectResult[]
-): Promise<FullMasteryResult[]> {
+): Promise<MasteryState[]> {
   const allAtoms = await fetchAllAtoms();
   return computeFullAtomMastery(directResults, allAtoms);
+}
+
+// ============================================================================
+// MAP-BASED API (for questionUnlock algorithm)
+// ============================================================================
+
+/**
+ * Computes mastery state and returns as a Map for O(1) lookups.
+ * Used by the question unlock algorithm for efficient queries.
+ *
+ * @param directResults - Atoms directly tested in diagnostic
+ * @param allAtoms - Map of all atoms (pass to avoid re-fetching)
+ * @returns Map of atomId -> MasteryState
+ */
+export function computeMasteryAsMap(
+  directResults: DirectResult[],
+  allAtoms: Map<string, AtomWithPrereqs>
+): Map<string, MasteryState> {
+  const masteryMap = new Map<string, MasteryState>();
+
+  // Step 1: Mark directly tested atoms
+  for (const result of directResults) {
+    masteryMap.set(result.atomId, {
+      atomId: result.atomId,
+      mastered: result.mastered,
+      source: "direct",
+    });
+  }
+
+  // Step 2: Apply transitivity for mastered atoms
+  const visited = new Set<string>();
+
+  function markPrerequisitesAsMastered(atomId: string): void {
+    if (visited.has(atomId)) return;
+    visited.add(atomId);
+
+    const atom = allAtoms.get(atomId);
+    if (!atom || !atom.prerequisiteIds) return;
+
+    for (const prereqId of atom.prerequisiteIds) {
+      const current = masteryMap.get(prereqId);
+
+      // Don't override direct test results
+      if (current?.source === "direct") {
+        if (current.mastered) {
+          markPrerequisitesAsMastered(prereqId);
+        }
+        continue;
+      }
+
+      // Mark as inferred mastered
+      masteryMap.set(prereqId, {
+        atomId: prereqId,
+        mastered: true,
+        source: "inferred",
+      });
+
+      markPrerequisitesAsMastered(prereqId);
+    }
+  }
+
+  for (const result of directResults) {
+    if (result.mastered) {
+      markPrerequisitesAsMastered(result.atomId);
+    }
+  }
+
+  // Step 3: All remaining atoms are not_tested
+  for (const [atomId] of allAtoms) {
+    if (!masteryMap.has(atomId)) {
+      masteryMap.set(atomId, {
+        atomId,
+        mastered: false,
+        source: "not_tested",
+      });
+    }
+  }
+
+  return masteryMap;
+}
+
+/**
+ * Async version that fetches atoms and computes mastery as Map.
+ */
+export async function computeMasteryAsMapWithFetch(
+  directResults: DirectResult[]
+): Promise<Map<string, MasteryState>> {
+  const allAtoms = await fetchAllAtomsAsMap();
+  return computeMasteryAsMap(directResults, allAtoms);
+}
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Gets the set of mastered atom IDs from a mastery map.
+ */
+export function getMasteredAtomIds(
+  masteryMap: Map<string, MasteryState>
+): Set<string> {
+  const mastered = new Set<string>();
+  for (const [atomId, state] of masteryMap) {
+    if (state.mastered) {
+      mastered.add(atomId);
+    }
+  }
+  return mastered;
+}
+
+/**
+ * Gets the set of non-mastered atom IDs from a mastery map.
+ */
+export function getNonMasteredAtomIds(
+  masteryMap: Map<string, MasteryState>
+): Set<string> {
+  const nonMastered = new Set<string>();
+  for (const [atomId, state] of masteryMap) {
+    if (!state.mastered) {
+      nonMastered.add(atomId);
+    }
+  }
+  return nonMastered;
 }

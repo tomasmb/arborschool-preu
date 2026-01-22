@@ -5,6 +5,9 @@
  * - Which atoms are mastered (directly or via transitivity)
  * - Which questions are currently unlocked
  * - Which questions are close to being unlocked
+ *
+ * Note: Mastery computation delegates to the shared atomMastery module
+ * to maintain a single source of truth for transitivity logic.
  */
 
 import type {
@@ -13,85 +16,32 @@ import type {
   AtomMasteryState,
   QuestionUnlockStatus,
 } from "./types";
+import {
+  computeMasteryAsMap,
+  getMasteredAtomIds as getMasteredAtomIdsBase,
+  getNonMasteredAtomIds as getNonMasteredAtomIdsBase,
+  type MasteryState,
+} from "../atomMastery";
 
 // ============================================================================
-// MASTERY STATE BUILDER
+// MASTERY STATE BUILDER (delegates to shared module)
 // ============================================================================
 
 /**
  * Builds a complete mastery state map from diagnostic results.
  * Applies transitivity: if advanced atom is mastered, prerequisites are too.
  *
- * @param directResults - Atoms directly tested in diagnostic
- * @param allAtoms - Map of all atoms with their prerequisites
- * @returns Map of atomId -> mastery state
+ * This is a wrapper around the shared atomMastery module to maintain
+ * backward compatibility with the questionUnlock API.
  */
 export function buildMasteryState(
   directResults: Array<{ atomId: string; mastered: boolean }>,
   allAtoms: Map<string, AtomWithPrereqs>
 ): Map<string, AtomMasteryState> {
-  const masteryMap = new Map<string, AtomMasteryState>();
-
-  // Step 1: Mark directly tested atoms
-  for (const result of directResults) {
-    masteryMap.set(result.atomId, {
-      atomId: result.atomId,
-      mastered: result.mastered,
-      source: "direct",
-    });
-  }
-
-  // Step 2: Apply transitivity for mastered atoms
-  // If atom X is mastered, all its prerequisites are mastered too
-  const visited = new Set<string>();
-
-  function markPrerequisitesAsMastered(atomId: string): void {
-    if (visited.has(atomId)) return;
-    visited.add(atomId);
-
-    const atom = allAtoms.get(atomId);
-    if (!atom) return;
-
-    for (const prereqId of atom.prerequisiteIds) {
-      const current = masteryMap.get(prereqId);
-
-      // Don't override direct test results
-      if (current?.source === "direct") {
-        if (current.mastered) {
-          markPrerequisitesAsMastered(prereqId);
-        }
-        continue;
-      }
-
-      // Mark as inferred mastered
-      masteryMap.set(prereqId, {
-        atomId: prereqId,
-        mastered: true,
-        source: "inferred",
-      });
-
-      markPrerequisitesAsMastered(prereqId);
-    }
-  }
-
-  for (const result of directResults) {
-    if (result.mastered) {
-      markPrerequisitesAsMastered(result.atomId);
-    }
-  }
-
-  // Step 3: All remaining atoms are not_tested
-  for (const [atomId] of allAtoms) {
-    if (!masteryMap.has(atomId)) {
-      masteryMap.set(atomId, {
-        atomId,
-        mastered: false,
-        source: "not_tested",
-      });
-    }
-  }
-
-  return masteryMap;
+  // The shared module accepts AtomWithPrereqs with just id and prerequisiteIds
+  // Our AtomWithPrereqs has additional fields (axis, title) which is fine
+  // due to TypeScript's structural typing
+  return computeMasteryAsMap(directResults, allAtoms as Map<string, { id: string; prerequisiteIds: string[] | null }>);
 }
 
 /**
@@ -100,15 +50,7 @@ export function buildMasteryState(
 export function getMasteredAtomIds(
   masteryMap: Map<string, AtomMasteryState>
 ): Set<string> {
-  const mastered = new Set<string>();
-
-  for (const [atomId, state] of masteryMap) {
-    if (state.mastered) {
-      mastered.add(atomId);
-    }
-  }
-
-  return mastered;
+  return getMasteredAtomIdsBase(masteryMap as Map<string, MasteryState>);
 }
 
 /**
@@ -117,15 +59,7 @@ export function getMasteredAtomIds(
 export function getNonMasteredAtomIds(
   masteryMap: Map<string, AtomMasteryState>
 ): Set<string> {
-  const nonMastered = new Set<string>();
-
-  for (const [atomId, state] of masteryMap) {
-    if (!state.mastered) {
-      nonMastered.add(atomId);
-    }
-  }
-
-  return nonMastered;
+  return getNonMasteredAtomIdsBase(masteryMap as Map<string, MasteryState>);
 }
 
 // ============================================================================
