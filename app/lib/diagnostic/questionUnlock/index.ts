@@ -1,0 +1,274 @@
+/**
+ * Question Unlock Algorithm - Public API
+ *
+ * Main entry point for calculating personalized learning routes
+ * based on question unlock potential.
+ *
+ * Usage:
+ *   const analysis = await analyzeLearningPotential(diagnosticResults);
+ *   console.log(analysis.routes); // Recommended learning paths
+ *   console.log(analysis.topAtomsByEfficiency); // Best individual atoms
+ */
+
+import {
+  loadAllAtoms,
+  loadOfficialQuestionsWithAtoms,
+  getQuestionAtomStats,
+} from "./dataLoader";
+import {
+  buildMasteryState,
+  getMasteredAtomIds,
+  analyzeAllQuestions,
+  calculateMasterySummary,
+} from "./masteryAnalyzer";
+import { calculateAllMarginalValues } from "./unlockCalculator";
+import {
+  buildAllRoutes,
+  findQuickWins,
+  findHighImpactAtoms,
+} from "./routeOptimizer";
+import type {
+  StudentLearningAnalysis,
+  LearningRoute,
+  AtomMarginalValue,
+  QuestionUnlockStatus,
+  ScoringConfig,
+} from "./types";
+import { DEFAULT_SCORING_CONFIG } from "./types";
+
+// Re-export types for consumers
+export type {
+  StudentLearningAnalysis,
+  LearningRoute,
+  AtomMarginalValue,
+  QuestionUnlockStatus,
+  AtomInRoute,
+  ScoringConfig,
+} from "./types";
+
+export { DEFAULT_SCORING_CONFIG } from "./types";
+
+// ============================================================================
+// MAIN ANALYSIS FUNCTION
+// ============================================================================
+
+/**
+ * Analyzes a student's learning potential based on diagnostic results.
+ * This is the main entry point for the algorithm.
+ *
+ * @param diagnosticResults - Atoms directly tested with results
+ * @param config - Optional scoring configuration
+ * @returns Complete analysis with routes and recommendations
+ */
+export async function analyzeLearningPotential(
+  diagnosticResults: Array<{ atomId: string; mastered: boolean }>,
+  config: ScoringConfig = DEFAULT_SCORING_CONFIG
+): Promise<StudentLearningAnalysis> {
+  // Load data
+  const [allAtoms, questions] = await Promise.all([
+    loadAllAtoms(),
+    loadOfficialQuestionsWithAtoms(),
+  ]);
+
+  // Build mastery state with transitivity
+  const masteryMap = buildMasteryState(diagnosticResults, allAtoms);
+  const masteredAtoms = getMasteredAtomIds(masteryMap);
+
+  // Analyze question unlock status
+  const questionAnalysis = analyzeAllQuestions(questions, masteredAtoms);
+
+  // Calculate all question statuses for marginal value calculation
+  const allStatuses: QuestionUnlockStatus[] = [
+    ...questionAnalysis.unlocked,
+    ...questionAnalysis.oneAway,
+    ...questionAnalysis.twoAway,
+    ...questionAnalysis.threeOrMoreAway,
+  ];
+
+  // Calculate marginal values for all non-mastered atoms
+  const marginalValues = calculateAllMarginalValues(
+    allAtoms,
+    questions,
+    masteryMap,
+    allStatuses,
+    config
+  );
+
+  // Build learning routes by axis
+  const routes = buildAllRoutes(
+    marginalValues,
+    allAtoms,
+    questions,
+    masteryMap,
+    config
+  );
+
+  // Get top atoms by efficiency
+  const topAtomsByEfficiency = findHighImpactAtoms(marginalValues, 10);
+
+  // Get low-hanging fruit (questions 1-2 atoms away)
+  const lowHangingFruit = [
+    ...questionAnalysis.oneAway,
+    ...questionAnalysis.twoAway,
+  ].sort((a, b) => a.atomsToUnlock - b.atomsToUnlock);
+
+  // Calculate summary
+  const masterySummary = calculateMasterySummary(masteryMap, questionAnalysis);
+
+  return {
+    summary: {
+      totalAtoms: masterySummary.totalAtoms,
+      masteredAtoms: masterySummary.masteredAtoms,
+      totalQuestions: masterySummary.totalQuestions,
+      unlockedQuestions: masterySummary.unlockedQuestions,
+      potentialQuestionsToUnlock:
+        masterySummary.questionsOneAway + masterySummary.questionsTwoAway,
+    },
+    routes,
+    topAtomsByEfficiency,
+    lowHangingFruit: lowHangingFruit.slice(0, 20),
+  };
+}
+
+// ============================================================================
+// CONVENIENCE FUNCTIONS
+// ============================================================================
+
+/**
+ * Gets quick statistics about question-atom coverage.
+ * Useful for debugging and understanding the data.
+ */
+export async function getStats() {
+  return getQuestionAtomStats();
+}
+
+/**
+ * Analyzes potential for a "fresh" student (no mastery assumed).
+ * Useful for understanding the full learning landscape.
+ */
+export async function analyzeFromScratch(
+  config: ScoringConfig = DEFAULT_SCORING_CONFIG
+): Promise<StudentLearningAnalysis> {
+  return analyzeLearningPotential([], config);
+}
+
+/**
+ * Gets the best single axis to focus on based on question unlock potential.
+ */
+export async function getBestAxisToFocus(
+  diagnosticResults: Array<{ atomId: string; mastered: boolean }>
+): Promise<LearningRoute | null> {
+  const analysis = await analyzeLearningPotential(diagnosticResults);
+  return analysis.routes[0] || null;
+}
+
+/**
+ * Gets atoms that can be learned immediately (no prerequisites needed)
+ * and will unlock at least one question.
+ */
+export async function getQuickWinAtoms(
+  diagnosticResults: Array<{ atomId: string; mastered: boolean }>
+): Promise<AtomMarginalValue[]> {
+  const analysis = await analyzeLearningPotential(diagnosticResults);
+  return findQuickWins(analysis.topAtomsByEfficiency, 5);
+}
+
+// ============================================================================
+// ROUTE FORMATTING HELPERS
+// ============================================================================
+
+/**
+ * Formats a learning route for display in the UI.
+ */
+export function formatRouteForDisplay(route: LearningRoute): {
+  title: string;
+  subtitle: string;
+  atomCount: number;
+  questionsUnlocked: number;
+  pointsGain: number;
+  studyHours: number;
+} {
+  const titles: Record<string, { title: string; subtitle: string }> = {
+    ALG: {
+      title: "Dominio Algebraico",
+      subtitle: "Expresiones, ecuaciones y funciones",
+    },
+    NUM: {
+      title: "El Poder de los Números",
+      subtitle: "Enteros, fracciones y operaciones",
+    },
+    GEO: {
+      title: "El Ojo Geométrico",
+      subtitle: "Figuras, medidas y transformaciones",
+    },
+    PROB: {
+      title: "El Arte de la Probabilidad",
+      subtitle: "Datos, probabilidades y estadística",
+    },
+  };
+
+  const display = titles[route.axis] || {
+    title: route.axisDisplayName,
+    subtitle: "Dominio temático",
+  };
+
+  return {
+    ...display,
+    atomCount: route.atoms.length,
+    questionsUnlocked: route.totalQuestionsUnlocked,
+    pointsGain: route.estimatedPointsGain,
+    studyHours: Math.round((route.estimatedMinutes / 60) * 10) / 10,
+  };
+}
+
+import {
+  calculateImprovement as calcPaesImprovement,
+  PAES_TOTAL_QUESTIONS,
+} from "../paesScoreTable";
+
+/**
+ * Calculates realistic PAES improvement projection based on questions unlocked.
+ * Takes into account:
+ * - Questions are spread across multiple tests
+ * - The official PAES conversion table (non-linear)
+ * - Student's estimated current score
+ */
+export function calculatePAESImprovement(
+  questionsUnlocked: number,
+  config: {
+    numTests?: number;
+    currentCorrect?: number;
+  } = {}
+): {
+  minPoints: number;
+  maxPoints: number;
+  questionsPerTest: number;
+  percentageOfTest: number;
+} {
+  const numTests = config.numTests || 4; // We have 4 official tests
+  // Default to 20 correct if not provided (roughly average student)
+  const currentCorrect = config.currentCorrect ?? 20;
+
+  // Questions unlocked are spread across tests, so divide by number of tests
+  const avgQuestionsUnlockedPerTest = Math.round(questionsUnlocked / numTests);
+
+  // Use actual PAES table for accurate point calculation
+  const improvement = calcPaesImprovement(currentCorrect, avgQuestionsUnlockedPerTest);
+
+  // Add uncertainty range (±15%) since question selection varies
+  const uncertaintyFactor = 0.15;
+  const minPoints = Math.round(improvement.improvement * (1 - uncertaintyFactor));
+  const maxPoints = Math.round(improvement.improvement * (1 + uncertaintyFactor));
+
+  // Percentage of a single test this represents
+  const percentageOfTest = Math.round(
+    (avgQuestionsUnlockedPerTest / PAES_TOTAL_QUESTIONS) * 100
+  );
+
+  return {
+    minPoints,
+    maxPoints,
+    questionsPerTest: avgQuestionsUnlockedPerTest,
+    percentageOfTest,
+  };
+}

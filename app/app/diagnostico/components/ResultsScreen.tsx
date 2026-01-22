@@ -1,9 +1,15 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import { AXIS_NAMES, type Route, type Axis } from "@/lib/diagnostic/config";
 import { Confetti } from "./Confetti";
+import { Icons, AnimatedCounter, AXIS_ICONS } from "./shared";
+import {
+  useLearningRoutes,
+  sortRoutesByImpact,
+  type LearningRouteData,
+} from "../hooks/useLearningRoutes";
 
 // ============================================================================
 // TYPES
@@ -15,6 +21,12 @@ interface AxisPerformance {
   percentage: number;
 }
 
+/** Atom mastery result from diagnostic */
+export interface AtomResult {
+  atomId: string;
+  mastered: boolean;
+}
+
 interface ResultsScreenProps {
   results: {
     paesMin: number;
@@ -24,6 +36,8 @@ interface ResultsScreenProps {
   };
   route: Route;
   totalCorrect: number;
+  /** Atom mastery results from diagnostic for computing learning routes */
+  atomResults?: AtomResult[];
   onSignup: () => void;
 }
 
@@ -31,119 +45,8 @@ interface ResultsScreenProps {
 // CONSTANTS
 // ============================================================================
 
-const ROUTE_DATA = {
-  ALG: {
-    titulo: "Dominio Algebraico",
-    subtitulo: "Expresiones, reducción y operaciones",
-    atomos: 8,
-    desbloqueados: 12,
-    puntosGanados: 45,
-    horasEstudio: 2.5,
-  },
-  NUM: {
-    titulo: "El Poder de los Números",
-    subtitulo: "Enteros, fracciones y operaciones",
-    atomos: 6,
-    desbloqueados: 8,
-    puntosGanados: 35,
-    horasEstudio: 2,
-  },
-  GEO: {
-    titulo: "El Ojo Geométrico",
-    subtitulo: "Pitágoras, perímetros y áreas",
-    atomos: 6,
-    desbloqueados: 10,
-    puntosGanados: 38,
-    horasEstudio: 2,
-  },
-  PROB: {
-    titulo: "El Arte de la Probabilidad",
-    subtitulo: "Probabilidades y combinatoria",
-    atomos: 5,
-    desbloqueados: 7,
-    puntosGanados: 28,
-    horasEstudio: 1.5,
-  },
-};
-
 const ATOM_COUNTS: Record<Axis, number> = { ALG: 80, NUM: 55, GEO: 43, PROB: 51 };
 const TOTAL_ATOMS = 229;
-
-// ============================================================================
-// ICONS
-// ============================================================================
-
-const Icons = {
-  star: (className: string) => (
-    <svg className={className} fill="currentColor" viewBox="0 0 20 20">
-      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-    </svg>
-  ),
-  trendUp: (className: string) => (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-    </svg>
-  ),
-  target: (className: string) => (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-      <circle cx="12" cy="12" r="10" />
-      <circle cx="12" cy="12" r="6" />
-      <circle cx="12" cy="12" r="2" />
-    </svg>
-  ),
-  book: (className: string) => (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-    </svg>
-  ),
-  unlock: (className: string) => (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
-    </svg>
-  ),
-  clock: (className: string) => (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  ),
-  lightbulb: (className: string) => (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-    </svg>
-  ),
-  trophy: (className: string) => (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-    </svg>
-  ),
-  algebra: (className: string) => (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M4 12h8m-8 5h16" />
-    </svg>
-  ),
-  numbers: (className: string) => (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
-    </svg>
-  ),
-  geometry: (className: string) => (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-    </svg>
-  ),
-  probability: (className: string) => (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-    </svg>
-  ),
-};
-
-const AXIS_ICONS: Record<Axis, (className: string) => React.ReactNode> = {
-  ALG: Icons.algebra,
-  NUM: Icons.numbers,
-  GEO: Icons.geometry,
-  PROB: Icons.probability,
-};
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -181,15 +84,6 @@ function calculateTotalAtomsRemaining(axisPerformance: Record<Axis, AxisPerforma
   return TOTAL_ATOMS - totalDominated;
 }
 
-function calculatePotentialImprovement(axisPerformance: Record<Axis, AxisPerformance>): number {
-  const sorted = Object.entries(axisPerformance).sort((a, b) => a[1].percentage - b[1].percentage);
-  let totalGain = 0;
-  for (let i = 0; i < Math.min(3, sorted.length); i++) {
-    totalGain += ROUTE_DATA[sorted[i][0] as Axis].puntosGanados;
-  }
-  return totalGain;
-}
-
 function getWeeksByStudyTime(atomsRemaining: number) {
   const totalMinutes = atomsRemaining * 20;
   return {
@@ -202,36 +96,6 @@ function getWeeksByStudyTime(atomsRemaining: number) {
 // ============================================================================
 // ANIMATED COMPONENTS
 // ============================================================================
-
-function AnimatedCounter({ target, duration = 2000, delay = 0 }: {
-  target: number;
-  duration?: number;
-  delay?: number;
-}) {
-  const [count, setCount] = useState(0);
-  const [started, setStarted] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setStarted(true), delay);
-    return () => clearTimeout(timer);
-  }, [delay]);
-
-  useEffect(() => {
-    if (!started) return;
-    let startTime: number;
-    let animationFrame: number;
-    const animate = (currentTime: number) => {
-      if (!startTime) startTime = currentTime;
-      const progress = Math.min((currentTime - startTime) / duration, 1);
-      setCount(Math.floor((1 - Math.pow(1 - progress, 3)) * target));
-      if (progress < 1) animationFrame = requestAnimationFrame(animate);
-    };
-    animationFrame = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animationFrame);
-  }, [target, duration, started]);
-
-  return <span>{count}</span>;
-}
 
 function AxisProgressBar({ axis, data, isStrength, isOpportunity, delay }: {
   axis: Axis;
@@ -285,14 +149,14 @@ function AxisProgressBar({ axis, data, isStrength, isOpportunity, delay }: {
   );
 }
 
-function RouteCard({ axis, isRecommended, delay }: {
-  axis: Axis;
+function RouteCard({ route, isRecommended, delay }: {
+  route: LearningRouteData;
   isRecommended: boolean;
   delay: number;
 }) {
   const [isVisible, setIsVisible] = useState(false);
-  const route = ROUTE_DATA[axis];
-  const AxisIcon = AXIS_ICONS[axis];
+  const axisKey = route.axis as Axis;
+  const AxisIcon = AXIS_ICONS[axisKey] || Icons.book;
 
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), delay);
@@ -314,24 +178,24 @@ function RouteCard({ axis, isRecommended, delay }: {
             {AxisIcon("w-6 h-6 text-primary")}
           </div>
           <div className="flex-1">
-            <h4 className="font-bold text-charcoal text-lg">{route.titulo}</h4>
-            <p className="text-sm text-cool-gray mb-4">{route.subtitulo}</p>
+            <h4 className="font-bold text-charcoal text-lg">{route.title}</h4>
+            <p className="text-sm text-cool-gray mb-4">{route.subtitle}</p>
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div className="flex items-center gap-2">
                 {Icons.book("w-4 h-4 text-primary")}
-                <span className="text-charcoal">{route.atomos} átomos</span>
+                <span className="text-charcoal">{route.atomCount} átomos</span>
               </div>
               <div className="flex items-center gap-2">
                 {Icons.unlock("w-4 h-4 text-primary")}
-                <span className="text-charcoal">+{route.desbloqueados} desbloqueados</span>
+                <span className="text-charcoal">+{route.questionsUnlocked} preguntas</span>
               </div>
               <div className="flex items-center gap-2">
                 {Icons.trendUp("w-4 h-4 text-success")}
-                <span className="text-success font-semibold">+{route.puntosGanados} pts PAES</span>
+                <span className="text-success font-semibold">+{route.pointsGain} pts PAES</span>
               </div>
               <div className="flex items-center gap-2">
                 {Icons.clock("w-4 h-4 text-cool-gray")}
-                <span className="text-cool-gray">~{route.horasEstudio} hrs</span>
+                <span className="text-cool-gray">~{route.studyHours} hrs</span>
               </div>
             </div>
           </div>
@@ -345,13 +209,36 @@ function RouteCard({ axis, isRecommended, delay }: {
 // MAIN COMPONENT
 // ============================================================================
 
-export function ResultsScreen({ results, route: _route, totalCorrect, onSignup }: ResultsScreenProps) {
+export function ResultsScreen({
+  results,
+  route: _route,
+  totalCorrect,
+  atomResults = [],
+  onSignup,
+}: ResultsScreenProps) {
   const [showContent, setShowContent] = useState(false);
   const midScore = Math.round((results.paesMin + results.paesMax) / 2);
   const motivational = getMotivationalMessage(results.axisPerformance);
-  const potentialImprovement = calculatePotentialImprovement(results.axisPerformance);
   const atomsRemaining = calculateTotalAtomsRemaining(results.axisPerformance);
   const weeksByStudy = getWeeksByStudyTime(atomsRemaining);
+
+  // Fetch personalized learning routes based on diagnostic atom results
+  const { data: routesData, isLoading: routesLoading } = useLearningRoutes(atomResults);
+
+  // Sort routes by impact and memoize
+  const sortedRoutes = useMemo(() => {
+    if (!routesData?.routes) return [];
+    return sortRoutesByImpact(routesData.routes);
+  }, [routesData?.routes]);
+
+  // Calculate potential improvement from actual route data
+  const potentialImprovement = useMemo(() => {
+    if (routesData?.improvement) {
+      return Math.round((routesData.improvement.minPoints + routesData.improvement.maxPoints) / 2);
+    }
+    // Fallback based on low-hanging fruit
+    return sortedRoutes.slice(0, 3).reduce((sum, r) => sum + r.pointsGain, 0);
+  }, [routesData?.improvement, sortedRoutes]);
 
   const sortedAxes = (Object.keys(results.axisPerformance) as Axis[]).sort(
     (a, b) => results.axisPerformance[b].percentage - results.axisPerformance[a].percentage
@@ -437,12 +324,35 @@ export function ResultsScreen({ results, route: _route, totalCorrect, onSignup }
             <p className="text-center text-cool-gray mb-6 text-sm">
               Caminos personalizados para maximizar tu mejora
             </p>
-            <div className="space-y-4">
-              <RouteCard axis={weakestAxis} isRecommended={true} delay={1000} />
-              {sortedAxes.filter(a => a !== weakestAxis).slice(-2).map((axis, i) => (
-                <RouteCard key={axis} axis={axis} isRecommended={false} delay={1200 + i * 150} />
-              ))}
-            </div>
+            {routesLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {sortedRoutes.slice(0, 3).map((route, i) => (
+                  <RouteCard
+                    key={route.axis}
+                    route={route}
+                    isRecommended={i === 0}
+                    delay={1000 + i * 150}
+                  />
+                ))}
+              </div>
+            )}
+            {routesData?.lowHangingFruit && (
+              <div className="card p-4 mt-4 bg-success/5 border-success/20">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  {Icons.lightbulb("w-5 h-5 text-success")}
+                  <p className="text-sm font-medium text-charcoal">Preguntas cerca de desbloquear</p>
+                </div>
+                <p className="text-center text-sm text-cool-gray">
+                  <strong className="text-success">{routesData.lowHangingFruit.oneAway}</strong> preguntas
+                  a 1 átomo de distancia,{" "}
+                  <strong className="text-amber-600">{routesData.lowHangingFruit.twoAway}</strong> a 2 átomos
+                </p>
+              </div>
+            )}
             <div className="card p-4 mt-4 bg-primary/5 border-primary/20 flex items-center justify-center gap-2">
               {Icons.lightbulb("w-5 h-5 text-primary")}
               <p className="text-sm text-charcoal">
@@ -462,8 +372,16 @@ export function ResultsScreen({ results, route: _route, totalCorrect, onSignup }
               <div className="grid sm:grid-cols-2 gap-6">
                 <div>
                   <p className="text-cool-gray mb-2">Átomos por dominar:</p>
-                  <p className="text-3xl font-bold text-primary">{atomsRemaining}</p>
+                  <p className="text-3xl font-bold text-primary">
+                    {routesData ? TOTAL_ATOMS - routesData.summary.masteredAtoms : atomsRemaining}
+                  </p>
                   <p className="text-sm text-cool-gray mt-1">de {TOTAL_ATOMS} totales</p>
+                  {routesData && (
+                    <p className="text-sm text-success mt-2">
+                      {routesData.summary.unlockedQuestions} de {routesData.summary.totalQuestions} preguntas
+                      desbloqueadas
+                    </p>
+                  )}
                 </div>
                 <div>
                   <p className="text-cool-gray mb-3">¿Cuánto tiempo toma?</p>

@@ -659,11 +659,13 @@ export default function DiagnosticoPage() {
     const totalCorrect = [...r1Responses, ...stage2Responses].filter(
       (r) => r.isCorrect
     ).length;
+    const atomResultsForRoutes = computeAtomResults();
     return (
       <ResultsScreen
         results={results}
         route={route || "B"}
         totalCorrect={totalCorrect}
+        atomResults={atomResultsForRoutes}
         onSignup={() => setScreen("signup")}
       />
     );
