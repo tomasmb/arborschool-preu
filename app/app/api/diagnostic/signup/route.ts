@@ -7,6 +7,7 @@ import {
   atomMastery,
 } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { computeFullMasteryWithTransitivity } from "@/lib/diagnostic/atomMastery";
 
 interface StoredResponse {
   questionId: string;
@@ -137,27 +138,48 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create atom mastery records if provided
-    if (atomResults && Array.isArray(atomResults)) {
-      for (const result of atomResults) {
-        try {
+    // Compute full atom mastery with transitivity and save all atoms
+    if (atomResults && Array.isArray(atomResults) && atomResults.length > 0) {
+      try {
+        // Compute full mastery for ALL atoms using transitivity
+        const fullMastery = await computeFullMasteryWithTransitivity(
+          atomResults
+        );
+
+        // Save all atom mastery records (batch insert for efficiency)
+        const masteryRecords = fullMastery.map((result) => ({
+          userId,
+          atomId: result.atomId,
+          status: result.mastered
+            ? ("mastered" as const)
+            : ("not_started" as const),
+          isMastered: result.mastered,
+          masterySource: result.mastered ? ("diagnostic" as const) : null,
+          firstMasteredAt: result.mastered ? new Date() : null,
+          lastDemonstratedAt:
+            result.source === "direct" ? new Date() : null,
+          totalAttempts: result.source === "direct" ? 1 : 0,
+          correctAttempts:
+            result.source === "direct" && result.mastered ? 1 : 0,
+        }));
+
+        // Insert in batches to avoid overwhelming the database
+        const BATCH_SIZE = 50;
+        for (let i = 0; i < masteryRecords.length; i += BATCH_SIZE) {
+          const batch = masteryRecords.slice(i, i + BATCH_SIZE);
           await db
             .insert(atomMastery)
-            .values({
-              userId,
-              atomId: result.atomId,
-              status: result.mastered ? "mastered" : "not_started",
-              isMastered: result.mastered,
-              masterySource: result.mastered ? "diagnostic" : null,
-              firstMasteredAt: result.mastered ? new Date() : null,
-              lastDemonstratedAt: new Date(),
-              totalAttempts: 1,
-              correctAttempts: result.mastered ? 1 : 0,
-            })
+            .values(batch)
             .onConflictDoNothing();
-        } catch {
-          console.warn(`Could not create mastery for atom ${result.atomId}`);
         }
+
+        console.log(
+          `Saved ${masteryRecords.length} atom mastery records ` +
+            `(${masteryRecords.filter((r) => r.isMastered).length} mastered)`
+        );
+      } catch (error) {
+        console.error("Failed to compute/save full atom mastery:", error);
+        // Don't fail the signup if atom mastery fails
       }
     }
 
