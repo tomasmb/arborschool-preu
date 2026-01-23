@@ -20,8 +20,13 @@ import {
   getStoredResponses,
   clearStoredResponses,
   saveAttemptId,
+  getStoredAttemptId,
   isLocalAttempt,
   generateLocalAttemptId,
+  saveSessionState,
+  getStoredSessionState,
+  calculateRemainingTime,
+  clearAllDiagnosticData,
 } from "@/lib/diagnostic/storage";
 import { type QuestionAtom } from "@/lib/diagnostic/qtiParser";
 import {
@@ -85,6 +90,8 @@ export default function DiagnosticoPage() {
   // Timer and tracking state
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [timeRemaining, setTimeRemaining] = useState(TOTAL_TIME_SECONDS);
+  const [timerStartedAt, setTimerStartedAt] = useState<number | null>(null);
+  const [isRestored, setIsRestored] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const questionStartTime = useRef<number>(Date.now());
 
@@ -103,6 +110,77 @@ export default function DiagnosticoPage() {
   useEffect(() => {
     routeRef.current = route;
   }, [route]);
+
+  // Restore session from localStorage on mount
+  useEffect(() => {
+    const storedSession = getStoredSessionState();
+    const storedAttemptId = getStoredAttemptId();
+
+    if (storedSession && storedAttemptId) {
+      // Restore attempt ID
+      setAttemptId(storedAttemptId);
+
+      // Restore screen state (but not welcome - that means no active session)
+      if (storedSession.screen !== "welcome") {
+        setScreen(storedSession.screen);
+        setStage(storedSession.stage);
+        setQuestionIndex(storedSession.questionIndex);
+        setRoute(storedSession.route);
+        setTimerStartedAt(storedSession.timerStartedAt);
+
+        // Calculate remaining time based on when timer started
+        if (
+          storedSession.screen === "question" ||
+          storedSession.screen === "transition"
+        ) {
+          const remaining = calculateRemainingTime(
+            storedSession.timerStartedAt
+          );
+          setTimeRemaining(remaining);
+        }
+
+        // Restore results if on results/signup screen
+        if (storedSession.results) {
+          // We need full DiagnosticResults, but storage only has summary
+          // The full axis performance will be recalculated from responses
+          setResults(storedSession.results as DiagnosticResults);
+        }
+      }
+    }
+    setIsRestored(true);
+  }, []);
+
+  // Save session state when it changes
+  useEffect(() => {
+    // Don't save until initial restoration is complete
+    if (!isRestored) return;
+    // Don't save welcome or thankyou screens (these are entry/exit points)
+    if (screen === "welcome" || screen === "thankyou") return;
+
+    saveSessionState({
+      screen,
+      stage,
+      questionIndex,
+      route,
+      timerStartedAt: timerStartedAt || Date.now(),
+      results: results
+        ? {
+            paesMin: results.paesMin,
+            paesMax: results.paesMax,
+            level: results.level,
+            axisPerformance: results.axisPerformance,
+          }
+        : null,
+    });
+  }, [
+    isRestored,
+    screen,
+    stage,
+    questionIndex,
+    route,
+    timerStartedAt,
+    results,
+  ]);
 
   // Calculate results when time runs out
   const handleTimeUp = useCallback(() => {
@@ -156,6 +234,20 @@ export default function DiagnosticoPage() {
 
   // Start the test
   const startTest = async () => {
+    // Clear any previous session data when starting fresh
+    clearAllDiagnosticData();
+
+    // Reset all state for a fresh test
+    setStage(1);
+    setQuestionIndex(0);
+    setSelectedAnswer(null);
+    setIsDontKnow(false);
+    setR1Responses([]);
+    setStage2Responses([]);
+    setRoute(null);
+    setResults(null);
+    setTimeRemaining(TOTAL_TIME_SECONDS);
+
     try {
       const response = await fetch("/api/diagnostic/start", { method: "POST" });
       const data = await response.json();
@@ -173,10 +265,15 @@ export default function DiagnosticoPage() {
       setAttemptId(localId);
       saveAttemptId(localId);
     }
+
+    // Set timer start time for session persistence
+    const now = Date.now();
+    setTimerStartedAt(now);
+
     // Scroll to top when starting the test
     window.scrollTo(0, 0);
     setScreen("question");
-    questionStartTime.current = Date.now();
+    questionStartTime.current = now;
   };
 
   // Get current question
@@ -397,8 +494,8 @@ export default function DiagnosticoPage() {
       const data = await response.json();
 
       if (data.success) {
-        // Clear localStorage backup after successful signup
-        clearStoredResponses();
+        // Clear all localStorage data after successful signup
+        clearAllDiagnosticData();
         setSignupStatus("success");
         setScreen("thankyou");
       } else {
@@ -430,7 +527,7 @@ export default function DiagnosticoPage() {
     const isOfflineMode = isLocalAttempt(attemptId);
 
     return (
-      <div className="min-h-screen relative overflow-x-hidden">
+      <div className="min-h-screen relative">
         {/* Background decorations */}
         <div className="fixed inset-0 bg-gradient-to-b from-cream via-white to-off-white" />
         <div

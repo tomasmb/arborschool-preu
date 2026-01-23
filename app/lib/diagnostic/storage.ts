@@ -2,8 +2,11 @@
  * Local Storage Helpers for Diagnostic Test
  *
  * Provides backup storage for test responses in case API calls fail.
+ * Also persists session state to survive page refreshes.
  * Data is cleared after successful signup/completion.
  */
+
+import type { Route } from "./config";
 
 // ============================================================================
 // CONSTANTS
@@ -12,7 +15,11 @@
 export const STORAGE_KEYS = {
   ATTEMPT: "arbor_diagnostic_attempt",
   RESPONSES: "arbor_diagnostic_responses",
+  SESSION: "arbor_diagnostic_session",
 } as const;
+
+// Total test time in seconds (30 minutes)
+const TOTAL_TIME_SECONDS = 30 * 60;
 
 // ============================================================================
 // TYPES
@@ -111,4 +118,112 @@ export function isLocalAttempt(attemptId: string | null): boolean {
  */
 export function generateLocalAttemptId(): string {
   return `local-${Date.now()}`;
+}
+
+// ============================================================================
+// SESSION STATE STORAGE
+// ============================================================================
+
+type Screen =
+  | "welcome"
+  | "question"
+  | "transition"
+  | "results"
+  | "signup"
+  | "thankyou"
+  | "maintenance";
+
+/** Results summary for storage (full DiagnosticResults is too large) */
+export interface StoredResults {
+  paesMin: number;
+  paesMax: number;
+  level: string;
+  axisPerformance: Record<
+    string,
+    { correct: number; total: number; percentage: number }
+  >;
+}
+
+export interface SessionState {
+  screen: Screen;
+  stage: 1 | 2;
+  questionIndex: number;
+  route: Route | null;
+  /** Timestamp when timer started (for calculating remaining time) */
+  timerStartedAt: number;
+  /** Results data if test is completed */
+  results: StoredResults | null;
+  /** Timestamp when session was saved */
+  savedAt: number;
+}
+
+/**
+ * Save session state to localStorage.
+ * Called on significant state changes.
+ */
+export function saveSessionState(state: Omit<SessionState, "savedAt">): void {
+  try {
+    const sessionData: SessionState = {
+      ...state,
+      savedAt: Date.now(),
+    };
+    localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(sessionData));
+  } catch (error) {
+    console.error("Failed to save session state:", error);
+  }
+}
+
+/**
+ * Retrieve stored session state from localStorage.
+ * Returns null if no session or session is too old (>1 hour).
+ */
+export function getStoredSessionState(): SessionState | null {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.SESSION);
+    if (!stored) return null;
+
+    const session: SessionState = JSON.parse(stored);
+
+    // Session expires after 1 hour of inactivity
+    const ONE_HOUR = 60 * 60 * 1000;
+    if (Date.now() - session.savedAt > ONE_HOUR) {
+      clearSessionState();
+      return null;
+    }
+
+    return session;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Calculate remaining time based on when timer started.
+ * Returns 0 if time has expired.
+ */
+export function calculateRemainingTime(timerStartedAt: number): number {
+  const elapsed = Math.floor((Date.now() - timerStartedAt) / 1000);
+  const remaining = TOTAL_TIME_SECONDS - elapsed;
+  return Math.max(0, remaining);
+}
+
+/**
+ * Clear session state from localStorage.
+ * Called when starting a new test or after signup.
+ */
+export function clearSessionState(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEYS.SESSION);
+  } catch (error) {
+    console.error("Failed to clear session state:", error);
+  }
+}
+
+/**
+ * Clear all diagnostic data (session, responses, attempt).
+ * Called when user wants to start completely fresh.
+ */
+export function clearAllDiagnosticData(): void {
+  clearStoredResponses();
+  clearSessionState();
 }
