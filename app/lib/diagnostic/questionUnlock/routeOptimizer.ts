@@ -168,12 +168,10 @@ export function buildAxisRoute(
     simulatedMastery = new Set([...simulatedMastery, atomId]);
 
     // Check if this atom is a prerequisite for others in the route
-    const isPrerequisite = orderedAtoms
-      .slice(i + 1)
-      .some((laterAtomId) => {
-        const laterAtom = allAtoms.get(laterAtomId);
-        return laterAtom?.prerequisiteIds.includes(atomId);
-      });
+    const isPrerequisite = orderedAtoms.slice(i + 1).some((laterAtomId) => {
+      const laterAtom = allAtoms.get(laterAtomId);
+      return laterAtom?.prerequisiteIds.includes(atomId);
+    });
 
     atomsInRoute.push({
       atomId,
@@ -191,7 +189,9 @@ export function buildAxisRoute(
   const totalQuestionsUnlocked = finalUnlocked - initialUnlocked;
 
   // Calculate per-test improvement (questions are spread across multiple tests)
-  const questionsPerTest = Math.round(totalQuestionsUnlocked / config.numOfficialTests);
+  const questionsPerTest = Math.round(
+    totalQuestionsUnlocked / config.numOfficialTests
+  );
 
   // Use actual PAES table for point estimation
   // Assume average student starts around 20 correct (~460 pts)
@@ -278,8 +278,7 @@ export function findQuickWins(
 ): AtomMarginalValue[] {
   return marginalValues
     .filter(
-      (v) =>
-        v.immediateUnlocks.length > 0 && v.prerequisitesNeeded.length === 0
+      (v) => v.immediateUnlocks.length > 0 && v.prerequisitesNeeded.length === 0
     )
     .sort((a, b) => b.immediateUnlocks.length - a.immediateUnlocks.length)
     .slice(0, limit);

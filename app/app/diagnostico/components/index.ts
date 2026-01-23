@@ -10,7 +10,10 @@ export { ThankYouScreen } from "./ThankYouScreen";
 export { MaintenanceScreen } from "./MaintenanceScreen";
 export { DiagnosticHeader } from "./DiagnosticHeader";
 export { Confetti } from "./Confetti";
-export { QuestionReviewDrawer, type ResponseForReview } from "./QuestionReviewDrawer";
+export {
+  QuestionReviewDrawer,
+  type ResponseForReview,
+} from "./QuestionReviewDrawer";
 export {
   Timer,
   formatTime,

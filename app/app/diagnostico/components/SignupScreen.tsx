@@ -113,7 +113,10 @@ export function SignupScreen({
 
               {/* Animated border glow when focused */}
               {isFocused && (
-                <div className="absolute inset-0 rounded-xl bg-accent/5 -z-10 blur-sm" aria-hidden="true" />
+                <div
+                  className="absolute inset-0 rounded-xl bg-accent/5 -z-10 blur-sm"
+                  aria-hidden="true"
+                />
               )}
             </div>
 
@@ -145,7 +148,11 @@ export function SignupScreen({
             <button
               type="submit"
               disabled={!email || status === "loading"}
-              aria-label={status === "loading" ? "Guardando email..." : "Guardar email y recibir notificaciones"}
+              aria-label={
+                status === "loading"
+                  ? "Guardando email..."
+                  : "Guardar email y recibir notificaciones"
+              }
               className="btn-cta w-full py-4 text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] 
                 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >

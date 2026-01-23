@@ -216,6 +216,7 @@ export async function getQuestionAtomStats(): Promise<{
     primaryMappings,
     secondaryMappings,
     avgAtomsPerQuestion: total > 0 ? totalMappings / total : 0,
-    avgQuestionsPerAtom: atomsWithQuestions > 0 ? totalMappings / atomsWithQuestions : 0,
+    avgQuestionsPerAtom:
+      atomsWithQuestions > 0 ? totalMappings / atomsWithQuestions : 0,
   };
 }

@@ -63,7 +63,9 @@ export async function fetchAllAtoms(): Promise<AtomWithPrereqs[]> {
 /**
  * Fetches all atoms as a Map for O(1) lookups.
  */
-export async function fetchAllAtomsAsMap(): Promise<Map<string, AtomWithPrereqs>> {
+export async function fetchAllAtomsAsMap(): Promise<
+  Map<string, AtomWithPrereqs>
+> {
   const allAtoms = await fetchAllAtoms();
   const atomMap = new Map<string, AtomWithPrereqs>();
 

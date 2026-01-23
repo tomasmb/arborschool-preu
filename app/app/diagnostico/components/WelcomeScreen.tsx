@@ -40,7 +40,9 @@ function InfoCard({
       >
         {value}
       </div>
-      <div className="text-xs sm:text-sm text-cool-gray font-medium">{label}</div>
+      <div className="text-xs sm:text-sm text-cool-gray font-medium">
+        {label}
+      </div>
     </div>
   );
 }

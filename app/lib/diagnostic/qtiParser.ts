@@ -180,7 +180,9 @@ function processItemBody(itemBody: Element): string {
       if (
         child.nodeType === Node.ELEMENT_NODE &&
         ["p", "div", "table"].includes(
-          ((child as Element).localName || (child as Element).tagName).toLowerCase()
+          (
+            (child as Element).localName || (child as Element).tagName
+          ).toLowerCase()
         )
       ) {
         html += content;
@@ -196,9 +198,7 @@ function processItemBody(itemBody: Element): string {
 /**
  * Parse choice elements into structured options
  */
-function parseChoices(
-  choices: NodeListOf<Element>
-): ParsedQuestion["options"] {
+function parseChoices(choices: NodeListOf<Element>): ParsedQuestion["options"] {
   const letters = ["A", "B", "C", "D"];
   const options: ParsedQuestion["options"] = [];
 

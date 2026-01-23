@@ -253,12 +253,19 @@ export function calculatePAESImprovement(
   const avgQuestionsUnlockedPerTest = Math.round(questionsUnlocked / numTests);
 
   // Use actual PAES table for accurate point calculation
-  const improvement = calcPaesImprovement(currentCorrect, avgQuestionsUnlockedPerTest);
+  const improvement = calcPaesImprovement(
+    currentCorrect,
+    avgQuestionsUnlockedPerTest
+  );
 
   // Add uncertainty range (±15%) since question selection varies
   const uncertaintyFactor = 0.15;
-  const minPoints = Math.round(improvement.improvement * (1 - uncertaintyFactor));
-  const maxPoints = Math.round(improvement.improvement * (1 + uncertaintyFactor));
+  const minPoints = Math.round(
+    improvement.improvement * (1 - uncertaintyFactor)
+  );
+  const maxPoints = Math.round(
+    improvement.improvement * (1 + uncertaintyFactor)
+  );
 
   // Percentage of a single test this represents
   const percentageOfTest = Math.round(

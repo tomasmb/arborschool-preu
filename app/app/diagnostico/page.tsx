@@ -69,13 +69,17 @@ export default function DiagnosticoPage() {
 
   // Responses and results state
   const [r1Responses, setR1Responses] = useState<DiagnosticResponse[]>([]);
-  const [stage2Responses, setStage2Responses] = useState<DiagnosticResponse[]>([]);
+  const [stage2Responses, setStage2Responses] = useState<DiagnosticResponse[]>(
+    []
+  );
   const [route, setRoute] = useState<Route | null>(null);
   const [results, setResults] = useState<DiagnosticResults | null>(null);
 
   // Signup state
   const [email, setEmail] = useState("");
-  const [signupStatus, setSignupStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [signupStatus, setSignupStatus] = useState<
+    "idle" | "loading" | "success" | "error"
+  >("idle");
   const [signupError, setSignupError] = useState("");
 
   // Timer and tracking state
@@ -90,9 +94,15 @@ export default function DiagnosticoPage() {
   const routeRef = useRef(route);
 
   // Keep refs in sync with state
-  useEffect(() => { r1ResponsesRef.current = r1Responses; }, [r1Responses]);
-  useEffect(() => { stage2ResponsesRef.current = stage2Responses; }, [stage2Responses]);
-  useEffect(() => { routeRef.current = route; }, [route]);
+  useEffect(() => {
+    r1ResponsesRef.current = r1Responses;
+  }, [r1Responses]);
+  useEffect(() => {
+    stage2ResponsesRef.current = stage2Responses;
+  }, [stage2Responses]);
+  useEffect(() => {
+    routeRef.current = route;
+  }, [route]);
 
   // Calculate results when time runs out
   const handleTimeUp = useCallback(() => {
@@ -103,7 +113,10 @@ export default function DiagnosticoPage() {
     const finalRoute = routeRef.current || "B";
 
     // Use consolidated results calculator
-    const calculatedResults = calculateDiagnosticResults(allResponses, finalRoute);
+    const calculatedResults = calculateDiagnosticResults(
+      allResponses,
+      finalRoute
+    );
     setResults(calculatedResults);
 
     if (timerRef.current) {
@@ -173,8 +186,14 @@ export default function DiagnosticoPage() {
   };
 
   // Handle answer selection
-  const handleSelectAnswer = (answer: string) => { setSelectedAnswer(answer); setIsDontKnow(false); };
-  const handleSelectDontKnow = () => { setIsDontKnow(true); setSelectedAnswer(null); };
+  const handleSelectAnswer = (answer: string) => {
+    setSelectedAnswer(answer);
+    setIsDontKnow(false);
+  };
+  const handleSelectDontKnow = () => {
+    setIsDontKnow(true);
+    setSelectedAnswer(null);
+  };
 
   // Submit response and advance
   const handleNext = async (
@@ -263,11 +282,22 @@ export default function DiagnosticoPage() {
     }
   };
 
-  const resetQuestionState = () => { setSelectedAnswer(null); setIsDontKnow(false); questionStartTime.current = Date.now(); };
-  const continueToStage2 = () => { setStage(2); setQuestionIndex(0); resetQuestionState(); setScreen("question"); };
+  const resetQuestionState = () => {
+    setSelectedAnswer(null);
+    setIsDontKnow(false);
+    questionStartTime.current = Date.now();
+  };
+  const continueToStage2 = () => {
+    setStage(2);
+    setQuestionIndex(0);
+    resetQuestionState();
+    setScreen("question");
+  };
 
   // Calculate and display results
-  const calculateAndShowResults = async (finalStage2Responses: DiagnosticResponse[]) => {
+  const calculateAndShowResults = async (
+    finalStage2Responses: DiagnosticResponse[]
+  ) => {
     const allResponses = [...r1Responses, ...finalStage2Responses];
     const finalRoute = route || "B";
     showResults(allResponses, finalRoute);
@@ -293,9 +323,15 @@ export default function DiagnosticoPage() {
   };
 
   // Shared results display logic
-  const showResults = (allResponses: DiagnosticResponse[], finalRoute: Route) => {
+  const showResults = (
+    allResponses: DiagnosticResponse[],
+    finalRoute: Route
+  ) => {
     // Use consolidated results calculator
-    const calculatedResults = calculateDiagnosticResults(allResponses, finalRoute);
+    const calculatedResults = calculateDiagnosticResults(
+      allResponses,
+      finalRoute
+    );
     setResults(calculatedResults);
 
     if (timerRef.current) {
@@ -307,7 +343,8 @@ export default function DiagnosticoPage() {
   };
 
   // Compute atom mastery from all responses
-  const getAtomResults = () => computeAtomMastery([...r1Responses, ...stage2Responses]);
+  const getAtomResults = () =>
+    computeAtomMastery([...r1Responses, ...stage2Responses]);
 
   // Handle email signup
   const handleSignup = async (e: React.FormEvent) => {
@@ -390,8 +427,14 @@ export default function DiagnosticoPage() {
       <div className="min-h-screen relative overflow-hidden">
         {/* Background decorations */}
         <div className="fixed inset-0 bg-gradient-to-b from-cream via-white to-off-white" />
-        <div className="fixed top-20 right-0 w-80 h-80 bg-accent/5 rounded-full blur-3xl" aria-hidden="true" />
-        <div className="fixed bottom-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" aria-hidden="true" />
+        <div
+          className="fixed top-20 right-0 w-80 h-80 bg-accent/5 rounded-full blur-3xl"
+          aria-hidden="true"
+        />
+        <div
+          className="fixed bottom-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl"
+          aria-hidden="true"
+        />
 
         {/* Header with progress and timer */}
         <DiagnosticHeader

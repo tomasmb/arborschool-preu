@@ -142,9 +142,8 @@ export async function POST(request: NextRequest) {
     if (atomResults && Array.isArray(atomResults) && atomResults.length > 0) {
       try {
         // Compute full mastery for ALL atoms using transitivity
-        const fullMastery = await computeFullMasteryWithTransitivity(
-          atomResults
-        );
+        const fullMastery =
+          await computeFullMasteryWithTransitivity(atomResults);
 
         // Save all atom mastery records (batch insert for efficiency)
         const masteryRecords = fullMastery.map((result) => ({
@@ -156,8 +155,7 @@ export async function POST(request: NextRequest) {
           isMastered: result.mastered,
           masterySource: result.mastered ? ("diagnostic" as const) : null,
           firstMasteredAt: result.mastered ? new Date() : null,
-          lastDemonstratedAt:
-            result.source === "direct" ? new Date() : null,
+          lastDemonstratedAt: result.source === "direct" ? new Date() : null,
           totalAttempts: result.source === "direct" ? 1 : 0,
           correctAttempts:
             result.source === "direct" && result.mastered ? 1 : 0,
@@ -167,10 +165,7 @@ export async function POST(request: NextRequest) {
         const BATCH_SIZE = 50;
         for (let i = 0; i < masteryRecords.length; i += BATCH_SIZE) {
           const batch = masteryRecords.slice(i, i + BATCH_SIZE);
-          await db
-            .insert(atomMastery)
-            .values(batch)
-            .onConflictDoNothing();
+          await db.insert(atomMastery).values(batch).onConflictDoNothing();
         }
 
         console.log(

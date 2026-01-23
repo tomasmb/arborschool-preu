@@ -41,7 +41,10 @@ export function buildMasteryState(
   // The shared module accepts AtomWithPrereqs with just id and prerequisiteIds
   // Our AtomWithPrereqs has additional fields (axis, title) which is fine
   // due to TypeScript's structural typing
-  return computeMasteryAsMap(directResults, allAtoms as Map<string, { id: string; prerequisiteIds: string[] | null }>);
+  return computeMasteryAsMap(
+    directResults,
+    allAtoms as Map<string, { id: string; prerequisiteIds: string[] | null }>
+  );
 }
 
 /**

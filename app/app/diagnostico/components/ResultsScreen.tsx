@@ -2,11 +2,22 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
-import { type Route, type Axis, type MSTQuestion, AXIS_NAMES } from "@/lib/diagnostic/config";
+import {
+  type Route,
+  type Axis,
+  type MSTQuestion,
+  AXIS_NAMES,
+} from "@/lib/diagnostic/config";
 import { Confetti } from "./Confetti";
 import { Icons, AnimatedCounter, CollapsibleSection } from "./shared";
-import { useLearningRoutes, sortRoutesByImpact } from "../hooks/useLearningRoutes";
-import { QuestionReviewDrawer, type ResponseForReview } from "./QuestionReviewDrawer";
+import {
+  useLearningRoutes,
+  sortRoutesByImpact,
+} from "../hooks/useLearningRoutes";
+import {
+  QuestionReviewDrawer,
+  type ResponseForReview,
+} from "./QuestionReviewDrawer";
 import {
   AxisProgressBar,
   RouteCard,
@@ -79,7 +90,8 @@ export function ResultsScreen({
   }, [responses]);
 
   // Fetch personalized learning routes based on diagnostic atom results
-  const { data: routesData, isLoading: routesLoading } = useLearningRoutes(atomResults);
+  const { data: routesData, isLoading: routesLoading } =
+    useLearningRoutes(atomResults);
 
   // Sort routes by impact and memoize
   const sortedRoutes = useMemo(() => {
@@ -90,14 +102,19 @@ export function ResultsScreen({
   // Calculate potential improvement from actual route data
   const potentialImprovement = useMemo(() => {
     if (routesData?.improvement) {
-      return Math.round((routesData.improvement.minPoints + routesData.improvement.maxPoints) / 2);
+      return Math.round(
+        (routesData.improvement.minPoints + routesData.improvement.maxPoints) /
+          2
+      );
     }
     // Fallback based on low-hanging fruit
     return sortedRoutes.slice(0, 3).reduce((sum, r) => sum + r.pointsGain, 0);
   }, [routesData?.improvement, sortedRoutes]);
 
   const sortedAxes = (Object.keys(results.axisPerformance) as Axis[]).sort(
-    (a, b) => results.axisPerformance[b].percentage - results.axisPerformance[a].percentage
+    (a, b) =>
+      results.axisPerformance[b].percentage -
+      results.axisPerformance[a].percentage
   );
   const strongestAxis = sortedAxes[0];
   const weakestAxis = sortedAxes[sortedAxes.length - 1];
@@ -118,14 +135,18 @@ export function ResultsScreen({
         <header className="bg-white/80 backdrop-blur-lg border-b border-gray-100 sticky top-0 z-20">
           <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-center gap-3">
             <Image src="/logo-arbor.svg" alt="Arbor" width={36} height={36} />
-            <span className="text-xl font-serif font-bold text-primary">Arbor PreU</span>
+            <span className="text-xl font-serif font-bold text-primary">
+              Arbor PreU
+            </span>
           </div>
         </header>
 
         <div className="max-w-4xl mx-auto px-4 py-8">
           {/* Hero Score */}
-          <div className={`text-center mb-10 transition-all duration-700 
-            ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+          <div
+            className={`text-center mb-10 transition-all duration-700 
+            ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+          >
             <div className="inline-flex items-center gap-2 text-sm font-medium text-success bg-success/10 px-4 py-2 rounded-full mb-6">
               <span className="w-2 h-2 bg-success rounded-full animate-pulse" />
               Diagnóstico Completado
@@ -142,11 +163,16 @@ export function ResultsScreen({
             <div className="card inline-block px-6 py-4 bg-gradient-to-r from-amber-50 to-white border-amber-200">
               <div className="flex items-center justify-center gap-2 mb-1">
                 {Icons.star("w-5 h-5 text-amber-500")}
-                <p className="text-lg text-charcoal font-medium">{motivational.message}</p>
+                <p className="text-lg text-charcoal font-medium">
+                  {motivational.message}
+                </p>
               </div>
               <p className="text-sm text-cool-gray mt-2 flex items-center justify-center gap-1">
                 {Icons.trendUp("w-4 h-4 text-success")}
-                Con trabajo enfocado puedes subir <strong className="text-success ml-1">+{potentialImprovement} puntos</strong>
+                Con trabajo enfocado puedes subir{" "}
+                <strong className="text-success ml-1">
+                  +{potentialImprovement} puntos
+                </strong>
               </p>
             </div>
           </div>
@@ -177,7 +203,11 @@ export function ResultsScreen({
           {/* Learning Routes */}
           <CollapsibleSection
             title="Rutas de Aprendizaje"
-            summary={sortedRoutes[0] ? `Recomendado: ${sortedRoutes[0].title}` : "Cargando..."}
+            summary={
+              sortedRoutes[0]
+                ? `Recomendado: ${sortedRoutes[0].title}`
+                : "Cargando..."
+            }
             helpText="Caminos personalizados basados en tu diagnóstico. Cada ruta te ayuda a dominar átomos de conocimiento que desbloquean más preguntas PAES."
             defaultExpanded={true}
             delay={500}
@@ -206,19 +236,27 @@ export function ResultsScreen({
               <div className="card p-4 mt-4 bg-success/5 border-success/20">
                 <div className="flex items-center justify-center gap-2 mb-2">
                   {Icons.lightbulb("w-5 h-5 text-success")}
-                  <p className="text-sm font-medium text-charcoal">Preguntas cerca de desbloquear</p>
+                  <p className="text-sm font-medium text-charcoal">
+                    Preguntas cerca de desbloquear
+                  </p>
                 </div>
                 <p className="text-center text-sm text-cool-gray">
-                  <strong className="text-success">{routesData.lowHangingFruit.oneAway}</strong> preguntas
-                  a 1 átomo de distancia,{" "}
-                  <strong className="text-amber-600">{routesData.lowHangingFruit.twoAway}</strong> a 2 átomos
+                  <strong className="text-success">
+                    {routesData.lowHangingFruit.oneAway}
+                  </strong>{" "}
+                  preguntas a 1 átomo de distancia,{" "}
+                  <strong className="text-amber-600">
+                    {routesData.lowHangingFruit.twoAway}
+                  </strong>{" "}
+                  a 2 átomos
                 </p>
               </div>
             )}
             <div className="card p-4 mt-4 bg-primary/5 border-primary/20 flex items-center justify-center gap-2">
               {Icons.lightbulb("w-5 h-5 text-primary")}
               <p className="text-sm text-charcoal">
-                <strong>Las rutas son acumulativas.</strong> Al terminar una, desbloqueas nuevos caminos.
+                <strong>Las rutas son acumulativas.</strong> Al terminar una,
+                desbloqueas nuevos caminos.
               </p>
             </div>
           </CollapsibleSection>
@@ -235,18 +273,25 @@ export function ResultsScreen({
             <div className="card p-6 bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
               <div className="flex items-center gap-2 mb-4">
                 {Icons.trophy("w-6 h-6 text-accent")}
-                <span className="text-lg font-semibold text-charcoal">Resumen de progreso</span>
+                <span className="text-lg font-semibold text-charcoal">
+                  Resumen de progreso
+                </span>
               </div>
               <div className="grid sm:grid-cols-2 gap-6">
                 <div>
                   <p className="text-cool-gray mb-2">Átomos por dominar:</p>
                   <p className="text-3xl font-bold text-primary">
-                    {routesData ? TOTAL_ATOMS - routesData.summary.masteredAtoms : atomsRemaining}
+                    {routesData
+                      ? TOTAL_ATOMS - routesData.summary.masteredAtoms
+                      : atomsRemaining}
                   </p>
-                  <p className="text-sm text-cool-gray mt-1">de {TOTAL_ATOMS} totales</p>
+                  <p className="text-sm text-cool-gray mt-1">
+                    de {TOTAL_ATOMS} totales
+                  </p>
                   {routesData && (
                     <p className="text-sm text-success mt-2">
-                      {routesData.summary.unlockedQuestions} de {routesData.summary.totalQuestions} preguntas
+                      {routesData.summary.unlockedQuestions} de{" "}
+                      {routesData.summary.totalQuestions} preguntas
                       desbloqueadas
                     </p>
                   )}
@@ -256,42 +301,61 @@ export function ResultsScreen({
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-charcoal">30 min/día</span>
-                      <span className="font-semibold text-primary">~{weeksByStudy.thirtyMin} semanas</span>
+                      <span className="font-semibold text-primary">
+                        ~{weeksByStudy.thirtyMin} semanas
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-charcoal">45 min/día</span>
-                      <span className="font-semibold text-primary">~{weeksByStudy.fortyFiveMin} semanas</span>
+                      <span className="font-semibold text-primary">
+                        ~{weeksByStudy.fortyFiveMin} semanas
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-charcoal">1 hora/día</span>
-                      <span className="font-semibold text-primary">~{weeksByStudy.sixtyMin} semanas</span>
+                      <span className="font-semibold text-primary">
+                        ~{weeksByStudy.sixtyMin} semanas
+                      </span>
                     </div>
                   </div>
                 </div>
               </div>
               <p className="text-sm text-cool-gray mt-4 text-center italic">
-                No tienes que hacerlo todo de una vez. Cada átomo que dominas te acerca más a tu máximo potencial.
+                No tienes que hacerlo todo de una vez. Cada átomo que dominas te
+                acerca más a tu máximo potencial.
               </p>
             </div>
           </CollapsibleSection>
 
           {/* Stats Summary */}
-          <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 transition-all duration-700 delay-300
-            ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+          <div
+            className={`grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 transition-all duration-700 delay-300
+            ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+          >
             <div className="card p-5 text-center bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
-              <div className="text-3xl font-bold text-primary mb-1">{totalCorrect}/16</div>
-              <div className="text-sm text-cool-gray font-medium">Respuestas Correctas</div>
+              <div className="text-3xl font-bold text-primary mb-1">
+                {totalCorrect}/16
+              </div>
+              <div className="text-sm text-cool-gray font-medium">
+                Respuestas Correctas
+              </div>
             </div>
             <div className="card p-5 text-center bg-gradient-to-br from-success/5 to-success/10 border-success/20">
-              <div className="text-3xl font-bold text-success mb-1">+{potentialImprovement}</div>
-              <div className="text-sm text-cool-gray font-medium">Puntos Alcanzables</div>
+              <div className="text-3xl font-bold text-success mb-1">
+                +{potentialImprovement}
+              </div>
+              <div className="text-sm text-cool-gray font-medium">
+                Puntos Alcanzables
+              </div>
             </div>
           </div>
 
           {/* Question Review Trigger */}
           {responsesForReview.length > 0 && (
-            <div className={`mb-10 transition-all duration-700 delay-500
-              ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+            <div
+              className={`mb-10 transition-all duration-700 delay-500
+              ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+            >
               <button
                 onClick={() => setShowReviewDrawer(true)}
                 className="w-full card p-4 flex items-center justify-center gap-3 
@@ -319,15 +383,22 @@ export function ResultsScreen({
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
                 </svg>
               </button>
             </div>
           )}
 
           {/* CTA */}
-          <div className={`transition-all duration-700 delay-1000
-            ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+          <div
+            className={`transition-all duration-700 delay-1000
+            ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+          >
             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary-light p-6 sm:p-8 text-center">
               <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
               <div className="absolute bottom-0 left-0 w-32 h-32 bg-accent/20 rounded-full blur-2xl" />
@@ -336,15 +407,31 @@ export function ResultsScreen({
                   ¿Listo para mejorar tu puntaje?
                 </h3>
                 <p className="text-white/80 mb-6 max-w-md mx-auto">
-                  Guarda tus resultados y te avisamos cuando tu plan de estudio personalizado esté listo.
+                  Guarda tus resultados y te avisamos cuando tu plan de estudio
+                  personalizado esté listo.
                 </p>
-                <button onClick={onSignup} className="btn-cta px-10 py-4 text-lg shadow-xl hover:scale-105 transition-transform">
+                <button
+                  onClick={onSignup}
+                  className="btn-cta px-10 py-4 text-lg shadow-xl hover:scale-105 transition-transform"
+                >
                   Guardar mis Resultados
-                  <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  <svg
+                    className="w-5 h-5 ml-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 7l5 5m0 0l-5 5m5-5H6"
+                    />
                   </svg>
                 </button>
-                <p className="text-white/60 text-sm mt-4">Te contactaremos muy pronto</p>
+                <p className="text-white/60 text-sm mt-4">
+                  Te contactaremos muy pronto
+                </p>
               </div>
             </div>
           </div>

@@ -32,8 +32,14 @@ export interface DiagnosticResults {
   paesMin: number;
   paesMax: number;
   level: string;
-  axisPerformance: Record<Axis, { correct: number; total: number; percentage: number }>;
-  skillPerformance: Record<Skill, { correct: number; total: number; percentage: number }>;
+  axisPerformance: Record<
+    Axis,
+    { correct: number; total: number; percentage: number }
+  >;
+  skillPerformance: Record<
+    Skill,
+    { correct: number; total: number; percentage: number }
+  >;
 }
 
 // ============================================================================
@@ -99,7 +105,9 @@ export interface AtomResult {
  * @param responses - All question responses
  * @returns Array of atom mastery results
  */
-export function computeAtomMastery(responses: DiagnosticResponse[]): AtomResult[] {
+export function computeAtomMastery(
+  responses: DiagnosticResponse[]
+): AtomResult[] {
   const atomMap = new Map<string, boolean>();
 
   responses.forEach((response) => {

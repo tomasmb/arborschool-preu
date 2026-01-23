@@ -19,7 +19,12 @@ export interface AxisPerformance {
 // CONSTANTS
 // ============================================================================
 
-export const ATOM_COUNTS: Record<Axis, number> = { ALG: 80, NUM: 55, GEO: 43, PROB: 51 };
+export const ATOM_COUNTS: Record<Axis, number> = {
+  ALG: 80,
+  NUM: 55,
+  GEO: 43,
+  PROB: 51,
+};
 export const TOTAL_ATOMS = 229;
 
 // ============================================================================
@@ -43,17 +48,30 @@ export function getMotivationalMessage(
     PROB: `Eres fuerte en Probabilidad. ${percentage}% de dominio en datos y azar.`,
   };
 
-  return { axis, axisName: AXIS_NAMES[axis], percentage, message: messages[axis] };
+  return {
+    axis,
+    axisName: AXIS_NAMES[axis],
+    percentage,
+    message: messages[axis],
+  };
 }
 
-export function calculateAtomsDominated(percentage: number, totalAtoms: number): number {
+export function calculateAtomsDominated(
+  percentage: number,
+  totalAtoms: number
+): number {
   return Math.round((percentage / 100) * totalAtoms);
 }
 
-export function calculateTotalAtomsRemaining(axisPerformance: Record<Axis, AxisPerformance>): number {
+export function calculateTotalAtomsRemaining(
+  axisPerformance: Record<Axis, AxisPerformance>
+): number {
   let totalDominated = 0;
   for (const axis of Object.keys(axisPerformance) as Axis[]) {
-    totalDominated += calculateAtomsDominated(axisPerformance[axis].percentage, ATOM_COUNTS[axis]);
+    totalDominated += calculateAtomsDominated(
+      axisPerformance[axis].percentage,
+      ATOM_COUNTS[axis]
+    );
   }
   return TOTAL_ATOMS - totalDominated;
 }
@@ -79,9 +97,18 @@ interface AxisProgressBarProps {
   delay: number;
 }
 
-export function AxisProgressBar({ axis, data, isStrength, isOpportunity, delay }: AxisProgressBarProps) {
+export function AxisProgressBar({
+  axis,
+  data,
+  isStrength,
+  isOpportunity,
+  delay,
+}: AxisProgressBarProps) {
   const [isVisible, setIsVisible] = useState(false);
-  const atomsDominated = calculateAtomsDominated(data.percentage, ATOM_COUNTS[axis]);
+  const atomsDominated = calculateAtomsDominated(
+    data.percentage,
+    ATOM_COUNTS[axis]
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), delay);
@@ -95,7 +122,9 @@ export function AxisProgressBar({ axis, data, isStrength, isOpportunity, delay }
   };
 
   return (
-    <div className={`transition-all duration-500 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+    <div
+      className={`transition-all duration-500 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+    >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <span className="font-medium text-charcoal">{AXIS_NAMES[axis]}</span>
@@ -110,7 +139,9 @@ export function AxisProgressBar({ axis, data, isStrength, isOpportunity, delay }
             </span>
           )}
         </div>
-        <span className="text-sm text-cool-gray">{atomsDominated}/{ATOM_COUNTS[axis]} atomos</span>
+        <span className="text-sm text-cool-gray">
+          {atomsDominated}/{ATOM_COUNTS[axis]} atomos
+        </span>
       </div>
       <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
         <div
@@ -119,7 +150,9 @@ export function AxisProgressBar({ axis, data, isStrength, isOpportunity, delay }
         />
       </div>
       <div className="text-right mt-1">
-        <span className="text-sm font-semibold text-charcoal">{data.percentage}%</span>
+        <span className="text-sm font-semibold text-charcoal">
+          {data.percentage}%
+        </span>
       </div>
     </div>
   );
@@ -146,9 +179,13 @@ export function RouteCard({ route, isRecommended, delay }: RouteCardProps) {
   }, [delay]);
 
   return (
-    <div className={`transition-all duration-500 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}
-      ${isRecommended ? "ring-2 ring-accent ring-offset-2" : ""}`}>
-      <div className={`card p-6 ${isRecommended ? "bg-gradient-to-br from-accent/5 to-white" : ""}`}>
+    <div
+      className={`transition-all duration-500 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}
+      ${isRecommended ? "ring-2 ring-accent ring-offset-2" : ""}`}
+    >
+      <div
+        className={`card p-6 ${isRecommended ? "bg-gradient-to-br from-accent/5 to-white" : ""}`}
+      >
         {isRecommended && (
           <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-accent/10 text-accent text-xs font-semibold rounded-full mb-4">
             {Icons.target("w-3.5 h-3.5")}
@@ -169,11 +206,15 @@ export function RouteCard({ route, isRecommended, delay }: RouteCardProps) {
               </div>
               <div className="flex items-center gap-2">
                 {Icons.unlock("w-4 h-4 text-primary")}
-                <span className="text-charcoal">+{route.questionsUnlocked} preguntas</span>
+                <span className="text-charcoal">
+                  +{route.questionsUnlocked} preguntas
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 {Icons.trendUp("w-4 h-4 text-success")}
-                <span className="text-success font-semibold">+{route.pointsGain} pts PAES</span>
+                <span className="text-success font-semibold">
+                  +{route.pointsGain} pts PAES
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 {Icons.clock("w-4 h-4 text-cool-gray")}

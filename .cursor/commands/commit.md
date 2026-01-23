@@ -47,6 +47,17 @@ cd app && npm run typecheck
 - All TypeScript errors must be fixed before committing
 - This mirrors what the CI/CD pipeline runs, preventing deploy failures
 
+### 3c. Formatting Check
+
+Run Prettier to verify code formatting:
+
+```bash
+cd app && npm run format:check
+```
+
+- If formatting issues exist, run `npm run format` to fix them
+- All files must pass formatting check before committing
+
 ### 4. File Length
 
 Verify all modified files are under 500 lines:

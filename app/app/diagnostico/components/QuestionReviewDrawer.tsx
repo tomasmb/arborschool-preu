@@ -53,7 +53,10 @@ function serializeNodeToHtml(node: Node): string {
   const tagName = el.localName || el.tagName.toLowerCase();
 
   // Preserve MathML
-  if (tagName === "math" || el.namespaceURI === "http://www.w3.org/1998/Math/MathML") {
+  if (
+    tagName === "math" ||
+    el.namespaceURI === "http://www.w3.org/1998/Math/MathML"
+  ) {
     return new XMLSerializer().serializeToString(el);
   }
 
@@ -107,7 +110,10 @@ function serializeNodeToHtml(node: Node): string {
   return content;
 }
 
-function parseQtiXml(xmlString: string): { html: string; options: ParsedOption[] } {
+function parseQtiXml(xmlString: string): {
+  html: string;
+  options: ParsedOption[];
+} {
   const parser = new DOMParser();
   const xmlDoc = parser.parseFromString(xmlString, "text/xml");
 
@@ -121,7 +127,11 @@ function parseQtiXml(xmlString: string): { html: string; options: ParsedOption[]
       if (child.nodeType === Node.ELEMENT_NODE) {
         const el = child as Element;
         const tagName = el.localName || el.tagName.toLowerCase();
-        if (tagName === "qti-choice-interaction" || tagName === "choiceinteraction") return;
+        if (
+          tagName === "qti-choice-interaction" ||
+          tagName === "choiceinteraction"
+        )
+          return;
       }
       const content = serializeNodeToHtml(child);
       if (content.trim()) html += content;
@@ -137,7 +147,8 @@ function parseQtiXml(xmlString: string): { html: string; options: ParsedOption[]
 
   choices.forEach((choice, index) => {
     const identifier = choice.getAttribute("identifier") || letters[index];
-    const text = serializeNodeToHtml(choice).trim() || `Opción ${letters[index]}`;
+    const text =
+      serializeNodeToHtml(choice).trim() || `Opción ${letters[index]}`;
     options.push({ letter: letters[index], text, identifier });
   });
 
@@ -148,7 +159,11 @@ function parseQtiXml(xmlString: string): { html: string; options: ParsedOption[]
 // MAIN COMPONENT
 // ============================================================================
 
-export function QuestionReviewDrawer({ isOpen, onClose, responses }: QuestionReviewDrawerProps) {
+export function QuestionReviewDrawer({
+  isOpen,
+  onClose,
+  responses,
+}: QuestionReviewDrawerProps) {
   const [reviewData, setReviewData] = useState<ReviewDataMap>({});
   const [parsedCache, setParsedCache] = useState<ParsedQuestionCache>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -210,8 +225,10 @@ export function QuestionReviewDrawer({ isOpen, onClose, responses }: QuestionRev
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isOpen) return;
       if (e.key === "Escape") onClose();
-      if (e.key === "ArrowLeft" && currentIndex > 0) setCurrentIndex(currentIndex - 1);
-      if (e.key === "ArrowRight" && currentIndex < responses.length - 1) setCurrentIndex(currentIndex + 1);
+      if (e.key === "ArrowLeft" && currentIndex > 0)
+        setCurrentIndex(currentIndex - 1);
+      if (e.key === "ArrowRight" && currentIndex < responses.length - 1)
+        setCurrentIndex(currentIndex + 1);
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -220,7 +237,9 @@ export function QuestionReviewDrawer({ isOpen, onClose, responses }: QuestionRev
   // Prevent body scroll when open
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -228,7 +247,10 @@ export function QuestionReviewDrawer({ isOpen, onClose, responses }: QuestionRev
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-charcoal/50 backdrop-blur-sm z-40" onClick={onClose} />
+      <div
+        className="fixed inset-0 bg-charcoal/50 backdrop-blur-sm z-40"
+        onClick={onClose}
+      />
 
       {/* Drawer */}
       <div className="fixed inset-0 z-50 flex flex-col sm:flex-row">
@@ -237,7 +259,9 @@ export function QuestionReviewDrawer({ isOpen, onClose, responses }: QuestionRev
           {/* Header */}
           <div className="p-4 border-b border-gray-100">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-serif font-bold text-charcoal">Revisión</h2>
+              <h2 className="text-lg font-serif font-bold text-charcoal">
+                Revisión
+              </h2>
               <button
                 onClick={onClose}
                 className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 sm:hidden"
@@ -246,7 +270,9 @@ export function QuestionReviewDrawer({ isOpen, onClose, responses }: QuestionRev
                 <CloseIcon />
               </button>
             </div>
-            <p className="text-xs text-cool-gray mt-1">{stats.correct}/{stats.total} correctas</p>
+            <p className="text-xs text-cool-gray mt-1">
+              {stats.correct}/{stats.total} correctas
+            </p>
           </div>
 
           {/* Question pills - horizontal on mobile, vertical on desktop */}
@@ -304,7 +330,9 @@ export function QuestionReviewDrawer({ isOpen, onClose, responses }: QuestionRev
               <span className="hidden sm:inline">Anterior</span>
             </button>
 
-            <span className="text-sm text-cool-gray">{currentIndex + 1} de {responses.length}</span>
+            <span className="text-sm text-cool-gray">
+              {currentIndex + 1} de {responses.length}
+            </span>
 
             <button
               onClick={() => setCurrentIndex(currentIndex + 1)}
@@ -377,15 +405,30 @@ function LoadingState() {
 
 function CloseIcon() {
   return (
-    <svg className="w-5 h-5 text-charcoal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+    <svg
+      className="w-5 h-5 text-charcoal"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M6 18L18 6M6 6l12 12"
+      />
     </svg>
   );
 }
 
 function ArrowIcon({ direction }: { direction: "left" | "right" }) {
   return (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg
+      className="w-5 h-5"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
       <path
         strokeLinecap="round"
         strokeLinejoin="round"

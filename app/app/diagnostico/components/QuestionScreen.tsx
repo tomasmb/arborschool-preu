@@ -195,7 +195,11 @@ export function QuestionScreen({
   if (error && !parsedQuestion) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-8">
-        <div className="card p-8 sm:p-12 text-center" role="alert" aria-live="polite">
+        <div
+          className="card p-8 sm:p-12 text-center"
+          role="alert"
+          aria-live="polite"
+        >
           {/* Error icon */}
           <div className="relative inline-block mb-6" aria-hidden="true">
             <div className="absolute inset-0 bg-amber-500/20 rounded-full blur-xl" />

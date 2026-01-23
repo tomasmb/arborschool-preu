@@ -2,7 +2,11 @@
 
 import React from "react";
 import { AXIS_NAMES, SKILL_NAMES } from "@/lib/diagnostic/config";
-import type { ResponseForReview, QuestionReviewData, ParsedOption } from "./QuestionReviewDrawer";
+import type {
+  ResponseForReview,
+  QuestionReviewData,
+  ParsedOption,
+} from "./QuestionReviewDrawer";
 
 // ============================================================================
 // TYPES
@@ -46,31 +50,66 @@ function getOptionFeedback(
 
 function CheckIcon() {
   return (
-    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+    <svg
+      className="w-6 h-6"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M5 13l4 4L19 7"
+      />
     </svg>
   );
 }
 
 function XIcon() {
   return (
-    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+    <svg
+      className="w-6 h-6"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M6 18L18 6M6 6l12 12"
+      />
     </svg>
   );
 }
 
 function MinusIcon() {
   return (
-    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+    <svg
+      className="w-6 h-6"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M20 12H4"
+      />
     </svg>
   );
 }
 
 function LightbulbIcon() {
   return (
-    <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg
+      className="w-5 h-5 text-primary"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -95,7 +134,10 @@ export function QuestionReviewContent({
   const wasSkipped = response.selectedAnswer === null;
 
   // Feedback
-  const optionFeedback = getOptionFeedback(reviewData?.feedbackPerOption ?? null, response.selectedAnswer);
+  const optionFeedback = getOptionFeedback(
+    reviewData?.feedbackPerOption ?? null,
+    response.selectedAnswer
+  );
   const generalFeedback = reviewData?.feedbackGeneral;
   const hasFeedback = Boolean(optionFeedback || generalFeedback);
 
@@ -105,13 +147,25 @@ export function QuestionReviewContent({
       <div className="flex flex-wrap items-center gap-3">
         <div
           className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${
-            response.isCorrect ? "bg-success" : wasSkipped ? "bg-gray-400" : "bg-error"
+            response.isCorrect
+              ? "bg-success"
+              : wasSkipped
+                ? "bg-gray-400"
+                : "bg-error"
           } text-white`}
         >
-          {response.isCorrect ? <CheckIcon /> : wasSkipped ? <MinusIcon /> : <XIcon />}
+          {response.isCorrect ? (
+            <CheckIcon />
+          ) : wasSkipped ? (
+            <MinusIcon />
+          ) : (
+            <XIcon />
+          )}
         </div>
         <div>
-          <h3 className="text-xl font-serif font-bold text-charcoal">Pregunta {index + 1}</h3>
+          <h3 className="text-xl font-serif font-bold text-charcoal">
+            Pregunta {index + 1}
+          </h3>
           <div className="flex flex-wrap gap-2 mt-1">
             <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">
               {AXIS_NAMES[response.question.axis]}
@@ -127,7 +181,9 @@ export function QuestionReviewContent({
       <div className="card p-5 sm:p-6">
         <div
           className="prose prose-sm sm:prose max-w-none text-charcoal"
-          dangerouslySetInnerHTML={{ __html: parsedHtml || "<p>Cargando pregunta...</p>" }}
+          dangerouslySetInnerHTML={{
+            __html: parsedHtml || "<p>Cargando pregunta...</p>",
+          }}
         />
       </div>
 
@@ -212,8 +268,12 @@ export function QuestionReviewContent({
             <span className="font-semibold text-charcoal">Explicación</span>
           </div>
           <div className="text-charcoal leading-relaxed">
-            {optionFeedback && <div dangerouslySetInnerHTML={{ __html: optionFeedback }} />}
-            {generalFeedback && !optionFeedback && <div dangerouslySetInnerHTML={{ __html: generalFeedback }} />}
+            {optionFeedback && (
+              <div dangerouslySetInnerHTML={{ __html: optionFeedback }} />
+            )}
+            {generalFeedback && !optionFeedback && (
+              <div dangerouslySetInnerHTML={{ __html: generalFeedback }} />
+            )}
           </div>
         </div>
       )}
@@ -221,7 +281,8 @@ export function QuestionReviewContent({
       {!hasFeedback && (
         <div className="card p-5 bg-gray-50 border-gray-200 text-center">
           <p className="text-sm text-cool-gray">
-            La explicación detallada estará disponible en tu plan de estudio personalizado.
+            La explicación detallada estará disponible en tu plan de estudio
+            personalizado.
           </p>
         </div>
       )}
