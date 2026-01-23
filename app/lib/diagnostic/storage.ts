@@ -30,6 +30,12 @@ const TOTAL_TIME_SECONDS = 30 * 60;
 // TYPES
 // ============================================================================
 
+/** Stored atom data (minimal for localStorage efficiency) */
+export interface StoredAtom {
+  atomId: string;
+  relevance: "primary" | "secondary";
+}
+
 export interface StoredResponse {
   questionId: string;
   selectedAnswer: string | null;
@@ -40,6 +46,8 @@ export interface StoredResponse {
   /** Route at time of answering (for stage 2 question reconstruction) */
   route?: Route | null;
   answeredAt: string;
+  /** Atoms associated with this question (needed for mastery calculation) */
+  atoms?: StoredAtom[];
 }
 
 // ============================================================================
@@ -357,7 +365,7 @@ export interface ReconstructedResponse {
   selectedAnswer: string | null;
   isCorrect: boolean;
   responseTime: number;
-  atoms: never[]; // Empty array, atoms not stored in localStorage
+  atoms: StoredAtom[];
 }
 
 /**
@@ -395,7 +403,7 @@ export function reconstructFullResponses(
         selectedAnswer: stored.selectedAnswer,
         isCorrect: stored.isCorrect,
         responseTime: stored.responseTimeSeconds,
-        atoms: [],
+        atoms: stored.atoms || [],
       });
     }
   }

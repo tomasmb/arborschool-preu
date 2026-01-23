@@ -330,6 +330,7 @@ export default function DiagnosticoPage() {
     const questionId = buildQuestionId(question.exam, question.questionNumber);
 
     // Always save to localStorage as backup (in case API fails or is local)
+    // Include atoms for mastery calculation (needed for PAES score from unlocked questions)
     saveResponseToLocalStorage({
       questionId,
       selectedAnswer: selectedAnswer || "skip",
@@ -339,6 +340,7 @@ export default function DiagnosticoPage() {
       questionIndex,
       route: stage === 2 ? route : null, // Save route for stage 2 reconstruction
       answeredAt: new Date().toISOString(),
+      atoms: atoms.map((a) => ({ atomId: a.atomId, relevance: a.relevance })),
     });
 
     // Also save response to API if we have a valid (non-local) attempt
