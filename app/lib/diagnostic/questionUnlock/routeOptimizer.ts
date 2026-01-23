@@ -22,7 +22,7 @@ import { simulateQuestionUnlocks } from "./unlockCalculator";
 import {
   calculateImprovement,
   capImprovementToMax,
-  getPaesScore,
+  estimateCorrectFromScore,
 } from "../paesScoreTable";
 
 // ============================================================================
@@ -197,18 +197,13 @@ export function buildAxisRoute(
     totalQuestionsUnlocked / config.numOfficialTests
   );
 
-  // Current correct per test is based on initially unlocked questions
-  // This ensures consistency: score comes from unlocked questions, not a separate formula
-  const currentCorrectPerTest = Math.round(
-    initialUnlocked / config.numOfficialTests
-  );
+  // Use diagnostic score as baseline (more accurate than unlocked questions)
+  // Default to 460 (~20 correct) if not provided
+  const currentScore = config.currentPaesScore ?? 460;
+  const currentCorrect = estimateCorrectFromScore(currentScore);
 
   // Use actual PAES table for accurate point estimation
-  const currentScore = getPaesScore(currentCorrectPerTest);
-  const improvement = calculateImprovement(
-    currentCorrectPerTest,
-    additionalPerTest
-  );
+  const improvement = calculateImprovement(currentCorrect, additionalPerTest);
 
   // Cap improvement to ensure we never promise exceeding 1000 points
   const estimatedPointsGain = capImprovementToMax(

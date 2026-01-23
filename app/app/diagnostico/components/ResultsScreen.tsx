@@ -91,26 +91,25 @@ export function ResultsScreen({
     }));
   }, [responses]);
 
+  // Use the diagnostic-based score (weighted formula) for main display
+  // This is more appropriate because atom data coverage is incomplete
+  const midScore = Math.round((results.paesMin + results.paesMax) / 2);
+  const scoreMin = results.paesMin;
+  const scoreMax = results.paesMax;
+
   // Fetch personalized learning routes based on diagnostic atom results
-  // The API returns estimatedScore calculated from unlocked questions using PAES table
-  const { data: routesData, isLoading: routesLoading } =
-    useLearningRoutes(atomResults);
+  // Pass diagnostic score so route improvements are properly capped
+  const { data: routesData, isLoading: routesLoading } = useLearningRoutes(
+    atomResults,
+    midScore
+  );
 
-  // Use the consistent PAES score from the API (based on unlocked questions)
-  // This ensures the score and improvement predictions are on the same scale
-  const estimatedScore = routesData?.estimatedScore;
-  // Fallback to old calculation's midpoint if API hasn't loaded yet
-  const fallbackMid = Math.round((results.paesMin + results.paesMax) / 2);
-  const midScore = estimatedScore?.score ?? fallbackMid;
-  const scoreMin = estimatedScore?.min ?? results.paesMin;
-  const scoreMax = estimatedScore?.max ?? results.paesMax;
-
-  // Notify parent when we have the consistent score from the API
+  // Notify parent of the diagnostic score for SignupScreen
   useEffect(() => {
-    if (estimatedScore?.score && onScoreCalculated) {
-      onScoreCalculated(estimatedScore.score);
+    if (onScoreCalculated) {
+      onScoreCalculated(midScore);
     }
-  }, [estimatedScore?.score, onScoreCalculated]);
+  }, [midScore, onScoreCalculated]);
 
   // Sort routes by impact and memoize
   const sortedRoutes = useMemo(() => {

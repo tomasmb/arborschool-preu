@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   analyzeLearningPotential,
   formatRouteForDisplay,
-  calculatePAESFromUnlocked,
   calculatePAESImprovement,
   DEFAULT_SCORING_CONFIG,
 } from "@/lib/diagnostic/questionUnlock";
@@ -14,13 +13,14 @@ import {
  * Uses the Question Unlock Algorithm to prioritize atoms by their
  * potential to unlock PAES questions.
  *
- * IMPORTANT: The PAES score is calculated from unlocked questions using
- * the official PAES conversion table. This ensures consistency between
- * the estimated score and the improvement predictions.
+ * Route improvements are calculated using the PAES table, with the
+ * diagnostic score as the baseline. This ensures improvements are
+ * properly capped and don't exceed 1000 total points.
  *
  * Request body:
  * {
- *   atomResults: Array<{ atomId: string, mastered: boolean }>
+ *   atomResults: Array<{ atomId: string, mastered: boolean }>,
+ *   diagnosticScore?: number  // Current PAES score from diagnostic formula
  * }
  *
  * Response:
@@ -28,7 +28,6 @@ import {
  *   success: boolean,
  *   data: {
  *     summary: { ... },
- *     estimatedScore: { score, min, max, correctPerTest },
  *     routes: Array<FormattedRoute>,
  *     quickWins: Array<{ atomId, title, questionsUnlocked }>,
  *     improvement: { minPoints, maxPoints, questionsPerTest, percentageOfTest },
@@ -39,7 +38,7 @@ import {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { atomResults } = body;
+    const { atomResults, diagnosticScore } = body;
 
     if (!Array.isArray(atomResults)) {
       return NextResponse.json(
@@ -48,17 +47,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Run the analysis
-    const analysis = await analyzeLearningPotential(atomResults);
+    // Run the analysis with diagnostic score for proper improvement capping
+    const analysis = await analyzeLearningPotential(
+      atomResults,
+      diagnosticScore ? { currentPaesScore: diagnosticScore } : undefined
+    );
 
     const numTests = DEFAULT_SCORING_CONFIG.numOfficialTests;
-
-    // Calculate PAES score from currently unlocked questions
-    // This is the consistent baseline for all calculations
-    const estimatedScore = calculatePAESFromUnlocked(
-      analysis.summary.unlockedQuestions,
-      numTests
-    );
 
     // Get routes to process (limit to top 4)
     const topRoutes = analysis.routes.slice(0, 4);
@@ -92,9 +87,10 @@ export async function POST(request: NextRequest) {
         questionsUnlocked: a.immediateUnlocks.length,
       }));
 
-    // Calculate overall improvement using consistent baseline
+    // Calculate overall improvement using diagnostic score as baseline
+    // This ensures improvement + current score doesn't exceed 1000
     const improvement = calculatePAESImprovement(
-      estimatedScore.correctPerTest,
+      diagnosticScore || 460, // Default to ~460 if not provided
       totalPotentialUnlocks,
       numTests
     );
@@ -103,7 +99,6 @@ export async function POST(request: NextRequest) {
       success: true,
       data: {
         summary: analysis.summary,
-        estimatedScore,
         routes: formattedRoutes,
         quickWins,
         improvement,
@@ -137,13 +132,6 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   try {
     const analysis = await analyzeLearningPotential([]);
-    const numTests = DEFAULT_SCORING_CONFIG.numOfficialTests;
-
-    // Calculate baseline score (fresh start = 0 unlocked)
-    const estimatedScore = calculatePAESFromUnlocked(
-      analysis.summary.unlockedQuestions,
-      numTests
-    );
 
     const formattedRoutes = analysis.routes.slice(0, 4).map((route) => ({
       ...formatRouteForDisplay(route),
@@ -159,7 +147,6 @@ export async function GET() {
       success: true,
       data: {
         summary: analysis.summary,
-        estimatedScore,
         routes: formattedRoutes,
       },
     });

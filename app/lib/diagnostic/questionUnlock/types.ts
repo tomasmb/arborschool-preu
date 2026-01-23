@@ -157,6 +157,11 @@ export interface ScoringConfig {
    * Questions are spread across tests, so real improvement = total / numTests
    */
   numOfficialTests: number;
+  /**
+   * Student's current PAES score from diagnostic formula.
+   * Used to calculate and cap improvements so total never exceeds 1000.
+   */
+  currentPaesScore?: number;
 }
 
 export const DEFAULT_SCORING_CONFIG: ScoringConfig = {

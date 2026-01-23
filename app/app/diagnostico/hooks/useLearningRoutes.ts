@@ -36,18 +36,6 @@ export interface QuickWin {
   questionsUnlocked: number;
 }
 
-/** PAES score calculated from unlocked questions using the official table */
-export interface EstimatedScore {
-  /** The estimated PAES score (100-1000) */
-  score: number;
-  /** Lower bound with uncertainty margin */
-  min: number;
-  /** Upper bound with uncertainty margin */
-  max: number;
-  /** Estimated correct answers per test */
-  correctPerTest: number;
-}
-
 export interface LearningRoutesResponse {
   summary: {
     totalAtoms: number;
@@ -56,8 +44,6 @@ export interface LearningRoutesResponse {
     unlockedQuestions: number;
     potentialQuestionsToUnlock: number;
   };
-  /** PAES score calculated from unlocked questions - use this for display */
-  estimatedScore: EstimatedScore;
   routes: LearningRouteData[];
   quickWins: QuickWin[];
   improvement: {
@@ -97,13 +83,6 @@ export function getFallbackRoutes(): LearningRoutesResponse {
       totalQuestions: 202,
       unlockedQuestions: 0,
       potentialQuestionsToUnlock: 30,
-    },
-    // Fallback assumes fresh start (0 unlocked = ~100 PAES score)
-    estimatedScore: {
-      score: 100,
-      min: 100,
-      max: 130,
-      correctPerTest: 0,
     },
     routes: [
       {
@@ -168,16 +147,17 @@ export function getFallbackRoutes(): LearningRoutesResponse {
 /**
  * Fetches learning routes based on atom mastery results from diagnostic.
  *
- * The hook returns an `estimatedScore` calculated from unlocked questions
- * using the official PAES table. This score should be used for display
- * instead of the score from `calculateDiagnosticResults()` to ensure
- * consistency with the improvement predictions.
+ * Route improvements are calculated using the PAES table relative to the
+ * provided diagnostic score. This ensures improvements are properly capped
+ * and don't exceed 1000 total points.
  *
  * @param atomResults - Array of {atomId, mastered} from diagnostic
- * @returns Loading state, data (including estimatedScore), and any errors
+ * @param diagnosticScore - Current PAES score from diagnostic (for improvement calc)
+ * @returns Loading state, data, and any errors
  */
 export function useLearningRoutes(
-  atomResults: Array<{ atomId: string; mastered: boolean }>
+  atomResults: Array<{ atomId: string; mastered: boolean }>,
+  diagnosticScore?: number
 ): UseLearningRoutesResult {
   const [data, setData] = useState<LearningRoutesResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -194,7 +174,7 @@ export function useLearningRoutes(
         const response = await fetch("/api/diagnostic/learning-routes", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ atomResults }),
+          body: JSON.stringify({ atomResults, diagnosticScore }),
         });
 
         if (!response.ok) {
@@ -231,7 +211,7 @@ export function useLearningRoutes(
     return () => {
       cancelled = true;
     };
-  }, [atomResults]);
+  }, [atomResults, diagnosticScore]);
 
   return { data, isLoading, error };
 }

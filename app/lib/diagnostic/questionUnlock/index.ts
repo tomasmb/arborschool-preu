@@ -234,6 +234,7 @@ export function formatRouteForDisplay(route: LearningRoute): {
 import {
   calculateImprovement as calcPaesImprovement,
   capImprovementToMax,
+  estimateCorrectFromScore,
   getPaesScore,
   PAES_TOTAL_QUESTIONS,
 } from "../paesScoreTable";
@@ -277,15 +278,15 @@ export function calculatePAESFromUnlocked(
  * Takes into account:
  * - Questions are spread across multiple tests
  * - The official PAES conversion table (non-linear)
- * - Student's current correct answers (derived from unlocked questions)
+ * - Student's current PAES score (from diagnostic)
  * - Caps improvement to never exceed max PAES score (1000)
  *
- * @param currentCorrectPerTest - Current correct answers per test (from unlocked questions)
- * @param additionalQuestionsUnlocked - Additional questions unlocked by a route (total across tests)
+ * @param currentPaesScore - Current PAES score from diagnostic formula
+ * @param additionalQuestionsUnlocked - Additional questions unlocked by routes (total across tests)
  * @param numTests - Number of tests (default: 4)
  */
 export function calculatePAESImprovement(
-  currentCorrectPerTest: number,
+  currentPaesScore: number,
   additionalQuestionsUnlocked: number,
   numTests: number = 4
 ): {
@@ -294,24 +295,23 @@ export function calculatePAESImprovement(
   questionsPerTest: number;
   percentageOfTest: number;
 } {
+  // Convert current PAES score to estimated correct answers
+  const currentCorrect = estimateCorrectFromScore(currentPaesScore);
+
   // Additional questions are spread across tests
   const additionalPerTest = Math.round(additionalQuestionsUnlocked / numTests);
 
   // Use actual PAES table for accurate point calculation
-  const currentScore = getPaesScore(currentCorrectPerTest);
-  const improvement = calcPaesImprovement(
-    currentCorrectPerTest,
-    additionalPerTest
-  );
+  const improvement = calcPaesImprovement(currentCorrect, additionalPerTest);
 
   // Add uncertainty range (±15%) since question selection varies
   const uncertaintyFactor = 0.15;
   const rawMin = Math.round(improvement.improvement * (1 - uncertaintyFactor));
   const rawMax = Math.round(improvement.improvement * (1 + uncertaintyFactor));
 
-  // Cap improvements to never exceed 1000
-  const minPoints = capImprovementToMax(currentScore, rawMin);
-  const maxPoints = capImprovementToMax(currentScore, rawMax);
+  // Cap improvements to never exceed 1000 from CURRENT score
+  const minPoints = capImprovementToMax(currentPaesScore, rawMin);
+  const maxPoints = capImprovementToMax(currentPaesScore, rawMax);
 
   // Percentage of a single test this represents
   const percentageOfTest = Math.round(
