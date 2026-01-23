@@ -249,11 +249,14 @@ export function QuestionReviewDrawer({
     };
   }, [isOpen]);
 
-  // Scroll content to top when question changes
+  // Scroll content to top when question changes (after render)
   useEffect(() => {
-    if (contentRef.current) {
-      contentRef.current.scrollTo(0, 0);
-    }
+    // Use requestAnimationFrame to ensure scroll happens after content renders
+    requestAnimationFrame(() => {
+      if (contentRef.current) {
+        contentRef.current.scrollTo(0, 0);
+      }
+    });
   }, [currentIndex]);
 
   if (!isOpen) return null;

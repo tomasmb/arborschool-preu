@@ -390,7 +390,10 @@ export default function DiagnosticoPage() {
   // Scroll to top when question changes (after React renders)
   useEffect(() => {
     if (screen === "question") {
-      window.scrollTo(0, 0);
+      // Use requestAnimationFrame to ensure scroll happens after content renders
+      requestAnimationFrame(() => {
+        window.scrollTo(0, 0);
+      });
     }
   }, [questionIndex, screen]);
   const continueToStage2 = () => {
