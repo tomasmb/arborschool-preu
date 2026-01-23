@@ -36,6 +36,17 @@ Run the linter on all modified files:
 - All linter errors must be fixed before committing
 - Warnings should be reviewed (fix if reasonable, note if intentional)
 
+### 3b. TypeScript Check
+
+Run the TypeScript compiler to catch type errors:
+
+```bash
+cd app && npm run typecheck
+```
+
+- All TypeScript errors must be fixed before committing
+- This mirrors what the CI/CD pipeline runs, preventing deploy failures
+
 ### 4. File Length
 
 Verify all modified files are under 500 lines:
@@ -69,6 +80,18 @@ Check for common code smells:
 - Magic numbers without named constants
 - Dead code or unused imports
 - Overly complex conditionals
+
+### 8. CI/CD Status Check
+
+Before committing, verify GitHub Actions are healthy:
+
+```bash
+gh run list --limit 3
+```
+
+- If recent runs are failing, investigate the cause before adding more commits
+- Check if failures are related to your changes or pre-existing issues
+- Fix any issues your changes might cause before committing
 
 ## Commit Process
 

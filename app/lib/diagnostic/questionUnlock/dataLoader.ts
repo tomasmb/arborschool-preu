@@ -181,11 +181,11 @@ export async function getQuestionAtomStats(): Promise<{
     .select({ count: sql<number>`count(*)` })
     .from(atoms);
 
-  const [atomsWithQs] = await db.execute(sql`
+  const atomsWithQsResult = await db.execute(sql`
     SELECT COUNT(DISTINCT atom_id) as count FROM question_atoms
   `);
 
-  const [mappingCounts] = await db.execute(sql`
+  const mappingCountsResult = await db.execute(sql`
     SELECT 
       COUNT(*) as total,
       COUNT(*) FILTER (WHERE relevance = 'primary') as primary_count,
@@ -193,21 +193,19 @@ export async function getQuestionAtomStats(): Promise<{
     FROM question_atoms
   `);
 
+  // Cast raw SQL results to typed arrays
+  const atomsWithQsRow = atomsWithQsResult[0] as { count: string } | undefined;
+  const mappingCountsRow = mappingCountsResult[0] as
+    | { total: string; primary_count: string; secondary_count: string }
+    | undefined;
+
   const total = Number(questionCount.count);
   const official = Number(officialCount.count);
   const totalAtoms = Number(atomCount.count);
-  const atomsWithQuestions = Number(
-    (atomsWithQs as { count: string }[])[0]?.count || 0
-  );
-  const totalMappings = Number(
-    (mappingCounts as { total: string }[])[0]?.total || 0
-  );
-  const primaryMappings = Number(
-    (mappingCounts as { primary_count: string }[])[0]?.primary_count || 0
-  );
-  const secondaryMappings = Number(
-    (mappingCounts as { secondary_count: string }[])[0]?.secondary_count || 0
-  );
+  const atomsWithQuestions = Number(atomsWithQsRow?.count || 0);
+  const totalMappings = Number(mappingCountsRow?.total || 0);
+  const primaryMappings = Number(mappingCountsRow?.primary_count || 0);
+  const secondaryMappings = Number(mappingCountsRow?.secondary_count || 0);
 
   return {
     totalQuestions: total,
