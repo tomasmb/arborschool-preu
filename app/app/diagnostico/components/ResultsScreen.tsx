@@ -90,8 +90,11 @@ export function ResultsScreen({
   }, [responses]);
 
   // Fetch personalized learning routes based on diagnostic atom results
-  const { data: routesData, isLoading: routesLoading } =
-    useLearningRoutes(atomResults);
+  // Pass current PAES score for accurate improvement calculations
+  const { data: routesData, isLoading: routesLoading } = useLearningRoutes(
+    atomResults,
+    midScore
+  );
 
   // Sort routes by impact and memoize
   const sortedRoutes = useMemo(() => {

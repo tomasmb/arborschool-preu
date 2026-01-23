@@ -19,7 +19,10 @@ import type {
 import { DEFAULT_SCORING_CONFIG } from "./types";
 import { getMasteredAtomIds } from "./masteryAnalyzer";
 import { simulateQuestionUnlocks } from "./unlockCalculator";
-import { getMarginalPointValue } from "../paesScoreTable";
+import {
+  calculateImprovement,
+  estimateCorrectFromScore,
+} from "../paesScoreTable";
 
 // ============================================================================
 // AXIS CONFIGURATION
@@ -193,12 +196,14 @@ export function buildAxisRoute(
     totalQuestionsUnlocked / config.numOfficialTests
   );
 
-  // Use actual PAES table for point estimation
-  // Assume average student starts around 20 correct (~460 pts)
-  // At this level, marginal value is ~14 pts per question
-  // This is more accurate than a flat rate since PAES is non-linear
-  const avgMarginalValue = getMarginalPointValue(20); // ~14 at score 460
-  const estimatedPointsGain = questionsPerTest * avgMarginalValue;
+  // Use actual PAES table for accurate point estimation based on student's current score
+  // The PAES table is non-linear: improvement depends heavily on current level
+  const currentCorrect = config.currentPaesScore
+    ? estimateCorrectFromScore(config.currentPaesScore)
+    : 20; // Default to 20 correct (~460 pts) if not provided
+
+  const improvement = calculateImprovement(currentCorrect, questionsPerTest);
+  const estimatedPointsGain = improvement.improvement;
 
   return {
     axis: AXIS_SHORT_CODES[axis] || axis,

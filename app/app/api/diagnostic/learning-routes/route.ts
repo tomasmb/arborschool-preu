@@ -3,8 +3,8 @@ import {
   analyzeLearningPotential,
   formatRouteForDisplay,
   calculatePAESImprovement,
-  type StudentLearningAnalysis,
 } from "@/lib/diagnostic/questionUnlock";
+import { estimateCorrectFromScore } from "@/lib/diagnostic/paesScoreTable";
 
 /**
  * POST /api/diagnostic/learning-routes
@@ -15,7 +15,8 @@ import {
  *
  * Request body:
  * {
- *   atomResults: Array<{ atomId: string, mastered: boolean }>
+ *   atomResults: Array<{ atomId: string, mastered: boolean }>,
+ *   currentPaesScore?: number // Student's current PAES score (100-1000)
  * }
  *
  * Response:
@@ -32,7 +33,7 @@ import {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { atomResults } = body;
+    const { atomResults, currentPaesScore } = body;
 
     if (!Array.isArray(atomResults)) {
       return NextResponse.json(
@@ -41,8 +42,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Run the analysis
-    const analysis = await analyzeLearningPotential(atomResults);
+    // Run the analysis with student's current score for accurate improvement calc
+    const analysis = await analyzeLearningPotential(
+      atomResults,
+      currentPaesScore ? { currentPaesScore } : undefined
+    );
 
     // Format routes for frontend display
     const formattedRoutes = analysis.routes.slice(0, 4).map((route) => ({
@@ -67,12 +71,18 @@ export async function POST(request: NextRequest) {
         questionsUnlocked: a.immediateUnlocks.length,
       }));
 
-    // Calculate overall improvement potential
+    // Calculate overall improvement potential using actual PAES table
     const totalPotentialUnlocks = formattedRoutes.reduce(
       (sum, r) => sum + r.questionsUnlocked,
       0
     );
-    const improvement = calculatePAESImprovement(totalPotentialUnlocks);
+    // Convert PAES score to correct answers for accurate improvement calculation
+    const currentCorrect = currentPaesScore
+      ? estimateCorrectFromScore(currentPaesScore)
+      : undefined;
+    const improvement = calculatePAESImprovement(totalPotentialUnlocks, {
+      currentCorrect,
+    });
 
     return NextResponse.json({
       success: true,

@@ -143,10 +143,12 @@ export function getFallbackRoutes(): LearningRoutesResponse {
  * Fetches learning routes based on atom mastery results from diagnostic.
  *
  * @param atomResults - Array of {atomId, mastered} from diagnostic
+ * @param currentPaesScore - Student's current PAES score for accurate improvement calc
  * @returns Loading state, data, and any errors
  */
 export function useLearningRoutes(
-  atomResults: Array<{ atomId: string; mastered: boolean }>
+  atomResults: Array<{ atomId: string; mastered: boolean }>,
+  currentPaesScore?: number
 ): UseLearningRoutesResult {
   const [data, setData] = useState<LearningRoutesResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -163,7 +165,7 @@ export function useLearningRoutes(
         const response = await fetch("/api/diagnostic/learning-routes", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ atomResults }),
+          body: JSON.stringify({ atomResults, currentPaesScore }),
         });
 
         if (!response.ok) {
@@ -200,7 +202,7 @@ export function useLearningRoutes(
     return () => {
       cancelled = true;
     };
-  }, [atomResults]);
+  }, [atomResults, currentPaesScore]);
 
   return { data, isLoading, error };
 }

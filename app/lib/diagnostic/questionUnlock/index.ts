@@ -57,13 +57,18 @@ export { DEFAULT_SCORING_CONFIG } from "./types";
  * This is the main entry point for the algorithm.
  *
  * @param diagnosticResults - Atoms directly tested with results
- * @param config - Optional scoring configuration
+ * @param configOverrides - Optional partial config to override defaults
  * @returns Complete analysis with routes and recommendations
  */
 export async function analyzeLearningPotential(
   diagnosticResults: Array<{ atomId: string; mastered: boolean }>,
-  config: ScoringConfig = DEFAULT_SCORING_CONFIG
+  configOverrides?: Partial<ScoringConfig>
 ): Promise<StudentLearningAnalysis> {
+  // Merge with defaults
+  const config: ScoringConfig = {
+    ...DEFAULT_SCORING_CONFIG,
+    ...configOverrides,
+  };
   // Load data
   const [allAtoms, questions] = await Promise.all([
     loadAllAtoms(),
