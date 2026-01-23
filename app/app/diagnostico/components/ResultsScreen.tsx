@@ -175,6 +175,28 @@ export function ResultsScreen({
                 </strong>
               </p>
             </div>
+
+            {/* Primary CTA - capture interest at emotional peak */}
+            <button
+              onClick={onSignup}
+              className="mt-6 btn-cta px-8 py-3 text-base inline-flex items-center gap-2 
+                shadow-lg hover:scale-105 transition-transform"
+            >
+              Guardar mis Resultados
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"
+                />
+              </svg>
+            </button>
           </div>
 
           {/* Axis Performance */}
@@ -271,12 +293,16 @@ export function ResultsScreen({
             className="mb-10"
           >
             <div className="card p-6 bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 mb-1">
                 {Icons.trophy("w-6 h-6 text-accent")}
                 <span className="text-lg font-semibold text-charcoal">
                   Resumen de progreso
                 </span>
               </div>
+              <p className="text-xs text-cool-gray mb-4">
+                Los átomos son conceptos fundamentales — domina más y desbloquea
+                más preguntas PAES
+              </p>
               <div className="grid sm:grid-cols-2 gap-6">
                 <div>
                   <p className="text-cool-gray mb-2">Átomos por dominar:</p>

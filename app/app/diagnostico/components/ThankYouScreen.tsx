@@ -7,13 +7,18 @@ import { Confetti } from "./Confetti";
 
 interface ThankYouScreenProps {
   hasEmail: boolean;
+  /** Callback for users who skipped but want to reconsider */
+  onReconsider?: () => void;
 }
 
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
-export function ThankYouScreen({ hasEmail }: ThankYouScreenProps) {
+export function ThankYouScreen({
+  hasEmail,
+  onReconsider,
+}: ThankYouScreenProps) {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -106,13 +111,42 @@ export function ThankYouScreen({ hasEmail }: ThankYouScreenProps) {
               </div>
             </>
           ) : (
-            <p
-              className={`text-lg text-cool-gray mb-8 transition-all duration-700 delay-300
-                ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-            >
-              Gracias por completar el diagnóstico. Vuelve pronto para crear tu
-              cuenta y ver tu plan personalizado.
-            </p>
+            <>
+              <p
+                className={`text-lg text-cool-gray mb-6 transition-all duration-700 delay-300
+                  ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+              >
+                Gracias por completar el diagnóstico. Vuelve pronto para crear
+                tu cuenta y ver tu plan personalizado.
+              </p>
+
+              {/* Second-chance CTA for users who skipped */}
+              {onReconsider && (
+                <button
+                  onClick={onReconsider}
+                  className={`mb-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-lg
+                    text-sm font-medium text-primary bg-primary/5 border border-primary/20
+                    hover:bg-primary/10 hover:border-primary/30 transition-all duration-300
+                    ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+                  style={{ transitionDelay: "350ms" }}
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                    />
+                  </svg>
+                  ¿Cambié de opinión? Guardar resultados
+                </button>
+              )}
+            </>
           )}
 
           <div

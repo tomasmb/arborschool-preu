@@ -9,6 +9,8 @@ interface SignupScreenProps {
   status: "idle" | "loading" | "success" | "error";
   error: string;
   onSkip: () => void;
+  /** User's estimated PAES score to display as a reminder */
+  score?: number;
 }
 
 // ============================================================================
@@ -22,6 +24,7 @@ export function SignupScreen({
   status,
   error,
   onSkip,
+  score,
 }: SignupScreenProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -74,6 +77,21 @@ export function SignupScreen({
           >
             Guarda tus Resultados
           </h2>
+
+          {/* Score reminder - reinforces what they're saving */}
+          {score && (
+            <div
+              className={`inline-flex items-center gap-2 px-4 py-2 mb-4 rounded-full 
+                bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20
+                transition-all duration-700 delay-150
+                ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+            >
+              <span className="text-sm text-cool-gray">Tu puntaje:</span>
+              <span className="text-lg font-bold text-primary">{score}</span>
+              <span className="text-sm text-cool-gray">pts</span>
+            </div>
+          )}
+
           <p
             className={`text-cool-gray mb-8 transition-all duration-700 delay-200
               ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}

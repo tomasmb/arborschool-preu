@@ -334,22 +334,22 @@ export function QuestionScreen({
           ))}
         </div>
 
-        {/* Skip question section - visually separated from answer options */}
+        {/* Skip question section - encourages honesty when unsure */}
         <div className="mt-6 pt-6 border-t border-gray-100">
           <button
             onClick={onSelectDontKnow}
             aria-label="Saltar pregunta: No lo sé"
             aria-pressed={isDontKnow}
-            className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-medium
-              transition-all duration-300
+            className={`w-full flex items-center justify-center gap-3 py-4 px-5 rounded-xl text-sm font-medium
+              transition-all duration-300 border-2
               ${
                 isDontKnow
-                  ? "bg-amber-100 text-amber-700 ring-2 ring-amber-400 ring-offset-2"
-                  : "text-cool-gray hover:text-amber-600 hover:bg-amber-50"
+                  ? "bg-amber-50 text-amber-700 border-amber-300 ring-2 ring-amber-400 ring-offset-2 shadow-sm"
+                  : "bg-gray-50 text-cool-gray border-gray-200 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200"
               }`}
           >
             <svg
-              className={`w-4 h-4 transition-transform duration-300 ${isDontKnow ? "rotate-12" : ""}`}
+              className={`w-5 h-5 transition-transform duration-300 ${isDontKnow ? "rotate-12" : ""}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -362,7 +362,10 @@ export function QuestionScreen({
                 d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            No lo sé
+            <span>No lo sé</span>
+            <span className="text-xs opacity-70 hidden sm:inline">
+              — Está bien no saber
+            </span>
           </button>
         </div>
 

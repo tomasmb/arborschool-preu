@@ -173,6 +173,8 @@ export default function DiagnosticoPage() {
       setAttemptId(localId);
       saveAttemptId(localId);
     }
+    // Scroll to top when starting the test
+    window.scrollTo({ top: 0, behavior: "instant" });
     setScreen("question");
     questionStartTime.current = Date.now();
   };
@@ -286,11 +288,15 @@ export default function DiagnosticoPage() {
     setSelectedAnswer(null);
     setIsDontKnow(false);
     questionStartTime.current = Date.now();
+    // Scroll to top when moving to next question
+    window.scrollTo({ top: 0, behavior: "instant" });
   };
   const continueToStage2 = () => {
     setStage(2);
     setQuestionIndex(0);
     resetQuestionState();
+    // Scroll to top when starting stage 2
+    window.scrollTo({ top: 0, behavior: "instant" });
     setScreen("question");
   };
 
@@ -424,7 +430,7 @@ export default function DiagnosticoPage() {
     const isOfflineMode = isLocalAttempt(attemptId);
 
     return (
-      <div className="min-h-screen relative overflow-hidden">
+      <div className="min-h-screen relative overflow-x-hidden">
         {/* Background decorations */}
         <div className="fixed inset-0 bg-gradient-to-b from-cream via-white to-off-white" />
         <div
@@ -504,7 +510,8 @@ export default function DiagnosticoPage() {
   }
 
   // Signup screen
-  if (screen === "signup") {
+  if (screen === "signup" && results) {
+    const midScore = Math.round((results.paesMin + results.paesMax) / 2);
     return (
       <SignupScreen
         email={email}
@@ -513,13 +520,21 @@ export default function DiagnosticoPage() {
         status={signupStatus}
         error={signupError}
         onSkip={() => setScreen("thankyou")}
+        score={midScore}
       />
     );
   }
 
   // Thank you screen
   if (screen === "thankyou") {
-    return <ThankYouScreen hasEmail={signupStatus === "success"} />;
+    return (
+      <ThankYouScreen
+        hasEmail={signupStatus === "success"}
+        onReconsider={
+          signupStatus !== "success" ? () => setScreen("signup") : undefined
+        }
+      />
+    );
   }
 
   // Maintenance screen - shown when questions fail to load after retries
