@@ -5,9 +5,12 @@
  * IMPORTANT: The PAES score is calculated from unlocked questions using
  * the official PAES conversion table. This ensures consistency between
  * the estimated score and the improvement predictions.
+ *
+ * @see docs/diagnostic-score-methodology.md
  */
 
 import { useState, useEffect } from "react";
+import { TOTAL_ATOMS } from "@/lib/diagnostic/scoringConstants";
 
 // ============================================================================
 // TYPES
@@ -78,7 +81,7 @@ interface UseLearningRoutesResult {
 export function getFallbackRoutes(): LearningRoutesResponse {
   return {
     summary: {
-      totalAtoms: 229,
+      totalAtoms: TOTAL_ATOMS,
       masteredAtoms: 0,
       totalQuestions: 202,
       unlockedQuestions: 0,

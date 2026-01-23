@@ -19,11 +19,11 @@ import type {
 import { DEFAULT_SCORING_CONFIG } from "./types";
 import { getMasteredAtomIds } from "./masteryAnalyzer";
 import { simulateQuestionUnlocks } from "./unlockCalculator";
+import { calculateImprovement } from "../paesScoreTable";
 import {
-  calculateImprovement,
   capImprovementToMax,
   estimateCorrectFromScore,
-} from "../paesScoreTable";
+} from "../scoringConstants";
 
 // ============================================================================
 // AXIS CONFIGURATION

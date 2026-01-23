@@ -232,24 +232,31 @@ export function formatRouteForDisplay(route: LearningRoute): {
 }
 
 import {
-  calculateImprovement as calcPaesImprovement,
+  calculateScoreRange,
   capImprovementToMax,
   estimateCorrectFromScore,
   getPaesScore,
   PAES_TOTAL_QUESTIONS,
-} from "../paesScoreTable";
+  IMPROVEMENT_UNCERTAINTY,
+  NUM_OFFICIAL_TESTS,
+} from "../scoringConstants";
+import { calculateImprovement as calcPaesImprovement } from "../paesScoreTable";
 
 /**
  * Calculates PAES score from the number of questions currently unlocked.
  * This provides a consistent score based on atom mastery analysis.
  *
+ * Range is calculated using ±5 questions with PAES table lookup,
+ * per methodology section 5.1. This allows high performers to reach 1000.
+ *
  * @param unlockedQuestions - Total questions unlocked across all tests
- * @param numTests - Number of tests in the database (default: 4)
+ * @param numTests - Number of tests in the database (default from constants)
  * @returns PAES score and the estimated correct answers per test
+ * @see docs/diagnostic-score-methodology.md
  */
 export function calculatePAESFromUnlocked(
   unlockedQuestions: number,
-  numTests: number = 4
+  numTests: number = NUM_OFFICIAL_TESTS
 ): {
   score: number;
   min: number;
@@ -262,33 +269,31 @@ export function calculatePAESFromUnlocked(
   // Use the official PAES table
   const score = getPaesScore(correctPerTest);
 
-  // Add uncertainty margin (±50 points) to account for:
-  // - Questions not in database that student might know
-  // - Careless errors on questions they could answer
-  // - Matches the margin used in the fallback calculation
-  const margin = 50;
-  const min = Math.max(100, score - margin);
-  const max = Math.min(1000, score + margin);
+  // Calculate range using ±5 questions with PAES table (methodology 5.1)
+  const range = calculateScoreRange(score);
 
-  return { score, min, max, correctPerTest };
+  return { score, min: range.min, max: range.max, correctPerTest };
 }
 
 /**
  * Calculates realistic PAES improvement projection based on questions unlocked.
- * Takes into account:
- * - Questions are spread across multiple tests
+ *
+ * Takes into account (per methodology section 6.2):
+ * - Questions are spread across multiple tests (÷4)
  * - The official PAES conversion table (non-linear)
  * - Student's current PAES score (from diagnostic)
  * - Caps improvement to never exceed max PAES score (1000)
+ * - Uncertainty factor (±15%) for question selection variance
  *
  * @param currentPaesScore - Current PAES score from diagnostic formula
- * @param additionalQuestionsUnlocked - Additional questions unlocked by routes (total across tests)
- * @param numTests - Number of tests (default: 4)
+ * @param additionalQuestionsUnlocked - Additional questions unlocked (total across tests)
+ * @param numTests - Number of tests (default from constants)
+ * @see docs/diagnostic-score-methodology.md section 6.2
  */
 export function calculatePAESImprovement(
   currentPaesScore: number,
   additionalQuestionsUnlocked: number,
-  numTests: number = 4
+  numTests: number = NUM_OFFICIAL_TESTS
 ): {
   minPoints: number;
   maxPoints: number;
@@ -305,9 +310,12 @@ export function calculatePAESImprovement(
   const improvement = calcPaesImprovement(currentCorrect, additionalPerTest);
 
   // Add uncertainty range (±15%) since question selection varies
-  const uncertaintyFactor = 0.15;
-  const rawMin = Math.round(improvement.improvement * (1 - uncertaintyFactor));
-  const rawMax = Math.round(improvement.improvement * (1 + uncertaintyFactor));
+  const rawMin = Math.round(
+    improvement.improvement * (1 - IMPROVEMENT_UNCERTAINTY)
+  );
+  const rawMax = Math.round(
+    improvement.improvement * (1 + IMPROVEMENT_UNCERTAINTY)
+  );
 
   // Cap improvements to never exceed 1000 from CURRENT score
   const minPoints = capImprovementToMax(currentPaesScore, rawMin);

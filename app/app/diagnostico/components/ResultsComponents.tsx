@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { AXIS_NAMES, type Axis } from "@/lib/diagnostic/config";
 import { Icons, AXIS_ICONS } from "./shared";
 import type { LearningRouteData } from "../hooks/useLearningRoutes";
+import { TOTAL_ATOMS as TOTAL_ATOMS_CONST } from "@/lib/diagnostic/scoringConstants";
 
 // ============================================================================
 // TYPES
@@ -19,13 +20,16 @@ export interface AxisPerformance {
 // CONSTANTS
 // ============================================================================
 
+/** Atom counts per axis (from methodology section 1.1) */
 export const ATOM_COUNTS: Record<Axis, number> = {
-  ALG: 80,
-  NUM: 55,
-  GEO: 43,
-  PROB: 51,
+  ALG: 80, // 35% of total
+  NUM: 55, // 24% of total
+  GEO: 43, // 19% of total
+  PROB: 51, // 22% of total
 };
-export const TOTAL_ATOMS = 229;
+
+/** Use centralized constant for consistency */
+export const TOTAL_ATOMS = TOTAL_ATOMS_CONST;
 
 // ============================================================================
 // HELPER FUNCTIONS

@@ -2,7 +2,16 @@
  * Question Unlock Algorithm - Type Definitions
  *
  * Types for calculating optimal learning routes based on question unlock potential.
+ * Uses centralized scoring constants for methodology alignment.
+ *
+ * @see docs/diagnostic-score-methodology.md
  */
+
+import {
+  UNLOCK_WEIGHTS,
+  MINUTES_PER_ATOM,
+  NUM_OFFICIAL_TESTS,
+} from "../scoringConstants";
 
 // Re-export shared mastery types from the canonical source
 export type {
@@ -164,11 +173,12 @@ export interface ScoringConfig {
   currentPaesScore?: number;
 }
 
+/** Default scoring configuration using centralized constants */
 export const DEFAULT_SCORING_CONFIG: ScoringConfig = {
-  immediateUnlockWeight: 10.0,
-  twoAwayWeight: 3.0,
-  threeOrMoreWeight: 1.0,
-  primaryRelevanceMultiplier: 2.0,
-  minutesPerAtom: 20,
-  numOfficialTests: 4, // We have 4 official PAES tests in the database
+  immediateUnlockWeight: UNLOCK_WEIGHTS.immediateUnlock,
+  twoAwayWeight: UNLOCK_WEIGHTS.twoAway,
+  threeOrMoreWeight: UNLOCK_WEIGHTS.threeOrMore,
+  primaryRelevanceMultiplier: UNLOCK_WEIGHTS.primaryRelevanceMultiplier,
+  minutesPerAtom: MINUTES_PER_ATOM,
+  numOfficialTests: NUM_OFFICIAL_TESTS,
 };

@@ -99,11 +99,20 @@ export interface AtomResult {
 /**
  * Compute atom mastery results from all responses.
  *
- * Primary atoms are marked as mastered only if the question was answered correctly.
- * Uses conservative approach: an atom must be answered correctly to be mastered.
+ * Per methodology (section 2.1 & D.2), mastery includes BOTH primary AND
+ * secondary atoms when a question is answered correctly. Transitivity is
+ * then applied to infer mastery of prerequisites.
+ *
+ * - Primary atoms: main concepts tested
+ * - Secondary atoms: supporting concepts used
+ * - Prerequisites: inferred via transitivity (handled by atomMastery module)
+ *
+ * Uses conservative approach: an atom must be tested on a correctly answered
+ * question to be marked as directly mastered.
  *
  * @param responses - All question responses
- * @returns Array of atom mastery results
+ * @returns Array of atom mastery results (to be processed with transitivity)
+ * @see docs/diagnostic-score-methodology.md section D.2
  */
 export function computeAtomMastery(
   responses: DiagnosticResponse[]
@@ -114,16 +123,21 @@ export function computeAtomMastery(
     // Safety check: atoms may be undefined if API didn't return them
     const atoms = response.atoms || [];
 
-    atoms
-      .filter((atom) => atom.relevance === "primary")
-      .forEach((atom) => {
-        // Only mark as mastered if correct; don't overwrite mastered with not mastered
-        const current = atomMap.get(atom.atomId);
-        if (current === undefined) {
-          atomMap.set(atom.atomId, response.isCorrect);
-        }
-        // If already marked, keep existing value (conservative approach)
-      });
+    // Include BOTH primary AND secondary atoms per methodology
+    // Transitivity is applied downstream by the atomMastery module
+    atoms.forEach((atom) => {
+      const current = atomMap.get(atom.atomId);
+
+      if (current === undefined) {
+        // First time seeing this atom - set its mastery status
+        atomMap.set(atom.atomId, response.isCorrect);
+      } else if (response.isCorrect && !current) {
+        // Upgrade to mastered if we see it on a correct answer
+        // (different question testing same atom correctly)
+        atomMap.set(atom.atomId, true);
+      }
+      // If already mastered, keep it mastered (conservative approach)
+    });
   });
 
   return Array.from(atomMap.entries()).map(([atomId, mastered]) => ({

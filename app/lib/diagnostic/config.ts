@@ -3,16 +3,24 @@
  *
  * Multi-Stage Testing configuration for the PAES M1 diagnostic.
  * Adapted from the PoC with full coverage optimization.
+ *
+ * Score calculation follows docs/diagnostic-score-methodology.md
  */
+
+import {
+  calculateRawPaesScore,
+  calculateScoreRange,
+  type Route,
+} from "./scoringConstants";
+
+// Re-export Route type for backward compatibility
+export type { Route };
 
 // Axis types for M1
 export type Axis = "ALG" | "NUM" | "GEO" | "PROB";
 
 // Skill types aligned with PAES competencies
 export type Skill = "RES" | "MOD" | "REP" | "ARG";
-
-// Route determined by Stage 1 performance
-export type Route = "A" | "B" | "C";
 
 // Question definition for the MST
 export interface MSTQuestion {
@@ -320,40 +328,24 @@ export function buildQuestionId(exam: string, questionNumber: string): string {
 
 /**
  * PAES Score calculation
- * Uses weighted scoring based on difficulty and route
+ *
+ * Uses weighted scoring based on difficulty and route.
+ * Range is calculated using ±5 questions with PAES table lookup,
+ * per methodology section 5.1. This allows high performers to reach 1000.
+ *
+ * @see docs/diagnostic-score-methodology.md
  */
 export function calculatePAESScore(
   route: Route,
   responses: Array<{ correct: boolean; difficulty: number }>
 ): { score: number; min: number; max: number; level: string } {
-  const WEIGHT_LOW = 1.0;
-  const WEIGHT_MEDIUM = 1.8;
-  const FACTOR_ROUTE: Record<Route, number> = { A: 0.7, B: 0.85, C: 1.0 };
-  const FACTOR_COVERAGE = 0.9; // 10% of atoms not inferrable
+  // Calculate raw score using centralized formula
+  const score = calculateRawPaesScore(route, responses);
 
-  let weightedScore = 0;
-  let maxWeightedScore = 0;
+  // Calculate range using ±5 questions with PAES table (methodology 5.1)
+  const range = calculateScoreRange(score);
 
-  for (const response of responses) {
-    const weight = response.difficulty <= 0.35 ? WEIGHT_LOW : WEIGHT_MEDIUM;
-    maxWeightedScore += weight;
-    if (response.correct) {
-      weightedScore += weight;
-    }
-  }
-
-  const normalizedScore =
-    maxWeightedScore > 0 ? weightedScore / maxWeightedScore : 0;
-  const paesRaw =
-    100 + 900 * normalizedScore * FACTOR_ROUTE[route] * FACTOR_COVERAGE;
-  const score = Math.round(paesRaw);
-
-  // Margin of error: ±50 points
-  const margin = 50;
-  const min = Math.max(100, score - margin);
-  const max = Math.min(1000, score + margin);
-
-  return { score, min, max, level: getLevel(score) };
+  return { score, min: range.min, max: range.max, level: getLevel(score) };
 }
 
 /**
