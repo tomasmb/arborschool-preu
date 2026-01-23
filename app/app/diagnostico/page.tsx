@@ -79,8 +79,9 @@ export default function DiagnosticoPage() {
   );
   const [route, setRoute] = useState<Route | null>(null);
   const [results, setResults] = useState<DiagnosticResults | null>(null);
-  // Cached r1Correct for transition screen persistence
+  // Cached counts for screen persistence across refreshes
   const [r1CorrectCount, setR1CorrectCount] = useState(0);
+  const [totalCorrectCount, setTotalCorrectCount] = useState(0);
 
   // Signup state
   const [email, setEmail] = useState("");
@@ -129,6 +130,7 @@ export default function DiagnosticoPage() {
         setQuestionIndex(storedSession.questionIndex);
         setRoute(storedSession.route);
         setR1CorrectCount(storedSession.r1Correct || 0);
+        setTotalCorrectCount(storedSession.totalCorrect || 0);
         setTimerStartedAt(storedSession.timerStartedAt);
 
         // Calculate remaining time based on when timer started
@@ -167,6 +169,9 @@ export default function DiagnosticoPage() {
       route,
       r1Correct:
         r1CorrectCount || r1Responses.filter((r) => r.isCorrect).length,
+      totalCorrect:
+        totalCorrectCount ||
+        [...r1Responses, ...stage2Responses].filter((r) => r.isCorrect).length,
       timerStartedAt: timerStartedAt || Date.now(),
       results: results
         ? {
@@ -184,7 +189,9 @@ export default function DiagnosticoPage() {
     questionIndex,
     route,
     r1CorrectCount,
+    totalCorrectCount,
     r1Responses,
+    stage2Responses,
     timerStartedAt,
     results,
   ]);
@@ -203,6 +210,7 @@ export default function DiagnosticoPage() {
       finalRoute
     );
     setResults(calculatedResults);
+    setTotalCorrectCount(allResponses.filter((r) => r.isCorrect).length);
 
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -253,6 +261,7 @@ export default function DiagnosticoPage() {
     setStage2Responses([]);
     setRoute(null);
     setR1CorrectCount(0);
+    setTotalCorrectCount(0);
     setResults(null);
     setTimeRemaining(TOTAL_TIME_SECONDS);
 
@@ -449,6 +458,7 @@ export default function DiagnosticoPage() {
       finalRoute
     );
     setResults(calculatedResults);
+    setTotalCorrectCount(allResponses.filter((r) => r.isCorrect).length);
 
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -599,7 +609,9 @@ export default function DiagnosticoPage() {
   // Results screen
   if (screen === "results" && results) {
     const allResponses = [...r1Responses, ...stage2Responses];
-    const totalCorrect = allResponses.filter((r) => r.isCorrect).length;
+    // Use cached count (persists across refresh) or calculate from responses
+    const totalCorrect =
+      totalCorrectCount || allResponses.filter((r) => r.isCorrect).length;
     const atomResults = getAtomResults();
 
     // Prepare responses for review (strip atoms to reduce data)
