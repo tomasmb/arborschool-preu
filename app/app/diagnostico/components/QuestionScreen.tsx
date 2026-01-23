@@ -251,7 +251,7 @@ function OptionButton({
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-4 p-4 sm:p-5 rounded-xl border-2 transition-all duration-300
+      className={`w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 md:p-5 rounded-xl border-2 transition-all duration-300
         transform ${isVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"}
         ${
           isSelected
@@ -260,7 +260,7 @@ function OptionButton({
         }`}
     >
       <span
-        className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-lg shrink-0 
+        className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center font-bold text-base sm:text-lg shrink-0 
           transition-all duration-300
           ${
             isSelected
@@ -271,12 +271,12 @@ function OptionButton({
         {letter}
       </span>
       <span
-        className="text-left text-charcoal flex-1"
+        className="text-left text-charcoal flex-1 text-sm sm:text-base min-w-0 break-words"
         dangerouslySetInnerHTML={{ __html: text }}
       />
       {isSelected && (
         <svg
-          className="w-6 h-6 text-primary shrink-0 animate-scale-in"
+          className="w-5 h-5 sm:w-6 sm:h-6 text-primary shrink-0 animate-scale-in"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -501,14 +501,14 @@ export function QuestionScreen({
         </div>
 
         {/* Question content */}
-        <div className="prose prose-lg max-w-none mb-8">
+        <div className="prose prose-sm sm:prose-lg max-w-none mb-6 sm:mb-8">
           {parsedQuestion?.html ? (
             <div
-              className="text-charcoal text-lg leading-relaxed"
+              className="text-charcoal text-base sm:text-lg leading-relaxed"
               dangerouslySetInnerHTML={{ __html: parsedQuestion.html }}
             />
           ) : (
-            <p className="text-charcoal text-lg leading-relaxed">
+            <p className="text-charcoal text-base sm:text-lg leading-relaxed">
               Pregunta {questionIndex + 1}
             </p>
           )}
@@ -556,11 +556,11 @@ export function QuestionScreen({
         </button>
 
         {/* Next button */}
-        <div className="mt-8 flex justify-end">
+        <div className="mt-6 sm:mt-8 flex justify-end">
           <button
             onClick={handleNext}
             disabled={!canProceed}
-            className={`group px-8 py-4 rounded-xl font-semibold flex items-center gap-2 transition-all duration-300
+            className={`group px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold flex items-center gap-2 transition-all duration-300
               ${
                 canProceed
                   ? "btn-primary shadow-lg hover:shadow-xl hover:scale-105"

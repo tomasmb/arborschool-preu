@@ -558,24 +558,69 @@ export default function DiagnosticoPage() {
 
         {/* Header */}
         <header className="relative z-20 bg-white/80 backdrop-blur-lg border-b border-gray-100 sticky top-0">
-          <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Image src="/logo-arbor.svg" alt="Arbor" width={32} height={32} />
-              <span className="font-serif font-bold text-primary hidden sm:inline">
-                Diagnóstico PAES M1
-              </span>
+          <div className="max-w-4xl mx-auto px-3 sm:px-4 py-2 sm:py-3">
+            {/* Mobile: Logo + Timer row */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <Image src="/logo-arbor.svg" alt="Arbor" width={28} height={28} className="sm:w-8 sm:h-8" />
+                <span className="font-serif font-bold text-primary hidden sm:inline">
+                  Diagnóstico PAES M1
+                </span>
+              </div>
+
+              {/* Progress - hidden on very small screens, shown inline on sm+ */}
+              <div className="hidden sm:flex items-center gap-4">
+                <div className="text-sm text-cool-gray">
+                  Pregunta{" "}
+                  <span className="font-bold text-charcoal">
+                    {currentQuestionNumber}
+                  </span>
+                  /{totalQuestions}
+                </div>
+                <div className="w-20 sm:w-28 h-2.5 bg-gray-100 rounded-full overflow-hidden shadow-inner">
+                  <div
+                    className="h-full bg-gradient-to-r from-primary to-primary-light rounded-full transition-all duration-500 ease-out"
+                    style={{
+                      width: `${(currentQuestionNumber / totalQuestions) * 100}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Timer */}
+              <div
+                className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-mono font-medium transition-all duration-300
+                ${
+                  timeRemaining < 300
+                    ? "bg-red-100 text-red-600 animate-pulse"
+                    : timeRemaining < 600
+                      ? "bg-amber-50 text-amber-600"
+                      : "bg-off-white text-charcoal shadow-sm"
+                }`}
+              >
+                <svg
+                  className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${timeRemaining < 300 ? "animate-bounce-subtle" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                {formatTime(timeRemaining)}
+              </div>
             </div>
 
-            {/* Progress */}
-            <div className="flex items-center gap-4">
-              <div className="text-sm text-cool-gray">
-                Pregunta{" "}
-                <span className="font-bold text-charcoal">
-                  {currentQuestionNumber}
-                </span>
-                /{totalQuestions}
+            {/* Mobile progress bar - shown only on small screens */}
+            <div className="flex sm:hidden items-center gap-3 mt-2">
+              <div className="text-xs text-cool-gray">
+                <span className="font-bold text-charcoal">{currentQuestionNumber}</span>/{totalQuestions}
               </div>
-              <div className="w-28 h-2.5 bg-gray-100 rounded-full overflow-hidden shadow-inner">
+              <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden shadow-inner">
                 <div
                   className="h-full bg-gradient-to-r from-primary to-primary-light rounded-full transition-all duration-500 ease-out"
                   style={{
@@ -584,40 +629,13 @@ export default function DiagnosticoPage() {
                 />
               </div>
             </div>
-
-            {/* Timer */}
-            <div
-              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-mono font-medium transition-all duration-300
-              ${
-                timeRemaining < 300
-                  ? "bg-red-100 text-red-600 animate-pulse"
-                  : timeRemaining < 600
-                    ? "bg-amber-50 text-amber-600"
-                    : "bg-off-white text-charcoal shadow-sm"
-              }`}
-            >
-              <svg
-                className={`w-4 h-4 ${timeRemaining < 300 ? "animate-bounce-subtle" : ""}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              {formatTime(timeRemaining)}
-            </div>
           </div>
 
           {/* Stage indicator */}
-          <div className="bg-gradient-to-r from-off-white to-white py-2 text-center text-sm text-cool-gray border-t border-gray-50">
+          <div className="bg-gradient-to-r from-off-white to-white py-1.5 sm:py-2 text-center text-xs sm:text-sm text-cool-gray border-t border-gray-50">
             <span className="font-medium">Etapa {stage} de 2</span>
             {stage === 2 && route && (
-              <span className="ml-2 text-accent font-medium">
+              <span className="hidden sm:inline ml-2 text-accent font-medium">
                 — Preguntas adaptadas a tu nivel
               </span>
             )}

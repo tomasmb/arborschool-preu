@@ -27,9 +27,9 @@ export function ThankYouScreen({ hasEmail }: ThankYouScreenProps) {
 
       {/* Background decorations */}
       <div className="fixed inset-0 bg-gradient-to-b from-cream via-white to-off-white" />
-      <div className="fixed top-1/4 left-1/4 w-96 h-96 bg-success/10 rounded-full blur-3xl animate-pulse-slow" />
-      <div className="fixed bottom-1/4 right-1/4 w-80 h-80 bg-accent/10 rounded-full blur-3xl" />
-      <div className="fixed top-1/2 right-10 w-48 h-48 bg-primary/10 rounded-full blur-3xl" />
+      <div className="fixed top-1/4 left-1/4 w-48 h-48 sm:w-72 sm:h-72 lg:w-96 lg:h-96 bg-success/10 rounded-full blur-3xl animate-pulse-slow" />
+      <div className="fixed bottom-1/4 right-1/4 w-40 h-40 sm:w-60 sm:h-60 lg:w-80 lg:h-80 bg-accent/10 rounded-full blur-3xl" />
+      <div className="fixed top-1/2 right-10 w-24 h-24 sm:w-36 sm:h-36 lg:w-48 lg:h-48 bg-primary/10 rounded-full blur-3xl" />
 
       {/* Dot pattern */}
       <div className="fixed inset-0 dot-pattern opacity-30" />

@@ -111,8 +111,8 @@ export function ResultsScreen({
     <div className="min-h-screen relative overflow-hidden">
       <Confetti />
       <div className="fixed inset-0 bg-gradient-to-b from-cream via-white to-off-white" />
-      <div className="fixed top-20 left-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
-      <div className="fixed bottom-20 right-1/4 w-80 h-80 bg-primary/10 rounded-full blur-3xl" />
+      <div className="fixed top-20 left-1/4 w-48 h-48 sm:w-72 sm:h-72 lg:w-96 lg:h-96 bg-accent/10 rounded-full blur-3xl" />
+      <div className="fixed bottom-20 right-1/4 w-40 h-40 sm:w-60 sm:h-60 lg:w-80 lg:h-80 bg-primary/10 rounded-full blur-3xl" />
 
       <div className="relative z-10">
         <header className="bg-white/80 backdrop-blur-lg border-b border-gray-100 sticky top-0 z-20">
@@ -133,7 +133,7 @@ export function ResultsScreen({
             <h1 className="text-3xl sm:text-4xl font-serif font-bold text-charcoal mb-2">
               Tu Puntaje PAES Estimado
             </h1>
-            <div className="text-6xl sm:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary-light my-4">
+            <div className="text-5xl sm:text-6xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary-light my-4">
               <AnimatedCounter target={midScore} duration={2500} delay={200} />
             </div>
             <div className="text-lg text-cool-gray mb-6">
@@ -264,7 +264,7 @@ export function ResultsScreen({
           </div>
 
           {/* Stats Summary */}
-          <div className={`grid grid-cols-2 gap-4 mb-6 transition-all duration-700 delay-300
+          <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 transition-all duration-700 delay-300
             ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
             <div className="card p-5 text-center bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
               <div className="text-3xl font-bold text-primary mb-1">{totalCorrect}/16</div>
@@ -316,7 +316,7 @@ export function ResultsScreen({
           {/* CTA */}
           <div className={`transition-all duration-700 delay-1000
             ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary-light p-8 text-center">
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary-light p-6 sm:p-8 text-center">
               <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
               <div className="absolute bottom-0 left-0 w-32 h-32 bg-accent/20 rounded-full blur-2xl" />
               <div className="relative">

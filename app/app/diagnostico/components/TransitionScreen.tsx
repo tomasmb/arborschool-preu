@@ -126,7 +126,7 @@ export function TransitionScreen({
           </p>
 
           {/* Stats with staggered animation */}
-          <div className="grid grid-cols-2 gap-4 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
             <StatCard value={`${r1Correct}/8`} label="Correctas" delay={500} />
             <StatCard
               value={ROUTE_NAMES[route]}

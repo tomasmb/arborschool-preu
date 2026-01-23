@@ -31,16 +31,16 @@ function InfoCard({
 
   return (
     <div
-      className={`text-center p-5 rounded-xl transition-all duration-500 transform
+      className={`text-center p-3 sm:p-5 rounded-xl transition-all duration-500 transform
         ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}
         ${isAccent ? "bg-gradient-to-br from-accent/10 to-accent/5 border border-accent/20" : "bg-gradient-to-br from-off-white to-white border border-gray-100"}`}
     >
       <div
-        className={`text-3xl font-bold mb-1 ${isAccent ? "text-accent" : "text-primary"}`}
+        className={`text-2xl sm:text-3xl font-bold mb-1 ${isAccent ? "text-accent" : "text-primary"}`}
       >
         {value}
       </div>
-      <div className="text-sm text-cool-gray font-medium">{label}</div>
+      <div className="text-xs sm:text-sm text-cool-gray font-medium">{label}</div>
     </div>
   );
 }
@@ -140,7 +140,7 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
           </div>
 
           {/* Info cards with staggered animation */}
-          <div className="grid grid-cols-3 gap-4 mb-10">
+          <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-10">
             <InfoCard value="16" label="Preguntas" delay={300} />
             <InfoCard value="30" label="Minutos" delay={400} />
             <InfoCard value="∞" label="Valor" isAccent delay={500} />

@@ -96,7 +96,7 @@ export function SignupScreen({
                 onBlur={() => setIsFocused(false)}
                 placeholder="tu@email.com"
                 className={`w-full px-5 py-4 rounded-xl border-2 bg-white text-charcoal 
-                  placeholder:text-gray-400 focus:outline-none transition-all duration-300 text-lg text-center
+                  placeholder:text-gray-400 focus:outline-none transition-all duration-300 text-base sm:text-lg text-center
                   ${
                     isFocused
                       ? "border-accent ring-4 ring-accent/10 shadow-lg"

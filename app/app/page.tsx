@@ -33,7 +33,7 @@ function BrowserFrame({ children }: { children: React.ReactNode }) {
             preu.arbor.school
           </div>
         </div>
-        <div className="w-16"></div>
+        <div className="hidden sm:block sm:w-16"></div>
       </div>
       {/* Content */}
       <div className="bg-white">{children}</div>
@@ -117,8 +117,8 @@ export default function Home() {
       <section className="relative pt-32 pb-20 sm:pt-40 sm:pb-32 overflow-hidden">
         {/* Background decoration */}
         <div className="absolute inset-0 bg-gradient-to-b from-white via-white to-off-white"></div>
-        <div className="absolute top-20 left-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-primary/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-20 left-1/4 w-48 h-48 sm:w-72 sm:h-72 lg:w-96 lg:h-96 bg-accent/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 right-1/4 w-40 h-40 sm:w-60 sm:h-60 lg:w-80 lg:h-80 bg-primary/10 rounded-full blur-3xl"></div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto">
@@ -127,7 +127,7 @@ export default function Home() {
               Diagnóstico PAES M1 disponible
             </div>
 
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-serif font-bold tracking-tight text-charcoal mb-8">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-serif font-bold tracking-tight text-charcoal mb-8">
               Alcanza tu puntaje PAES
               <span className="block text-accent mt-2">
                 dominando un concepto a la vez
@@ -235,7 +235,7 @@ export default function Home() {
 
       {/* Mastery Section */}
       <section className="py-24 bg-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-accent/10 to-transparent"></div>
+        <div className="absolute top-0 right-0 w-full sm:w-1/2 h-1/2 sm:h-full bg-gradient-to-l from-accent/10 to-transparent"></div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
@@ -538,7 +538,7 @@ export default function Home() {
       {/* Progress Tracking - Dark Section */}
       <section className="py-24 section-navy relative overflow-hidden">
         <div className="absolute inset-0 dot-pattern opacity-5"></div>
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-0 left-1/4 w-48 h-48 sm:w-72 sm:h-72 lg:w-96 lg:h-96 bg-accent/10 rounded-full blur-3xl"></div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
@@ -618,7 +618,7 @@ export default function Home() {
 
       {/* CTA Section */}
       <section id="cta" className="py-24 bg-white relative overflow-hidden">
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-accent/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[400px] h-[200px] sm:w-[600px] sm:h-[300px] lg:w-[800px] lg:h-[400px] bg-accent/10 rounded-full blur-3xl"></div>
 
         <div className="relative max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-flex items-center gap-2 text-sm font-medium text-success bg-success/10 px-4 py-2 rounded-full mb-8">

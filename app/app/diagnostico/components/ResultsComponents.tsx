@@ -162,7 +162,7 @@ export function RouteCard({ route, isRecommended, delay }: RouteCardProps) {
           <div className="flex-1">
             <h4 className="font-bold text-charcoal text-lg">{route.title}</h4>
             <p className="text-sm text-cool-gray mb-4">{route.subtitle}</p>
-            <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div className="flex items-center gap-2">
                 {Icons.book("w-4 h-4 text-primary")}
                 <span className="text-charcoal">{route.atomCount} atomos</span>

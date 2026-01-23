@@ -291,7 +291,7 @@ export function QuestionReviewDrawer({
           </div>
 
           {/* Filter tabs */}
-          <div className="flex gap-2 p-4 border-b border-gray-100 shrink-0">
+          <div className="flex flex-wrap gap-2 p-4 border-b border-gray-100 shrink-0">
             <FilterButton
               active={activeFilter === "all"}
               onClick={() => setActiveFilter("all")}
