@@ -174,7 +174,7 @@ export default function DiagnosticoPage() {
       saveAttemptId(localId);
     }
     // Scroll to top when starting the test
-    window.scrollTo({ top: 0, behavior: "instant" });
+    window.scrollTo(0, 0);
     setScreen("question");
     questionStartTime.current = Date.now();
   };
@@ -289,14 +289,14 @@ export default function DiagnosticoPage() {
     setIsDontKnow(false);
     questionStartTime.current = Date.now();
     // Scroll to top when moving to next question
-    window.scrollTo({ top: 0, behavior: "instant" });
+    window.scrollTo(0, 0);
   };
   const continueToStage2 = () => {
     setStage(2);
     setQuestionIndex(0);
     resetQuestionState();
     // Scroll to top when starting stage 2
-    window.scrollTo({ top: 0, behavior: "instant" });
+    window.scrollTo(0, 0);
     setScreen("question");
   };
 

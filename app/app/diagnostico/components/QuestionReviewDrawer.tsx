@@ -252,7 +252,7 @@ export function QuestionReviewDrawer({
   // Scroll content to top when question changes
   useEffect(() => {
     if (contentRef.current) {
-      contentRef.current.scrollTo({ top: 0, behavior: "instant" });
+      contentRef.current.scrollTo(0, 0);
     }
   }, [currentIndex]);
 
