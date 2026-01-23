@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import { type MSTQuestion } from "@/lib/diagnostic/config";
 import { QuestionReviewContent } from "./QuestionReviewContent";
 
@@ -168,6 +174,7 @@ export function QuestionReviewDrawer({
   const [parsedCache, setParsedCache] = useState<ParsedQuestionCache>({});
   const [isLoading, setIsLoading] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   // Stats
   const stats = useMemo(() => {
@@ -242,6 +249,13 @@ export function QuestionReviewDrawer({
     };
   }, [isOpen]);
 
+  // Scroll content to top when question changes
+  useEffect(() => {
+    if (contentRef.current) {
+      contentRef.current.scrollTo({ top: 0, behavior: "instant" });
+    }
+  }, [currentIndex]);
+
   if (!isOpen) return null;
 
   return (
@@ -304,7 +318,7 @@ export function QuestionReviewDrawer({
           </div>
 
           {/* Question Content */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+          <div ref={contentRef} className="flex-1 overflow-y-auto p-4 sm:p-6">
             {isLoading ? (
               <LoadingState />
             ) : currentResponse ? (
