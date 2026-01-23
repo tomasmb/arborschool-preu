@@ -228,6 +228,8 @@ export function formatRouteForDisplay(route: LearningRoute): {
 
 import {
   calculateImprovement as calcPaesImprovement,
+  capImprovementToMax,
+  getPaesScore,
   PAES_TOTAL_QUESTIONS,
 } from "../paesScoreTable";
 
@@ -237,6 +239,7 @@ import {
  * - Questions are spread across multiple tests
  * - The official PAES conversion table (non-linear)
  * - Student's estimated current score
+ * - Caps improvement to never exceed max PAES score (1000)
  */
 export function calculatePAESImprovement(
   questionsUnlocked: number,
@@ -253,6 +256,7 @@ export function calculatePAESImprovement(
   const numTests = config.numTests || 4; // We have 4 official tests
   // Default to 20 correct if not provided (roughly average student)
   const currentCorrect = config.currentCorrect ?? 20;
+  const currentScore = getPaesScore(currentCorrect);
 
   // Questions unlocked are spread across tests, so divide by number of tests
   const avgQuestionsUnlockedPerTest = Math.round(questionsUnlocked / numTests);
@@ -265,12 +269,12 @@ export function calculatePAESImprovement(
 
   // Add uncertainty range (±15%) since question selection varies
   const uncertaintyFactor = 0.15;
-  const minPoints = Math.round(
-    improvement.improvement * (1 - uncertaintyFactor)
-  );
-  const maxPoints = Math.round(
-    improvement.improvement * (1 + uncertaintyFactor)
-  );
+  const rawMin = Math.round(improvement.improvement * (1 - uncertaintyFactor));
+  const rawMax = Math.round(improvement.improvement * (1 + uncertaintyFactor));
+
+  // Cap improvements to ensure we never promise exceeding 1000 points
+  const minPoints = capImprovementToMax(currentScore, rawMin);
+  const maxPoints = capImprovementToMax(currentScore, rawMax);
 
   // Percentage of a single test this represents
   const percentageOfTest = Math.round(

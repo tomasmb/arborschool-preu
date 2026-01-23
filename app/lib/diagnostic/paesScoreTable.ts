@@ -151,6 +151,22 @@ export function getMarginalPointValue(currentCorrect: number): number {
 }
 
 /**
+ * Caps improvement to ensure score never exceeds PAES_MAX_SCORE (1000).
+ * Use this whenever displaying or calculating improvement values.
+ *
+ * @param currentScore - Student's current PAES score
+ * @param improvement - Raw improvement value
+ * @returns Capped improvement that won't exceed max score
+ */
+export function capImprovementToMax(
+  currentScore: number,
+  improvement: number
+): number {
+  const maxPossibleImprovement = PAES_MAX_SCORE - currentScore;
+  return Math.max(0, Math.min(improvement, maxPossibleImprovement));
+}
+
+/**
  * Calculates average points per question at different score ranges.
  */
 export function getPointsPerQuestionByRange(): {

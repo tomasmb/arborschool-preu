@@ -103,16 +103,25 @@ export function ResultsScreen({
   }, [routesData?.routes]);
 
   // Calculate potential improvement from actual route data
+  // Cap to ensure displayed improvement never exceeds max PAES score (1000)
   const potentialImprovement = useMemo(() => {
+    const maxPossibleImprovement = 1000 - midScore;
+    let improvement: number;
+
     if (routesData?.improvement) {
-      return Math.round(
+      improvement = Math.round(
         (routesData.improvement.minPoints + routesData.improvement.maxPoints) /
           2
       );
+    } else {
+      // Fallback based on low-hanging fruit
+      improvement = sortedRoutes
+        .slice(0, 3)
+        .reduce((sum, r) => sum + r.pointsGain, 0);
     }
-    // Fallback based on low-hanging fruit
-    return sortedRoutes.slice(0, 3).reduce((sum, r) => sum + r.pointsGain, 0);
-  }, [routesData?.improvement, sortedRoutes]);
+
+    return Math.max(0, Math.min(improvement, maxPossibleImprovement));
+  }, [routesData?.improvement, sortedRoutes, midScore]);
 
   const sortedAxes = (Object.keys(results.axisPerformance) as Axis[]).sort(
     (a, b) =>

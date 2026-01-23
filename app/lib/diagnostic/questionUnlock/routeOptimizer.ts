@@ -22,6 +22,7 @@ import { simulateQuestionUnlocks } from "./unlockCalculator";
 import {
   calculateImprovement,
   estimateCorrectFromScore,
+  capImprovementToMax,
 } from "../paesScoreTable";
 
 // ============================================================================
@@ -198,12 +199,15 @@ export function buildAxisRoute(
 
   // Use actual PAES table for accurate point estimation based on student's current score
   // The PAES table is non-linear: improvement depends heavily on current level
-  const currentCorrect = config.currentPaesScore
-    ? estimateCorrectFromScore(config.currentPaesScore)
-    : 20; // Default to 20 correct (~460 pts) if not provided
+  const currentScore = config.currentPaesScore ?? 460; // Default ~460 pts if not provided
+  const currentCorrect = estimateCorrectFromScore(currentScore);
 
   const improvement = calculateImprovement(currentCorrect, questionsPerTest);
-  const estimatedPointsGain = improvement.improvement;
+  // Cap improvement to ensure we never promise exceeding 1000 points
+  const estimatedPointsGain = capImprovementToMax(
+    currentScore,
+    improvement.improvement
+  );
 
   return {
     axis: AXIS_SHORT_CODES[axis] || axis,
