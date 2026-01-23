@@ -149,6 +149,8 @@ export interface SessionState {
   stage: 1 | 2;
   questionIndex: number;
   route: Route | null;
+  /** Number of correct answers in stage 1 (for transition screen) */
+  r1Correct: number;
   /** Timestamp when timer started (for calculating remaining time) */
   timerStartedAt: number;
   /** Results data if test is completed */

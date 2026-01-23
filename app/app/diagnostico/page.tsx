@@ -79,6 +79,8 @@ export default function DiagnosticoPage() {
   );
   const [route, setRoute] = useState<Route | null>(null);
   const [results, setResults] = useState<DiagnosticResults | null>(null);
+  // Cached r1Correct for transition screen persistence
+  const [r1CorrectCount, setR1CorrectCount] = useState(0);
 
   // Signup state
   const [email, setEmail] = useState("");
@@ -126,6 +128,7 @@ export default function DiagnosticoPage() {
         setStage(storedSession.stage);
         setQuestionIndex(storedSession.questionIndex);
         setRoute(storedSession.route);
+        setR1CorrectCount(storedSession.r1Correct || 0);
         setTimerStartedAt(storedSession.timerStartedAt);
 
         // Calculate remaining time based on when timer started
@@ -162,6 +165,8 @@ export default function DiagnosticoPage() {
       stage,
       questionIndex,
       route,
+      r1Correct:
+        r1CorrectCount || r1Responses.filter((r) => r.isCorrect).length,
       timerStartedAt: timerStartedAt || Date.now(),
       results: results
         ? {
@@ -178,6 +183,8 @@ export default function DiagnosticoPage() {
     stage,
     questionIndex,
     route,
+    r1CorrectCount,
+    r1Responses,
     timerStartedAt,
     results,
   ]);
@@ -245,6 +252,7 @@ export default function DiagnosticoPage() {
     setR1Responses([]);
     setStage2Responses([]);
     setRoute(null);
+    setR1CorrectCount(0);
     setResults(null);
     setTimeRemaining(TOTAL_TIME_SECONDS);
 
@@ -363,6 +371,7 @@ export default function DiagnosticoPage() {
         const correctCount = newResponses.filter((r) => r.isCorrect).length;
         const determinedRoute = getRoute(correctCount);
         setRoute(determinedRoute);
+        setR1CorrectCount(correctCount);
         setScreen("transition");
       } else {
         setQuestionIndex(questionIndex + 1);
@@ -573,7 +582,9 @@ export default function DiagnosticoPage() {
 
   // Transition screen
   if (screen === "transition" && route) {
-    const r1Correct = r1Responses.filter((r) => r.isCorrect).length;
+    // Use cached count (persists across refresh) or calculate from responses
+    const r1Correct =
+      r1CorrectCount || r1Responses.filter((r) => r.isCorrect).length;
     return (
       <div className="min-h-screen bg-gradient-to-b from-cream to-off-white">
         <TransitionScreen
