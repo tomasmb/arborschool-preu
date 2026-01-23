@@ -392,6 +392,13 @@ export function QuestionScreen({
             </svg>
           </button>
         </div>
+
+        {/* Forward-only hint - shown only on first question */}
+        {questionIndex === 0 && (
+          <p className="text-center text-xs text-cool-gray/60 mt-4 italic">
+            Tómate tu tiempo — no podrás volver a preguntas anteriores
+          </p>
+        )}
       </div>
     </div>
   );

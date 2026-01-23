@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo } from "react";
 
 // ============================================================================
 // TYPES
@@ -25,10 +25,53 @@ interface ConfettiProps {
   variant?: ConfettiVariant;
   /** Duration in ms before confetti fades out */
   duration?: number;
-  /** Number of particles */
+  /** Number of particles (auto-adjusted for device performance) */
   particleCount?: number;
   /** Custom colors (defaults to brand colors) */
   colors?: string[];
+}
+
+// ============================================================================
+// PERFORMANCE DETECTION
+// ============================================================================
+
+type PerformanceTier = "high" | "medium" | "low";
+
+/** Particle count multipliers for each performance tier */
+const PERFORMANCE_MULTIPLIERS: Record<PerformanceTier, number> = {
+  high: 1.0,
+  medium: 0.6,
+  low: 0.35,
+};
+
+/** Detect device performance tier based on hardware signals */
+function detectPerformanceTier(): PerformanceTier {
+  if (typeof window === "undefined") return "medium";
+
+  // Check for reduced motion preference - respect accessibility
+  const prefersReducedMotion = window.matchMedia(
+    "(prefers-reduced-motion: reduce)"
+  ).matches;
+  if (prefersReducedMotion) return "low";
+
+  // Check CPU cores (low-end devices typically have 2-4 cores)
+  const cpuCores = navigator.hardwareConcurrency || 4;
+
+  // Check screen size (mobile devices)
+  const isMobile = window.innerWidth < 768;
+
+  // Check device memory if available (Chrome only)
+  const deviceMemory = (navigator as { deviceMemory?: number }).deviceMemory;
+  const isLowMemory = deviceMemory !== undefined && deviceMemory < 4;
+
+  // Determine tier based on signals
+  if (isLowMemory || (isMobile && cpuCores <= 4)) {
+    return "low";
+  }
+  if (isMobile || cpuCores <= 4) {
+    return "medium";
+  }
+  return "high";
 }
 
 // ============================================================================
@@ -49,6 +92,15 @@ export function Confetti({
 }: ConfettiProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // Detect performance tier once on mount (memoized to avoid recalculation)
+  const performanceTier = useMemo(() => detectPerformanceTier(), []);
+
+  // Adjust particle count based on device performance
+  const adjustedParticleCount = useMemo(() => {
+    const multiplier = PERFORMANCE_MULTIPLIERS[performanceTier];
+    return Math.max(10, Math.round(particleCount * multiplier));
+  }, [particleCount, performanceTier]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -68,13 +120,13 @@ export function Confetti({
 
     const particles: Particle[] = [];
 
-    // Create particles based on variant
-    for (let i = 0; i < particleCount; i++) {
+    // Create particles based on variant (using adjusted count for performance)
+    for (let i = 0; i < adjustedParticleCount; i++) {
       const particle = createParticle(
         canvas,
         variant,
         i,
-        particleCount,
+        adjustedParticleCount,
         colors
       );
       particles.push(particle);
@@ -107,7 +159,7 @@ export function Confetti({
 
     animate();
     return () => cancelAnimationFrame(animationFrame);
-  }, [variant, duration, particleCount, colors]);
+  }, [variant, duration, adjustedParticleCount, colors]);
 
   const isFullScreen = variant !== "mini";
 
