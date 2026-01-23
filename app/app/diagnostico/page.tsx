@@ -385,15 +385,18 @@ export default function DiagnosticoPage() {
     setSelectedAnswer(null);
     setIsDontKnow(false);
     questionStartTime.current = Date.now();
-    // Scroll to top when moving to next question
-    window.scrollTo(0, 0);
   };
+
+  // Scroll to top when question changes (after React renders)
+  useEffect(() => {
+    if (screen === "question") {
+      window.scrollTo(0, 0);
+    }
+  }, [questionIndex, screen]);
   const continueToStage2 = () => {
     setStage(2);
     setQuestionIndex(0);
     resetQuestionState();
-    // Scroll to top when starting stage 2
-    window.scrollTo(0, 0);
     setScreen("question");
   };
 
