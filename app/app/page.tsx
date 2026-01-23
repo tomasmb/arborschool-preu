@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
+import { LoadingButton } from "@/app/components/ui";
 
 /**
  * Browser frame component for displaying app mockups
@@ -44,11 +46,19 @@ function BrowserFrame({ children }: { children: React.ReactNode }) {
 /**
  * CTA Button component for diagnostic
  */
-function DiagnosticCTA() {
+function DiagnosticCTA({
+  onClick,
+  isLoading,
+}: {
+  onClick: () => void;
+  isLoading: boolean;
+}) {
   return (
     <div className="text-center">
-      <button
-        onClick={goToDiagnostic}
+      <LoadingButton
+        onClick={onClick}
+        isLoading={isLoading}
+        loadingText="Cargando..."
         className="btn-cta px-10 py-5 text-lg shadow-lg mb-4"
       >
         Comenzar Diagnóstico Gratis
@@ -65,7 +75,7 @@ function DiagnosticCTA() {
             d="M13 7l5 5m0 0l-5 5m5-5H6"
           />
         </svg>
-      </button>
+      </LoadingButton>
       <p className="text-cool-gray text-sm">
         16 preguntas · Resultados inmediatos · Guarda tu progreso
       </p>
@@ -73,14 +83,14 @@ function DiagnosticCTA() {
   );
 }
 
-/**
- * Navigate to diagnostic test
- */
-function goToDiagnostic() {
-  window.location.href = "/diagnostico";
-}
-
 export default function Home() {
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  const goToDiagnostic = () => {
+    setIsNavigating(true);
+    window.location.href = "/diagnostico";
+  };
+
   return (
     <main className="min-h-screen overflow-hidden">
       {/* Navigation */}
@@ -102,12 +112,13 @@ export default function Home() {
               <span className="hidden sm:inline-flex text-sm font-medium text-success bg-success/10 px-3 py-1.5 rounded-full">
                 ¡Disponible!
               </span>
-              <button
+              <LoadingButton
                 onClick={goToDiagnostic}
+                isLoading={isNavigating}
                 className="btn-cta text-sm px-4 py-2"
               >
                 Hacer Diagnóstico
-              </button>
+              </LoadingButton>
             </div>
           </div>
         </div>
@@ -139,8 +150,10 @@ export default function Home() {
               no avanzas hasta que lo domines.
             </p>
 
-            <button
+            <LoadingButton
               onClick={goToDiagnostic}
+              isLoading={isNavigating}
+              loadingText="Cargando..."
               className="btn-cta text-lg px-10 py-5 shadow-lg"
             >
               Tomar el Diagnóstico Gratis
@@ -157,7 +170,7 @@ export default function Home() {
                   d="M13 7l5 5m0 0l-5 5m5-5H6"
                 />
               </svg>
-            </button>
+            </LoadingButton>
 
             <p className="text-sm text-cool-gray mt-4">
               16 preguntas · 30 minutos · Resultados inmediatos
@@ -635,7 +648,7 @@ export default function Home() {
           </p>
 
           <div className="max-w-lg mx-auto">
-            <DiagnosticCTA />
+            <DiagnosticCTA onClick={goToDiagnostic} isLoading={isNavigating} />
           </div>
 
           <p className="text-sm text-cool-gray mt-6">

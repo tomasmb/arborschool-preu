@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { LoadingButton } from "@/app/components/ui";
 
 interface SignupScreenProps {
   email: string;
@@ -163,9 +164,11 @@ export function SignupScreen({
               </div>
             )}
 
-            <button
+            <LoadingButton
               type="submit"
-              disabled={!email || status === "loading"}
+              disabled={!email}
+              isLoading={status === "loading"}
+              loadingText="Guardando..."
               aria-label={
                 status === "loading"
                   ? "Guardando email..."
@@ -174,34 +177,22 @@ export function SignupScreen({
               className="btn-cta w-full py-4 text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] 
                 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
-              {status === "loading" ? (
-                <span className="flex items-center justify-center gap-2">
-                  <div
-                    className="w-5 h-5 border-2 border-charcoal/30 border-t-charcoal rounded-full animate-spin"
-                    aria-hidden="true"
-                  />
-                  Guardando...
-                </span>
-              ) : (
-                <>
-                  Guardar y Notificarme
-                  <svg
-                    className="w-5 h-5 ml-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                </>
-              )}
-            </button>
+              Guardar y Notificarme
+              <svg
+                className="w-5 h-5 ml-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </LoadingButton>
           </form>
 
           <button

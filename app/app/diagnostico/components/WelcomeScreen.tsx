@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { LoadingButton } from "@/app/components/ui";
 
 interface WelcomeScreenProps {
-  onStart: () => void;
+  onStart: () => void | Promise<void>;
 }
 
 // ============================================================================
@@ -76,10 +77,23 @@ function TipItem({ text, delay }: { text: string; delay: number }) {
 
 export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
 
   useEffect(() => {
     setIsLoaded(true);
   }, []);
+
+  const handleStart = async () => {
+    setIsStarting(true);
+    try {
+      await onStart();
+    } catch (error) {
+      // If there's an error, reset loading state so user can retry
+      setIsStarting(false);
+      throw error;
+    }
+    // Note: Component unmounts on success, so no need to reset loading
+  };
 
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
@@ -185,8 +199,10 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
           </div>
 
           {/* Start button with enhanced styling */}
-          <button
-            onClick={onStart}
+          <LoadingButton
+            onClick={handleStart}
+            isLoading={isStarting}
+            loadingText="Preparando..."
             className="btn-cta w-full py-5 text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300"
           >
             Comenzar Diagnóstico
@@ -203,7 +219,7 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
                 d="M13 7l5 5m0 0l-5 5m5-5H6"
               />
             </svg>
-          </button>
+          </LoadingButton>
         </div>
 
         {/* Footer note */}

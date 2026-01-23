@@ -21,30 +21,6 @@ interface QuestionContentProps {
 }
 
 // ============================================================================
-// HELPERS
-// ============================================================================
-
-function getOptionFeedback(
-  feedbackPerOption: Record<string, string> | null,
-  selectedAnswer: string | null
-): string | null {
-  if (!feedbackPerOption || !selectedAnswer) return null;
-
-  const keys = [
-    selectedAnswer,
-    `Choice${selectedAnswer}`,
-    `choice_${selectedAnswer.toLowerCase()}`,
-    selectedAnswer.toLowerCase(),
-  ];
-
-  for (const key of keys) {
-    if (feedbackPerOption[key]) return feedbackPerOption[key];
-  }
-
-  return null;
-}
-
-// ============================================================================
 // ICONS
 // ============================================================================
 
@@ -102,24 +78,6 @@ function MinusIcon() {
   );
 }
 
-function LightbulbIcon() {
-  return (
-    <svg
-      className="w-5 h-5 text-primary"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-      />
-    </svg>
-  );
-}
-
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
@@ -132,14 +90,6 @@ export function QuestionReviewContent({
   parsedOptions,
 }: QuestionContentProps) {
   const wasSkipped = response.selectedAnswer === null;
-
-  // Feedback
-  const optionFeedback = getOptionFeedback(
-    reviewData?.feedbackPerOption ?? null,
-    response.selectedAnswer
-  );
-  const generalFeedback = reviewData?.feedbackGeneral;
-  const hasFeedback = Boolean(optionFeedback || generalFeedback);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -259,33 +209,6 @@ export function QuestionReviewContent({
           );
         })}
       </div>
-
-      {/* Feedback */}
-      {hasFeedback && (
-        <div className="card p-5 bg-primary/5 border-primary/20 overflow-x-auto">
-          <div className="flex items-center gap-2 mb-3">
-            <LightbulbIcon />
-            <span className="font-semibold text-charcoal">Explicación</span>
-          </div>
-          <div className="text-charcoal leading-relaxed">
-            {optionFeedback && (
-              <div dangerouslySetInnerHTML={{ __html: optionFeedback }} />
-            )}
-            {generalFeedback && !optionFeedback && (
-              <div dangerouslySetInnerHTML={{ __html: generalFeedback }} />
-            )}
-          </div>
-        </div>
-      )}
-
-      {!hasFeedback && (
-        <div className="card p-5 bg-gray-50 border-gray-200 text-center">
-          <p className="text-sm text-cool-gray">
-            La explicación detallada estará disponible en tu plan de estudio
-            personalizado.
-          </p>
-        </div>
-      )}
     </div>
   );
 }

@@ -3,11 +3,12 @@
 import { useState, useEffect } from "react";
 import { ROUTE_NAMES, type Route } from "@/lib/diagnostic/config";
 import { Confetti } from "./Confetti";
+import { LoadingButton } from "@/app/components/ui";
 
 interface TransitionScreenProps {
   r1Correct: number;
   route: Route;
-  onContinue: () => void;
+  onContinue: () => void | Promise<void>;
 }
 
 // ============================================================================
@@ -59,12 +60,23 @@ export function TransitionScreen({
 }: TransitionScreenProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [isContinuing, setIsContinuing] = useState(false);
 
   useEffect(() => {
     setIsLoaded(true);
     const timer = setTimeout(() => setShowConfetti(true), 300);
     return () => clearTimeout(timer);
   }, []);
+
+  const handleContinue = async () => {
+    setIsContinuing(true);
+    try {
+      await onContinue();
+    } catch (error) {
+      setIsContinuing(false);
+      throw error;
+    }
+  };
 
   return (
     <div className="min-h-[calc(100vh-80px)] relative overflow-hidden flex items-center justify-center p-4">
@@ -145,8 +157,10 @@ export function TransitionScreen({
             tu desempeño para obtener un diagnóstico más preciso.
           </p>
 
-          <button
-            onClick={onContinue}
+          <LoadingButton
+            onClick={handleContinue}
+            isLoading={isContinuing}
+            loadingText="Cargando..."
             className={`btn-cta w-full py-4 text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-500 delay-800
               ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
@@ -164,7 +178,7 @@ export function TransitionScreen({
                 d="M13 7l5 5m0 0l-5 5m5-5H6"
               />
             </svg>
-          </button>
+          </LoadingButton>
         </div>
       </div>
     </div>
