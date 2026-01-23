@@ -157,12 +157,6 @@ export interface ScoringConfig {
    * Questions are spread across tests, so real improvement = total / numTests
    */
   numOfficialTests: number;
-  /**
-   * Student's current PAES score (100-1000).
-   * Used to calculate accurate point improvements based on the non-linear PAES table.
-   * If not provided, defaults to 460 (~20 correct answers).
-   */
-  currentPaesScore?: number;
 }
 
 export const DEFAULT_SCORING_CONFIG: ScoringConfig = {
