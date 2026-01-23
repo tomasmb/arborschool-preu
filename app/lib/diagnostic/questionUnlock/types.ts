@@ -151,8 +151,6 @@ export interface ScoringConfig {
   primaryRelevanceMultiplier: number;
   /** Estimated minutes to master one atom */
   minutesPerAtom: number;
-  /** PAES points per question (rough estimate: 900 points / ~65 questions) */
-  pointsPerQuestion: number;
   /**
    * Number of official tests in database.
    * Used to convert total questions unlocked to per-test improvement.
@@ -173,6 +171,5 @@ export const DEFAULT_SCORING_CONFIG: ScoringConfig = {
   threeOrMoreWeight: 1.0,
   primaryRelevanceMultiplier: 2.0,
   minutesPerAtom: 20,
-  pointsPerQuestion: 14, // ~900 points spread across ~65 questions
   numOfficialTests: 4, // We have 4 official PAES tests in the database
 };
