@@ -261,10 +261,11 @@ export function calculatePAESFromUnlocked(
   // Use the official PAES table
   const score = getPaesScore(correctPerTest);
 
-  // Add uncertainty margin (±30 points) to account for:
+  // Add uncertainty margin (±50 points) to account for:
   // - Questions not in database that student might know
   // - Careless errors on questions they could answer
-  const margin = 30;
+  // - Matches the margin used in the fallback calculation
+  const margin = 50;
   const min = Math.max(100, score - margin);
   const max = Math.min(1000, score + margin);
 

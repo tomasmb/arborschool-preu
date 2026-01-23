@@ -99,7 +99,9 @@ export function ResultsScreen({
   // Use the consistent PAES score from the API (based on unlocked questions)
   // This ensures the score and improvement predictions are on the same scale
   const estimatedScore = routesData?.estimatedScore;
-  const midScore = estimatedScore?.score ?? results.paesMin;
+  // Fallback to old calculation's midpoint if API hasn't loaded yet
+  const fallbackMid = Math.round((results.paesMin + results.paesMax) / 2);
+  const midScore = estimatedScore?.score ?? fallbackMid;
   const scoreMin = estimatedScore?.min ?? results.paesMin;
   const scoreMax = estimatedScore?.max ?? results.paesMax;
 
