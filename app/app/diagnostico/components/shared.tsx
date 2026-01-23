@@ -76,6 +76,111 @@ export const Icons = {
 };
 
 // ============================================================================
+// TIMER WARNING THRESHOLDS (in seconds)
+// ============================================================================
+
+export const TIMER_THRESHOLDS = {
+  CRITICAL: 30, // 30 seconds - urgent warning
+  WARNING: 300, // 5 minutes - warning state
+  CAUTION: 600, // 10 minutes - caution state
+} as const;
+
+// ============================================================================
+// TIMER COMPONENT
+// ============================================================================
+
+type TimerState = "normal" | "caution" | "warning" | "critical";
+
+interface TimerProps {
+  seconds: number;
+  className?: string;
+}
+
+/**
+ * Determines timer state based on remaining seconds
+ */
+function getTimerState(seconds: number): TimerState {
+  if (seconds <= TIMER_THRESHOLDS.CRITICAL) return "critical";
+  if (seconds <= TIMER_THRESHOLDS.WARNING) return "warning";
+  if (seconds <= TIMER_THRESHOLDS.CAUTION) return "caution";
+  return "normal";
+}
+
+/**
+ * Formats seconds as MM:SS
+ */
+export function formatTime(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+}
+
+/**
+ * Timer display component with visual warning states.
+ * - Critical (≤30s): Red pulsing with shake animation
+ * - Warning (≤5min): Red with pulse
+ * - Caution (≤10min): Amber
+ * - Normal: Default styling
+ */
+export function Timer({ seconds, className = "" }: TimerProps) {
+  const state = getTimerState(seconds);
+
+  // Style maps for each state
+  const stateStyles: Record<TimerState, string> = {
+    critical: "bg-red-500 text-white shadow-lg shadow-red-500/30 animate-pulse",
+    warning: "bg-red-100 text-red-600 animate-pulse",
+    caution: "bg-amber-50 text-amber-600",
+    normal: "bg-off-white text-charcoal shadow-sm",
+  };
+
+  const iconStyles: Record<TimerState, string> = {
+    critical: "animate-bounce",
+    warning: "animate-bounce-subtle",
+    caution: "",
+    normal: "",
+  };
+
+  // Accessibility: announce time changes at critical thresholds
+  const getAriaLabel = () => {
+    const timeStr = formatTime(seconds);
+    if (state === "critical") return `¡Atención! Quedan ${timeStr} - Tiempo casi agotado`;
+    if (state === "warning") return `Advertencia: Quedan ${timeStr}`;
+    return `Tiempo restante: ${timeStr}`;
+  };
+
+  return (
+    <div
+      role="timer"
+      aria-live={state === "critical" ? "assertive" : "polite"}
+      aria-label={getAriaLabel()}
+      className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full 
+        text-xs sm:text-sm font-mono font-medium transition-all duration-300
+        ${stateStyles[state]} ${className}`}
+    >
+      <svg
+        className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${iconStyles[state]}`}
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+      <span>{formatTime(seconds)}</span>
+      {/* Visual warning indicator for critical state */}
+      {state === "critical" && (
+        <span className="sr-only">¡Tiempo casi agotado!</span>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
 // ANIMATED COUNTER
 // ============================================================================
 

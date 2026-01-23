@@ -6,6 +6,22 @@ Key improvements to enhance student experience in the diagnostic app.
 
 ## Completed ✅
 
+### Accessibility Compliance (Done Jan 2026)
+
+**Changes made:**
+- ✅ Added `aria-label` to all interactive buttons (answer options, navigation, retry, skip)
+- ✅ Added `aria-pressed` to toggle-style buttons (option selection, "No lo sé")
+- ✅ Added `role="alert" aria-live="polite"` to error messages in QuestionScreen and SignupScreen
+- ✅ Added `role="status" aria-live="polite"` to loading state for screen reader announcements
+- ✅ Added proper `<label>` element to email input with `sr-only` class
+- ✅ Added `aria-describedby` and `aria-invalid` to form input for error association
+- ✅ Added `aria-hidden="true"` to decorative SVG icons
+- ✅ ResultsComponents already had icons alongside color-coded badges (star, trendUp, target)
+
+**Files updated**: `QuestionScreen.tsx`, `SignupScreen.tsx`
+
+---
+
 ### Mobile Responsiveness (Done Jan 2026)
 
 **Changes made:**
@@ -32,29 +48,18 @@ Key improvements to enhance student experience in the diagnostic app.
 
 ## High Priority
 
-### 1. Accessibility Compliance
+### ~~2. Timer Visibility & Warnings~~ ✅ (Done Jan 2026)
 
-**Problem**: Screen reader users and keyboard-only users face barriers.
+**Changes made:**
+- ✅ Created reusable `Timer` component in `shared.tsx` (SOLID/DRY)
+- ✅ Added configurable warning thresholds via `TIMER_THRESHOLDS` constant
+- ✅ Critical state (≤30s): Red background, white text, pulse animation, bounce icon
+- ✅ Warning state (≤5min): Red background with pulse
+- ✅ Caution state (≤10min): Amber background
+- ✅ Added `role="timer"` and `aria-live` for screen reader announcements
+- ✅ Critical state uses `aria-live="assertive"` for urgent announcements
 
-**Actions**:
-- Add `aria-label` to all interactive buttons (answer options, navigation)
-- Add `role="alert" aria-live="polite"` to error messages for screen reader announcements
-- Ensure all form inputs have associated labels
-- Add icons alongside color-coded feedback (not color-only)
-
-**Files**: `QuestionScreen.tsx`, `SignupScreen.tsx`, `ResultsComponents.tsx`
-
----
-
-### 2. Timer Visibility & Warnings
-
-**Problem**: Students may not notice the timer or realize when time is running low.
-
-**Actions**:
-- Add visual warning state when timer drops below 30 seconds (color change, pulse animation)
-- Consider adding a subtle sound cue option for low time
-
-**File**: `page.tsx` (diagnostic)
+**Files updated**: `shared.tsx`, `page.tsx`, `index.ts`
 
 ---
 

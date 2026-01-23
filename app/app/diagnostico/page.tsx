@@ -23,6 +23,7 @@ import {
   ResultsScreen,
   SignupScreen,
   ThankYouScreen,
+  Timer,
   type QuestionAtom,
 } from "./components";
 
@@ -526,12 +527,6 @@ export default function DiagnosticoPage() {
     }
   };
 
-  // Format time
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
 
   // ============================================================================
   // RENDER
@@ -587,32 +582,8 @@ export default function DiagnosticoPage() {
                 </div>
               </div>
 
-              {/* Timer */}
-              <div
-                className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-mono font-medium transition-all duration-300
-                ${
-                  timeRemaining < 300
-                    ? "bg-red-100 text-red-600 animate-pulse"
-                    : timeRemaining < 600
-                      ? "bg-amber-50 text-amber-600"
-                      : "bg-off-white text-charcoal shadow-sm"
-                }`}
-              >
-                <svg
-                  className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${timeRemaining < 300 ? "animate-bounce-subtle" : ""}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                {formatTime(timeRemaining)}
-              </div>
+              {/* Timer with warning states */}
+              <Timer seconds={timeRemaining} />
             </div>
 
             {/* Mobile progress bar - shown only on small screens */}

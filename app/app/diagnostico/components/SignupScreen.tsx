@@ -88,13 +88,19 @@ export function SignupScreen({
               ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
             <div className="relative">
+              <label htmlFor="email-input" className="sr-only">
+                Correo electrónico
+              </label>
               <input
+                id="email-input"
                 type="email"
                 value={email}
                 onChange={(e) => onEmailChange(e.target.value)}
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
                 placeholder="tu@email.com"
+                aria-describedby={error ? "email-error" : undefined}
+                aria-invalid={error ? "true" : undefined}
                 className={`w-full px-5 py-4 rounded-xl border-2 bg-white text-charcoal 
                   placeholder:text-gray-400 focus:outline-none transition-all duration-300 text-base sm:text-lg text-center
                   ${
@@ -107,17 +113,23 @@ export function SignupScreen({
 
               {/* Animated border glow when focused */}
               {isFocused && (
-                <div className="absolute inset-0 rounded-xl bg-accent/5 -z-10 blur-sm" />
+                <div className="absolute inset-0 rounded-xl bg-accent/5 -z-10 blur-sm" aria-hidden="true" />
               )}
             </div>
 
             {error && (
-              <div className="flex items-center justify-center gap-2 text-red-500 text-sm bg-red-50 p-3 rounded-lg">
+              <div
+                id="email-error"
+                role="alert"
+                aria-live="polite"
+                className="flex items-center justify-center gap-2 text-red-500 text-sm bg-red-50 p-3 rounded-lg"
+              >
                 <svg
                   className="w-4 h-4 shrink-0"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"
@@ -133,12 +145,16 @@ export function SignupScreen({
             <button
               type="submit"
               disabled={!email || status === "loading"}
+              aria-label={status === "loading" ? "Guardando email..." : "Guardar email y recibir notificaciones"}
               className="btn-cta w-full py-4 text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] 
                 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               {status === "loading" ? (
                 <span className="flex items-center justify-center gap-2">
-                  <div className="w-5 h-5 border-2 border-charcoal/30 border-t-charcoal rounded-full animate-spin" />
+                  <div
+                    className="w-5 h-5 border-2 border-charcoal/30 border-t-charcoal rounded-full animate-spin"
+                    aria-hidden="true"
+                  />
                   Guardando...
                 </span>
               ) : (
@@ -149,6 +165,7 @@ export function SignupScreen({
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
+                    aria-hidden="true"
                   >
                     <path
                       strokeLinecap="round"
@@ -164,6 +181,7 @@ export function SignupScreen({
 
           <button
             onClick={onSkip}
+            aria-label="Continuar sin guardar email"
             className={`mt-6 text-cool-gray hover:text-charcoal transition-all duration-300 text-sm 
               hover:underline underline-offset-4 transition-all duration-700 delay-400
               ${isLoaded ? "opacity-100" : "opacity-0"}`}

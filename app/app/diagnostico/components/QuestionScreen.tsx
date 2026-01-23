@@ -248,9 +248,14 @@ function OptionButton({
     return () => clearTimeout(timer);
   }, [index]);
 
+  // Strip HTML tags for accessible label
+  const plainText = text.replace(/<[^>]*>/g, "").trim();
+
   return (
     <button
       onClick={onClick}
+      aria-label={`Opción ${letter}: ${plainText}`}
+      aria-pressed={isSelected}
       className={`w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 md:p-5 rounded-xl border-2 transition-all duration-300
         transform ${isVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"}
         ${
@@ -381,10 +386,13 @@ export function QuestionScreen({
     return (
       <div className="max-w-3xl mx-auto px-4 py-8">
         <div className="card p-6 sm:p-10 flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
+          <div className="text-center" role="status" aria-live="polite">
             <div className="relative w-16 h-16 mx-auto mb-4">
               <div className="absolute inset-0 rounded-full border-4 border-primary/20" />
-              <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+              <div
+                className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"
+                aria-hidden="true"
+              />
             </div>
             <p className="text-cool-gray font-medium">Cargando pregunta...</p>
           </div>
@@ -397,9 +405,9 @@ export function QuestionScreen({
   if (error && !parsedQuestion) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-8">
-        <div className="card p-8 sm:p-12 text-center">
+        <div className="card p-8 sm:p-12 text-center" role="alert" aria-live="polite">
           {/* Error icon */}
-          <div className="relative inline-block mb-6">
+          <div className="relative inline-block mb-6" aria-hidden="true">
             <div className="absolute inset-0 bg-amber-500/20 rounded-full blur-xl" />
             <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-amber-100 to-amber-50 border border-amber-200">
               <svg
@@ -430,6 +438,7 @@ export function QuestionScreen({
             {retryCount < MAX_RETRIES ? (
               <button
                 onClick={handleRetry}
+                aria-label="Reintentar cargar la pregunta"
                 className="btn-primary px-8 py-3 flex items-center justify-center gap-2"
               >
                 <svg
@@ -437,6 +446,7 @@ export function QuestionScreen({
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"
@@ -450,6 +460,7 @@ export function QuestionScreen({
             ) : null}
             <Link
               href="/"
+              aria-label="Volver a la página de inicio"
               className="btn-ghost px-8 py-3 flex items-center justify-center gap-2"
             >
               <svg
@@ -457,6 +468,7 @@ export function QuestionScreen({
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"
@@ -531,6 +543,8 @@ export function QuestionScreen({
         {/* Don't know button */}
         <button
           onClick={onSelectDontKnow}
+          aria-label="Seleccionar: No lo sé"
+          aria-pressed={isDontKnow}
           className={`w-full flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-dashed 
             transition-all duration-300
             ${
@@ -544,6 +558,7 @@ export function QuestionScreen({
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
+            aria-hidden="true"
           >
             <path
               strokeLinecap="round"
@@ -560,6 +575,7 @@ export function QuestionScreen({
           <button
             onClick={handleNext}
             disabled={!canProceed}
+            aria-label="Ir a la siguiente pregunta"
             className={`group px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold flex items-center gap-2 transition-all duration-300
               ${
                 canProceed
@@ -573,6 +589,7 @@ export function QuestionScreen({
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"
