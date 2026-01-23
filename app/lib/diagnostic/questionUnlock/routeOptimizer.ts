@@ -201,7 +201,10 @@ export function buildAxisRoute(
 
   // Use diagnostic score as baseline (more accurate than unlocked questions)
   // Default to 460 (~20 correct) if not provided
-  const currentScore = config.currentPaesScore ?? 460;
+  if (config.currentPaesScore === undefined) {
+    throw new Error("currentPaesScore is required in ScoringConfig");
+  }
+  const currentScore = config.currentPaesScore;
   const currentCorrect = estimateCorrectFromScore(currentScore);
 
   // Use actual PAES table for accurate point estimation

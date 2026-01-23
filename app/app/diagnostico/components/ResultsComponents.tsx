@@ -121,12 +121,13 @@ export function AxisProgressBar({
 }: AxisProgressBarProps) {
   const [isVisible, setIsVisible] = useState(false);
 
-  // Use actual mastery data if available, otherwise fall back to estimate
-  const masteredAtoms =
-    actualMastery?.masteredAtoms ??
-    calculateAtomsDominated(data.percentage, ATOM_COUNTS[axis]);
-  const totalAtoms = actualMastery?.totalAtoms ?? ATOM_COUNTS[axis];
-  const percentage = actualMastery?.masteryPercentage ?? data.percentage;
+  // Require actual mastery data - no estimates
+  if (!actualMastery) {
+    throw new Error(`Actual mastery data required for axis ${axis}`);
+  }
+  const masteredAtoms = actualMastery.masteredAtoms;
+  const totalAtoms = actualMastery.totalAtoms;
+  const percentage = actualMastery.masteryPercentage;
 
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), delay);

@@ -219,10 +219,10 @@ export function formatRouteForDisplay(route: LearningRoute): {
     },
   };
 
-  const display = titles[route.axis] || {
-    title: route.axisDisplayName,
-    subtitle: "Dominio temático",
-  };
+  const display = titles[route.axis];
+  if (!display) {
+    throw new Error(`Unknown axis: ${route.axis}`);
+  }
 
   // Show questions per test (average), not total across all tests
   const numTests = DEFAULT_SCORING_CONFIG.numOfficialTests;

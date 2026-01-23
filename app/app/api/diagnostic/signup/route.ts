@@ -100,6 +100,21 @@ export async function POST(request: NextRequest) {
     }
     // If we have diagnostic data from a local attempt, create the records now
     else if (diagnosticData && diagnosticData.responses.length > 0) {
+      // Compute correct answers from responses - don't use fallback
+      const correctAnswers = diagnosticData.responses.filter(
+        (r) => r.isCorrect
+      ).length;
+      const stage1Score = diagnosticData.responses.filter(
+        (r) => r.stage === 1 && r.isCorrect
+      ).length;
+
+      if (!diagnosticData.results?.route) {
+        return NextResponse.json(
+          { success: false, error: "diagnosticData.results.route is required" },
+          { status: 400 }
+        );
+      }
+
       // Create a new test attempt
       const [newAttempt] = await db
         .insert(testAttempts)
@@ -108,11 +123,9 @@ export async function POST(request: NextRequest) {
           startedAt: new Date(diagnosticData.responses[0].answeredAt),
           completedAt: new Date(),
           totalQuestions: 16,
-          correctAnswers: diagnosticData.results?.totalCorrect ?? 0,
-          stage1Score: diagnosticData.responses.filter(
-            (r) => r.stage === 1 && r.isCorrect
-          ).length,
-          stage2Difficulty: diagnosticData.results?.route ?? "B",
+          correctAnswers,
+          stage1Score,
+          stage2Difficulty: diagnosticData.results.route,
         })
         .returning({ id: testAttempts.id });
 
@@ -120,11 +133,17 @@ export async function POST(request: NextRequest) {
 
       // Insert all responses
       for (const response of diagnosticData.responses) {
+        if (!response.questionId) {
+          console.error(
+            `Response at stage ${response.stage}, index ${response.questionIndex} has no questionId`
+          );
+          continue;
+        }
         try {
           await db.insert(studentResponses).values({
             userId,
             testAttemptId: newAttempt.id,
-            questionId: response.questionId || null,
+            questionId: response.questionId,
             selectedAnswer: response.selectedAnswer,
             isCorrect: response.isCorrect,
             responseTimeSeconds: response.responseTimeSeconds,

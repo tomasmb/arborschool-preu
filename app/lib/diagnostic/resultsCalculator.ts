@@ -120,12 +120,16 @@ export function computeAtomMastery(
   const atomMap = new Map<string, boolean>();
 
   responses.forEach((response) => {
-    // Safety check: atoms may be undefined if API didn't return them
-    const atoms = response.atoms || [];
+    // Require atoms - if API didn't return them, that's a bug
+    if (!response.atoms || response.atoms.length === 0) {
+      throw new Error(
+        `Response for question has no atoms - cannot compute mastery`
+      );
+    }
 
     // Include BOTH primary AND secondary atoms per methodology
     // Transitivity is applied downstream by the atomMastery module
-    atoms.forEach((atom) => {
+    response.atoms.forEach((atom) => {
       const current = atomMap.get(atom.atomId);
 
       if (current === undefined) {

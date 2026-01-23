@@ -149,7 +149,17 @@ export function QuestionScreen({
           if (data.question.correctAnswer) {
             parsed.correctAnswer = data.question.correctAnswer;
           }
-          parsed.atoms = data.question.atoms || [];
+          if (!data.question.atoms || data.question.atoms.length === 0) {
+            console.error(
+              "Question has no atoms:",
+              question.exam,
+              question.questionNumber
+            );
+            setError("Error: pregunta sin átomos de conocimiento");
+            setParsedQuestion(null);
+            return;
+          }
+          parsed.atoms = data.question.atoms;
           setParsedQuestion(parsed);
           setError(null);
         } else {
@@ -170,12 +180,14 @@ export function QuestionScreen({
   }, [question.exam, question.questionNumber, retryCount]);
 
   const handleNext = () => {
+    if (!parsedQuestion?.atoms || parsedQuestion.atoms.length === 0) {
+      console.error("Cannot proceed: question has no atoms");
+      onFatalError();
+      return;
+    }
     setIsExiting(true);
     setTimeout(() => {
-      onNext(
-        parsedQuestion?.correctAnswer || null,
-        parsedQuestion?.atoms || []
-      );
+      onNext(parsedQuestion.correctAnswer ?? null, parsedQuestion.atoms);
     }, 200);
   };
 
@@ -285,7 +297,12 @@ export function QuestionScreen({
     );
   }
 
-  const options = parsedQuestion?.options || [];
+  if (!parsedQuestion || !parsedQuestion.options) {
+    throw new Error(
+      "parsedQuestion or options is null after loading completed"
+    );
+  }
+  const options = parsedQuestion.options;
 
   return (
     <div

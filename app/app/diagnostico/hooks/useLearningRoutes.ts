@@ -10,7 +10,6 @@
  */
 
 import { useState, useEffect } from "react";
-import { TOTAL_ATOMS } from "@/lib/diagnostic/scoringConstants";
 
 // ============================================================================
 // TYPES
@@ -80,80 +79,6 @@ interface UseLearningRoutesResult {
 }
 
 // ============================================================================
-// FALLBACK DATA
-// ============================================================================
-
-/**
- * Fallback data when API is unavailable.
- * Uses reasonable estimates based on typical diagnostic results.
- * Note: questionsUnlocked is per-test average (not total across all tests).
- */
-export function getFallbackRoutes(): LearningRoutesResponse {
-  return {
-    summary: {
-      totalAtoms: TOTAL_ATOMS,
-      masteredAtoms: 0,
-      totalQuestions: 202,
-      unlockedQuestions: 0,
-      potentialQuestionsToUnlock: 30,
-    },
-    routes: [
-      {
-        axis: "ALG",
-        title: "Dominio Algebraico",
-        subtitle: "Expresiones, ecuaciones y funciones",
-        atomCount: 10,
-        questionsUnlocked: 11,
-        pointsGain: 45,
-        studyHours: 3.5,
-        atoms: [],
-      },
-      {
-        axis: "NUM",
-        title: "El Poder de los Números",
-        subtitle: "Enteros, fracciones y operaciones",
-        atomCount: 8,
-        questionsUnlocked: 5,
-        pointsGain: 30,
-        studyHours: 2.5,
-        atoms: [],
-      },
-      {
-        axis: "GEO",
-        title: "El Ojo Geométrico",
-        subtitle: "Figuras, medidas y transformaciones",
-        atomCount: 7,
-        questionsUnlocked: 4,
-        pointsGain: 22,
-        studyHours: 2.5,
-        atoms: [],
-      },
-      {
-        axis: "PROB",
-        title: "El Arte de la Probabilidad",
-        subtitle: "Datos, probabilidades y estadística",
-        atomCount: 6,
-        questionsUnlocked: 4,
-        pointsGain: 25,
-        studyHours: 2,
-        atoms: [],
-      },
-    ],
-    quickWins: [],
-    improvement: {
-      minPoints: 80,
-      maxPoints: 120,
-      questionsPerTest: 8,
-      percentageOfTest: 16,
-    },
-    lowHangingFruit: {
-      oneAway: 20,
-      twoAway: 35,
-    },
-  };
-}
-
-// ============================================================================
 // HOOK
 // ============================================================================
 
@@ -200,17 +125,15 @@ export function useLearningRoutes(
           if (result.success && result.data) {
             setData(result.data);
           } else {
-            // Use fallback if API returns error
-            console.warn("Using fallback learning routes:", result.error);
-            setData(getFallbackRoutes());
+            // Don't use fallback - show error so students don't see fake data
+            console.error("Learning routes API returned error:", result.error);
+            setError(result.error || "Error al calcular rutas de aprendizaje");
           }
         }
       } catch (err) {
         if (!cancelled) {
           console.error("Failed to fetch learning routes:", err);
-          setError(err instanceof Error ? err.message : "Unknown error");
-          // Use fallback data on error
-          setData(getFallbackRoutes());
+          setError(err instanceof Error ? err.message : "Error de conexión");
         }
       } finally {
         if (!cancelled) {

@@ -19,7 +19,12 @@ export async function POST(request: NextRequest) {
       questionIndex,
     } = body;
 
-    if (!attemptId || selectedAnswer === undefined || isCorrect === undefined) {
+    if (
+      !attemptId ||
+      !questionId ||
+      selectedAnswer === undefined ||
+      isCorrect === undefined
+    ) {
       return NextResponse.json(
         { success: false, error: "Missing required fields" },
         { status: 400 }
@@ -30,7 +35,7 @@ export async function POST(request: NextRequest) {
       .insert(studentResponses)
       .values({
         testAttemptId: attemptId,
-        questionId: questionId || null,
+        questionId,
         selectedAnswer,
         isCorrect,
         responseTimeSeconds,

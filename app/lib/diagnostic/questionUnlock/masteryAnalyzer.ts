@@ -160,7 +160,10 @@ export function calculateMasteryByAxis(
   for (const [atomId, atom] of allAtoms) {
     const axis = atom.axis;
     const masteryState = masteryMap.get(atomId);
-    const isMastered = masteryState?.mastered ?? false;
+    if (!masteryState) {
+      throw new Error(`Mastery state not found for atom: ${atomId}`);
+    }
+    const isMastered = masteryState.mastered;
 
     const current = axisCounts.get(axis) || { total: 0, mastered: 0 };
     current.total++;

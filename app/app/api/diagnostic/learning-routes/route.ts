@@ -47,11 +47,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Require diagnostic score - don't use a fallback that could mislead students
+    if (typeof diagnosticScore !== "number") {
+      return NextResponse.json(
+        { success: false, error: "diagnosticScore is required" },
+        { status: 400 }
+      );
+    }
+
     // Run the analysis with diagnostic score for proper improvement capping
-    const analysis = await analyzeLearningPotential(
-      atomResults,
-      diagnosticScore ? { currentPaesScore: diagnosticScore } : undefined
-    );
+    const analysis = await analyzeLearningPotential(atomResults, {
+      currentPaesScore: diagnosticScore,
+    });
 
     const numTests = DEFAULT_SCORING_CONFIG.numOfficialTests;
 
@@ -90,7 +97,7 @@ export async function POST(request: NextRequest) {
     // Calculate overall improvement using diagnostic score as baseline
     // This ensures improvement + current score doesn't exceed 1000
     const improvement = calculatePAESImprovement(
-      diagnosticScore || 460, // Default to ~460 if not provided
+      diagnosticScore,
       totalPotentialUnlocks,
       numTests
     );

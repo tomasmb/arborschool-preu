@@ -85,14 +85,16 @@ export function saveResponseToLocalStorage(response: StoredResponse): void {
 
 /**
  * Retrieve all stored responses from localStorage.
- * Returns empty array if no data or on error.
+ * Returns empty array if no data. Throws on parse errors.
  */
 export function getStoredResponses(): StoredResponse[] {
+  const stored = localStorage.getItem(STORAGE_KEYS.RESPONSES);
+  if (!stored) return [];
   try {
-    const stored = localStorage.getItem(STORAGE_KEYS.RESPONSES);
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
+    return JSON.parse(stored);
+  } catch (error) {
+    console.error("Failed to parse stored responses:", error);
+    throw new Error("Corrupted response data in localStorage");
   }
 }
 
@@ -128,11 +130,7 @@ export function saveAttemptId(attemptId: string): void {
  * Retrieve stored attempt ID from localStorage.
  */
 export function getStoredAttemptId(): string | null {
-  try {
-    return localStorage.getItem(STORAGE_KEYS.ATTEMPT);
-  } catch {
-    return null;
-  }
+  return localStorage.getItem(STORAGE_KEYS.ATTEMPT);
 }
 
 /**
@@ -209,25 +207,28 @@ export function saveSessionState(state: Omit<SessionState, "savedAt">): void {
 /**
  * Retrieve stored session state from localStorage.
  * Returns null if no session or session is too old (>1 hour).
+ * Throws on parse errors to surface corrupted data.
  */
 export function getStoredSessionState(): SessionState | null {
+  const stored = localStorage.getItem(STORAGE_KEYS.SESSION);
+  if (!stored) return null;
+
+  let session: SessionState;
   try {
-    const stored = localStorage.getItem(STORAGE_KEYS.SESSION);
-    if (!stored) return null;
+    session = JSON.parse(stored);
+  } catch (error) {
+    console.error("Failed to parse session state:", error);
+    throw new Error("Corrupted session data in localStorage");
+  }
 
-    const session: SessionState = JSON.parse(stored);
-
-    // Session expires after 1 hour of inactivity
-    const ONE_HOUR = 60 * 60 * 1000;
-    if (Date.now() - session.savedAt > ONE_HOUR) {
-      clearSessionState();
-      return null;
-    }
-
-    return session;
-  } catch {
+  // Session expires after 1 hour of inactivity
+  const ONE_HOUR = 60 * 60 * 1000;
+  if (Date.now() - session.savedAt > ONE_HOUR) {
+    clearSessionState();
     return null;
   }
+
+  return session;
 }
 
 /**
@@ -275,11 +276,9 @@ export interface ResponseForReview {
 /**
  * Reconstruct responses for review from localStorage.
  * Maps stored responses back to MSTQuestion objects using the config.
- * Uses stored route from each response if available, falls back to passed route.
+ * Requires stored route for stage 2 responses.
  */
-export function getResponsesForReview(
-  fallbackRoute: Route | null
-): ResponseForReview[] {
+export function getResponsesForReview(): ResponseForReview[] {
   const storedResponses = getStoredResponses();
   if (storedResponses.length === 0) return [];
 
@@ -292,21 +291,28 @@ export function getResponsesForReview(
       // Stage 1 questions come from R1
       question = MST_QUESTIONS.R1[stored.questionIndex];
     } else if (stored.stage === 2) {
-      // Use stored route if available, otherwise fall back to passed route
-      const routeForQuestion = stored.route || fallbackRoute;
-      if (routeForQuestion) {
-        const stage2Questions = getStage2Questions(routeForQuestion);
-        question = stage2Questions[stored.questionIndex];
+      // Require route for stage 2 - no fallbacks
+      const routeForQuestion = stored.route;
+      if (!routeForQuestion) {
+        throw new Error(
+          `Stage 2 response at index ${stored.questionIndex} has no route stored`
+        );
       }
+      const stage2Questions = getStage2Questions(routeForQuestion);
+      question = stage2Questions[stored.questionIndex];
     }
 
-    if (question) {
-      responses.push({
-        question,
-        selectedAnswer: stored.selectedAnswer,
-        isCorrect: stored.isCorrect,
-      });
+    if (!question) {
+      throw new Error(
+        `Could not find question for stage ${stored.stage}, index ${stored.questionIndex}`
+      );
     }
+
+    responses.push({
+      question,
+      selectedAnswer: stored.selectedAnswer,
+      isCorrect: stored.isCorrect,
+    });
   }
 
   return responses;
@@ -315,12 +321,9 @@ export function getResponsesForReview(
 /**
  * Get stored responses for a specific stage, reconstructed with MSTQuestion.
  * Used to restore r1Responses/stage2Responses after page refresh.
- * Uses stored route from each response if available, falls back to passed route.
+ * Requires stored route for stage 2 responses.
  */
-export function getStoredResponsesForStage(
-  stage: 1 | 2,
-  fallbackRoute: Route | null
-): ResponseForReview[] {
+export function getStoredResponsesForStage(stage: 1 | 2): ResponseForReview[] {
   const storedResponses = getStoredResponses();
   const stageResponses = storedResponses.filter((r) => r.stage === stage);
 
@@ -335,21 +338,28 @@ export function getStoredResponsesForStage(
     if (stage === 1) {
       question = MST_QUESTIONS.R1[stored.questionIndex];
     } else if (stage === 2) {
-      // Use stored route if available, otherwise fall back to passed route
-      const routeForQuestion = stored.route || fallbackRoute;
-      if (routeForQuestion) {
-        const stage2Questions = getStage2Questions(routeForQuestion);
-        question = stage2Questions[stored.questionIndex];
+      // Require route for stage 2 - no fallbacks
+      const routeForQuestion = stored.route;
+      if (!routeForQuestion) {
+        throw new Error(
+          `Stage 2 response at index ${stored.questionIndex} has no route stored`
+        );
       }
+      const stage2Questions = getStage2Questions(routeForQuestion);
+      question = stage2Questions[stored.questionIndex];
     }
 
-    if (question) {
-      responses.push({
-        question,
-        selectedAnswer: stored.selectedAnswer,
-        isCorrect: stored.isCorrect,
-      });
+    if (!question) {
+      throw new Error(
+        `Could not find question for stage ${stage}, index ${stored.questionIndex}`
+      );
     }
+
+    responses.push({
+      question,
+      selectedAnswer: stored.selectedAnswer,
+      isCorrect: stored.isCorrect,
+    });
   }
 
   return responses;
@@ -371,13 +381,11 @@ export interface ReconstructedResponse {
 /**
  * Reconstructs full DiagnosticResponse objects from localStorage.
  * Used for results calculation, signup, and time-up scenarios.
+ * Requires stored route for stage 2 responses.
  *
- * @param fallbackRoute - Route to use if not stored in response (session route)
  * @returns Array of reconstructed responses with MSTQuestion objects
  */
-export function reconstructFullResponses(
-  fallbackRoute: Route | null
-): ReconstructedResponse[] {
+export function reconstructFullResponses(): ReconstructedResponse[] {
   const storedResponses = getStoredResponses();
   if (storedResponses.length === 0) return [];
 
@@ -389,23 +397,36 @@ export function reconstructFullResponses(
     if (stored.stage === 1) {
       question = MST_QUESTIONS.R1[stored.questionIndex];
     } else if (stored.stage === 2) {
-      // Use stored route if available, otherwise fall back to passed route
-      const routeForQuestion = stored.route || fallbackRoute;
-      if (routeForQuestion) {
-        const stage2Questions = getStage2Questions(routeForQuestion);
-        question = stage2Questions[stored.questionIndex];
+      // Require route for stage 2 - no fallbacks
+      const routeForQuestion = stored.route;
+      if (!routeForQuestion) {
+        throw new Error(
+          `Stage 2 response at index ${stored.questionIndex} has no route stored`
+        );
       }
+      const stage2Questions = getStage2Questions(routeForQuestion);
+      question = stage2Questions[stored.questionIndex];
     }
 
-    if (question) {
-      responses.push({
-        question,
-        selectedAnswer: stored.selectedAnswer,
-        isCorrect: stored.isCorrect,
-        responseTime: stored.responseTimeSeconds,
-        atoms: stored.atoms || [],
-      });
+    if (!question) {
+      throw new Error(
+        `Could not find question for stage ${stored.stage}, index ${stored.questionIndex}`
+      );
     }
+
+    if (!stored.atoms) {
+      throw new Error(
+        `Response for question ${stored.questionId} has no atoms stored`
+      );
+    }
+
+    responses.push({
+      question,
+      selectedAnswer: stored.selectedAnswer,
+      isCorrect: stored.isCorrect,
+      responseTime: stored.responseTimeSeconds,
+      atoms: stored.atoms,
+    });
   }
 
   return responses;
@@ -413,10 +434,21 @@ export function reconstructFullResponses(
 
 /**
  * Gets the actual route used in stage 2 from stored responses.
- * Falls back to the provided route if no stage 2 responses exist.
+ * Requires a stage 2 response with route to exist.
  */
-export function getActualRouteFromStorage(fallbackRoute: Route): Route {
+export function getActualRouteFromStorage(expectedRoute: Route): Route {
   const storedResponses = getStoredResponses();
   const stage2Response = storedResponses.find((r) => r.stage === 2);
-  return stage2Response?.route || fallbackRoute;
+
+  if (stage2Response?.route) {
+    return stage2Response.route;
+  }
+
+  // If no stage 2 responses yet, use expected route (stage 2 hasn't started)
+  if (!stage2Response) {
+    return expectedRoute;
+  }
+
+  // Stage 2 response exists but has no route - this is a bug
+  throw new Error("Stage 2 response found but has no route stored");
 }

@@ -164,6 +164,11 @@ export default function DiagnosticoPage() {
       (r) => r.isCorrect
     ).length;
 
+    if (!timerStartedAt) {
+      console.error("Attempting to save session but timerStartedAt is not set");
+      return;
+    }
+
     saveSessionState({
       screen,
       stage,
@@ -171,7 +176,7 @@ export default function DiagnosticoPage() {
       route,
       r1Correct: storedR1Correct,
       totalCorrect: storedTotalCorrect,
-      timerStartedAt: timerStartedAt || Date.now(),
+      timerStartedAt,
       results: results
         ? {
             paesMin: results.paesMin,
@@ -193,11 +198,16 @@ export default function DiagnosticoPage() {
 
   // Calculate results when time runs out
   const handleTimeUp = useCallback(() => {
-    const fallbackRoute = routeRef.current || "B";
+    const currentRoute = routeRef.current;
+    if (!currentRoute) {
+      console.error("handleTimeUp called but route is not set");
+      setScreen("maintenance");
+      return;
+    }
 
     // Get data from localStorage (source of truth after refreshes)
-    const reconstructedResponses = reconstructFullResponses(fallbackRoute);
-    const actualRoute = getActualRouteFromStorage(fallbackRoute);
+    const reconstructedResponses = reconstructFullResponses();
+    const actualRoute = getActualRouteFromStorage(currentRoute);
 
     const calculatedResults = calculateDiagnosticResults(
       reconstructedResponses,
@@ -289,7 +299,12 @@ export default function DiagnosticoPage() {
     if (stage === 1) {
       return MST_QUESTIONS.R1[questionIndex];
     }
-    return getStage2Questions(route || "B")[questionIndex];
+    if (!route) {
+      throw new Error(
+        "getCurrentQuestion called for stage 2 but route is not set"
+      );
+    }
+    return getStage2Questions(route)[questionIndex];
   };
 
   // Handle answer selection
@@ -425,8 +440,12 @@ export default function DiagnosticoPage() {
       .filter((r) => r.stage === 1)
       .filter((r) => r.isCorrect).length;
 
-    const finalRoute = route || "B";
-    showResults(totalCorrect, finalRoute);
+    if (!route) {
+      console.error("calculateAndShowResults called but route is not set");
+      setScreen("maintenance");
+      return;
+    }
+    showResults();
 
     // Complete test on API if we have a valid (non-local) attempt
     if (!isLocalAttempt(attemptId)) {
@@ -439,7 +458,7 @@ export default function DiagnosticoPage() {
             totalQuestions: 16,
             correctAnswers: totalCorrect,
             stage1Score: stage1Correct,
-            stage2Difficulty: finalRoute,
+            stage2Difficulty: route,
           }),
         });
       } catch (error) {
@@ -449,9 +468,14 @@ export default function DiagnosticoPage() {
   };
 
   // Shared results display logic
-  const showResults = (totalCorrect: number, fallbackRoute: Route) => {
-    const reconstructedResponses = reconstructFullResponses(fallbackRoute);
-    const actualRoute = getActualRouteFromStorage(fallbackRoute);
+  const showResults = () => {
+    if (!route) {
+      console.error("showResults called but route is not set");
+      setScreen("maintenance");
+      return;
+    }
+    const reconstructedResponses = reconstructFullResponses();
+    const actualRoute = getActualRouteFromStorage(route);
 
     const calculatedResults = calculateDiagnosticResults(
       reconstructedResponses,
@@ -478,9 +502,11 @@ export default function DiagnosticoPage() {
     try {
       // Get all data from localStorage (source of truth)
       const storedResponses = getStoredResponses();
-      const fallbackRoute = route || "B";
-      const reconstructedResponses = reconstructFullResponses(fallbackRoute);
-      const actualRoute = getActualRouteFromStorage(fallbackRoute);
+      if (!route) {
+        throw new Error("Cannot sign up: route is not set");
+      }
+      const reconstructedResponses = reconstructFullResponses();
+      const actualRoute = getActualRouteFromStorage(route);
 
       const atomResults = computeAtomMastery(reconstructedResponses);
       const isLocal = isLocalAttempt(attemptId);
@@ -611,9 +637,12 @@ export default function DiagnosticoPage() {
     // Always get data from localStorage (source of truth after refreshes)
     const storedResponses = getStoredResponses();
     const totalCorrect = storedResponses.filter((r) => r.isCorrect).length;
-    const fallbackRoute = route || "B";
-    const reconstructedResponses = reconstructFullResponses(fallbackRoute);
-    const actualRoute = getActualRouteFromStorage(fallbackRoute);
+    if (!route) {
+      console.error("Results screen rendered but route is not set");
+      return <MaintenanceScreen />;
+    }
+    const reconstructedResponses = reconstructFullResponses();
+    const actualRoute = getActualRouteFromStorage(route);
 
     // ALWAYS recalculate results from localStorage data (source of truth)
     // This ensures axisPerformance and skillPerformance are correct after refresh
@@ -626,7 +655,7 @@ export default function DiagnosticoPage() {
     const atomResults = computeAtomMastery(reconstructedResponses);
 
     // Prepare responses for review drawer
-    const responsesForReview = getResponsesForReview(actualRoute);
+    const responsesForReview = getResponsesForReview();
 
     return (
       <ResultsScreen
@@ -643,22 +672,17 @@ export default function DiagnosticoPage() {
 
   // Signup screen
   if (screen === "signup") {
-    // Use consistent score from API if available, otherwise fall back to old calculation
-    let displayScore = consistentScore;
-
-    if (!displayScore) {
-      // Fallback: recalculate from localStorage (less accurate but works if API failed)
-      const fallbackRoute = route || "B";
-      const reconstructedResponses = reconstructFullResponses(fallbackRoute);
-      const actualRoute = getActualRouteFromStorage(fallbackRoute);
-      const calculatedResults = calculateDiagnosticResults(
-        reconstructedResponses,
-        actualRoute
-      );
-      displayScore = Math.round(
-        (calculatedResults.paesMin + calculatedResults.paesMax) / 2
-      );
+    if (!route) {
+      console.error("Signup screen rendered but route is not set");
+      return <MaintenanceScreen />;
     }
+
+    // Use consistent score from API - require it to be set
+    if (!consistentScore) {
+      console.error("Signup screen rendered but consistentScore is not set");
+      return <MaintenanceScreen />;
+    }
+    const displayScore = consistentScore;
 
     return (
       <SignupScreen
