@@ -7,15 +7,15 @@ import {
   SKILL_NAMES,
   type MSTQuestion,
 } from "@/lib/diagnostic/config";
+import {
+  parseQtiXml,
+  type ParsedQuestion,
+  type QuestionAtom,
+} from "@/lib/diagnostic/qtiParser";
 
 // ============================================================================
 // TYPES
 // ============================================================================
-
-export interface QuestionAtom {
-  atomId: string;
-  relevance: "primary" | "secondary";
-}
 
 interface QuestionScreenProps {
   question: MSTQuestion;
@@ -26,202 +26,6 @@ interface QuestionScreenProps {
   onSelectDontKnow: () => void;
   onNext: (correctAnswer: string | null, atoms: QuestionAtom[]) => void;
   onFatalError: () => void;
-}
-
-interface ParsedQuestion {
-  html: string;
-  options: Array<{ letter: string; text: string; identifier: string }>;
-  correctAnswer: string | null;
-  atoms: QuestionAtom[];
-}
-
-// ============================================================================
-// QTI PARSING UTILITIES
-// ============================================================================
-
-/**
- * Serialize a DOM node to HTML string, preserving MathML and tables
- */
-function serializeNodeToHtml(node: Node): string {
-  if (node.nodeType === Node.TEXT_NODE) {
-    return node.textContent || "";
-  }
-
-  if (node.nodeType === Node.ELEMENT_NODE) {
-    const el = node as Element;
-    const tagName = el.localName || el.tagName.toLowerCase();
-
-    // Preserve MathML elements as-is
-    if (
-      tagName === "math" ||
-      el.namespaceURI === "http://www.w3.org/1998/Math/MathML"
-    ) {
-      return new XMLSerializer().serializeToString(el);
-    }
-
-    // Handle images
-    if (tagName === "img") {
-      const src = el.getAttribute("src") || "";
-      const alt = el.getAttribute("alt") || "Imagen";
-      return `<img src="${src}" alt="${alt}" class="max-w-full rounded-lg my-4" />`;
-    }
-
-    // Preserve table structure with styling
-    if (tagName === "table") {
-      let content = "";
-      el.childNodes.forEach((child) => {
-        content += serializeNodeToHtml(child);
-      });
-      return `<table class="w-full border-collapse border border-gray-300 my-4 text-sm">${content}</table>`;
-    }
-
-    // Preserve table elements
-    if (["thead", "tbody", "tfoot"].includes(tagName)) {
-      let content = "";
-      el.childNodes.forEach((child) => {
-        content += serializeNodeToHtml(child);
-      });
-      const bgClass = tagName === "thead" ? ' class="bg-gray-100"' : "";
-      return `<${tagName}${bgClass}>${content}</${tagName}>`;
-    }
-
-    if (tagName === "tr") {
-      let content = "";
-      el.childNodes.forEach((child) => {
-        content += serializeNodeToHtml(child);
-      });
-      return `<tr class="border-b border-gray-200">${content}</tr>`;
-    }
-
-    if (tagName === "th" || tagName === "td") {
-      const colspan = el.getAttribute("colspan");
-      const rowspan = el.getAttribute("rowspan");
-      let attrs = `class="border border-gray-300 px-3 py-2 ${tagName === "th" ? "font-semibold text-left" : ""}"`;
-      if (colspan) attrs += ` colspan="${colspan}"`;
-      if (rowspan) attrs += ` rowspan="${rowspan}"`;
-      let content = "";
-      el.childNodes.forEach((child) => {
-        content += serializeNodeToHtml(child);
-      });
-      return `<${tagName} ${attrs}>${content}</${tagName}>`;
-    }
-
-    // Handle div containers
-    if (tagName === "div") {
-      let content = "";
-      el.childNodes.forEach((child) => {
-        content += serializeNodeToHtml(child);
-      });
-      return `<div class="my-4">${content}</div>`;
-    }
-
-    // Preserve paragraph structure
-    if (tagName === "p") {
-      let content = "";
-      el.childNodes.forEach((child) => {
-        content += serializeNodeToHtml(child);
-      });
-      return `<p class="mb-4">${content}</p>`;
-    }
-
-    // Recursively process children for other elements
-    let content = "";
-    el.childNodes.forEach((child) => {
-      content += serializeNodeToHtml(child);
-    });
-
-    return content;
-  }
-
-  return "";
-}
-
-/**
- * Parse QTI XML to extract question content and options
- */
-function parseQtiXml(xmlString: string): ParsedQuestion {
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(xmlString, "text/xml");
-
-  // Extract question content
-  const itemBody = xmlDoc.querySelector("itemBody, qti-item-body");
-  const prompt = xmlDoc.querySelector("prompt, qti-prompt");
-  const choices = xmlDoc.querySelectorAll("simpleChoice, qti-simple-choice");
-  const correctResponse = xmlDoc.querySelector(
-    "correctResponse value, qti-correct-response qti-value"
-  );
-
-  // Build question HTML preserving MathML, tables, and other content
-  let html = "";
-  if (itemBody) {
-    // Process all direct children except choice-interaction elements
-    itemBody.childNodes.forEach((child) => {
-      if (child.nodeType === Node.ELEMENT_NODE) {
-        const el = child as Element;
-        const tagName = el.localName || el.tagName.toLowerCase();
-        // Skip QTI interaction elements - these are handled separately
-        if (
-          tagName === "qti-choice-interaction" ||
-          tagName === "choiceinteraction"
-        ) {
-          return;
-        }
-      }
-      const content = serializeNodeToHtml(child);
-      if (content.trim()) {
-        // Wrap loose text/content in paragraph if not already wrapped
-        if (
-          child.nodeType === Node.ELEMENT_NODE &&
-          ["p", "div", "table"].includes(
-            (
-              (child as Element).localName || (child as Element).tagName
-            ).toLowerCase()
-          )
-        ) {
-          html += content;
-        } else if (content.trim()) {
-          html += `<p class="mb-4">${content}</p>`;
-        }
-      }
-    });
-  }
-
-  if (prompt) {
-    const content = serializeNodeToHtml(prompt);
-    html += `<p class="font-semibold mt-4">${content}</p>`;
-  }
-
-  // Parse options
-  const letters = ["A", "B", "C", "D"];
-  const options: ParsedQuestion["options"] = [];
-
-  choices.forEach((choice, index) => {
-    const identifier = choice.getAttribute("identifier") || letters[index];
-    const text =
-      serializeNodeToHtml(choice).trim() || `Opción ${letters[index]}`;
-
-    options.push({
-      letter: letters[index],
-      text,
-      identifier,
-    });
-  });
-
-  // Get correct answer identifier
-  const correctAnswerIdentifier = correctResponse?.textContent || null;
-
-  // Map identifier to letter
-  let correctAnswer: string | null = null;
-  if (correctAnswerIdentifier) {
-    const correctOption = options.find(
-      (o) => o.identifier === correctAnswerIdentifier
-    );
-    if (correctOption) {
-      correctAnswer = correctOption.letter;
-    }
-  }
-
-  return { html, options, correctAnswer, atoms: [] };
 }
 
 // ============================================================================

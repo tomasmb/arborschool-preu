@@ -2,11 +2,13 @@
  * Diagnostic test screen components
  */
 export { WelcomeScreen } from "./WelcomeScreen";
-export { QuestionScreen, type QuestionAtom } from "./QuestionScreen";
+export { QuestionScreen } from "./QuestionScreen";
 export { TransitionScreen } from "./TransitionScreen";
 export { ResultsScreen, type AtomResult } from "./ResultsScreen";
 export { SignupScreen } from "./SignupScreen";
 export { ThankYouScreen } from "./ThankYouScreen";
+export { MaintenanceScreen } from "./MaintenanceScreen";
+export { DiagnosticHeader } from "./DiagnosticHeader";
 export { Confetti } from "./Confetti";
 export { QuestionReviewDrawer, type ResponseForReview } from "./QuestionReviewDrawer";
 export { QuestionReviewItem } from "./QuestionReviewItem";
