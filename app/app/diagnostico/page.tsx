@@ -387,15 +387,13 @@ export default function DiagnosticoPage() {
     questionStartTime.current = Date.now();
   };
 
-  // Scroll to top when question changes (after React renders)
+  // Scroll to top on any screen or question change (after React renders)
   useEffect(() => {
-    if (screen === "question") {
-      // Use requestAnimationFrame to ensure scroll happens after content renders
-      requestAnimationFrame(() => {
-        window.scrollTo(0, 0);
-      });
-    }
-  }, [questionIndex, screen]);
+    // Use requestAnimationFrame to ensure scroll happens after content renders
+    requestAnimationFrame(() => {
+      window.scrollTo(0, 0);
+    });
+  }, [screen, questionIndex, stage]);
   const continueToStage2 = () => {
     setStage(2);
     setQuestionIndex(0);
