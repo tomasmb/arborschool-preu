@@ -46,13 +46,27 @@ export interface StoredResponse {
 
 /**
  * Save a single response to localStorage backup.
- * Appends to existing responses array.
+ * Updates existing response for same stage+questionIndex, or appends if new.
  */
 export function saveResponseToLocalStorage(response: StoredResponse): void {
   try {
     const existing = localStorage.getItem(STORAGE_KEYS.RESPONSES);
     const responses: StoredResponse[] = existing ? JSON.parse(existing) : [];
-    responses.push(response);
+
+    // Check if response for this stage+questionIndex already exists
+    const existingIndex = responses.findIndex(
+      (r) =>
+        r.stage === response.stage && r.questionIndex === response.questionIndex
+    );
+
+    if (existingIndex >= 0) {
+      // Update existing response (user may have refreshed and re-answered)
+      responses[existingIndex] = response;
+    } else {
+      // Add new response
+      responses.push(response);
+    }
+
     localStorage.setItem(STORAGE_KEYS.RESPONSES, JSON.stringify(responses));
   } catch (error) {
     console.error("Failed to save response to localStorage:", error);
