@@ -82,9 +82,6 @@ export default function DiagnosticoPage() {
   );
   const [route, setRoute] = useState<Route | null>(null);
   const [results, setResults] = useState<DiagnosticResults | null>(null);
-  // Cached counts for screen persistence across refreshes
-  const [r1CorrectCount, setR1CorrectCount] = useState(0);
-  const [totalCorrectCount, setTotalCorrectCount] = useState(0);
 
   // Signup state
   const [email, setEmail] = useState("");
@@ -124,8 +121,6 @@ export default function DiagnosticoPage() {
         setStage(storedSession.stage);
         setQuestionIndex(storedSession.questionIndex);
         setRoute(storedSession.route);
-        setR1CorrectCount(storedSession.r1Correct || 0);
-        setTotalCorrectCount(storedSession.totalCorrect || 0);
         setTimerStartedAt(storedSession.timerStartedAt);
 
         // Calculate remaining time based on when timer started
@@ -189,8 +184,6 @@ export default function DiagnosticoPage() {
     stage,
     questionIndex,
     route,
-    r1CorrectCount,
-    totalCorrectCount,
     timerStartedAt,
     results,
   ]);
@@ -200,8 +193,6 @@ export default function DiagnosticoPage() {
     const fallbackRoute = routeRef.current || "B";
 
     // Get data from localStorage (source of truth after refreshes)
-    const storedResponses = getStoredResponses();
-    const totalCorrect = storedResponses.filter((r) => r.isCorrect).length;
     const reconstructedResponses = reconstructFullResponses(fallbackRoute);
     const actualRoute = getActualRouteFromStorage(fallbackRoute);
 
@@ -210,7 +201,6 @@ export default function DiagnosticoPage() {
       actualRoute
     );
     setResults(calculatedResults);
-    setTotalCorrectCount(totalCorrect);
 
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -260,8 +250,6 @@ export default function DiagnosticoPage() {
     setR1Responses([]);
     setStage2Responses([]);
     setRoute(null);
-    setR1CorrectCount(0);
-    setTotalCorrectCount(0);
     setResults(null);
     setTimeRemaining(TOTAL_TIME_SECONDS);
 
@@ -383,7 +371,6 @@ export default function DiagnosticoPage() {
         const correctCount = storedR1.filter((r) => r.isCorrect).length;
         const determinedRoute = getRoute(correctCount);
         setRoute(determinedRoute);
-        setR1CorrectCount(correctCount);
         setScreen("transition");
       } else {
         setQuestionIndex(questionIndex + 1);
@@ -466,7 +453,6 @@ export default function DiagnosticoPage() {
       actualRoute
     );
     setResults(calculatedResults);
-    setTotalCorrectCount(totalCorrect);
 
     if (timerRef.current) {
       clearInterval(timerRef.current);
