@@ -184,6 +184,7 @@ export async function getQuickWinAtoms(
 
 /**
  * Formats a learning route for display in the UI.
+ * Questions shown are per-test average (total / 4 tests).
  */
 export function formatRouteForDisplay(route: LearningRoute): {
   title: string;
@@ -217,10 +218,14 @@ export function formatRouteForDisplay(route: LearningRoute): {
     subtitle: "Dominio temático",
   };
 
+  // Show questions per test (average), not total across all tests
+  const numTests = DEFAULT_SCORING_CONFIG.numOfficialTests;
+  const questionsPerTest = Math.round(route.totalQuestionsUnlocked / numTests);
+
   return {
     ...display,
     atomCount: route.atoms.length,
-    questionsUnlocked: route.totalQuestionsUnlocked,
+    questionsUnlocked: questionsPerTest,
     pointsGain: route.estimatedPointsGain,
     studyHours: Math.round((route.estimatedMinutes / 60) * 10) / 10,
   };

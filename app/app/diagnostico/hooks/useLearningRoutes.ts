@@ -69,6 +69,7 @@ interface UseLearningRoutesResult {
 /**
  * Fallback data when API is unavailable.
  * Uses reasonable estimates based on typical diagnostic results.
+ * Note: questionsUnlocked is per-test average (not total across all tests).
  */
 export function getFallbackRoutes(): LearningRoutesResponse {
   return {
@@ -77,7 +78,7 @@ export function getFallbackRoutes(): LearningRoutesResponse {
       masteredAtoms: 0,
       totalQuestions: 202,
       unlockedQuestions: 0,
-      potentialQuestionsToUnlock: 120,
+      potentialQuestionsToUnlock: 30, // Per-test average
     },
     routes: [
       {
@@ -85,7 +86,7 @@ export function getFallbackRoutes(): LearningRoutesResponse {
         title: "Dominio Algebraico",
         subtitle: "Expresiones, ecuaciones y funciones",
         atomCount: 10,
-        questionsUnlocked: 45,
+        questionsUnlocked: 11, // Per-test average
         pointsGain: 45,
         studyHours: 3.5,
         atoms: [],
@@ -95,7 +96,7 @@ export function getFallbackRoutes(): LearningRoutesResponse {
         title: "El Poder de los Números",
         subtitle: "Enteros, fracciones y operaciones",
         atomCount: 8,
-        questionsUnlocked: 22,
+        questionsUnlocked: 5, // Per-test average
         pointsGain: 30,
         studyHours: 2.5,
         atoms: [],
@@ -105,7 +106,7 @@ export function getFallbackRoutes(): LearningRoutesResponse {
         title: "El Ojo Geométrico",
         subtitle: "Figuras, medidas y transformaciones",
         atomCount: 7,
-        questionsUnlocked: 15,
+        questionsUnlocked: 4, // Per-test average
         pointsGain: 22,
         studyHours: 2.5,
         atoms: [],
@@ -115,7 +116,7 @@ export function getFallbackRoutes(): LearningRoutesResponse {
         title: "El Arte de la Probabilidad",
         subtitle: "Datos, probabilidades y estadística",
         atomCount: 6,
-        questionsUnlocked: 18,
+        questionsUnlocked: 4, // Per-test average
         pointsGain: 25,
         studyHours: 2,
         atoms: [],
