@@ -82,6 +82,9 @@ export default function DiagnosticoPage() {
   );
   const [route, setRoute] = useState<Route | null>(null);
   const [results, setResults] = useState<DiagnosticResults | null>(null);
+  // Consistent PAES score from API (based on unlocked questions)
+  // This is set by ResultsScreen when the learning routes API returns
+  const [consistentScore, setConsistentScore] = useState<number | null>(null);
 
   // Signup state
   const [email, setEmail] = useState("");
@@ -631,23 +634,29 @@ export default function DiagnosticoPage() {
         atomResults={atomResults}
         responses={responsesForReview}
         onSignup={() => setScreen("signup")}
+        onScoreCalculated={setConsistentScore}
       />
     );
   }
 
   // Signup screen
   if (screen === "signup") {
-    // Recalculate score from localStorage (source of truth)
-    const fallbackRoute = route || "B";
-    const reconstructedResponses = reconstructFullResponses(fallbackRoute);
-    const actualRoute = getActualRouteFromStorage(fallbackRoute);
-    const calculatedResults = calculateDiagnosticResults(
-      reconstructedResponses,
-      actualRoute
-    );
-    const midScore = Math.round(
-      (calculatedResults.paesMin + calculatedResults.paesMax) / 2
-    );
+    // Use consistent score from API if available, otherwise fall back to old calculation
+    let displayScore = consistentScore;
+
+    if (!displayScore) {
+      // Fallback: recalculate from localStorage (less accurate but works if API failed)
+      const fallbackRoute = route || "B";
+      const reconstructedResponses = reconstructFullResponses(fallbackRoute);
+      const actualRoute = getActualRouteFromStorage(fallbackRoute);
+      const calculatedResults = calculateDiagnosticResults(
+        reconstructedResponses,
+        actualRoute
+      );
+      displayScore = Math.round(
+        (calculatedResults.paesMin + calculatedResults.paesMax) / 2
+      );
+    }
 
     return (
       <SignupScreen
@@ -660,7 +669,7 @@ export default function DiagnosticoPage() {
           clearAllDiagnosticData();
           setScreen("thankyou");
         }}
-        score={midScore}
+        score={displayScore}
       />
     );
   }

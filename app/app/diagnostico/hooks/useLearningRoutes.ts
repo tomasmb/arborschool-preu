@@ -1,6 +1,10 @@
 /**
  * Hook for fetching personalized learning routes based on diagnostic results.
  * Uses the Question Unlock Algorithm to calculate optimal learning paths.
+ *
+ * IMPORTANT: The PAES score is calculated from unlocked questions using
+ * the official PAES conversion table. This ensures consistency between
+ * the estimated score and the improvement predictions.
  */
 
 import { useState, useEffect } from "react";
@@ -32,6 +36,18 @@ export interface QuickWin {
   questionsUnlocked: number;
 }
 
+/** PAES score calculated from unlocked questions using the official table */
+export interface EstimatedScore {
+  /** The estimated PAES score (100-1000) */
+  score: number;
+  /** Lower bound with uncertainty margin */
+  min: number;
+  /** Upper bound with uncertainty margin */
+  max: number;
+  /** Estimated correct answers per test */
+  correctPerTest: number;
+}
+
 export interface LearningRoutesResponse {
   summary: {
     totalAtoms: number;
@@ -40,6 +56,8 @@ export interface LearningRoutesResponse {
     unlockedQuestions: number;
     potentialQuestionsToUnlock: number;
   };
+  /** PAES score calculated from unlocked questions - use this for display */
+  estimatedScore: EstimatedScore;
   routes: LearningRouteData[];
   quickWins: QuickWin[];
   improvement: {
@@ -78,7 +96,14 @@ export function getFallbackRoutes(): LearningRoutesResponse {
       masteredAtoms: 0,
       totalQuestions: 202,
       unlockedQuestions: 0,
-      potentialQuestionsToUnlock: 30, // Per-test average
+      potentialQuestionsToUnlock: 30,
+    },
+    // Fallback assumes fresh start (0 unlocked = ~100 PAES score)
+    estimatedScore: {
+      score: 100,
+      min: 100,
+      max: 130,
+      correctPerTest: 0,
     },
     routes: [
       {
@@ -86,7 +111,7 @@ export function getFallbackRoutes(): LearningRoutesResponse {
         title: "Dominio Algebraico",
         subtitle: "Expresiones, ecuaciones y funciones",
         atomCount: 10,
-        questionsUnlocked: 11, // Per-test average
+        questionsUnlocked: 11,
         pointsGain: 45,
         studyHours: 3.5,
         atoms: [],
@@ -96,7 +121,7 @@ export function getFallbackRoutes(): LearningRoutesResponse {
         title: "El Poder de los Números",
         subtitle: "Enteros, fracciones y operaciones",
         atomCount: 8,
-        questionsUnlocked: 5, // Per-test average
+        questionsUnlocked: 5,
         pointsGain: 30,
         studyHours: 2.5,
         atoms: [],
@@ -106,7 +131,7 @@ export function getFallbackRoutes(): LearningRoutesResponse {
         title: "El Ojo Geométrico",
         subtitle: "Figuras, medidas y transformaciones",
         atomCount: 7,
-        questionsUnlocked: 4, // Per-test average
+        questionsUnlocked: 4,
         pointsGain: 22,
         studyHours: 2.5,
         atoms: [],
@@ -116,7 +141,7 @@ export function getFallbackRoutes(): LearningRoutesResponse {
         title: "El Arte de la Probabilidad",
         subtitle: "Datos, probabilidades y estadística",
         atomCount: 6,
-        questionsUnlocked: 4, // Per-test average
+        questionsUnlocked: 4,
         pointsGain: 25,
         studyHours: 2,
         atoms: [],
@@ -143,13 +168,16 @@ export function getFallbackRoutes(): LearningRoutesResponse {
 /**
  * Fetches learning routes based on atom mastery results from diagnostic.
  *
+ * The hook returns an `estimatedScore` calculated from unlocked questions
+ * using the official PAES table. This score should be used for display
+ * instead of the score from `calculateDiagnosticResults()` to ensure
+ * consistency with the improvement predictions.
+ *
  * @param atomResults - Array of {atomId, mastered} from diagnostic
- * @param currentPaesScore - Student's current PAES score for accurate improvement calc
- * @returns Loading state, data, and any errors
+ * @returns Loading state, data (including estimatedScore), and any errors
  */
 export function useLearningRoutes(
-  atomResults: Array<{ atomId: string; mastered: boolean }>,
-  currentPaesScore?: number
+  atomResults: Array<{ atomId: string; mastered: boolean }>
 ): UseLearningRoutesResult {
   const [data, setData] = useState<LearningRoutesResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -166,7 +194,7 @@ export function useLearningRoutes(
         const response = await fetch("/api/diagnostic/learning-routes", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ atomResults, currentPaesScore }),
+          body: JSON.stringify({ atomResults }),
         });
 
         if (!response.ok) {
@@ -203,7 +231,7 @@ export function useLearningRoutes(
     return () => {
       cancelled = true;
     };
-  }, [atomResults, currentPaesScore]);
+  }, [atomResults]);
 
   return { data, isLoading, error };
 }

@@ -21,8 +21,8 @@ import { getMasteredAtomIds } from "./masteryAnalyzer";
 import { simulateQuestionUnlocks } from "./unlockCalculator";
 import {
   calculateImprovement,
-  estimateCorrectFromScore,
   capImprovementToMax,
+  getPaesScore,
 } from "../paesScoreTable";
 
 // ============================================================================
@@ -192,17 +192,24 @@ export function buildAxisRoute(
   const finalUnlocked = cumulativeUnlocked;
   const totalQuestionsUnlocked = finalUnlocked - initialUnlocked;
 
-  // Calculate per-test improvement (questions are spread across multiple tests)
-  const questionsPerTest = Math.round(
+  // Calculate per-test values (questions are spread across multiple tests)
+  const additionalPerTest = Math.round(
     totalQuestionsUnlocked / config.numOfficialTests
   );
 
-  // Use actual PAES table for accurate point estimation based on student's current score
-  // The PAES table is non-linear: improvement depends heavily on current level
-  const currentScore = config.currentPaesScore ?? 460; // Default ~460 pts if not provided
-  const currentCorrect = estimateCorrectFromScore(currentScore);
+  // Current correct per test is based on initially unlocked questions
+  // This ensures consistency: score comes from unlocked questions, not a separate formula
+  const currentCorrectPerTest = Math.round(
+    initialUnlocked / config.numOfficialTests
+  );
 
-  const improvement = calculateImprovement(currentCorrect, questionsPerTest);
+  // Use actual PAES table for accurate point estimation
+  const currentScore = getPaesScore(currentCorrectPerTest);
+  const improvement = calculateImprovement(
+    currentCorrectPerTest,
+    additionalPerTest
+  );
+
   // Cap improvement to ensure we never promise exceeding 1000 points
   const estimatedPointsGain = capImprovementToMax(
     currentScore,

@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   analyzeLearningPotential,
   formatRouteForDisplay,
+  calculatePAESFromUnlocked,
   calculatePAESImprovement,
+  DEFAULT_SCORING_CONFIG,
 } from "@/lib/diagnostic/questionUnlock";
 
 /**
@@ -12,10 +14,13 @@ import {
  * Uses the Question Unlock Algorithm to prioritize atoms by their
  * potential to unlock PAES questions.
  *
+ * IMPORTANT: The PAES score is calculated from unlocked questions using
+ * the official PAES conversion table. This ensures consistency between
+ * the estimated score and the improvement predictions.
+ *
  * Request body:
  * {
- *   atomResults: Array<{ atomId: string, mastered: boolean }>,
- *   currentPaesScore?: number // Student's current PAES score (100-1000)
+ *   atomResults: Array<{ atomId: string, mastered: boolean }>
  * }
  *
  * Response:
@@ -23,16 +28,18 @@ import {
  *   success: boolean,
  *   data: {
  *     summary: { ... },
+ *     estimatedScore: { score, min, max, correctPerTest },
  *     routes: Array<FormattedRoute>,
  *     quickWins: Array<{ atomId, title, questionsUnlocked }>,
- *     improvement: { minPoints, maxPoints, percentageIncrease }
+ *     improvement: { minPoints, maxPoints, questionsPerTest, percentageOfTest },
+ *     lowHangingFruit: { oneAway, twoAway }
  *   }
  * }
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { atomResults, currentPaesScore } = body;
+    const { atomResults } = body;
 
     if (!Array.isArray(atomResults)) {
       return NextResponse.json(
@@ -41,17 +48,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Run the analysis with student's current score for accurate improvement calc
-    const analysis = await analyzeLearningPotential(
-      atomResults,
-      currentPaesScore ? { currentPaesScore } : undefined
+    // Run the analysis
+    const analysis = await analyzeLearningPotential(atomResults);
+
+    const numTests = DEFAULT_SCORING_CONFIG.numOfficialTests;
+
+    // Calculate PAES score from currently unlocked questions
+    // This is the consistent baseline for all calculations
+    const estimatedScore = calculatePAESFromUnlocked(
+      analysis.summary.unlockedQuestions,
+      numTests
     );
 
     // Get routes to process (limit to top 4)
     const topRoutes = analysis.routes.slice(0, 4);
 
-    // Calculate total questions unlocked BEFORE formatting (raw totals across all tests)
-    // This is needed for accurate overall improvement calculation
+    // Calculate total questions that could be unlocked by all routes
     const totalPotentialUnlocks = topRoutes.reduce(
       (sum, r) => sum + r.totalQuestionsUnlocked,
       0
@@ -75,19 +87,23 @@ export async function POST(request: NextRequest) {
       .slice(0, 5)
       .map((a) => ({
         atomId: a.atomId,
-        title: a.title,
+        title: a.axis,
         axis: a.axis,
         questionsUnlocked: a.immediateUnlocks.length,
       }));
-    // Calculate overall improvement using student's PAES score directly
-    const improvement = calculatePAESImprovement(totalPotentialUnlocks, {
-      currentPaesScore,
-    });
+
+    // Calculate overall improvement using consistent baseline
+    const improvement = calculatePAESImprovement(
+      estimatedScore.correctPerTest,
+      totalPotentialUnlocks,
+      numTests
+    );
 
     return NextResponse.json({
       success: true,
       data: {
         summary: analysis.summary,
+        estimatedScore,
         routes: formattedRoutes,
         quickWins,
         improvement,
@@ -121,6 +137,13 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   try {
     const analysis = await analyzeLearningPotential([]);
+    const numTests = DEFAULT_SCORING_CONFIG.numOfficialTests;
+
+    // Calculate baseline score (fresh start = 0 unlocked)
+    const estimatedScore = calculatePAESFromUnlocked(
+      analysis.summary.unlockedQuestions,
+      numTests
+    );
 
     const formattedRoutes = analysis.routes.slice(0, 4).map((route) => ({
       ...formatRouteForDisplay(route),
@@ -136,6 +159,7 @@ export async function GET() {
       success: true,
       data: {
         summary: analysis.summary,
+        estimatedScore,
         routes: formattedRoutes,
       },
     });

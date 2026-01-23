@@ -234,46 +234,73 @@ export function formatRouteForDisplay(route: LearningRoute): {
 import {
   calculateImprovement as calcPaesImprovement,
   capImprovementToMax,
-  estimateCorrectFromScore,
+  getPaesScore,
   PAES_TOTAL_QUESTIONS,
 } from "../paesScoreTable";
+
+/**
+ * Calculates PAES score from the number of questions currently unlocked.
+ * This provides a consistent score based on atom mastery analysis.
+ *
+ * @param unlockedQuestions - Total questions unlocked across all tests
+ * @param numTests - Number of tests in the database (default: 4)
+ * @returns PAES score and the estimated correct answers per test
+ */
+export function calculatePAESFromUnlocked(
+  unlockedQuestions: number,
+  numTests: number = 4
+): {
+  score: number;
+  min: number;
+  max: number;
+  correctPerTest: number;
+} {
+  // Questions are spread across tests, so divide by number of tests
+  const correctPerTest = Math.round(unlockedQuestions / numTests);
+
+  // Use the official PAES table
+  const score = getPaesScore(correctPerTest);
+
+  // Add uncertainty margin (±30 points) to account for:
+  // - Questions not in database that student might know
+  // - Careless errors on questions they could answer
+  const margin = 30;
+  const min = Math.max(100, score - margin);
+  const max = Math.min(1000, score + margin);
+
+  return { score, min, max, correctPerTest };
+}
 
 /**
  * Calculates realistic PAES improvement projection based on questions unlocked.
  * Takes into account:
  * - Questions are spread across multiple tests
  * - The official PAES conversion table (non-linear)
- * - Student's current PAES score
+ * - Student's current correct answers (derived from unlocked questions)
  * - Caps improvement to never exceed max PAES score (1000)
  *
- * @param questionsUnlocked - Total questions unlocked across all tests
- * @param config.currentPaesScore - Student's current PAES score (100-1000)
- * @param config.numTests - Number of tests (default: 4)
+ * @param currentCorrectPerTest - Current correct answers per test (from unlocked questions)
+ * @param additionalQuestionsUnlocked - Additional questions unlocked by a route (total across tests)
+ * @param numTests - Number of tests (default: 4)
  */
 export function calculatePAESImprovement(
-  questionsUnlocked: number,
-  config: {
-    numTests?: number;
-    currentPaesScore?: number;
-  } = {}
+  currentCorrectPerTest: number,
+  additionalQuestionsUnlocked: number,
+  numTests: number = 4
 ): {
   minPoints: number;
   maxPoints: number;
   questionsPerTest: number;
   percentageOfTest: number;
 } {
-  const numTests = config.numTests || 4;
-  // Default to 460 pts (~20 correct) if not provided
-  const currentScore = config.currentPaesScore ?? 460;
-  const currentCorrect = estimateCorrectFromScore(currentScore);
-
-  // Questions unlocked are spread across tests, so divide by number of tests
-  const avgQuestionsUnlockedPerTest = Math.round(questionsUnlocked / numTests);
+  // Additional questions are spread across tests
+  const additionalPerTest = Math.round(additionalQuestionsUnlocked / numTests);
 
   // Use actual PAES table for accurate point calculation
+  const currentScore = getPaesScore(currentCorrectPerTest);
   const improvement = calcPaesImprovement(
-    currentCorrect,
-    avgQuestionsUnlockedPerTest
+    currentCorrectPerTest,
+    additionalPerTest
   );
 
   // Add uncertainty range (±15%) since question selection varies
@@ -281,20 +308,19 @@ export function calculatePAESImprovement(
   const rawMin = Math.round(improvement.improvement * (1 - uncertaintyFactor));
   const rawMax = Math.round(improvement.improvement * (1 + uncertaintyFactor));
 
-  // Cap improvements using the ORIGINAL score (not the table lookup)
-  // This ensures consistency with per-route calculations
+  // Cap improvements to never exceed 1000
   const minPoints = capImprovementToMax(currentScore, rawMin);
   const maxPoints = capImprovementToMax(currentScore, rawMax);
 
   // Percentage of a single test this represents
   const percentageOfTest = Math.round(
-    (avgQuestionsUnlockedPerTest / PAES_TOTAL_QUESTIONS) * 100
+    (additionalPerTest / PAES_TOTAL_QUESTIONS) * 100
   );
 
   return {
     minPoints,
     maxPoints,
-    questionsPerTest: avgQuestionsUnlockedPerTest,
+    questionsPerTest: additionalPerTest,
     percentageOfTest,
   };
 }

@@ -59,6 +59,8 @@ interface ResultsScreenProps {
   /** All responses from diagnostic for question review */
   responses?: DiagnosticResponse[];
   onSignup: () => void;
+  /** Callback to set the consistent PAES score (from unlocked questions) for use in SignupScreen */
+  onScoreCalculated?: (score: number) => void;
 }
 
 // ============================================================================
@@ -72,10 +74,10 @@ export function ResultsScreen({
   atomResults = [],
   responses = [],
   onSignup,
+  onScoreCalculated,
 }: ResultsScreenProps) {
   const [showContent, setShowContent] = useState(false);
   const [showReviewDrawer, setShowReviewDrawer] = useState(false);
-  const midScore = Math.round((results.paesMin + results.paesMax) / 2);
   const motivational = getMotivationalMessage(results.axisPerformance);
   const atomsRemaining = calculateTotalAtomsRemaining(results.axisPerformance);
   const weeksByStudy = getWeeksByStudyTime(atomsRemaining);
@@ -90,11 +92,23 @@ export function ResultsScreen({
   }, [responses]);
 
   // Fetch personalized learning routes based on diagnostic atom results
-  // Pass current PAES score for accurate improvement calculations
-  const { data: routesData, isLoading: routesLoading } = useLearningRoutes(
-    atomResults,
-    midScore
-  );
+  // The API returns estimatedScore calculated from unlocked questions using PAES table
+  const { data: routesData, isLoading: routesLoading } =
+    useLearningRoutes(atomResults);
+
+  // Use the consistent PAES score from the API (based on unlocked questions)
+  // This ensures the score and improvement predictions are on the same scale
+  const estimatedScore = routesData?.estimatedScore;
+  const midScore = estimatedScore?.score ?? results.paesMin;
+  const scoreMin = estimatedScore?.min ?? results.paesMin;
+  const scoreMax = estimatedScore?.max ?? results.paesMax;
+
+  // Notify parent when we have the consistent score from the API
+  useEffect(() => {
+    if (estimatedScore?.score && onScoreCalculated) {
+      onScoreCalculated(estimatedScore.score);
+    }
+  }, [estimatedScore?.score, onScoreCalculated]);
 
   // Sort routes by impact and memoize
   const sortedRoutes = useMemo(() => {
@@ -158,7 +172,7 @@ export function ResultsScreen({
               <AnimatedCounter target={midScore} duration={2500} delay={200} />
             </div>
             <div className="text-lg text-cool-gray mb-6">
-              Rango: {results.paesMin} - {results.paesMax} puntos
+              Rango: {scoreMin} - {scoreMax} puntos
             </div>
             <div className="card inline-block px-6 py-4 bg-gradient-to-r from-amber-50 to-white border-amber-200">
               <div className="flex items-center justify-center gap-2 mb-1">
