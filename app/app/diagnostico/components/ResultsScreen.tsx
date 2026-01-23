@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
-import { type Route, type Axis, type MSTQuestion } from "@/lib/diagnostic/config";
+import { type Route, type Axis, type MSTQuestion, AXIS_NAMES } from "@/lib/diagnostic/config";
 import { Confetti } from "./Confetti";
-import { Icons, AnimatedCounter } from "./shared";
+import { Icons, AnimatedCounter, CollapsibleSection } from "./shared";
 import { useLearningRoutes, sortRoutesByImpact } from "../hooks/useLearningRoutes";
 import { QuestionReviewDrawer, type ResponseForReview } from "./QuestionReviewDrawer";
 import {
@@ -152,11 +152,14 @@ export function ResultsScreen({
           </div>
 
           {/* Axis Performance */}
-          <div className={`mb-10 transition-all duration-700 delay-300
-            ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
-            <h2 className="text-2xl font-serif font-bold text-charcoal mb-6 text-center">
-              Tu Perfil por Eje Temático
-            </h2>
+          <CollapsibleSection
+            title="Tu Perfil por Eje"
+            summary={`${AXIS_NAMES[strongestAxis]} es tu fortaleza`}
+            helpText="Muestra tu dominio en cada eje temático de la PAES. Las barras indican qué porcentaje de los átomos de conocimiento dominas en cada área."
+            defaultExpanded={true}
+            delay={300}
+            className="mb-10"
+          >
             <div className="card p-6 space-y-5">
               {sortedAxes.map((axis, index) => (
                 <AxisProgressBar
@@ -169,14 +172,17 @@ export function ResultsScreen({
                 />
               ))}
             </div>
-          </div>
+          </CollapsibleSection>
 
           {/* Learning Routes */}
-          <div className={`mb-10 transition-all duration-700 delay-500
-            ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
-            <h2 className="text-2xl font-serif font-bold text-charcoal mb-2 text-center">
-              Rutas de Aprendizaje
-            </h2>
+          <CollapsibleSection
+            title="Rutas de Aprendizaje"
+            summary={sortedRoutes[0] ? `Recomendado: ${sortedRoutes[0].title}` : "Cargando..."}
+            helpText="Caminos personalizados basados en tu diagnóstico. Cada ruta te ayuda a dominar átomos de conocimiento que desbloquean más preguntas PAES."
+            defaultExpanded={true}
+            delay={500}
+            className="mb-10"
+          >
             <p className="text-center text-cool-gray mb-6 text-sm">
               Caminos personalizados para maximizar tu mejora
             </p>
@@ -215,16 +221,22 @@ export function ResultsScreen({
                 <strong>Las rutas son acumulativas.</strong> Al terminar una, desbloqueas nuevos caminos.
               </p>
             </div>
-          </div>
+          </CollapsibleSection>
 
           {/* Maximum Potential */}
-          <div className={`mb-10 transition-all duration-700 delay-700
-            ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+          <CollapsibleSection
+            title="Tu Potencial Máximo"
+            summary={`${routesData ? TOTAL_ATOMS - routesData.summary.masteredAtoms : atomsRemaining} átomos por dominar`}
+            helpText="Los átomos son unidades de conocimiento. Cada átomo que dominas desbloquea preguntas PAES relacionadas. El tiempo estimado asume práctica diaria constante."
+            defaultExpanded={false}
+            delay={700}
+            className="mb-10"
+          >
             <div className="card p-6 bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
-              <h3 className="text-xl font-serif font-bold text-charcoal mb-4 flex items-center gap-2">
+              <div className="flex items-center gap-2 mb-4">
                 {Icons.trophy("w-6 h-6 text-accent")}
-                Tu Potencial Máximo
-              </h3>
+                <span className="text-lg font-semibold text-charcoal">Resumen de progreso</span>
+              </div>
               <div className="grid sm:grid-cols-2 gap-6">
                 <div>
                   <p className="text-cool-gray mb-2">Átomos por dominar:</p>
@@ -261,7 +273,7 @@ export function ResultsScreen({
                 No tienes que hacerlo todo de una vez. Cada átomo que dominas te acerca más a tu máximo potencial.
               </p>
             </div>
-          </div>
+          </CollapsibleSection>
 
           {/* Stats Summary */}
           <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 transition-all duration-700 delay-300

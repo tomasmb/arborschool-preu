@@ -75,19 +75,12 @@ export const Icons = {
   ),
 };
 
-// ============================================================================
-// TIMER WARNING THRESHOLDS (in seconds)
-// ============================================================================
-
+// --- Timer Warning Thresholds (seconds) ---
 export const TIMER_THRESHOLDS = {
-  CRITICAL: 30, // 30 seconds - urgent warning
-  WARNING: 300, // 5 minutes - warning state
-  CAUTION: 600, // 10 minutes - caution state
+  CRITICAL: 30,
+  WARNING: 300,
+  CAUTION: 600,
 } as const;
-
-// ============================================================================
-// TIMER COMPONENT
-// ============================================================================
 
 type TimerState = "normal" | "caution" | "warning" | "critical";
 
@@ -228,3 +221,274 @@ export const AXIS_ICONS: Record<Axis, (className: string) => React.ReactNode> = 
   GEO: Icons.geometry,
   PROB: Icons.probability,
 };
+
+// ============================================================================
+// COLLAPSIBLE SECTION
+// ============================================================================
+
+interface CollapsibleSectionProps {
+  title: string;
+  /** Brief summary shown in header when collapsed */
+  summary?: string;
+  /** Help text explaining this section */
+  helpText?: string;
+  /** Whether section starts expanded */
+  defaultExpanded?: boolean;
+  /** Animation delay in ms */
+  delay?: number;
+  children: React.ReactNode;
+  className?: string;
+}
+
+/**
+ * Collapsible section for organizing results.
+ * Shows title + optional summary, expands to reveal full content.
+ */
+export function CollapsibleSection({
+  title,
+  summary,
+  helpText,
+  defaultExpanded = true,
+  delay = 0,
+  children,
+  className = "",
+}: CollapsibleSectionProps) {
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  const [isVisible, setIsVisible] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), delay);
+    return () => clearTimeout(timer);
+  }, [delay]);
+
+  return (
+    <div
+      className={`transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"} ${className}`}
+    >
+      {/* Section header - always visible */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center justify-between gap-3 mb-4 group"
+        aria-expanded={isExpanded}
+      >
+        <div className="flex items-center gap-3">
+          <h2 className="text-xl sm:text-2xl font-serif font-bold text-charcoal text-left">
+            {title}
+          </h2>
+          {helpText && (
+            <div className="relative">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowHelp(!showHelp);
+                }}
+                className="w-8 h-8 flex items-center justify-center text-cool-gray hover:text-primary rounded-full hover:bg-primary/10 transition-colors"
+                aria-label="Más información"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </button>
+              {showHelp && (
+                <div className="absolute left-0 top-8 z-20 w-64 p-3 bg-white rounded-lg shadow-lg border text-sm text-cool-gray">
+                  {helpText}
+                  <div className="absolute -top-1.5 left-3 w-3 h-3 bg-white border-l border-t rotate-45" />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {!isExpanded && summary && (
+            <span className="text-sm text-cool-gray hidden sm:block">{summary}</span>
+          )}
+          <div
+            className={`p-1.5 rounded-full bg-off-white group-hover:bg-primary/10 transition-all duration-300
+              ${isExpanded ? "rotate-180" : ""}`}
+          >
+            <svg className="w-5 h-5 text-cool-gray" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </div>
+      </button>
+
+      {/* Collapsible content */}
+      <div
+        className={`overflow-hidden transition-all duration-500 ease-in-out
+          ${isExpanded ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"}`}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// SKELETON COMPONENTS
+// ============================================================================
+
+/**
+ * Animated skeleton pulse bar for loading states.
+ * Uses a base gray color with shimmer overlay effect.
+ */
+function SkeletonBar({ className = "" }: { className?: string }) {
+  return (
+    <div
+      className={`relative overflow-hidden bg-gray-200 rounded ${className}`}
+      aria-hidden="true"
+    >
+      <div className="absolute inset-0 animate-shimmer" />
+    </div>
+  );
+}
+
+/**
+ * Skeleton loading state for question screen.
+ * Mimics the layout of the actual question to reduce layout shift.
+ */
+export function QuestionSkeleton() {
+  return (
+    <div className="max-w-3xl mx-auto px-4 py-8" role="status" aria-label="Cargando pregunta">
+      <div className="card p-6 sm:p-10 relative overflow-hidden">
+        {/* Decorative corner gradient (matches real card) */}
+        <div
+          className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/5 to-transparent rounded-bl-full"
+          aria-hidden="true"
+        />
+
+        {/* Question metadata badges skeleton */}
+        <div className="flex flex-wrap items-center gap-2 mb-6 relative">
+          <SkeletonBar className="w-24 h-7 rounded-lg" />
+          <SkeletonBar className="w-28 h-7 rounded-lg" />
+        </div>
+
+        {/* Question content skeleton (2-3 lines of text) */}
+        <div className="mb-6 sm:mb-8 space-y-3">
+          <SkeletonBar className="w-full h-5" />
+          <SkeletonBar className="w-5/6 h-5" />
+          <SkeletonBar className="w-3/4 h-5" />
+        </div>
+
+        {/* Answer options skeleton (4 options with staggered animation) */}
+        <div className="space-y-3 mb-8">
+          {[0, 1, 2, 3].map((index) => (
+            <div
+              key={index}
+              className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 md:p-5 rounded-xl border-2 border-gray-100"
+              style={{ animationDelay: `${index * 100}ms` }}
+            >
+              {/* Option letter circle */}
+              <SkeletonBar className="w-10 h-10 sm:w-11 sm:h-11 rounded-full shrink-0" />
+              {/* Option text */}
+              <div className="flex-1 space-y-2">
+                <SkeletonBar className="w-full h-4" />
+                <SkeletonBar className="w-2/3 h-4" />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Skip question section skeleton - matches new separated layout */}
+        <div className="mt-6 pt-6 border-t border-gray-100">
+          <SkeletonBar className="w-full h-10 rounded-lg" />
+        </div>
+
+        {/* Next button skeleton */}
+        <div className="mt-6 sm:mt-8 flex justify-end">
+          <SkeletonBar className="w-32 h-12 rounded-xl" />
+        </div>
+      </div>
+
+      {/* Screen reader announcement */}
+      <span className="sr-only">Cargando pregunta, por favor espera...</span>
+    </div>
+  );
+}
+
+// ============================================================================
+// OFFLINE INDICATOR
+// ============================================================================
+
+interface OfflineIndicatorProps {
+  className?: string;
+}
+
+/**
+ * Subtle indicator shown when operating in offline/local storage mode.
+ * Non-intrusive but informative for users.
+ */
+export function OfflineIndicator({ className = "" }: OfflineIndicatorProps) {
+  const [isVisible, setIsVisible] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+
+  // Fade in after mount for smoother appearance
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), 300);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (dismissed) return null;
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className={`fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-sm z-50
+        transition-all duration-500 ease-out
+        ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}
+        ${className}`}
+    >
+      <div className="flex items-start gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl shadow-lg">
+        {/* Cloud offline icon */}
+        <div className="shrink-0 mt-0.5">
+          <svg
+            className="w-5 h-5 text-amber-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"
+            />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M18.364 18.364L5.636 5.636m12.728 12.728L5.636 5.636"
+            />
+          </svg>
+        </div>
+
+        {/* Message */}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-amber-800">Modo sin conexión</p>
+          <p className="text-xs text-amber-600 mt-0.5">
+            Tus respuestas se guardan localmente y se sincronizarán después.
+          </p>
+        </div>
+
+        {/* Dismiss button */}
+        <button
+          onClick={() => setDismissed(true)}
+          aria-label="Cerrar aviso de modo sin conexión"
+          className="shrink-0 w-8 h-8 flex items-center justify-center text-amber-500 hover:text-amber-700 hover:bg-amber-100 rounded transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}

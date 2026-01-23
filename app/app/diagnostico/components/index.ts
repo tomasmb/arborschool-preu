@@ -11,5 +11,11 @@ export { MaintenanceScreen } from "./MaintenanceScreen";
 export { DiagnosticHeader } from "./DiagnosticHeader";
 export { Confetti } from "./Confetti";
 export { QuestionReviewDrawer, type ResponseForReview } from "./QuestionReviewDrawer";
-export { QuestionReviewItem } from "./QuestionReviewItem";
-export { Timer, formatTime, TIMER_THRESHOLDS } from "./shared";
+export {
+  Timer,
+  formatTime,
+  TIMER_THRESHOLDS,
+  QuestionSkeleton,
+  OfflineIndicator,
+  CollapsibleSection,
+} from "./shared";

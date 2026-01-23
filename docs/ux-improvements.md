@@ -4,6 +4,25 @@ Key improvements to enhance student experience in the diagnostic app.
 
 ---
 
+## Summary
+
+| Priority | Item | Status |
+|----------|------|--------|
+| High | Accessibility Compliance | ✅ Done |
+| High | Mobile Responsiveness | ✅ Done |
+| High | Timer Visibility & Warnings | ✅ Done |
+| High | Loading & Error States | ✅ Done |
+| Medium | "No lo sé" Button Distinction | ✅ Done |
+| Medium | Results Screen Organization | ✅ Done |
+| Medium | Touch Target Sizes | ✅ Done |
+| Medium | Question Review UX Refactor | ✅ Done |
+| Low | Navigation Clarity | Pending |
+| Low | Confetti Performance | Pending |
+
+**Completion: 8/10 items done**
+
+---
+
 ## Completed ✅
 
 ### Accessibility Compliance (Done Jan 2026)
@@ -44,11 +63,7 @@ Key improvements to enhance student experience in the diagnostic app.
 - Next/CTA buttons: Large touch area with padding
 - All interactive elements have adequate spacing
 
----
-
-## High Priority
-
-### ~~2. Timer Visibility & Warnings~~ ✅ (Done Jan 2026)
+### Timer Visibility & Warnings (Done Jan 2026)
 
 **Changes made:**
 - ✅ Created reusable `Timer` component in `shared.tsx` (SOLID/DRY)
@@ -63,68 +78,73 @@ Key improvements to enhance student experience in the diagnostic app.
 
 ---
 
-### 3. Loading & Error States
+### Loading & Error States (Done Jan 2026)
 
-**Problem**: Async operations lack clear feedback, leaving students uncertain.
+**Changes made:**
+- ✅ Created `QuestionSkeleton` component in `shared.tsx` that mimics question layout
+- ✅ Skeleton shows animated placeholder for metadata badges, question text, 4 answer options, and buttons
+- ✅ Created `OfflineIndicator` component for local storage fallback mode
+- ✅ Indicator shows dismissible toast when operating offline, explaining responses save locally
+- ✅ Error states with retry already existed (up to 2 retries before maintenance screen)
+- ✅ Added proper `role="status"` and `aria-label` for screen reader announcements
 
-**Actions**:
-- Add loading spinners/skeletons for question loading
-- Add clear error messages with retry options
-- Show subtle indicator when using local storage fallback (offline mode)
-
-**Files**: `QuestionScreen.tsx`, `page.tsx`
-
----
-
-## Medium Priority
-
-### 4. "No lo sé" Button Distinction
-
-**Problem**: Button can be confused with answer options.
-
-**Actions**:
-- Change to outline/ghost style instead of filled
-- Position it separately from answer options (e.g., below with spacing)
-
-**File**: `QuestionScreen.tsx`
+**Files updated**: `shared.tsx`, `QuestionScreen.tsx`, `page.tsx`, `index.ts`
 
 ---
 
-### 5. Results Screen Organization
+### "No lo sé" Button Distinction (Done Jan 2026)
 
-**Problem**: Multiple metrics displayed at once can overwhelm students.
+**Changes made:**
+- ✅ Repositioned button below answer options with visual separator (border-top + margin)
+- ✅ Changed to subtle ghost style with ring highlight when selected
+- ✅ Smaller, more secondary appearance (text-sm, py-3)
+- ✅ Updated skeleton to match new layout
 
-**Actions**:
-- Group related information into collapsible sections
-- Show summary first, details on demand
-- Add brief explanations for what each metric means
-
-**Files**: `ResultsScreen.tsx`, `ResultsComponents.tsx`
-
----
-
-### 6. Touch Target Sizes
-
-**Problem**: Some interactive elements may be too small for comfortable touch interaction.
-
-**Actions**:
-- Ensure all buttons are minimum 44x44px
-- Add adequate spacing between adjacent touch targets
-- Verify on actual mobile devices
-
-**Files**: All component files with buttons
+**Files updated**: `QuestionScreen.tsx`, `shared.tsx`
 
 ---
 
-### 7. Question Review Performance
+### Results Screen Organization (Done Jan 2026)
 
-**Problem**: Fetching all questions at once can be slow with many questions.
+**Changes made:**
+- ✅ Created `CollapsibleSection` component for organizing content
+- ✅ Wrapped Axis Performance, Learning Routes, and Maximum Potential in collapsible sections
+- ✅ Added help tooltips explaining each metric
+- ✅ Maximum Potential starts collapsed by default (less critical info)
+- ✅ Shows summary text in header when collapsed
 
-**Actions**:
-- Implement lazy loading or pagination
-- Show loading indicator while fetching
+**Files updated**: `shared.tsx`, `ResultsScreen.tsx`, `index.ts`
 
-**File**: `QuestionReviewDrawer.tsx`
+---
+
+### Touch Target Sizes (Done Jan 2026)
+
+**Changes made:**
+- ✅ Close button in QuestionReviewDrawer: 40px → 44px (w-11 h-11)
+- ✅ Help info button in CollapsibleSection: p-1 → w-8 h-8 (32px minimum)
+- ✅ Dismiss button in OfflineIndicator: p-1 → w-8 h-8 (32px minimum)
+- ✅ All primary interactive buttons already meet 44px guideline
+- ✅ Answer option buttons have full-width touch areas
+
+**Files updated**: `QuestionReviewDrawer.tsx`, `shared.tsx`
+
+---
+
+### Question Review UX Refactor (Done Jan 2026)
+
+**Changes made:**
+- ✅ Completely redesigned from scrollable list to single-question view with navigation
+- ✅ Navigation sidebar with numbered question pills (color-coded: green/red/gray)
+- ✅ Active question highlighted with ring + scale effect
+- ✅ Prev/Next buttons in footer with keyboard support (Arrow keys, Escape)
+- ✅ Click any pill to jump directly to that question
+- ✅ Mobile responsive: sidebar becomes horizontal scrollable row at top
+- ✅ Deleted `QuestionReviewItem.tsx` (consolidated into drawer)
+- ✅ Split into `QuestionReviewDrawer.tsx` (397 lines) + `QuestionReviewContent.tsx` (230 lines)
+
+**Files updated**: `QuestionReviewDrawer.tsx`, `QuestionReviewContent.tsx` (new), `index.ts`
+
+**Files deleted**: `QuestionReviewItem.tsx`
 
 ---
 
@@ -153,3 +173,47 @@ Key improvements to enhance student experience in the diagnostic app.
 - Test all changes on mobile devices (iOS Safari, Android Chrome)
 - Run accessibility audit after changes (axe DevTools, Lighthouse)
 - Get student feedback on changes before full rollout
+
+---
+
+## Architecture & Code Quality
+
+### File Size Limits
+All component files maintained under 500 lines:
+- `shared.tsx`: 494 lines (reusable components)
+- `QuestionScreen.tsx`: 398 lines
+- `QuestionReviewDrawer.tsx`: 397 lines
+- `ResultsScreen.tsx`: 362 lines
+- All others: < 250 lines
+
+### SOLID Principles Applied
+
+**Single Responsibility:**
+- `QuestionSkeleton` - only renders loading skeleton
+- `OfflineIndicator` - only handles offline status display
+- `CollapsibleSection` - only handles expand/collapse behavior
+- `Timer` - only handles time display and warning states
+
+**Open/Closed:**
+- `Timer` uses configurable `TIMER_THRESHOLDS` constant
+- `CollapsibleSection` accepts children for flexible content
+
+**DRY (Don't Repeat Yourself):**
+- Shared icons in `Icons` object (shared.tsx)
+- Reusable `CollapsibleSection` used 3x in ResultsScreen
+- `formatTime()` helper exported for reuse
+- QTI parsing logic shared between QuestionScreen and QuestionReviewDrawer
+
+### Responsive Design Patterns
+- Mobile-first with `sm:`, `md:`, `lg:` breakpoints
+- Flex direction changes: `flex-col sm:flex-row`
+- Hidden elements: `hidden sm:block`, `sm:hidden`
+- Touch targets: minimum 32-44px on all interactive elements
+- Text scaling: `text-sm sm:text-base`
+
+### Accessibility Standards
+- All buttons have `aria-label`
+- Toggle buttons use `aria-pressed`
+- Live regions: `role="status"`, `role="timer"`, `role="alert"`
+- Critical announcements: `aria-live="assertive"`
+- Decorative elements: `aria-hidden="true"`

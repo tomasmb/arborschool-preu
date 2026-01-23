@@ -2,20 +2,29 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { type MSTQuestion } from "@/lib/diagnostic/config";
-import {
-  QuestionReviewItem,
-  type ParsedOption,
-  type QuestionReviewData,
-} from "./QuestionReviewItem";
+import { QuestionReviewContent } from "./QuestionReviewContent";
 
 // ============================================================================
-// TYPES
+// TYPES (exported for QuestionReviewContent)
 // ============================================================================
 
 export interface ResponseForReview {
   question: MSTQuestion;
   selectedAnswer: string | null;
   isCorrect: boolean;
+}
+
+export interface QuestionReviewData {
+  qtiXml: string;
+  correctAnswer: string | null;
+  feedbackGeneral: string | null;
+  feedbackPerOption: Record<string, string> | null;
+}
+
+export interface ParsedOption {
+  letter: string;
+  text: string;
+  identifier: string;
 }
 
 interface QuestionReviewDrawerProps {
@@ -29,93 +38,73 @@ interface ReviewDataMap {
 }
 
 interface ParsedQuestionCache {
-  [key: string]: {
-    html: string;
-    options: ParsedOption[];
-  };
+  [key: string]: { html: string; options: ParsedOption[] };
 }
 
 // ============================================================================
-// ICONS
-// ============================================================================
-
-function CloseIcon({ className }: { className: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-    </svg>
-  );
-}
-
-// ============================================================================
-// QTI PARSING (reuse from QuestionScreen)
+// QTI PARSING
 // ============================================================================
 
 function serializeNodeToHtml(node: Node): string {
-  if (node.nodeType === Node.TEXT_NODE) {
-    return node.textContent || "";
+  if (node.nodeType === Node.TEXT_NODE) return node.textContent || "";
+  if (node.nodeType !== Node.ELEMENT_NODE) return "";
+
+  const el = node as Element;
+  const tagName = el.localName || el.tagName.toLowerCase();
+
+  // Preserve MathML
+  if (tagName === "math" || el.namespaceURI === "http://www.w3.org/1998/Math/MathML") {
+    return new XMLSerializer().serializeToString(el);
   }
 
-  if (node.nodeType === Node.ELEMENT_NODE) {
-    const el = node as Element;
-    const tagName = el.localName || el.tagName.toLowerCase();
+  // Handle images
+  if (tagName === "img") {
+    const src = el.getAttribute("src") || "";
+    const alt = el.getAttribute("alt") || "Imagen";
+    return `<img src="${src}" alt="${alt}" class="max-w-full rounded-lg my-2" />`;
+  }
 
-    // Preserve MathML
-    if (tagName === "math" || el.namespaceURI === "http://www.w3.org/1998/Math/MathML") {
-      return new XMLSerializer().serializeToString(el);
-    }
-
-    // Handle images
-    if (tagName === "img") {
-      const src = el.getAttribute("src") || "";
-      const alt = el.getAttribute("alt") || "Imagen";
-      return `<img src="${src}" alt="${alt}" class="max-w-full rounded-lg my-2" />`;
-    }
-
-    // Tables
-    if (tagName === "table") {
-      let content = "";
-      el.childNodes.forEach((child) => (content += serializeNodeToHtml(child)));
-      return `<table class="w-full border-collapse border border-gray-300 my-2 text-xs">${content}</table>`;
-    }
-
-    if (["thead", "tbody", "tfoot"].includes(tagName)) {
-      let content = "";
-      el.childNodes.forEach((child) => (content += serializeNodeToHtml(child)));
-      const bgClass = tagName === "thead" ? ' class="bg-gray-100"' : "";
-      return `<${tagName}${bgClass}>${content}</${tagName}>`;
-    }
-
-    if (tagName === "tr") {
-      let content = "";
-      el.childNodes.forEach((child) => (content += serializeNodeToHtml(child)));
-      return `<tr class="border-b border-gray-200">${content}</tr>`;
-    }
-
-    if (tagName === "th" || tagName === "td") {
-      const colspan = el.getAttribute("colspan");
-      const rowspan = el.getAttribute("rowspan");
-      let attrs = `class="border border-gray-300 px-2 py-1 ${tagName === "th" ? "font-semibold text-left" : ""}"`;
-      if (colspan) attrs += ` colspan="${colspan}"`;
-      if (rowspan) attrs += ` rowspan="${rowspan}"`;
-      let content = "";
-      el.childNodes.forEach((child) => (content += serializeNodeToHtml(child)));
-      return `<${tagName} ${attrs}>${content}</${tagName}>`;
-    }
-
-    if (tagName === "p") {
-      let content = "";
-      el.childNodes.forEach((child) => (content += serializeNodeToHtml(child)));
-      return `<p class="mb-2">${content}</p>`;
-    }
-
-    // Default: process children
+  // Tables
+  if (tagName === "table") {
     let content = "";
     el.childNodes.forEach((child) => (content += serializeNodeToHtml(child)));
-    return content;
+    return `<table class="w-full border-collapse border border-gray-300 my-2 text-sm">${content}</table>`;
   }
 
-  return "";
+  if (["thead", "tbody", "tfoot"].includes(tagName)) {
+    let content = "";
+    el.childNodes.forEach((child) => (content += serializeNodeToHtml(child)));
+    const bgClass = tagName === "thead" ? ' class="bg-gray-100"' : "";
+    return `<${tagName}${bgClass}>${content}</${tagName}>`;
+  }
+
+  if (tagName === "tr") {
+    let content = "";
+    el.childNodes.forEach((child) => (content += serializeNodeToHtml(child)));
+    return `<tr class="border-b border-gray-200">${content}</tr>`;
+  }
+
+  if (tagName === "th" || tagName === "td") {
+    const colspan = el.getAttribute("colspan");
+    const rowspan = el.getAttribute("rowspan");
+    let attrs = `class="border border-gray-300 px-2 py-1 ${tagName === "th" ? "font-semibold text-left" : ""}"`;
+    if (colspan) attrs += ` colspan="${colspan}"`;
+    if (rowspan) attrs += ` rowspan="${rowspan}"`;
+    let content = "";
+    el.childNodes.forEach((child) => (content += serializeNodeToHtml(child)));
+    return `<${tagName} ${attrs}>${content}</${tagName}>`;
+  }
+
+  if (tagName === "p") {
+    let content = "";
+    el.childNodes.forEach((child) => (content += serializeNodeToHtml(child)));
+    return `<p class="mb-3">${content}</p>`;
+  }
+
+  // Default: process children
+  let content = "";
+  el.childNodes.forEach((child) => (content += serializeNodeToHtml(child)));
+  return content;
 }
 
 function parseQtiXml(xmlString: string): { html: string; options: ParsedOption[] } {
@@ -132,20 +121,15 @@ function parseQtiXml(xmlString: string): { html: string; options: ParsedOption[]
       if (child.nodeType === Node.ELEMENT_NODE) {
         const el = child as Element;
         const tagName = el.localName || el.tagName.toLowerCase();
-        if (tagName === "qti-choice-interaction" || tagName === "choiceinteraction") {
-          return;
-        }
+        if (tagName === "qti-choice-interaction" || tagName === "choiceinteraction") return;
       }
       const content = serializeNodeToHtml(child);
-      if (content.trim()) {
-        html += content;
-      }
+      if (content.trim()) html += content;
     });
   }
 
   if (prompt) {
-    const content = serializeNodeToHtml(prompt);
-    html += `<p class="font-semibold mt-2">${content}</p>`;
+    html += `<p class="font-semibold mt-2">${serializeNodeToHtml(prompt)}</p>`;
   }
 
   const letters = ["A", "B", "C", "D"];
@@ -153,7 +137,7 @@ function parseQtiXml(xmlString: string): { html: string; options: ParsedOption[]
 
   choices.forEach((choice, index) => {
     const identifier = choice.getAttribute("identifier") || letters[index];
-    const text = serializeNodeToHtml(choice).trim() || `Opcion ${letters[index]}`;
+    const text = serializeNodeToHtml(choice).trim() || `Opción ${letters[index]}`;
     options.push({ letter: letters[index], text, identifier });
   });
 
@@ -164,35 +148,29 @@ function parseQtiXml(xmlString: string): { html: string; options: ParsedOption[]
 // MAIN COMPONENT
 // ============================================================================
 
-export function QuestionReviewDrawer({
-  isOpen,
-  onClose,
-  responses,
-}: QuestionReviewDrawerProps) {
+export function QuestionReviewDrawer({ isOpen, onClose, responses }: QuestionReviewDrawerProps) {
   const [reviewData, setReviewData] = useState<ReviewDataMap>({});
   const [parsedCache, setParsedCache] = useState<ParsedQuestionCache>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<"all" | "correct" | "incorrect">("all");
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Calculate stats
+  // Stats
   const stats = useMemo(() => {
     const correct = responses.filter((r) => r.isCorrect).length;
-    const incorrect = responses.filter((r) => !r.isCorrect && r.selectedAnswer !== null).length;
-    const skipped = responses.filter((r) => r.selectedAnswer === null).length;
-    return { correct, incorrect, skipped, total: responses.length };
+    return { correct, total: responses.length };
   }, [responses]);
 
-  // Filtered responses
-  const filteredResponses = useMemo(() => {
-    if (activeFilter === "all") return responses;
-    if (activeFilter === "correct") return responses.filter((r) => r.isCorrect);
-    return responses.filter((r) => !r.isCorrect);
-  }, [responses, activeFilter]);
+  // Current response
+  const currentResponse = responses[currentIndex];
+  const currentKey = currentResponse
+    ? `${currentResponse.question.exam.toLowerCase()}-${currentResponse.question.questionNumber}`
+    : "";
+  const currentReviewData = reviewData[currentKey] || null;
+  const currentParsed = parsedCache[currentKey] || { html: "", options: [] };
 
   // Fetch review data when drawer opens
   const fetchReviewData = useCallback(async () => {
     if (responses.length === 0) return;
-
     setIsLoading(true);
     try {
       const questionRefs = responses.map((r) => ({
@@ -210,12 +188,9 @@ export function QuestionReviewDrawer({
       if (data.success && data.data) {
         setReviewData(data.data);
 
-        // Parse QTI XML for each question
         const cache: ParsedQuestionCache = {};
         for (const [key, qData] of Object.entries(data.data as ReviewDataMap)) {
-          if (qData.qtiXml) {
-            cache[key] = parseQtiXml(qData.qtiXml);
-          }
+          if (qData.qtiXml) cache[key] = parseQtiXml(qData.qtiXml);
         }
         setParsedCache(cache);
       }
@@ -226,34 +201,26 @@ export function QuestionReviewDrawer({
     }
   }, [responses]);
 
-  // Fetch data when drawer opens
   useEffect(() => {
-    if (isOpen && Object.keys(reviewData).length === 0) {
-      fetchReviewData();
-    }
+    if (isOpen && Object.keys(reviewData).length === 0) fetchReviewData();
   }, [isOpen, reviewData, fetchReviewData]);
 
-  // Handle escape key
+  // Keyboard navigation
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) {
-        onClose();
-      }
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isOpen) return;
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowLeft" && currentIndex > 0) setCurrentIndex(currentIndex - 1);
+      if (e.key === "ArrowRight" && currentIndex < responses.length - 1) setCurrentIndex(currentIndex + 1);
     };
-    window.addEventListener("keydown", handleEscape);
-    return () => window.removeEventListener("keydown", handleEscape);
-  }, [isOpen, onClose]);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose, currentIndex, responses.length]);
 
   // Prevent body scroll when open
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
+    document.body.style.overflow = isOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -261,168 +228,170 @@ export function QuestionReviewDrawer({
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-charcoal/50 backdrop-blur-sm z-40 transition-opacity"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 bg-charcoal/50 backdrop-blur-sm z-40" onClick={onClose} />
 
       {/* Drawer */}
-      <div className="fixed inset-x-0 bottom-0 z-50 animate-slide-up">
-        <div className="bg-white rounded-t-2xl shadow-2xl max-h-[85vh] flex flex-col">
+      <div className="fixed inset-0 z-50 flex flex-col sm:flex-row">
+        {/* Navigation Sidebar */}
+        <nav className="bg-white border-b sm:border-b-0 sm:border-r border-gray-200 shrink-0">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 shrink-0">
-            <div>
-              <h2 className="text-xl font-serif font-bold text-charcoal">
-                Revision de Respuestas
-              </h2>
-              <p className="text-sm text-cool-gray mt-0.5">
-                {stats.correct} correctas, {stats.incorrect} incorrectas
-                {stats.skipped > 0 && `, ${stats.skipped} omitidas`}
-              </p>
+          <div className="p-4 border-b border-gray-100">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-serif font-bold text-charcoal">Revisión</h2>
+              <button
+                onClick={onClose}
+                className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 sm:hidden"
+                aria-label="Cerrar"
+              >
+                <CloseIcon />
+              </button>
             </div>
+            <p className="text-xs text-cool-gray mt-1">{stats.correct}/{stats.total} correctas</p>
+          </div>
+
+          {/* Question pills - horizontal on mobile, vertical on desktop */}
+          <div className="flex sm:flex-col gap-2 p-3 overflow-x-auto sm:overflow-y-auto sm:max-h-[calc(100vh-140px)]">
+            {responses.map((response, idx) => (
+              <QuestionPill
+                key={idx}
+                index={idx}
+                isCorrect={response.isCorrect}
+                isSkipped={response.selectedAnswer === null}
+                isActive={idx === currentIndex}
+                onClick={() => setCurrentIndex(idx)}
+              />
+            ))}
+          </div>
+        </nav>
+
+        {/* Main Content */}
+        <main className="flex-1 bg-off-white overflow-hidden flex flex-col">
+          {/* Desktop close button */}
+          <div className="hidden sm:flex justify-end p-4 pb-0">
             <button
               onClick={onClose}
-              className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center 
-                hover:bg-gray-200 transition-colors"
+              className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50"
               aria-label="Cerrar"
             >
-              <CloseIcon className="w-5 h-5 text-charcoal" />
+              <CloseIcon />
             </button>
           </div>
 
-          {/* Filter tabs */}
-          <div className="flex flex-wrap gap-2 p-4 border-b border-gray-100 shrink-0">
-            <FilterButton
-              active={activeFilter === "all"}
-              onClick={() => setActiveFilter("all")}
-              label="Todas"
-              count={stats.total}
-            />
-            <FilterButton
-              active={activeFilter === "correct"}
-              onClick={() => setActiveFilter("correct")}
-              label="Correctas"
-              count={stats.correct}
-              variant="success"
-            />
-            <FilterButton
-              active={activeFilter === "incorrect"}
-              onClick={() => setActiveFilter("incorrect")}
-              label="Incorrectas"
-              count={stats.incorrect + stats.skipped}
-              variant="error"
-            />
-          </div>
-
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto p-4">
+          {/* Question Content */}
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
             {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                  <p className="text-cool-gray text-sm">Cargando preguntas...</p>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-3 pb-4">
-                {filteredResponses.map((response, idx) => {
-                  const key = `${response.question.exam.toLowerCase()}-${response.question.questionNumber}`;
-                  const qData = reviewData[key] || null;
-                  const parsed = parsedCache[key] || { html: "", options: [] };
-
-                  // Find original index for question number
-                  const originalIndex = responses.indexOf(response);
-
-                  return (
-                    <QuestionReviewItem
-                      key={key}
-                      index={originalIndex}
-                      question={response.question}
-                      selectedAnswer={response.selectedAnswer}
-                      isCorrect={response.isCorrect}
-                      reviewData={qData}
-                      parsedOptions={parsed.options}
-                      questionHtml={parsed.html}
-                    />
-                  );
-                })}
-
-                {filteredResponses.length === 0 && (
-                  <div className="text-center py-12">
-                    <p className="text-cool-gray">
-                      No hay preguntas en esta categoria.
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
+              <LoadingState />
+            ) : currentResponse ? (
+              <QuestionReviewContent
+                index={currentIndex}
+                response={currentResponse}
+                reviewData={currentReviewData}
+                parsedHtml={currentParsed.html}
+                parsedOptions={currentParsed.options}
+              />
+            ) : null}
           </div>
 
-          {/* Footer */}
-          <div className="p-4 border-t border-gray-200 bg-gray-50 shrink-0">
+          {/* Navigation Footer */}
+          <footer className="bg-white border-t border-gray-200 p-4 flex items-center justify-between gap-4">
             <button
-              onClick={onClose}
-              className="w-full btn-primary py-3"
+              onClick={() => setCurrentIndex(currentIndex - 1)}
+              disabled={currentIndex === 0}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all
+                disabled:opacity-40 disabled:cursor-not-allowed enabled:hover:bg-gray-100 text-charcoal"
             >
-              Cerrar Revision
+              <ArrowIcon direction="left" />
+              <span className="hidden sm:inline">Anterior</span>
             </button>
-          </div>
-        </div>
-      </div>
 
-      {/* Animation styles */}
-      <style jsx>{`
-        @keyframes slide-up {
-          from {
-            transform: translateY(100%);
-          }
-          to {
-            transform: translateY(0);
-          }
-        }
-        .animate-slide-up {
-          animation: slide-up 0.3s ease-out forwards;
-        }
-      `}</style>
+            <span className="text-sm text-cool-gray">{currentIndex + 1} de {responses.length}</span>
+
+            <button
+              onClick={() => setCurrentIndex(currentIndex + 1)}
+              disabled={currentIndex === responses.length - 1}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all
+                disabled:opacity-40 disabled:cursor-not-allowed enabled:hover:bg-gray-100 text-charcoal"
+            >
+              <span className="hidden sm:inline">Siguiente</span>
+              <ArrowIcon direction="right" />
+            </button>
+          </footer>
+        </main>
+      </div>
     </>
   );
 }
 
 // ============================================================================
-// FILTER BUTTON
+// SUB-COMPONENTS
 // ============================================================================
 
-function FilterButton({
-  active,
+function QuestionPill({
+  index,
+  isCorrect,
+  isSkipped,
+  isActive,
   onClick,
-  label,
-  count,
-  variant = "default",
 }: {
-  active: boolean;
+  index: number;
+  isCorrect: boolean;
+  isSkipped: boolean;
+  isActive: boolean;
   onClick: () => void;
-  label: string;
-  count: number;
-  variant?: "default" | "success" | "error";
 }) {
-  const baseClasses = "px-4 py-2 rounded-full text-sm font-medium transition-all";
-
-  const variantClasses = {
-    default: active
-      ? "bg-primary text-white"
-      : "bg-gray-100 text-charcoal hover:bg-gray-200",
-    success: active
-      ? "bg-success text-white"
-      : "bg-success/10 text-success hover:bg-success/20",
-    error: active
-      ? "bg-error text-white"
-      : "bg-error/10 text-error hover:bg-error/20",
-  };
+  const statusColor = isCorrect
+    ? "bg-success text-white"
+    : isSkipped
+      ? "bg-gray-400 text-white"
+      : "bg-error text-white";
 
   return (
-    <button onClick={onClick} className={`${baseClasses} ${variantClasses[variant]}`}>
-      {label}{" "}
-      <span className={`ml-1 ${active ? "opacity-80" : "opacity-60"}`}>({count})</span>
+    <button
+      onClick={onClick}
+      className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold 
+        transition-all shrink-0
+        ${isActive ? `${statusColor} ring-2 ring-offset-2 ring-primary scale-110` : statusColor}
+        ${!isActive && "opacity-70 hover:opacity-100"}`}
+      aria-label={`Pregunta ${index + 1}, ${isCorrect ? "correcta" : isSkipped ? "omitida" : "incorrecta"}`}
+      aria-current={isActive ? "true" : undefined}
+    >
+      {index + 1}
     </button>
+  );
+}
+
+function LoadingState() {
+  return (
+    <div className="flex items-center justify-center h-full">
+      <div className="text-center">
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-cool-gray">Cargando pregunta...</p>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// ICONS
+// ============================================================================
+
+function CloseIcon() {
+  return (
+    <svg className="w-5 h-5 text-charcoal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  );
+}
+
+function ArrowIcon({ direction }: { direction: "left" | "right" }) {
+  return (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d={direction === "left" ? "M15 19l-7-7 7-7" : "M9 5l7 7-7 7"}
+      />
+    </svg>
   );
 }

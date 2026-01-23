@@ -12,6 +12,7 @@ import {
   type ParsedQuestion,
   type QuestionAtom,
 } from "@/lib/diagnostic/qtiParser";
+import { QuestionSkeleton } from "./shared";
 
 // ============================================================================
 // TYPES
@@ -187,22 +188,7 @@ export function QuestionScreen({
   };
 
   if (loading) {
-    return (
-      <div className="max-w-3xl mx-auto px-4 py-8">
-        <div className="card p-6 sm:p-10 flex items-center justify-center min-h-[400px]">
-          <div className="text-center" role="status" aria-live="polite">
-            <div className="relative w-16 h-16 mx-auto mb-4">
-              <div className="absolute inset-0 rounded-full border-4 border-primary/20" />
-              <div
-                className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"
-                aria-hidden="true"
-              />
-            </div>
-            <p className="text-cool-gray font-medium">Cargando pregunta...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <QuestionSkeleton />;
   }
 
   // Show error state when question fails to load
@@ -344,35 +330,37 @@ export function QuestionScreen({
           ))}
         </div>
 
-        {/* Don't know button */}
-        <button
-          onClick={onSelectDontKnow}
-          aria-label="Seleccionar: No lo sé"
-          aria-pressed={isDontKnow}
-          className={`w-full flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-dashed 
-            transition-all duration-300
-            ${
-              isDontKnow
-                ? "border-amber-500 bg-amber-50 text-amber-700 shadow-md scale-[1.01]"
-                : "border-gray-300 text-cool-gray hover:border-amber-400 hover:bg-amber-50/50 hover:text-amber-600"
-            }`}
-        >
-          <svg
-            className={`w-5 h-5 transition-transform duration-300 ${isDontKnow ? "rotate-12" : ""}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
+        {/* Skip question section - visually separated from answer options */}
+        <div className="mt-6 pt-6 border-t border-gray-100">
+          <button
+            onClick={onSelectDontKnow}
+            aria-label="Saltar pregunta: No lo sé"
+            aria-pressed={isDontKnow}
+            className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-medium
+              transition-all duration-300
+              ${
+                isDontKnow
+                  ? "bg-amber-100 text-amber-700 ring-2 ring-amber-400 ring-offset-2"
+                  : "text-cool-gray hover:text-amber-600 hover:bg-amber-50"
+              }`}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          No lo sé
-        </button>
+            <svg
+              className={`w-4 h-4 transition-transform duration-300 ${isDontKnow ? "rotate-12" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            No lo sé
+          </button>
+        </div>
 
         {/* Next button */}
         <div className="mt-6 sm:mt-8 flex justify-end">

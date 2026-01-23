@@ -33,6 +33,7 @@ import {
   ThankYouScreen,
   MaintenanceScreen,
   DiagnosticHeader,
+  OfflineIndicator,
 } from "./components";
 
 // ============================================================================
@@ -383,6 +384,7 @@ export default function DiagnosticoPage() {
     const totalQuestions = 16;
     const currentQuestionNumber =
       stage === 1 ? questionIndex + 1 : 8 + questionIndex + 1;
+    const isOfflineMode = isLocalAttempt(attemptId);
 
     return (
       <div className="min-h-screen relative overflow-hidden">
@@ -412,6 +414,9 @@ export default function DiagnosticoPage() {
             onFatalError={() => setScreen("maintenance")}
           />
         </div>
+
+        {/* Offline mode indicator */}
+        {isOfflineMode && <OfflineIndicator />}
       </div>
     );
   }
