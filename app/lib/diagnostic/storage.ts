@@ -346,3 +346,69 @@ export function getStoredResponsesForStage(
 
   return responses;
 }
+
+// ============================================================================
+// FULL RESPONSE RECONSTRUCTION
+// ============================================================================
+
+/** Full response data needed for results calculation */
+export interface ReconstructedResponse {
+  question: MSTQuestion;
+  selectedAnswer: string | null;
+  isCorrect: boolean;
+  responseTime: number;
+  atoms: never[]; // Empty array, atoms not stored in localStorage
+}
+
+/**
+ * Reconstructs full DiagnosticResponse objects from localStorage.
+ * Used for results calculation, signup, and time-up scenarios.
+ *
+ * @param fallbackRoute - Route to use if not stored in response (session route)
+ * @returns Array of reconstructed responses with MSTQuestion objects
+ */
+export function reconstructFullResponses(
+  fallbackRoute: Route | null
+): ReconstructedResponse[] {
+  const storedResponses = getStoredResponses();
+  if (storedResponses.length === 0) return [];
+
+  const responses: ReconstructedResponse[] = [];
+
+  for (const stored of storedResponses) {
+    let question: MSTQuestion | undefined;
+
+    if (stored.stage === 1) {
+      question = MST_QUESTIONS.R1[stored.questionIndex];
+    } else if (stored.stage === 2) {
+      // Use stored route if available, otherwise fall back to passed route
+      const routeForQuestion = stored.route || fallbackRoute;
+      if (routeForQuestion) {
+        const stage2Questions = getStage2Questions(routeForQuestion);
+        question = stage2Questions[stored.questionIndex];
+      }
+    }
+
+    if (question) {
+      responses.push({
+        question,
+        selectedAnswer: stored.selectedAnswer,
+        isCorrect: stored.isCorrect,
+        responseTime: stored.responseTimeSeconds,
+        atoms: [],
+      });
+    }
+  }
+
+  return responses;
+}
+
+/**
+ * Gets the actual route used in stage 2 from stored responses.
+ * Falls back to the provided route if no stage 2 responses exist.
+ */
+export function getActualRouteFromStorage(fallbackRoute: Route): Route {
+  const storedResponses = getStoredResponses();
+  const stage2Response = storedResponses.find((r) => r.stage === 2);
+  return stage2Response?.route || fallbackRoute;
+}

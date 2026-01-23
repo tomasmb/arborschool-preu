@@ -23,6 +23,9 @@ export interface MSTQuestion {
   difficulty: number; // 0-1 scale
 }
 
+// Number of questions per stage (R1 has 8, each route has 8)
+export const QUESTIONS_PER_STAGE = 8;
+
 // Human-readable names for display
 export const AXIS_NAMES: Record<Axis, string> = {
   ALG: "Álgebra y Funciones",

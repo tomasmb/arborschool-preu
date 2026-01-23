@@ -6,6 +6,7 @@ import {
   getRoute,
   getStage2Questions,
   buildQuestionId,
+  QUESTIONS_PER_STAGE,
   type MSTQuestion,
   type Route,
 } from "@/lib/diagnostic/config";
@@ -27,6 +28,8 @@ import {
   calculateRemainingTime,
   clearAllDiagnosticData,
   getResponsesForReview,
+  reconstructFullResponses,
+  getActualRouteFromStorage,
 } from "@/lib/diagnostic/storage";
 import { type QuestionAtom } from "@/lib/diagnostic/qtiParser";
 import {
@@ -194,38 +197,14 @@ export default function DiagnosticoPage() {
 
   // Calculate results when time runs out
   const handleTimeUp = useCallback(() => {
-    const finalRoute = routeRef.current || "B";
+    const fallbackRoute = routeRef.current || "B";
 
-    // Get total correct from localStorage (source of truth after refreshes)
+    // Get data from localStorage (source of truth after refreshes)
     const storedResponses = getStoredResponses();
     const totalCorrect = storedResponses.filter((r) => r.isCorrect).length;
+    const reconstructedResponses = reconstructFullResponses(fallbackRoute);
+    const actualRoute = getActualRouteFromStorage(fallbackRoute);
 
-    // Reconstruct DiagnosticResponse objects from localStorage
-    const reconstructedResponses: DiagnosticResponse[] = [];
-    for (const stored of storedResponses) {
-      let question: MSTQuestion | undefined;
-      if (stored.stage === 1) {
-        question = MST_QUESTIONS.R1[stored.questionIndex];
-      } else if (stored.stage === 2) {
-        // Use stored route if available, otherwise fall back to session route
-        const routeForQuestion = stored.route || finalRoute;
-        const stage2Questions = getStage2Questions(routeForQuestion);
-        question = stage2Questions[stored.questionIndex];
-      }
-      if (question) {
-        reconstructedResponses.push({
-          question,
-          selectedAnswer: stored.selectedAnswer,
-          isCorrect: stored.isCorrect,
-          responseTime: stored.responseTimeSeconds,
-          atoms: [],
-        });
-      }
-    }
-
-    // Use route from first stage 2 response if available, else session route
-    const actualRoute =
-      storedResponses.find((r) => r.stage === 2)?.route || finalRoute;
     const calculatedResults = calculateDiagnosticResults(
       reconstructedResponses,
       actualRoute
@@ -398,7 +377,7 @@ export default function DiagnosticoPage() {
       const newResponses = [...r1Responses, responseData];
       setR1Responses(newResponses);
 
-      if (questionIndex === 7) {
+      if (questionIndex === QUESTIONS_PER_STAGE - 1) {
         // Get correct count from localStorage (source of truth after refreshes)
         const storedR1 = getStoredResponses().filter((r) => r.stage === 1);
         const correctCount = storedR1.filter((r) => r.isCorrect).length;
@@ -414,7 +393,7 @@ export default function DiagnosticoPage() {
       const newResponses = [...stage2Responses, responseData];
       setStage2Responses(newResponses);
 
-      if (questionIndex === 7) {
+      if (questionIndex === QUESTIONS_PER_STAGE - 1) {
         calculateAndShowResults(newResponses);
       } else {
         setQuestionIndex(questionIndex + 1);
@@ -478,36 +457,10 @@ export default function DiagnosticoPage() {
   };
 
   // Shared results display logic
-  const showResults = (totalCorrect: number, finalRoute: Route) => {
-    // Get stored responses for axis/skill performance calculation
-    const storedResponses = getStoredResponses();
+  const showResults = (totalCorrect: number, fallbackRoute: Route) => {
+    const reconstructedResponses = reconstructFullResponses(fallbackRoute);
+    const actualRoute = getActualRouteFromStorage(fallbackRoute);
 
-    // Reconstruct DiagnosticResponse objects from localStorage for results calc
-    const reconstructedResponses: DiagnosticResponse[] = [];
-    for (const stored of storedResponses) {
-      let question: MSTQuestion | undefined;
-      if (stored.stage === 1) {
-        question = MST_QUESTIONS.R1[stored.questionIndex];
-      } else if (stored.stage === 2) {
-        // Use stored route if available, otherwise fall back to session route
-        const routeForQuestion = stored.route || finalRoute;
-        const stage2Questions = getStage2Questions(routeForQuestion);
-        question = stage2Questions[stored.questionIndex];
-      }
-      if (question) {
-        reconstructedResponses.push({
-          question,
-          selectedAnswer: stored.selectedAnswer,
-          isCorrect: stored.isCorrect,
-          responseTime: stored.responseTimeSeconds,
-          atoms: [], // Atoms not needed for results calculation
-        });
-      }
-    }
-
-    // Use route from first stage 2 response if available, else passed route
-    const actualRoute =
-      storedResponses.find((r) => r.stage === 2)?.route || finalRoute;
     const calculatedResults = calculateDiagnosticResults(
       reconstructedResponses,
       actualRoute
@@ -534,37 +487,12 @@ export default function DiagnosticoPage() {
     try {
       // Get all data from localStorage (source of truth)
       const storedResponses = getStoredResponses();
-      const sessionRoute = route || "B";
-
-      // Reconstruct responses for atom mastery calculation
-      const reconstructedResponses: DiagnosticResponse[] = [];
-      for (const stored of storedResponses) {
-        let question: MSTQuestion | undefined;
-        if (stored.stage === 1) {
-          question = MST_QUESTIONS.R1[stored.questionIndex];
-        } else if (stored.stage === 2) {
-          // Use stored route if available, otherwise fall back to session route
-          const routeForQuestion = stored.route || sessionRoute;
-          const stage2Questions = getStage2Questions(routeForQuestion);
-          question = stage2Questions[stored.questionIndex];
-        }
-        if (question) {
-          reconstructedResponses.push({
-            question,
-            selectedAnswer: stored.selectedAnswer,
-            isCorrect: stored.isCorrect,
-            responseTime: stored.responseTimeSeconds,
-            atoms: [],
-          });
-        }
-      }
+      const fallbackRoute = route || "B";
+      const reconstructedResponses = reconstructFullResponses(fallbackRoute);
+      const actualRoute = getActualRouteFromStorage(fallbackRoute);
 
       const atomResults = computeAtomMastery(reconstructedResponses);
       const isLocal = isLocalAttempt(attemptId);
-
-      // Use route from first stage 2 response if available, else session route
-      const actualRoute =
-        storedResponses.find((r) => r.stage === 2)?.route || sessionRoute;
       const calculatedResults = calculateDiagnosticResults(
         reconstructedResponses,
         actualRoute
@@ -692,34 +620,9 @@ export default function DiagnosticoPage() {
     // Always get data from localStorage (source of truth after refreshes)
     const storedResponses = getStoredResponses();
     const totalCorrect = storedResponses.filter((r) => r.isCorrect).length;
-
-    // Reconstruct responses for all calculations
-    const sessionRoute = route || "B";
-    const reconstructedResponses: DiagnosticResponse[] = [];
-    for (const stored of storedResponses) {
-      let question: MSTQuestion | undefined;
-      if (stored.stage === 1) {
-        question = MST_QUESTIONS.R1[stored.questionIndex];
-      } else if (stored.stage === 2) {
-        // Use stored route if available, otherwise fall back to session route
-        const routeForQuestion = stored.route || sessionRoute;
-        const stage2Questions = getStage2Questions(routeForQuestion);
-        question = stage2Questions[stored.questionIndex];
-      }
-      if (question) {
-        reconstructedResponses.push({
-          question,
-          selectedAnswer: stored.selectedAnswer,
-          isCorrect: stored.isCorrect,
-          responseTime: stored.responseTimeSeconds,
-          atoms: [],
-        });
-      }
-    }
-
-    // Use route from first stage 2 response if available, else session route
-    const actualRoute =
-      storedResponses.find((r) => r.stage === 2)?.route || sessionRoute;
+    const fallbackRoute = route || "B";
+    const reconstructedResponses = reconstructFullResponses(fallbackRoute);
+    const actualRoute = getActualRouteFromStorage(fallbackRoute);
 
     // ALWAYS recalculate results from localStorage data (source of truth)
     // This ensures axisPerformance and skillPerformance are correct after refresh
@@ -749,32 +652,9 @@ export default function DiagnosticoPage() {
   // Signup screen
   if (screen === "signup") {
     // Recalculate score from localStorage (source of truth)
-    const storedResponses = getStoredResponses();
-    const sessionRoute = route || "B";
-    const reconstructedResponses: DiagnosticResponse[] = [];
-    for (const stored of storedResponses) {
-      let question: MSTQuestion | undefined;
-      if (stored.stage === 1) {
-        question = MST_QUESTIONS.R1[stored.questionIndex];
-      } else if (stored.stage === 2) {
-        // Use stored route if available, otherwise fall back to session route
-        const routeForQuestion = stored.route || sessionRoute;
-        const stage2Questions = getStage2Questions(routeForQuestion);
-        question = stage2Questions[stored.questionIndex];
-      }
-      if (question) {
-        reconstructedResponses.push({
-          question,
-          selectedAnswer: stored.selectedAnswer,
-          isCorrect: stored.isCorrect,
-          responseTime: stored.responseTimeSeconds,
-          atoms: [],
-        });
-      }
-    }
-    // Use route from first stage 2 response if available, else session route
-    const actualRoute =
-      storedResponses.find((r) => r.stage === 2)?.route || sessionRoute;
+    const fallbackRoute = route || "B";
+    const reconstructedResponses = reconstructFullResponses(fallbackRoute);
+    const actualRoute = getActualRouteFromStorage(fallbackRoute);
     const calculatedResults = calculateDiagnosticResults(
       reconstructedResponses,
       actualRoute
