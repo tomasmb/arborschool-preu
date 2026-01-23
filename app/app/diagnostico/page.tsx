@@ -18,7 +18,6 @@ import {
 import {
   saveResponseToLocalStorage,
   getStoredResponses,
-  clearStoredResponses,
   saveAttemptId,
   getStoredAttemptId,
   isLocalAttempt,
@@ -99,18 +98,10 @@ export default function DiagnosticoPage() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const questionStartTime = useRef<number>(Date.now());
 
-  // Refs for timer callback (to avoid stale closures)
-  const r1ResponsesRef = useRef(r1Responses);
-  const stage2ResponsesRef = useRef(stage2Responses);
+  // Ref for timer callback (to avoid stale closure)
   const routeRef = useRef(route);
 
-  // Keep refs in sync with state
-  useEffect(() => {
-    r1ResponsesRef.current = r1Responses;
-  }, [r1Responses]);
-  useEffect(() => {
-    stage2ResponsesRef.current = stage2Responses;
-  }, [stage2Responses]);
+  // Keep ref in sync with state
   useEffect(() => {
     routeRef.current = route;
   }, [route]);
@@ -163,16 +154,22 @@ export default function DiagnosticoPage() {
     // Don't save welcome or thankyou screens (these are entry/exit points)
     if (screen === "welcome" || screen === "thankyou") return;
 
+    // Always calculate counts from localStorage (source of truth after refreshes)
+    const storedResponses = getStoredResponses();
+    const storedR1Correct = storedResponses
+      .filter((r) => r.stage === 1)
+      .filter((r) => r.isCorrect).length;
+    const storedTotalCorrect = storedResponses.filter(
+      (r) => r.isCorrect
+    ).length;
+
     saveSessionState({
       screen,
       stage,
       questionIndex,
       route,
-      r1Correct:
-        r1CorrectCount || r1Responses.filter((r) => r.isCorrect).length,
-      totalCorrect:
-        totalCorrectCount ||
-        [...r1Responses, ...stage2Responses].filter((r) => r.isCorrect).length,
+      r1Correct: storedR1Correct,
+      totalCorrect: storedTotalCorrect,
       timerStartedAt: timerStartedAt || Date.now(),
       results: results
         ? {
@@ -191,27 +188,50 @@ export default function DiagnosticoPage() {
     route,
     r1CorrectCount,
     totalCorrectCount,
-    r1Responses,
-    stage2Responses,
     timerStartedAt,
     results,
   ]);
 
   // Calculate results when time runs out
   const handleTimeUp = useCallback(() => {
-    const allResponses = [
-      ...r1ResponsesRef.current,
-      ...stage2ResponsesRef.current,
-    ];
     const finalRoute = routeRef.current || "B";
 
-    // Use consolidated results calculator
+    // Get total correct from localStorage (source of truth after refreshes)
+    const storedResponses = getStoredResponses();
+    const totalCorrect = storedResponses.filter((r) => r.isCorrect).length;
+
+    // Reconstruct DiagnosticResponse objects from localStorage
+    const reconstructedResponses: DiagnosticResponse[] = [];
+    for (const stored of storedResponses) {
+      let question: MSTQuestion | undefined;
+      if (stored.stage === 1) {
+        question = MST_QUESTIONS.R1[stored.questionIndex];
+      } else if (stored.stage === 2) {
+        // Use stored route if available, otherwise fall back to session route
+        const routeForQuestion = stored.route || finalRoute;
+        const stage2Questions = getStage2Questions(routeForQuestion);
+        question = stage2Questions[stored.questionIndex];
+      }
+      if (question) {
+        reconstructedResponses.push({
+          question,
+          selectedAnswer: stored.selectedAnswer,
+          isCorrect: stored.isCorrect,
+          responseTime: stored.responseTimeSeconds,
+          atoms: [],
+        });
+      }
+    }
+
+    // Use route from first stage 2 response if available, else session route
+    const actualRoute =
+      storedResponses.find((r) => r.stage === 2)?.route || finalRoute;
     const calculatedResults = calculateDiagnosticResults(
-      allResponses,
-      finalRoute
+      reconstructedResponses,
+      actualRoute
     );
     setResults(calculatedResults);
-    setTotalCorrectCount(allResponses.filter((r) => r.isCorrect).length);
+    setTotalCorrectCount(totalCorrect);
 
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -347,6 +367,7 @@ export default function DiagnosticoPage() {
       responseTimeSeconds: responseTime,
       stage,
       questionIndex,
+      route: stage === 2 ? route : null, // Save route for stage 2 reconstruction
       answeredAt: new Date().toISOString(),
     });
 
@@ -378,7 +399,9 @@ export default function DiagnosticoPage() {
       setR1Responses(newResponses);
 
       if (questionIndex === 7) {
-        const correctCount = newResponses.filter((r) => r.isCorrect).length;
+        // Get correct count from localStorage (source of truth after refreshes)
+        const storedR1 = getStoredResponses().filter((r) => r.stage === 1);
+        const correctCount = storedR1.filter((r) => r.isCorrect).length;
         const determinedRoute = getRoute(correctCount);
         setRoute(determinedRoute);
         setR1CorrectCount(correctCount);
@@ -422,11 +445,17 @@ export default function DiagnosticoPage() {
 
   // Calculate and display results
   const calculateAndShowResults = async (
-    finalStage2Responses: DiagnosticResponse[]
+    _finalStage2Responses: DiagnosticResponse[]
   ) => {
-    const allResponses = [...r1Responses, ...finalStage2Responses];
+    // Get all data from localStorage (source of truth after refreshes)
+    const storedResponses = getStoredResponses();
+    const totalCorrect = storedResponses.filter((r) => r.isCorrect).length;
+    const stage1Correct = storedResponses
+      .filter((r) => r.stage === 1)
+      .filter((r) => r.isCorrect).length;
+
     const finalRoute = route || "B";
-    showResults(allResponses, finalRoute);
+    showResults(totalCorrect, finalRoute);
 
     // Complete test on API if we have a valid (non-local) attempt
     if (!isLocalAttempt(attemptId)) {
@@ -437,8 +466,8 @@ export default function DiagnosticoPage() {
           body: JSON.stringify({
             attemptId,
             totalQuestions: 16,
-            correctAnswers: allResponses.filter((r) => r.isCorrect).length,
-            stage1Score: r1Responses.filter((r) => r.isCorrect).length,
+            correctAnswers: totalCorrect,
+            stage1Score: stage1Correct,
             stage2Difficulty: finalRoute,
           }),
         });
@@ -449,17 +478,42 @@ export default function DiagnosticoPage() {
   };
 
   // Shared results display logic
-  const showResults = (
-    allResponses: DiagnosticResponse[],
-    finalRoute: Route
-  ) => {
-    // Use consolidated results calculator
+  const showResults = (totalCorrect: number, finalRoute: Route) => {
+    // Get stored responses for axis/skill performance calculation
+    const storedResponses = getStoredResponses();
+
+    // Reconstruct DiagnosticResponse objects from localStorage for results calc
+    const reconstructedResponses: DiagnosticResponse[] = [];
+    for (const stored of storedResponses) {
+      let question: MSTQuestion | undefined;
+      if (stored.stage === 1) {
+        question = MST_QUESTIONS.R1[stored.questionIndex];
+      } else if (stored.stage === 2) {
+        // Use stored route if available, otherwise fall back to session route
+        const routeForQuestion = stored.route || finalRoute;
+        const stage2Questions = getStage2Questions(routeForQuestion);
+        question = stage2Questions[stored.questionIndex];
+      }
+      if (question) {
+        reconstructedResponses.push({
+          question,
+          selectedAnswer: stored.selectedAnswer,
+          isCorrect: stored.isCorrect,
+          responseTime: stored.responseTimeSeconds,
+          atoms: [], // Atoms not needed for results calculation
+        });
+      }
+    }
+
+    // Use route from first stage 2 response if available, else passed route
+    const actualRoute =
+      storedResponses.find((r) => r.stage === 2)?.route || finalRoute;
     const calculatedResults = calculateDiagnosticResults(
-      allResponses,
-      finalRoute
+      reconstructedResponses,
+      actualRoute
     );
     setResults(calculatedResults);
-    setTotalCorrectCount(allResponses.filter((r) => r.isCorrect).length);
+    setTotalCorrectCount(totalCorrect);
 
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -468,10 +522,6 @@ export default function DiagnosticoPage() {
 
     setScreen("results");
   };
-
-  // Compute atom mastery from all responses
-  const getAtomResults = () =>
-    computeAtomMastery([...r1Responses, ...stage2Responses]);
 
   // Handle email signup
   const handleSignup = async (e: React.FormEvent) => {
@@ -482,9 +532,43 @@ export default function DiagnosticoPage() {
     setSignupError("");
 
     try {
-      const atomResults = getAtomResults();
+      // Get all data from localStorage (source of truth)
       const storedResponses = getStoredResponses();
+      const sessionRoute = route || "B";
+
+      // Reconstruct responses for atom mastery calculation
+      const reconstructedResponses: DiagnosticResponse[] = [];
+      for (const stored of storedResponses) {
+        let question: MSTQuestion | undefined;
+        if (stored.stage === 1) {
+          question = MST_QUESTIONS.R1[stored.questionIndex];
+        } else if (stored.stage === 2) {
+          // Use stored route if available, otherwise fall back to session route
+          const routeForQuestion = stored.route || sessionRoute;
+          const stage2Questions = getStage2Questions(routeForQuestion);
+          question = stage2Questions[stored.questionIndex];
+        }
+        if (question) {
+          reconstructedResponses.push({
+            question,
+            selectedAnswer: stored.selectedAnswer,
+            isCorrect: stored.isCorrect,
+            responseTime: stored.responseTimeSeconds,
+            atoms: [],
+          });
+        }
+      }
+
+      const atomResults = computeAtomMastery(reconstructedResponses);
       const isLocal = isLocalAttempt(attemptId);
+
+      // Use route from first stage 2 response if available, else session route
+      const actualRoute =
+        storedResponses.find((r) => r.stage === 2)?.route || sessionRoute;
+      const calculatedResults = calculateDiagnosticResults(
+        reconstructedResponses,
+        actualRoute
+      );
 
       // Build signup payload with all available data
       const signupPayload = {
@@ -495,17 +579,13 @@ export default function DiagnosticoPage() {
         diagnosticData: isLocal
           ? {
               responses: storedResponses,
-              results: results
-                ? {
-                    paesMin: results.paesMin,
-                    paesMax: results.paesMax,
-                    level: results.level,
-                    route,
-                    totalCorrect: [...r1Responses, ...stage2Responses].filter(
-                      (r) => r.isCorrect
-                    ).length,
-                  }
-                : null,
+              results: {
+                paesMin: calculatedResults.paesMin,
+                paesMax: calculatedResults.paesMax,
+                level: calculatedResults.level,
+                route: actualRoute,
+                totalCorrect: storedResponses.filter((r) => r.isCorrect).length,
+              },
             }
           : null,
       };
@@ -593,9 +673,9 @@ export default function DiagnosticoPage() {
 
   // Transition screen
   if (screen === "transition" && route) {
-    // Use cached count (persists across refresh) or calculate from responses
-    const r1Correct =
-      r1CorrectCount || r1Responses.filter((r) => r.isCorrect).length;
+    // Always get count from localStorage (source of truth)
+    const storedR1 = getStoredResponses().filter((r) => r.stage === 1);
+    const r1Correct = storedR1.filter((r) => r.isCorrect).length;
     return (
       <div className="min-h-screen bg-gradient-to-b from-cream to-off-white">
         <TransitionScreen
@@ -608,27 +688,56 @@ export default function DiagnosticoPage() {
   }
 
   // Results screen
-  if (screen === "results" && results) {
-    const allResponses = [...r1Responses, ...stage2Responses];
-    // Use cached count (persists across refresh) or calculate from responses
-    const totalCorrect =
-      totalCorrectCount || allResponses.filter((r) => r.isCorrect).length;
-    const atomResults = getAtomResults();
+  if (screen === "results") {
+    // Always get data from localStorage (source of truth after refreshes)
+    const storedResponses = getStoredResponses();
+    const totalCorrect = storedResponses.filter((r) => r.isCorrect).length;
 
-    // Prepare responses for review - use in-memory or reconstruct from localStorage
-    const responsesForReview =
-      allResponses.length > 0
-        ? allResponses.map((r) => ({
-            question: r.question,
-            selectedAnswer: r.selectedAnswer,
-            isCorrect: r.isCorrect,
-          }))
-        : getResponsesForReview(route);
+    // Reconstruct responses for all calculations
+    const sessionRoute = route || "B";
+    const reconstructedResponses: DiagnosticResponse[] = [];
+    for (const stored of storedResponses) {
+      let question: MSTQuestion | undefined;
+      if (stored.stage === 1) {
+        question = MST_QUESTIONS.R1[stored.questionIndex];
+      } else if (stored.stage === 2) {
+        // Use stored route if available, otherwise fall back to session route
+        const routeForQuestion = stored.route || sessionRoute;
+        const stage2Questions = getStage2Questions(routeForQuestion);
+        question = stage2Questions[stored.questionIndex];
+      }
+      if (question) {
+        reconstructedResponses.push({
+          question,
+          selectedAnswer: stored.selectedAnswer,
+          isCorrect: stored.isCorrect,
+          responseTime: stored.responseTimeSeconds,
+          atoms: [],
+        });
+      }
+    }
+
+    // Use route from first stage 2 response if available, else session route
+    const actualRoute =
+      storedResponses.find((r) => r.stage === 2)?.route || sessionRoute;
+
+    // ALWAYS recalculate results from localStorage data (source of truth)
+    // This ensures axisPerformance and skillPerformance are correct after refresh
+    const calculatedResults = calculateDiagnosticResults(
+      reconstructedResponses,
+      actualRoute
+    );
+
+    // Compute atom results from reconstructed responses
+    const atomResults = computeAtomMastery(reconstructedResponses);
+
+    // Prepare responses for review drawer
+    const responsesForReview = getResponsesForReview(actualRoute);
 
     return (
       <ResultsScreen
-        results={results}
-        route={route || "B"}
+        results={calculatedResults}
+        route={actualRoute}
         totalCorrect={totalCorrect}
         atomResults={atomResults}
         responses={responsesForReview}
@@ -638,8 +747,42 @@ export default function DiagnosticoPage() {
   }
 
   // Signup screen
-  if (screen === "signup" && results) {
-    const midScore = Math.round((results.paesMin + results.paesMax) / 2);
+  if (screen === "signup") {
+    // Recalculate score from localStorage (source of truth)
+    const storedResponses = getStoredResponses();
+    const sessionRoute = route || "B";
+    const reconstructedResponses: DiagnosticResponse[] = [];
+    for (const stored of storedResponses) {
+      let question: MSTQuestion | undefined;
+      if (stored.stage === 1) {
+        question = MST_QUESTIONS.R1[stored.questionIndex];
+      } else if (stored.stage === 2) {
+        // Use stored route if available, otherwise fall back to session route
+        const routeForQuestion = stored.route || sessionRoute;
+        const stage2Questions = getStage2Questions(routeForQuestion);
+        question = stage2Questions[stored.questionIndex];
+      }
+      if (question) {
+        reconstructedResponses.push({
+          question,
+          selectedAnswer: stored.selectedAnswer,
+          isCorrect: stored.isCorrect,
+          responseTime: stored.responseTimeSeconds,
+          atoms: [],
+        });
+      }
+    }
+    // Use route from first stage 2 response if available, else session route
+    const actualRoute =
+      storedResponses.find((r) => r.stage === 2)?.route || sessionRoute;
+    const calculatedResults = calculateDiagnosticResults(
+      reconstructedResponses,
+      actualRoute
+    );
+    const midScore = Math.round(
+      (calculatedResults.paesMin + calculatedResults.paesMax) / 2
+    );
+
     return (
       <SignupScreen
         email={email}
@@ -647,7 +790,10 @@ export default function DiagnosticoPage() {
         onSubmit={handleSignup}
         status={signupStatus}
         error={signupError}
-        onSkip={() => setScreen("thankyou")}
+        onSkip={() => {
+          clearAllDiagnosticData();
+          setScreen("thankyou");
+        }}
         score={midScore}
       />
     );

@@ -37,6 +37,8 @@ export interface StoredResponse {
   responseTimeSeconds: number;
   stage: 1 | 2;
   questionIndex: number;
+  /** Route at time of answering (for stage 2 question reconstruction) */
+  route?: Route | null;
   answeredAt: string;
 }
 
@@ -265,9 +267,10 @@ export interface ResponseForReview {
 /**
  * Reconstruct responses for review from localStorage.
  * Maps stored responses back to MSTQuestion objects using the config.
+ * Uses stored route from each response if available, falls back to passed route.
  */
 export function getResponsesForReview(
-  route: Route | null
+  fallbackRoute: Route | null
 ): ResponseForReview[] {
   const storedResponses = getStoredResponses();
   if (storedResponses.length === 0) return [];
@@ -280,10 +283,56 @@ export function getResponsesForReview(
     if (stored.stage === 1) {
       // Stage 1 questions come from R1
       question = MST_QUESTIONS.R1[stored.questionIndex];
-    } else if (stored.stage === 2 && route) {
-      // Stage 2 questions come from the determined route
-      const stage2Questions = getStage2Questions(route);
-      question = stage2Questions[stored.questionIndex];
+    } else if (stored.stage === 2) {
+      // Use stored route if available, otherwise fall back to passed route
+      const routeForQuestion = stored.route || fallbackRoute;
+      if (routeForQuestion) {
+        const stage2Questions = getStage2Questions(routeForQuestion);
+        question = stage2Questions[stored.questionIndex];
+      }
+    }
+
+    if (question) {
+      responses.push({
+        question,
+        selectedAnswer: stored.selectedAnswer,
+        isCorrect: stored.isCorrect,
+      });
+    }
+  }
+
+  return responses;
+}
+
+/**
+ * Get stored responses for a specific stage, reconstructed with MSTQuestion.
+ * Used to restore r1Responses/stage2Responses after page refresh.
+ * Uses stored route from each response if available, falls back to passed route.
+ */
+export function getStoredResponsesForStage(
+  stage: 1 | 2,
+  fallbackRoute: Route | null
+): ResponseForReview[] {
+  const storedResponses = getStoredResponses();
+  const stageResponses = storedResponses.filter((r) => r.stage === stage);
+
+  // Sort by questionIndex to maintain order
+  stageResponses.sort((a, b) => a.questionIndex - b.questionIndex);
+
+  const responses: ResponseForReview[] = [];
+
+  for (const stored of stageResponses) {
+    let question: MSTQuestion | undefined;
+
+    if (stage === 1) {
+      question = MST_QUESTIONS.R1[stored.questionIndex];
+    } else if (stage === 2) {
+      // Use stored route if available, otherwise fall back to passed route
+      const routeForQuestion = stored.route || fallbackRoute;
+      if (routeForQuestion) {
+        const stage2Questions = getStage2Questions(routeForQuestion);
+        question = stage2Questions[stored.questionIndex];
+      }
     }
 
     if (question) {
