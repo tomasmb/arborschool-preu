@@ -305,25 +305,44 @@ export function ResultsScreen({
           {/* Axis Performance */}
           <CollapsibleSection
             title="Tu Perfil por Eje"
-            summary={`${AXIS_NAMES[strongestAxis]} es tu fortaleza`}
+            summary={
+              routesLoading
+                ? "Calculando..."
+                : `${AXIS_NAMES[strongestAxis]} es tu fortaleza`
+            }
             helpText="Muestra tu dominio en cada eje temático de la PAES. Las barras indican qué porcentaje de los átomos de conocimiento dominas en cada área."
             defaultExpanded={true}
             delay={300}
             className="mb-10"
           >
-            <div className="card p-6 space-y-5">
-              {sortedAxes.map((axis, index) => (
-                <AxisProgressBar
-                  key={axis}
-                  axis={axis}
-                  data={results.axisPerformance[axis]}
-                  isStrength={axis === strongestAxis}
-                  isOpportunity={axis === weakestAxis}
-                  delay={600 + index * 150}
-                  actualMastery={actualMasteryByAxis.get(axis)}
-                />
-              ))}
-            </div>
+            {routesLoading ? (
+              <div className="card p-6">
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+                </div>
+              </div>
+            ) : (
+              <div className="card p-6 space-y-5">
+                {sortedAxes.map((axis, index) => {
+                  const mastery = actualMasteryByAxis.get(axis);
+                  if (!mastery) {
+                    console.error(`Missing mastery data for axis ${axis}`);
+                    return null;
+                  }
+                  return (
+                    <AxisProgressBar
+                      key={axis}
+                      axis={axis}
+                      data={results.axisPerformance[axis]}
+                      isStrength={axis === strongestAxis}
+                      isOpportunity={axis === weakestAxis}
+                      delay={600 + index * 150}
+                      actualMastery={mastery}
+                    />
+                  );
+                })}
+              </div>
+            )}
           </CollapsibleSection>
 
           {/* Learning Routes */}
