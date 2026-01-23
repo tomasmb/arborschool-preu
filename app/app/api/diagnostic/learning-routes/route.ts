@@ -4,7 +4,6 @@ import {
   formatRouteForDisplay,
   calculatePAESImprovement,
 } from "@/lib/diagnostic/questionUnlock";
-import { estimateCorrectFromScore } from "@/lib/diagnostic/paesScoreTable";
 
 /**
  * POST /api/diagnostic/learning-routes
@@ -48,8 +47,18 @@ export async function POST(request: NextRequest) {
       currentPaesScore ? { currentPaesScore } : undefined
     );
 
-    // Format routes for frontend display
-    const formattedRoutes = analysis.routes.slice(0, 4).map((route) => ({
+    // Get routes to process (limit to top 4)
+    const topRoutes = analysis.routes.slice(0, 4);
+
+    // Calculate total questions unlocked BEFORE formatting (raw totals across all tests)
+    // This is needed for accurate overall improvement calculation
+    const totalPotentialUnlocks = topRoutes.reduce(
+      (sum, r) => sum + r.totalQuestionsUnlocked,
+      0
+    );
+
+    // Format routes for frontend display (questionsUnlocked becomes per-test average)
+    const formattedRoutes = topRoutes.map((route) => ({
       ...formatRouteForDisplay(route),
       axis: route.axis,
       atoms: route.atoms.map((a) => ({
@@ -70,18 +79,9 @@ export async function POST(request: NextRequest) {
         axis: a.axis,
         questionsUnlocked: a.immediateUnlocks.length,
       }));
-
-    // Calculate overall improvement potential using actual PAES table
-    const totalPotentialUnlocks = formattedRoutes.reduce(
-      (sum, r) => sum + r.questionsUnlocked,
-      0
-    );
-    // Convert PAES score to correct answers for accurate improvement calculation
-    const currentCorrect = currentPaesScore
-      ? estimateCorrectFromScore(currentPaesScore)
-      : undefined;
+    // Calculate overall improvement using student's PAES score directly
     const improvement = calculatePAESImprovement(totalPotentialUnlocks, {
-      currentCorrect,
+      currentPaesScore,
     });
 
     return NextResponse.json({

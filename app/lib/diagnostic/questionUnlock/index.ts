@@ -234,7 +234,7 @@ export function formatRouteForDisplay(route: LearningRoute): {
 import {
   calculateImprovement as calcPaesImprovement,
   capImprovementToMax,
-  getPaesScore,
+  estimateCorrectFromScore,
   PAES_TOTAL_QUESTIONS,
 } from "../paesScoreTable";
 
@@ -243,14 +243,18 @@ import {
  * Takes into account:
  * - Questions are spread across multiple tests
  * - The official PAES conversion table (non-linear)
- * - Student's estimated current score
+ * - Student's current PAES score
  * - Caps improvement to never exceed max PAES score (1000)
+ *
+ * @param questionsUnlocked - Total questions unlocked across all tests
+ * @param config.currentPaesScore - Student's current PAES score (100-1000)
+ * @param config.numTests - Number of tests (default: 4)
  */
 export function calculatePAESImprovement(
   questionsUnlocked: number,
   config: {
     numTests?: number;
-    currentCorrect?: number;
+    currentPaesScore?: number;
   } = {}
 ): {
   minPoints: number;
@@ -258,10 +262,10 @@ export function calculatePAESImprovement(
   questionsPerTest: number;
   percentageOfTest: number;
 } {
-  const numTests = config.numTests || 4; // We have 4 official tests
-  // Default to 20 correct if not provided (roughly average student)
-  const currentCorrect = config.currentCorrect ?? 20;
-  const currentScore = getPaesScore(currentCorrect);
+  const numTests = config.numTests || 4;
+  // Default to 460 pts (~20 correct) if not provided
+  const currentScore = config.currentPaesScore ?? 460;
+  const currentCorrect = estimateCorrectFromScore(currentScore);
 
   // Questions unlocked are spread across tests, so divide by number of tests
   const avgQuestionsUnlockedPerTest = Math.round(questionsUnlocked / numTests);
@@ -277,7 +281,8 @@ export function calculatePAESImprovement(
   const rawMin = Math.round(improvement.improvement * (1 - uncertaintyFactor));
   const rawMax = Math.round(improvement.improvement * (1 + uncertaintyFactor));
 
-  // Cap improvements to ensure we never promise exceeding 1000 points
+  // Cap improvements using the ORIGINAL score (not the table lookup)
+  // This ensures consistency with per-route calculations
   const minPoints = capImprovementToMax(currentScore, rawMin);
   const maxPoints = capImprovementToMax(currentScore, rawMax);
 
