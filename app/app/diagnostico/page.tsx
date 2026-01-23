@@ -656,16 +656,24 @@ export default function DiagnosticoPage() {
 
   // Results screen
   if (screen === "results" && results) {
-    const totalCorrect = [...r1Responses, ...stage2Responses].filter(
-      (r) => r.isCorrect
-    ).length;
+    const allResponses = [...r1Responses, ...stage2Responses];
+    const totalCorrect = allResponses.filter((r) => r.isCorrect).length;
     const atomResultsForRoutes = computeAtomResults();
+
+    // Prepare responses for review (strip atoms to reduce data)
+    const responsesForReview = allResponses.map((r) => ({
+      question: r.question,
+      selectedAnswer: r.selectedAnswer,
+      isCorrect: r.isCorrect,
+    }));
+
     return (
       <ResultsScreen
         results={results}
         route={route || "B"}
         totalCorrect={totalCorrect}
         atomResults={atomResultsForRoutes}
+        responses={responsesForReview}
         onSignup={() => setScreen("signup")}
       />
     );

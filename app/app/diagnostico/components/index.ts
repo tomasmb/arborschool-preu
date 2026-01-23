@@ -8,3 +8,5 @@ export { ResultsScreen, type AtomResult } from "./ResultsScreen";
 export { SignupScreen } from "./SignupScreen";
 export { ThankYouScreen } from "./ThankYouScreen";
 export { Confetti } from "./Confetti";
+export { QuestionReviewDrawer, type ResponseForReview } from "./QuestionReviewDrawer";
+export { QuestionReviewItem } from "./QuestionReviewItem";
