@@ -93,12 +93,22 @@ export function getWeeksByStudyTime(atomsRemaining: number) {
 // AXIS PROGRESS BAR
 // ============================================================================
 
+/** Actual mastery data from the API (calculated via transitivity) */
+export interface ActualAxisMastery {
+  axis: string;
+  totalAtoms: number;
+  masteredAtoms: number;
+  masteryPercentage: number;
+}
+
 interface AxisProgressBarProps {
   axis: Axis;
   data: AxisPerformance;
   isStrength: boolean;
   isOpportunity: boolean;
   delay: number;
+  /** Actual mastery data from API (uses transitivity) - preferred over estimate */
+  actualMastery?: ActualAxisMastery;
 }
 
 export function AxisProgressBar({
@@ -107,12 +117,16 @@ export function AxisProgressBar({
   isStrength,
   isOpportunity,
   delay,
+  actualMastery,
 }: AxisProgressBarProps) {
   const [isVisible, setIsVisible] = useState(false);
-  const atomsDominated = calculateAtomsDominated(
-    data.percentage,
-    ATOM_COUNTS[axis]
-  );
+
+  // Use actual mastery data if available, otherwise fall back to estimate
+  const masteredAtoms =
+    actualMastery?.masteredAtoms ??
+    calculateAtomsDominated(data.percentage, ATOM_COUNTS[axis]);
+  const totalAtoms = actualMastery?.totalAtoms ?? ATOM_COUNTS[axis];
+  const percentage = actualMastery?.masteryPercentage ?? data.percentage;
 
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), delay);
@@ -144,18 +158,18 @@ export function AxisProgressBar({
           )}
         </div>
         <span className="text-sm text-cool-gray">
-          {atomsDominated}/{ATOM_COUNTS[axis]} atomos
+          {masteredAtoms}/{totalAtoms} atomos
         </span>
       </div>
       <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
         <div
-          className={`h-full rounded-full transition-all duration-1000 ease-out ${getBarColor(data.percentage)}`}
-          style={{ width: isVisible ? `${data.percentage}%` : "0%" }}
+          className={`h-full rounded-full transition-all duration-1000 ease-out ${getBarColor(percentage)}`}
+          style={{ width: isVisible ? `${percentage}%` : "0%" }}
         />
       </div>
       <div className="text-right mt-1">
         <span className="text-sm font-semibold text-charcoal">
-          {data.percentage}%
+          {percentage}%
         </span>
       </div>
     </div>

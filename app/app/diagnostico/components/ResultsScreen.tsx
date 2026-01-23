@@ -26,7 +26,20 @@ import {
   getWeeksByStudyTime,
   TOTAL_ATOMS,
   type AxisPerformance,
+  type ActualAxisMastery,
 } from "./ResultsComponents";
+
+// ============================================================================
+// AXIS MAPPING
+// ============================================================================
+
+/** Maps database axis names to frontend Axis codes */
+const DB_AXIS_TO_AXIS: Record<string, Axis> = {
+  algebra_y_funciones: "ALG",
+  numeros: "NUM",
+  geometria: "GEO",
+  probabilidad_y_estadistica: "PROB",
+};
 
 // ============================================================================
 // TYPES
@@ -78,9 +91,6 @@ export function ResultsScreen({
 }: ResultsScreenProps) {
   const [showContent, setShowContent] = useState(false);
   const [showReviewDrawer, setShowReviewDrawer] = useState(false);
-  const motivational = getMotivationalMessage(results.axisPerformance);
-  const atomsRemaining = calculateTotalAtomsRemaining(results.axisPerformance);
-  const weeksByStudy = getWeeksByStudyTime(atomsRemaining);
 
   // Prepare responses for review drawer
   const responsesForReview: ResponseForReview[] = useMemo(() => {
@@ -126,13 +136,76 @@ export function ResultsScreen({
     return 0;
   }, [sortedRoutes]);
 
-  const sortedAxes = (Object.keys(results.axisPerformance) as Axis[]).sort(
-    (a, b) =>
-      results.axisPerformance[b].percentage -
-      results.axisPerformance[a].percentage
-  );
+  // Check if student has very high mastery (can't improve much due to data coverage)
+  // This happens when they've mastered most atoms that have question mappings
+  const isHighMastery = useMemo(() => {
+    if (!routesData?.summary) return false;
+    const { masteredAtoms, totalAtoms, unlockedQuestions, totalQuestions } =
+      routesData.summary;
+    // High mastery: >80% atoms mastered OR >90% questions unlocked
+    return (
+      masteredAtoms / totalAtoms > 0.8 ||
+      unlockedQuestions / totalQuestions > 0.9
+    );
+  }, [routesData?.summary]);
+
+  // Build a lookup map for actual mastery by axis (from API with transitivity)
+  const actualMasteryByAxis = useMemo(() => {
+    const map = new Map<Axis, ActualAxisMastery>();
+    if (routesData?.masteryByAxis) {
+      for (const m of routesData.masteryByAxis) {
+        const axis = DB_AXIS_TO_AXIS[m.axis];
+        if (axis) {
+          map.set(axis, m);
+        }
+      }
+    }
+    return map;
+  }, [routesData?.masteryByAxis]);
+
+  // Sort axes by actual mastery percentage if available, otherwise by question percentage
+  const sortedAxes = useMemo(() => {
+    return (Object.keys(results.axisPerformance) as Axis[]).sort((a, b) => {
+      const aData = actualMasteryByAxis.get(a);
+      const bData = actualMasteryByAxis.get(b);
+      const aPct =
+        aData?.masteryPercentage ?? results.axisPerformance[a].percentage;
+      const bPct =
+        bData?.masteryPercentage ?? results.axisPerformance[b].percentage;
+      return bPct - aPct;
+    });
+  }, [results.axisPerformance, actualMasteryByAxis]);
+
   const strongestAxis = sortedAxes[0];
   const weakestAxis = sortedAxes[sortedAxes.length - 1];
+
+  // Calculate motivational message using actual mastery data when available
+  const motivational = useMemo(() => {
+    // Build performance record with actual mastery percentages if available
+    const effectivePerformance: Record<Axis, AxisPerformance> = {
+      ...results.axisPerformance,
+    };
+    for (const axis of Object.keys(effectivePerformance) as Axis[]) {
+      const actual = actualMasteryByAxis.get(axis);
+      if (actual) {
+        effectivePerformance[axis] = {
+          ...effectivePerformance[axis],
+          percentage: actual.masteryPercentage,
+        };
+      }
+    }
+    return getMotivationalMessage(effectivePerformance);
+  }, [results.axisPerformance, actualMasteryByAxis]);
+
+  // Calculate atoms remaining - prefer API data (with transitivity) over estimate
+  const atomsRemaining = useMemo(() => {
+    if (routesData?.summary) {
+      return TOTAL_ATOMS - routesData.summary.masteredAtoms;
+    }
+    return calculateTotalAtomsRemaining(results.axisPerformance);
+  }, [routesData?.summary, results.axisPerformance]);
+
+  const weeksByStudy = getWeeksByStudyTime(atomsRemaining);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowContent(true), 500);
@@ -184,10 +257,25 @@ export function ResultsScreen({
               </div>
               <p className="text-sm text-cool-gray mt-2 flex items-center justify-center gap-1">
                 {Icons.trendUp("w-4 h-4 text-success")}
-                Con trabajo enfocado puedes subir{" "}
-                <strong className="text-success ml-1">
-                  +{potentialImprovement} puntos
-                </strong>
+                {potentialImprovement > 0 ? (
+                  <>
+                    Con trabajo enfocado puedes subir{" "}
+                    <strong className="text-success ml-1">
+                      +{potentialImprovement} puntos
+                    </strong>
+                  </>
+                ) : isHighMastery ? (
+                  <strong className="text-success ml-1">
+                    Ya dominas la gran mayoria del contenido evaluable
+                  </strong>
+                ) : (
+                  <>
+                    Con trabajo enfocado puedes subir{" "}
+                    <strong className="text-success ml-1">
+                      +{potentialImprovement} puntos
+                    </strong>
+                  </>
+                )}
               </p>
             </div>
 
@@ -232,6 +320,7 @@ export function ResultsScreen({
                   isStrength={axis === strongestAxis}
                   isOpportunity={axis === weakestAxis}
                   delay={600 + index * 150}
+                  actualMastery={actualMasteryByAxis.get(axis)}
                 />
               ))}
             </div>
@@ -383,10 +472,14 @@ export function ResultsScreen({
             </div>
             <div className="card p-5 text-center bg-gradient-to-br from-success/5 to-success/10 border-success/20">
               <div className="text-3xl font-bold text-success mb-1">
-                +{potentialImprovement}
+                {potentialImprovement > 0 || !isHighMastery
+                  ? `+${potentialImprovement}`
+                  : "Max"}
               </div>
               <div className="text-sm text-cool-gray font-medium">
-                Puntos Alcanzables
+                {potentialImprovement > 0 || !isHighMastery
+                  ? "Puntos Alcanzables"
+                  : "Dominio Alto"}
               </div>
             </div>
           </div>

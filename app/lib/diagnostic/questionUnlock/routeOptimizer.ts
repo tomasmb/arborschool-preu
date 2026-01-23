@@ -193,9 +193,11 @@ export function buildAxisRoute(
   const totalQuestionsUnlocked = finalUnlocked - initialUnlocked;
 
   // Calculate per-test values (questions are spread across multiple tests)
-  const additionalPerTest = Math.round(
-    totalQuestionsUnlocked / config.numOfficialTests
-  );
+  // Use Math.max(1, ...) when there ARE questions to unlock to avoid showing
+  // 0 improvement due to rounding (e.g., 1 question / 4 tests = 0.25 → rounds to 0)
+  const rawPerTest = totalQuestionsUnlocked / config.numOfficialTests;
+  const additionalPerTest =
+    totalQuestionsUnlocked > 0 ? Math.max(1, Math.round(rawPerTest)) : 0;
 
   // Use diagnostic score as baseline (more accurate than unlocked questions)
   // Default to 460 (~20 correct) if not provided

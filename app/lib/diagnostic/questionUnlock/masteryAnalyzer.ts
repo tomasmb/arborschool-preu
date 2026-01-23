@@ -138,6 +138,55 @@ export function analyzeAllQuestions(
   return result;
 }
 
+/** Mastery breakdown by axis */
+export interface AxisMasteryBreakdown {
+  axis: string;
+  totalAtoms: number;
+  masteredAtoms: number;
+  masteryPercentage: number;
+}
+
+/**
+ * Calculates mastery breakdown by axis.
+ * Uses the atom's axis field to group mastery counts.
+ */
+export function calculateMasteryByAxis(
+  masteryMap: Map<string, AtomMasteryState>,
+  allAtoms: Map<string, AtomWithPrereqs>
+): AxisMasteryBreakdown[] {
+  // Count atoms by axis
+  const axisCounts = new Map<string, { total: number; mastered: number }>();
+
+  for (const [atomId, atom] of allAtoms) {
+    const axis = atom.axis;
+    const masteryState = masteryMap.get(atomId);
+    const isMastered = masteryState?.mastered ?? false;
+
+    const current = axisCounts.get(axis) || { total: 0, mastered: 0 };
+    current.total++;
+    if (isMastered) {
+      current.mastered++;
+    }
+    axisCounts.set(axis, current);
+  }
+
+  // Convert to array format
+  const result: AxisMasteryBreakdown[] = [];
+  for (const [axis, counts] of axisCounts) {
+    result.push({
+      axis,
+      totalAtoms: counts.total,
+      masteredAtoms: counts.mastered,
+      masteryPercentage:
+        counts.total > 0
+          ? Math.round((counts.mastered / counts.total) * 100)
+          : 0,
+    });
+  }
+
+  return result;
+}
+
 /**
  * Calculates mastery summary statistics.
  */

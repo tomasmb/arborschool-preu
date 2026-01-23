@@ -20,6 +20,7 @@ import {
   getMasteredAtomIds,
   analyzeAllQuestions,
   calculateMasterySummary,
+  calculateMasteryByAxis,
 } from "./masteryAnalyzer";
 import { calculateAllMarginalValues } from "./unlockCalculator";
 import {
@@ -44,6 +45,7 @@ export type {
   QuestionUnlockStatus,
   AtomInRoute,
   ScoringConfig,
+  AxisMastery,
 } from "./types";
 
 export { DEFAULT_SCORING_CONFIG } from "./types";
@@ -120,6 +122,9 @@ export async function analyzeLearningPotential(
   // Calculate summary
   const masterySummary = calculateMasterySummary(masteryMap, questionAnalysis);
 
+  // Calculate mastery breakdown by axis
+  const masteryByAxis = calculateMasteryByAxis(masteryMap, allAtoms);
+
   return {
     summary: {
       totalAtoms: masterySummary.totalAtoms,
@@ -129,6 +134,7 @@ export async function analyzeLearningPotential(
       potentialQuestionsToUnlock:
         masterySummary.questionsOneAway + masterySummary.questionsTwoAway,
     },
+    masteryByAxis,
     routes,
     topAtomsByEfficiency,
     lowHangingFruit: lowHangingFruit.slice(0, 20),
@@ -304,7 +310,10 @@ export function calculatePAESImprovement(
   const currentCorrect = estimateCorrectFromScore(currentPaesScore);
 
   // Additional questions are spread across tests
-  const additionalPerTest = Math.round(additionalQuestionsUnlocked / numTests);
+  // Use Math.max(1, ...) when there ARE questions to avoid 0 improvement due to rounding
+  const rawPerTest = additionalQuestionsUnlocked / numTests;
+  const additionalPerTest =
+    additionalQuestionsUnlocked > 0 ? Math.max(1, Math.round(rawPerTest)) : 0;
 
   // Use actual PAES table for accurate point calculation
   const improvement = calcPaesImprovement(currentCorrect, additionalPerTest);

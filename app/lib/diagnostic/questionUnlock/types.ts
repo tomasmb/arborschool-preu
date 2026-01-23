@@ -126,6 +126,14 @@ export interface AtomInRoute {
   isPrerequisite: boolean;
 }
 
+/** Mastery breakdown for a single axis */
+export interface AxisMastery {
+  axis: string;
+  totalAtoms: number;
+  masteredAtoms: number;
+  masteryPercentage: number;
+}
+
 /** Complete analysis result for a student */
 export interface StudentLearningAnalysis {
   /** Student's current state */
@@ -136,6 +144,8 @@ export interface StudentLearningAnalysis {
     unlockedQuestions: number;
     potentialQuestionsToUnlock: number;
   };
+  /** Mastery breakdown by axis (atoms mastered via transitivity) */
+  masteryByAxis: AxisMastery[];
   /** Recommended learning routes by axis */
   routes: LearningRoute[];
   /** Top individual atoms ranked by efficiency */

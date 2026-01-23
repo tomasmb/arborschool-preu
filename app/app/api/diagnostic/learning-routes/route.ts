@@ -99,6 +99,7 @@ export async function POST(request: NextRequest) {
       success: true,
       data: {
         summary: analysis.summary,
+        masteryByAxis: analysis.masteryByAxis,
         routes: formattedRoutes,
         quickWins,
         improvement,

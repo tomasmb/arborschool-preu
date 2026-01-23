@@ -39,6 +39,14 @@ export interface QuickWin {
   questionsUnlocked: number;
 }
 
+/** Mastery breakdown for a single axis (calculated via transitivity) */
+export interface AxisMasteryData {
+  axis: string;
+  totalAtoms: number;
+  masteredAtoms: number;
+  masteryPercentage: number;
+}
+
 export interface LearningRoutesResponse {
   summary: {
     totalAtoms: number;
@@ -47,6 +55,8 @@ export interface LearningRoutesResponse {
     unlockedQuestions: number;
     potentialQuestionsToUnlock: number;
   };
+  /** Mastery breakdown by axis (atoms mastered via transitivity) */
+  masteryByAxis?: AxisMasteryData[];
   routes: LearningRouteData[];
   quickWins: QuickWin[];
   improvement: {
