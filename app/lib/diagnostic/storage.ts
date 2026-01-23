@@ -6,7 +6,12 @@
  * Data is cleared after successful signup/completion.
  */
 
-import type { Route } from "./config";
+import {
+  type Route,
+  type MSTQuestion,
+  MST_QUESTIONS,
+  getStage2Questions,
+} from "./config";
 
 // ============================================================================
 // CONSTANTS
@@ -230,4 +235,51 @@ export function clearSessionState(): void {
 export function clearAllDiagnosticData(): void {
   clearStoredResponses();
   clearSessionState();
+}
+
+// ============================================================================
+// RESPONSE RECONSTRUCTION
+// ============================================================================
+
+/** Minimal response data needed for review drawer */
+export interface ResponseForReview {
+  question: MSTQuestion;
+  selectedAnswer: string | null;
+  isCorrect: boolean;
+}
+
+/**
+ * Reconstruct responses for review from localStorage.
+ * Maps stored responses back to MSTQuestion objects using the config.
+ */
+export function getResponsesForReview(
+  route: Route | null
+): ResponseForReview[] {
+  const storedResponses = getStoredResponses();
+  if (storedResponses.length === 0) return [];
+
+  const responses: ResponseForReview[] = [];
+
+  for (const stored of storedResponses) {
+    let question: MSTQuestion | undefined;
+
+    if (stored.stage === 1) {
+      // Stage 1 questions come from R1
+      question = MST_QUESTIONS.R1[stored.questionIndex];
+    } else if (stored.stage === 2 && route) {
+      // Stage 2 questions come from the determined route
+      const stage2Questions = getStage2Questions(route);
+      question = stage2Questions[stored.questionIndex];
+    }
+
+    if (question) {
+      responses.push({
+        question,
+        selectedAnswer: stored.selectedAnswer,
+        isCorrect: stored.isCorrect,
+      });
+    }
+  }
+
+  return responses;
 }

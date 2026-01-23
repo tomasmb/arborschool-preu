@@ -27,6 +27,7 @@ import {
   getStoredSessionState,
   calculateRemainingTime,
   clearAllDiagnosticData,
+  getResponsesForReview,
 } from "@/lib/diagnostic/storage";
 import { type QuestionAtom } from "@/lib/diagnostic/qtiParser";
 import {
@@ -614,12 +615,15 @@ export default function DiagnosticoPage() {
       totalCorrectCount || allResponses.filter((r) => r.isCorrect).length;
     const atomResults = getAtomResults();
 
-    // Prepare responses for review (strip atoms to reduce data)
-    const responsesForReview = allResponses.map((r) => ({
-      question: r.question,
-      selectedAnswer: r.selectedAnswer,
-      isCorrect: r.isCorrect,
-    }));
+    // Prepare responses for review - use in-memory or reconstruct from localStorage
+    const responsesForReview =
+      allResponses.length > 0
+        ? allResponses.map((r) => ({
+            question: r.question,
+            selectedAnswer: r.selectedAnswer,
+            isCorrect: r.isCorrect,
+          }))
+        : getResponsesForReview(route);
 
     return (
       <ResultsScreen
