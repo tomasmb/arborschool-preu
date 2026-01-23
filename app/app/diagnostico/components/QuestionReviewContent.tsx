@@ -178,7 +178,7 @@ export function QuestionReviewContent({
       </div>
 
       {/* Question content */}
-      <div className="card p-5 sm:p-6">
+      <div className="card p-5 sm:p-6 overflow-x-auto">
         <div
           className="prose prose-sm sm:prose max-w-none text-charcoal"
           dangerouslySetInnerHTML={{
@@ -262,7 +262,7 @@ export function QuestionReviewContent({
 
       {/* Feedback */}
       {hasFeedback && (
-        <div className="card p-5 bg-primary/5 border-primary/20">
+        <div className="card p-5 bg-primary/5 border-primary/20 overflow-x-auto">
           <div className="flex items-center gap-2 mb-3">
             <LightbulbIcon />
             <span className="font-semibold text-charcoal">Explicación</span>

@@ -307,7 +307,7 @@ export function QuestionScreen({
         </div>
 
         {/* Question content */}
-        <div className="prose prose-sm sm:prose-lg max-w-none mb-6 sm:mb-8">
+        <div className="prose prose-sm sm:prose-lg max-w-none mb-6 sm:mb-8 overflow-x-auto">
           {parsedQuestion?.html ? (
             <div
               className="text-charcoal text-base sm:text-lg leading-relaxed"
