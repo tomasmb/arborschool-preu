@@ -267,7 +267,16 @@ export default function DiagnosticoPage() {
     setTimeRemaining(TOTAL_TIME_SECONDS);
 
     try {
-      const response = await fetch("/api/diagnostic/start", { method: "POST" });
+      // Timeout after 10s to prevent hanging on stale DB connections
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const response = await fetch("/api/diagnostic/start", {
+        method: "POST",
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
       const data = await response.json();
 
       if (!data.success || !data.attemptId) {
@@ -278,7 +287,7 @@ export default function DiagnosticoPage() {
       saveAttemptId(data.attemptId);
     } catch (error) {
       console.error("Failed to start test:", error);
-      // Create local fallback ID so test can proceed
+      // Create local fallback ID so test can proceed (handles timeout & errors)
       const localId = generateLocalAttemptId();
       setAttemptId(localId);
       saveAttemptId(localId);

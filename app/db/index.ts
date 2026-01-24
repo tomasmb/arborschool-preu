@@ -59,6 +59,19 @@ function getConnectionConfig(): ConnectionConfig {
 let client: Sql | null = null;
 let drizzleInstance: ReturnType<typeof drizzle<typeof schema>> | null = null;
 
+// Connection pool options optimized for serverless (Cloud Run)
+// Key settings to prevent stale connections from hanging:
+// - Lower max: fewer connections per container instance
+// - Short idle_timeout: close unused connections quickly
+// - max_lifetime: force refresh of old connections
+// - connect_timeout: fail fast on connection issues
+const POOL_OPTIONS = {
+  max: 5, // Reduced for serverless - each instance needs fewer connections
+  idle_timeout: 10, // Close idle connections after 10s (was 20)
+  max_lifetime: 60 * 5, // Force close connections older than 5 minutes
+  connect_timeout: 10, // Fail connection attempts after 10s
+};
+
 /**
  * Get the database instance with lazy initialization.
  * Reuses existing connection in serverless environments.
@@ -69,11 +82,7 @@ export function getDb() {
 
     // postgres.js accepts either a connection string or an options object
     if (config.connectionString) {
-      client = postgres(config.connectionString, {
-        max: 10,
-        idle_timeout: 20,
-        connect_timeout: 10,
-      });
+      client = postgres(config.connectionString, POOL_OPTIONS);
     } else {
       client = postgres({
         host: config.host,
@@ -81,9 +90,7 @@ export function getDb() {
         database: config.database,
         username: config.username,
         password: config.password,
-        max: 10,
-        idle_timeout: 20,
-        connect_timeout: 10,
+        ...POOL_OPTIONS,
       });
     }
 

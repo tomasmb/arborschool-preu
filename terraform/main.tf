@@ -150,7 +150,9 @@ resource "google_cloud_run_v2_service" "preu" {
           cpu    = "1"
           memory = "512Mi"
         }
-        cpu_idle = true
+        # cpu_idle = false keeps CPU allocated, preventing connection issues
+        # Cost: ~$30/month more, but much more reliable for DB connections
+        cpu_idle = false
       }
 
       # Database connection via Cloud SQL Auth Proxy (built into Cloud Run)
@@ -190,7 +192,9 @@ resource "google_cloud_run_v2_service" "preu" {
     }
 
     scaling {
-      min_instance_count = 0
+      # min_instance_count = 1 keeps one container warm, avoiding cold starts
+      # This prevents DB connection issues when the service is idle
+      min_instance_count = 1
       max_instance_count = 10
     }
 
