@@ -25,5 +25,4 @@ export {
   TIMER_THRESHOLDS,
   QuestionSkeleton,
   OfflineIndicator,
-  CollapsibleSection,
 } from "./shared";

@@ -1,7 +1,6 @@
 "use client";
 
-import React from "react";
-import { AXIS_NAMES, type Axis } from "@/lib/diagnostic/config";
+import { type Axis } from "@/lib/diagnostic/config";
 import { Icons, AXIS_ICONS } from "./shared";
 import type { LearningRouteData } from "../hooks/useLearningRoutes";
 
@@ -13,39 +12,6 @@ export interface AxisPerformance {
   correct: number;
   total: number;
   percentage: number;
-}
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-/**
- * Gets a motivational message based on axis performance.
- * Used for tiers with enough signal to identify a strongest axis.
- */
-export function getMotivationalMessage(
-  axisPerformance: Record<Axis, AxisPerformance>
-): { axis: Axis; axisName: string; percentage: number; message: string } {
-  const sorted = Object.entries(axisPerformance).sort(
-    (a, b) => b[1].percentage - a[1].percentage
-  );
-  const [strongestAxis, data] = sorted[0];
-  const axis = strongestAxis as Axis;
-  const percentage = data.percentage;
-
-  const messages: Record<Axis, string> = {
-    ALG: `El Álgebra es lo tuyo. Tienes una base sólida.`,
-    NUM: `Destacas en Números — es tu fortaleza matemática.`,
-    GEO: `Tienes ojo para la Geometría — ves las formas.`,
-    PROB: `Eres fuerte en Probabilidad — datos y azar son lo tuyo.`,
-  };
-
-  return {
-    axis,
-    axisName: AXIS_NAMES[axis],
-    percentage,
-    message: messages[axis],
-  };
 }
 
 // ============================================================================
@@ -124,19 +90,4 @@ export function SimpleRouteCard({
       </div>
     </div>
   );
-}
-
-// ============================================================================
-// LEGACY EXPORTS (for backwards compatibility during migration)
-// ============================================================================
-
-/** @deprecated Use SimpleRouteCard instead */
-export { SimpleRouteCard as RouteCard };
-
-/** @deprecated Atom mastery data from API - only kept for type compatibility */
-export interface ActualAxisMastery {
-  axis: string;
-  totalAtoms: number;
-  masteredAtoms: number;
-  masteryPercentage: number;
 }
