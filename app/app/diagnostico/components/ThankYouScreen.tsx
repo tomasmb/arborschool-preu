@@ -19,7 +19,21 @@ interface ResultsSnapshot {
     name: string;
     questionsUnlocked: number;
     pointsGain: number;
+    studyHours: number;
   };
+}
+
+/**
+ * Formats study hours for display.
+ */
+function formatStudyHours(hours: number): string {
+  if (hours >= 1) {
+    const rounded = Math.round(hours * 2) / 2;
+    if (rounded === 1) return "~1 hora";
+    return `~${rounded} horas`;
+  }
+  const minutes = Math.round(hours * 60);
+  return `~${minutes} min`;
 }
 
 interface ThankYouScreenProps {
@@ -127,13 +141,20 @@ export function ThankYouScreen({
                       <p className="text-xs text-cool-gray mb-1">
                         Tu ruta de mayor impacto:
                       </p>
-                      <p className="font-semibold text-charcoal text-sm">
+                      <p className="font-semibold text-charcoal text-sm mb-1">
                         {resultsSnapshot.topRoute.name}
                       </p>
-                      <p className="text-xs text-cool-gray">
-                        +{resultsSnapshot.topRoute.questionsUnlocked} preguntas
-                        PAES · +{resultsSnapshot.topRoute.pointsGain} puntos
-                        potenciales
+                      {/* Key value proposition: points + time */}
+                      <p className="text-sm">
+                        <span className="text-success font-semibold">
+                          +{resultsSnapshot.topRoute.pointsGain} puntos
+                        </span>{" "}
+                        en{" "}
+                        <span className="text-charcoal font-medium">
+                          {formatStudyHours(
+                            resultsSnapshot.topRoute.studyHours
+                          )}
+                        </span>
                       </p>
                     </div>
                   )}

@@ -111,6 +111,7 @@ export default function DiagnosticoPage() {
       name: string;
       questionsUnlocked: number;
       pointsGain: number;
+      studyHours: number;
     };
   } | null>(null);
 

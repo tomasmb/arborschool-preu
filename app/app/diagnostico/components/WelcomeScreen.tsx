@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { LoadingButton } from "@/app/components/ui";
 
 interface WelcomeScreenProps {
@@ -107,16 +108,42 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
       <div className="fixed inset-0 dot-pattern opacity-50" />
 
       <div className="relative z-10 max-w-2xl w-full">
-        {/* Logo */}
+        {/* Header with back link and logo */}
         <div
-          className={`text-center mb-8 transition-all duration-700
+          className={`mb-8 transition-all duration-700
             ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"}`}
         >
-          <div className="inline-flex items-center gap-3 mb-6 px-6 py-3 bg-white/80 backdrop-blur-sm rounded-full shadow-sm border border-gray-100">
-            <Image src="/logo-arbor.svg" alt="Arbor" width={40} height={40} />
-            <span className="text-xl font-serif font-bold text-primary">
-              Arbor PreU
-            </span>
+          {/* Back to home link */}
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 text-sm text-charcoal font-medium 
+              bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border border-gray-100
+              hover:bg-white hover:shadow transition-all mb-4"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+            Volver al inicio
+          </Link>
+
+          {/* Logo - centered */}
+          <div className="text-center">
+            <div className="inline-flex items-center gap-3 px-6 py-3 bg-white/80 backdrop-blur-sm rounded-full shadow-sm border border-gray-100">
+              <Image src="/logo-arbor.svg" alt="Arbor" width={40} height={40} />
+              <span className="text-xl font-serif font-bold text-primary">
+                Arbor PreU
+              </span>
+            </div>
           </div>
         </div>
 
@@ -276,14 +303,6 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
             </div>
           </details>
         </div>
-
-        {/* Footer note */}
-        <p
-          className={`text-center text-sm text-cool-gray mt-6 transition-all duration-700 delay-500
-            ${isLoaded ? "opacity-100" : "opacity-0"}`}
-        >
-          Tus resultados se guardan cuando ingresas tu email.
-        </p>
       </div>
     </div>
   );

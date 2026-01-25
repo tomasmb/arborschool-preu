@@ -19,17 +19,17 @@ interface ExampleResultsModalProps {
 }
 
 // ============================================================================
-// EXAMPLE DATA (Illustrative values from spec)
+// EXAMPLE DATA (Illustrative values - consistent single route message)
 // ============================================================================
 
 const EXAMPLE_DATA = {
   scoreMin: 650,
   scoreMax: 720,
-  improvement: 68,
   topRoute: {
     name: "Geometría",
     questionsUnlocked: 12,
-    pointsGain: 32,
+    pointsGain: 48,
+    studyHours: 4, // ~12 atoms × 20 min = 4 hours
   },
   lowHangingFruit: 5,
 };
@@ -141,19 +141,18 @@ export function ExampleResultsModal({
               {EXAMPLE_DATA.scoreMin}-{EXAMPLE_DATA.scoreMax}
             </div>
 
-            {/* Improvement Message */}
+            {/* Key Value Proposition: X points in Y hours */}
             <div className="flex items-center justify-center gap-2 mt-4 text-charcoal">
-              {Icons.star("w-5 h-5 text-amber-500")}
-              <span>Buen punto de partida</span>
-            </div>
-            <div className="flex items-center justify-center gap-2 mt-2 text-sm text-charcoal">
-              {Icons.trendUp("w-4 h-4 text-success")}
+              {Icons.trendUp("w-5 h-5 text-success")}
               <span>
-                Podrías subir hasta{" "}
+                Podrías subir{" "}
                 <strong className="text-success">
-                  +{EXAMPLE_DATA.improvement} puntos
+                  +{EXAMPLE_DATA.topRoute.pointsGain} puntos
                 </strong>{" "}
-                al dominar los conceptos identificados
+                en{" "}
+                <strong className="text-charcoal">
+                  ~{EXAMPLE_DATA.topRoute.studyHours} horas
+                </strong>
               </span>
             </div>
           </div>
@@ -172,37 +171,36 @@ export function ExampleResultsModal({
             <h4 className="font-bold text-charcoal mb-2">
               {EXAMPLE_DATA.topRoute.name}
             </h4>
-            <div className="space-y-1 text-sm text-cool-gray">
-              <div className="flex items-center gap-2">
-                <svg
-                  className="w-4 h-4 text-cool-gray"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"
-                  />
-                </svg>
-                <span>
-                  Desbloquear{" "}
-                  <strong>+{EXAMPLE_DATA.topRoute.questionsUnlocked}</strong>{" "}
-                  preguntas PAES
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                {Icons.trendUp("w-4 h-4 text-success")}
-                <span>
-                  Hasta{" "}
-                  <strong className="text-success">
-                    +{EXAMPLE_DATA.topRoute.pointsGain}
-                  </strong>{" "}
-                  puntos al dominar esta ruta
-                </span>
-              </div>
+
+            {/* Key value proposition: points + time */}
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-success font-bold text-lg">
+                +{EXAMPLE_DATA.topRoute.pointsGain} puntos
+              </span>
+              <span className="text-cool-gray">en</span>
+              <span className="text-charcoal font-semibold">
+                ~{EXAMPLE_DATA.topRoute.studyHours} horas
+              </span>
+            </div>
+
+            {/* Secondary: questions unlocked */}
+            <div className="flex items-center gap-2 text-sm text-cool-gray">
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"
+                />
+              </svg>
+              <span>
+                +{EXAMPLE_DATA.topRoute.questionsUnlocked} preguntas PAES
+              </span>
             </div>
           </div>
 

@@ -58,8 +58,24 @@ interface SimpleRouteCardProps {
 }
 
 /**
- * Simplified route card showing only questions unlocked and points gain.
- * Removes atom counts and study time estimates per the conversion optimization spec.
+ * Formats study hours for display.
+ * Shows hours for 1+ hours, minutes for less than 1 hour.
+ */
+function formatStudyTime(hours: number): string {
+  if (hours >= 1) {
+    // Round to nearest half hour for cleaner display
+    const rounded = Math.round(hours * 2) / 2;
+    if (rounded === 1) return "~1 hora";
+    return `~${rounded} horas`;
+  }
+  // Less than 1 hour - show minutes
+  const minutes = Math.round(hours * 60);
+  return `~${minutes} min`;
+}
+
+/**
+ * Simplified route card showing questions unlocked, points gain, and study time.
+ * The key value proposition: X points in Y hours.
  */
 export function SimpleRouteCard({
   route,
@@ -67,6 +83,7 @@ export function SimpleRouteCard({
 }: SimpleRouteCardProps) {
   const axisKey = route.axis as Axis;
   const AxisIcon = AXIS_ICONS[axisKey] || Icons.book;
+  const studyTimeDisplay = formatStudyTime(route.studyHours);
 
   return (
     <div
@@ -87,19 +104,21 @@ export function SimpleRouteCard({
         <div className="flex-1">
           <h4 className="font-bold text-charcoal">{route.title}</h4>
 
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm">
-            <div className="flex items-center gap-1.5">
-              {Icons.unlock("w-4 h-4 text-primary")}
-              <span className="text-charcoal">
-                +{route.questionsUnlocked} preguntas PAES
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              {Icons.trendUp("w-4 h-4 text-success")}
-              <span className="text-success font-semibold">
-                +{route.pointsGain} puntos
-              </span>
-            </div>
+          {/* Key value proposition: points + time */}
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-success font-bold text-lg">
+              +{route.pointsGain} puntos
+            </span>
+            <span className="text-cool-gray">en</span>
+            <span className="text-charcoal font-semibold">
+              {studyTimeDisplay}
+            </span>
+          </div>
+
+          {/* Secondary info: questions unlocked */}
+          <div className="flex items-center gap-1.5 mt-1.5 text-sm text-cool-gray">
+            {Icons.unlock("w-4 h-4")}
+            <span>+{route.questionsUnlocked} preguntas PAES</span>
           </div>
         </div>
       </div>

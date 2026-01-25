@@ -54,6 +54,7 @@ export interface TopRouteInfo {
   name: string;
   questionsUnlocked: number;
   pointsGain: number;
+  studyHours: number;
 }
 
 interface ResultsScreenProps {
@@ -161,6 +162,7 @@ export function ResultsScreen({
           name: sortedRoutes[0].axis,
           questionsUnlocked: sortedRoutes[0].questionsUnlocked,
           pointsGain: sortedRoutes[0].pointsGain,
+          studyHours: sortedRoutes[0].studyHours,
         });
       } else {
         onTopRouteCalculated(null);
@@ -168,12 +170,15 @@ export function ResultsScreen({
     }
   }, [sortedRoutes, routesLoading, onTopRouteCalculated]);
 
-  // Use the best route's improvement as the main "potential improvement"
-  const potentialImprovement = useMemo(() => {
+  // Use the best route's improvement and study hours as the main value proposition
+  const { potentialImprovement, studyHours } = useMemo(() => {
     if (sortedRoutes.length > 0) {
-      return sortedRoutes[0].pointsGain;
+      return {
+        potentialImprovement: sortedRoutes[0].pointsGain,
+        studyHours: sortedRoutes[0].studyHours,
+      };
     }
-    return 0;
+    return { potentialImprovement: 0, studyHours: 0 };
   }, [sortedRoutes]);
 
   // Check if student has very high mastery
@@ -235,10 +240,6 @@ export function ResultsScreen({
         </header>
 
         <div className="max-w-4xl mx-auto px-4 py-8">
-          {/* ============================================================ */}
-          {/* PHASE 1: Essential (Above Fold) */}
-          {/* ============================================================ */}
-
           {/* Completion Badge */}
           <div
             className={`text-center mb-6 transition-all duration-700 
@@ -314,6 +315,7 @@ export function ResultsScreen({
             <TierMessageCard
               tier={performanceTier}
               potentialImprovement={potentialImprovement}
+              studyHours={studyHours}
               isHighMastery={isHighMastery}
             />
           </div>
@@ -375,10 +377,6 @@ export function ResultsScreen({
               {EXPECTATION_LINE}
             </p>
           </div>
-
-          {/* ============================================================ */}
-          {/* PHASE 2: Expanded Details (On Click) */}
-          {/* ============================================================ */}
 
           {/* "Ver más rutas" toggle (only for tiers with routes) */}
           {showRoutes && sortedRoutes.length > 1 && (

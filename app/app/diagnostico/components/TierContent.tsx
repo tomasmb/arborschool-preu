@@ -29,6 +29,7 @@ interface TierHeadlineProps {
 interface TierMessageCardProps {
   tier: PerformanceTier;
   potentialImprovement: number;
+  studyHours: number;
   isHighMastery: boolean;
 }
 
@@ -70,11 +71,27 @@ export function TierHeadline({ tier }: TierHeadlineProps) {
 // ============================================================================
 
 /**
- * Returns the appropriate improvement message based on tier and data
+ * Formats study hours for display in messages.
+ * Shows hours for 1+ hours, minutes for less than 1 hour.
+ */
+function formatStudyTimeForMessage(hours: number): string {
+  if (hours >= 1) {
+    const rounded = Math.round(hours * 2) / 2;
+    if (rounded === 1) return "~1 hora";
+    return `~${rounded} horas`;
+  }
+  const minutes = Math.round(hours * 60);
+  return `~${minutes} minutos`;
+}
+
+/**
+ * Returns the appropriate improvement message based on tier and data.
+ * Key value proposition: X points in Y hours.
  */
 export function getTierImprovementMessage(
   tier: PerformanceTier,
   potentialImprovement: number,
+  studyHours: number,
   isHighMastery: boolean
 ): React.ReactNode {
   const config = TIER_CONFIG[tier];
@@ -92,20 +109,25 @@ export function getTierImprovementMessage(
 
   // Conservative projections (near-perfect)
   if (config.projectionRule === "conservative" && potentialImprovement > 0) {
+    const timeDisplay = formatStudyTimeForMessage(studyHours);
     return (
       <>
-        Reforzar este concepto específico puede acercarte al rango más alto:{" "}
-        <strong className="text-success">+{potentialImprovement} puntos</strong>
+        Reforzar este concepto te acerca al rango más alto:{" "}
+        <strong className="text-success">+{potentialImprovement} puntos</strong>{" "}
+        en <strong className="text-charcoal">{timeDisplay}</strong>
       </>
     );
   }
 
-  // Moderate/full projections
-  if (potentialImprovement > 0) {
+  // Moderate/full projections - THE KEY MESSAGE: X points in Y hours
+  if (potentialImprovement > 0 && studyHours > 0) {
+    const timeDisplay = formatStudyTimeForMessage(studyHours);
     return (
       <>
-        Al dominar los conceptos identificados, podrías subir hasta{" "}
-        <strong className="text-success">+{potentialImprovement} puntos</strong>
+        Podrías subir{" "}
+        <strong className="text-success">+{potentialImprovement} puntos</strong>{" "}
+        en <strong className="text-charcoal">{timeDisplay}</strong> de estudio
+        enfocado
       </>
     );
   }
@@ -114,16 +136,19 @@ export function getTierImprovementMessage(
 }
 
 /**
- * Tier-specific message card shown in the results
+ * Tier-specific message card shown in the results.
+ * Shows the key value proposition: X points in Y hours.
  */
 export function TierMessageCard({
   tier,
   potentialImprovement,
+  studyHours,
   isHighMastery,
 }: TierMessageCardProps) {
   const message = getTierImprovementMessage(
     tier,
     potentialImprovement,
+    studyHours,
     isHighMastery
   );
 
