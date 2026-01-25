@@ -4,12 +4,17 @@
 export { WelcomeScreen } from "./WelcomeScreen";
 export { QuestionScreen } from "./QuestionScreen";
 export { TransitionScreen } from "./TransitionScreen";
-export { ResultsScreen, type AtomResult } from "./ResultsScreen";
+export {
+  ResultsScreen,
+  type AtomResult,
+  type TopRouteInfo,
+} from "./ResultsScreen";
 export { SignupScreen } from "./SignupScreen";
 export { ThankYouScreen } from "./ThankYouScreen";
 export { MaintenanceScreen } from "./MaintenanceScreen";
 export { DiagnosticHeader } from "./DiagnosticHeader";
 export { Confetti } from "./Confetti";
+export { ExampleResultsModal } from "./ExampleResultsModal";
 export {
   QuestionReviewDrawer,
   type ResponseForReview,

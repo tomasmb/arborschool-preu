@@ -49,6 +49,13 @@ export interface DiagnosticResponse {
   isCorrect: boolean;
 }
 
+/** Top route info for passing to parent */
+export interface TopRouteInfo {
+  name: string;
+  questionsUnlocked: number;
+  pointsGain: number;
+}
+
 interface ResultsScreenProps {
   results: {
     paesMin: number;
@@ -65,6 +72,8 @@ interface ResultsScreenProps {
   onSignup: () => void;
   /** Callback to set the consistent PAES score for use in SignupScreen */
   onScoreCalculated?: (score: number) => void;
+  /** Callback to set the top route info for use in ThankYouScreen */
+  onTopRouteCalculated?: (topRoute: TopRouteInfo | null) => void;
 }
 
 // ============================================================================
@@ -91,6 +100,7 @@ export function ResultsScreen({
   responses = [],
   onSignup,
   onScoreCalculated,
+  onTopRouteCalculated,
 }: ResultsScreenProps) {
   void _route; // Silence unused warning - route may be needed for future tier logic
 
@@ -142,6 +152,21 @@ export function ResultsScreen({
     if (!routesData?.routes) return [];
     return sortRoutesByImpact(routesData.routes);
   }, [routesData?.routes]);
+
+  // Notify parent of the top route for ThankYouScreen
+  useEffect(() => {
+    if (onTopRouteCalculated && !routesLoading) {
+      if (sortedRoutes.length > 0) {
+        onTopRouteCalculated({
+          name: sortedRoutes[0].axis,
+          questionsUnlocked: sortedRoutes[0].questionsUnlocked,
+          pointsGain: sortedRoutes[0].pointsGain,
+        });
+      } else {
+        onTopRouteCalculated(null);
+      }
+    }
+  }, [sortedRoutes, routesLoading, onTopRouteCalculated]);
 
   // Use the best route's improvement as the main "potential improvement"
   const potentialImprovement = useMemo(() => {

@@ -146,19 +146,37 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
               </div>
             </div>
 
+            {/* Credibility Badge */}
+            <div className="inline-flex items-center gap-2 text-sm text-cool-gray bg-primary/5 px-3 py-1.5 rounded-full mb-4">
+              <svg
+                className="w-4 h-4 text-primary"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              Basado en preguntas PAES oficiales
+            </div>
+
             <h1 className="text-3xl sm:text-4xl font-serif font-bold text-charcoal mb-4">
               Prueba Diagnóstica PAES M1
             </h1>
             <p className="text-lg text-cool-gray max-w-md mx-auto leading-relaxed">
-              Descubre tu nivel actual y qué necesitas aprender para alcanzar tu
-              puntaje meta.
+              En ~15 minutos sabrás tu puntaje estimado y exactamente qué
+              conceptos detectamos en este diagnóstico para empezar a mejorar.
             </p>
           </div>
 
           {/* Info cards with staggered animation */}
           <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-10">
             <InfoCard value="16" label="Preguntas" delay={300} />
-            <InfoCard value="30" label="Minutos" delay={400} />
+            <InfoCard value="~15" label="Minutos" delay={400} />
             <InfoCard value="∞" label="Valor" isAccent delay={500} />
           </div>
 
@@ -220,6 +238,43 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
               />
             </svg>
           </LoadingButton>
+
+          {/* Expandable "¿Cómo funciona?" */}
+          <details className="bg-white/50 rounded-xl p-4 mt-6 text-left">
+            <summary className="font-medium text-charcoal cursor-pointer flex items-center gap-2">
+              <svg
+                className="w-5 h-5 text-primary"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              ¿Cómo funciona este diagnóstico?
+            </summary>
+            <div className="mt-4 text-sm text-cool-gray space-y-3 pl-7">
+              <p>
+                <strong className="text-charcoal">Preguntas reales:</strong>{" "}
+                Usamos preguntas PAES oficiales.
+              </p>
+              <p>
+                <strong className="text-charcoal">
+                  Diagnóstico adaptativo:
+                </strong>{" "}
+                Las preguntas se ajustan a tu desempeño.
+              </p>
+              <p>
+                <strong className="text-charcoal">Continuación:</strong> Guarda
+                tu progreso para recibir acceso cuando lancemos la experiencia
+                completa.
+              </p>
+            </div>
+          </details>
         </div>
 
         {/* Footer note */}
@@ -227,7 +282,7 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
           className={`text-center text-sm text-cool-gray mt-6 transition-all duration-700 delay-500
             ${isLoaded ? "opacity-100" : "opacity-0"}`}
         >
-          Tu diagnóstico se guarda automáticamente al final
+          Tus resultados se guardan cuando ingresas tu email.
         </p>
       </div>
     </div>

@@ -48,6 +48,7 @@ import {
   MaintenanceScreen,
   DiagnosticHeader,
   OfflineIndicator,
+  type TopRouteInfo,
 } from "./components";
 
 // ============================================================================
@@ -92,12 +93,26 @@ export default function DiagnosticoPage() {
   // This is set by ResultsScreen when the learning routes API returns
   const [consistentScore, setConsistentScore] = useState<number | null>(null);
 
+  // Top route info from ResultsScreen (for ThankYouScreen snapshot)
+  const [topRouteInfo, setTopRouteInfo] = useState<TopRouteInfo | null>(null);
+
   // Signup state
   const [email, setEmail] = useState("");
   const [signupStatus, setSignupStatus] = useState<
     "idle" | "loading" | "success" | "error"
   >("idle");
   const [signupError, setSignupError] = useState("");
+
+  // Results snapshot for ThankYouScreen (captured on successful signup)
+  const [resultsSnapshot, setResultsSnapshot] = useState<{
+    paesMin: number;
+    paesMax: number;
+    topRoute?: {
+      name: string;
+      questionsUnlocked: number;
+      pointsGain: number;
+    };
+  } | null>(null);
 
   // Timer and tracking state
   const [attemptId, setAttemptId] = useState<string | null>(null);
@@ -573,6 +588,13 @@ export default function DiagnosticoPage() {
           getPerformanceTier(storedResponses.filter((r) => r.isCorrect).length)
         );
 
+        // Capture results snapshot for ThankYouScreen
+        setResultsSnapshot({
+          paesMin: calculatedResults.paesMin,
+          paesMax: calculatedResults.paesMax,
+          topRoute: topRouteInfo ?? undefined,
+        });
+
         // Clear all localStorage data after successful signup
         clearAllDiagnosticData();
         setSignupStatus("success");
@@ -696,6 +718,7 @@ export default function DiagnosticoPage() {
         responses={responsesForReview}
         onSignup={() => setScreen("signup")}
         onScoreCalculated={setConsistentScore}
+        onTopRouteCalculated={setTopRouteInfo}
       />
     );
   }
@@ -738,6 +761,7 @@ export default function DiagnosticoPage() {
         onReconsider={
           signupStatus !== "success" ? () => setScreen("signup") : undefined
         }
+        resultsSnapshot={resultsSnapshot ?? undefined}
       />
     );
   }
