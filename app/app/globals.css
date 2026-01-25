@@ -411,6 +411,10 @@ h6 {
   animation: float 6s ease-in-out infinite;
 }
 
+.animate-fadeIn {
+  animation: fade-in-up 0.4s ease-out forwards;
+}
+
 /* ============================================================================
    ANIMATION DELAYS
    ============================================================================ */

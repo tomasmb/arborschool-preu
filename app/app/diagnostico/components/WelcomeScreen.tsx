@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { LoadingButton } from "@/app/components/ui";
 
 interface WelcomeScreenProps {
@@ -107,16 +108,42 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
       <div className="fixed inset-0 dot-pattern opacity-50" />
 
       <div className="relative z-10 max-w-2xl w-full">
-        {/* Logo */}
+        {/* Header with back link and logo */}
         <div
-          className={`text-center mb-8 transition-all duration-700
+          className={`mb-8 transition-all duration-700
             ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"}`}
         >
-          <div className="inline-flex items-center gap-3 mb-6 px-6 py-3 bg-white/80 backdrop-blur-sm rounded-full shadow-sm border border-gray-100">
-            <Image src="/logo-arbor.svg" alt="Arbor" width={40} height={40} />
-            <span className="text-xl font-serif font-bold text-primary">
-              Arbor PreU
-            </span>
+          {/* Back to home link */}
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 text-sm text-charcoal font-medium 
+              bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border border-gray-100
+              hover:bg-white hover:shadow transition-all mb-4"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+            Volver al inicio
+          </Link>
+
+          {/* Logo - centered */}
+          <div className="text-center">
+            <div className="inline-flex items-center gap-3 px-6 py-3 bg-white/80 backdrop-blur-sm rounded-full shadow-sm border border-gray-100">
+              <Image src="/logo-arbor.svg" alt="Arbor" width={40} height={40} />
+              <span className="text-xl font-serif font-bold text-primary">
+                Arbor PreU
+              </span>
+            </div>
           </div>
         </div>
 
@@ -146,19 +173,37 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
               </div>
             </div>
 
+            {/* Credibility Badge */}
+            <div className="inline-flex items-center gap-2 text-sm text-cool-gray bg-primary/5 px-3 py-1.5 rounded-full mb-4">
+              <svg
+                className="w-4 h-4 text-primary"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              Basado en preguntas PAES oficiales
+            </div>
+
             <h1 className="text-3xl sm:text-4xl font-serif font-bold text-charcoal mb-4">
               Prueba Diagnóstica PAES M1
             </h1>
             <p className="text-lg text-cool-gray max-w-md mx-auto leading-relaxed">
-              Descubre tu nivel actual y qué necesitas aprender para alcanzar tu
-              puntaje meta.
+              En ~15 minutos sabrás tu puntaje estimado y exactamente qué
+              conceptos detectamos en este diagnóstico para empezar a mejorar.
             </p>
           </div>
 
           {/* Info cards with staggered animation */}
           <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-10">
             <InfoCard value="16" label="Preguntas" delay={300} />
-            <InfoCard value="30" label="Minutos" delay={400} />
+            <InfoCard value="~15" label="Minutos" delay={400} />
             <InfoCard value="∞" label="Valor" isAccent delay={500} />
           </div>
 
@@ -220,15 +265,44 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
               />
             </svg>
           </LoadingButton>
-        </div>
 
-        {/* Footer note */}
-        <p
-          className={`text-center text-sm text-cool-gray mt-6 transition-all duration-700 delay-500
-            ${isLoaded ? "opacity-100" : "opacity-0"}`}
-        >
-          Tu diagnóstico se guarda automáticamente al final
-        </p>
+          {/* Expandable "¿Cómo funciona?" */}
+          <details className="bg-white/50 rounded-xl p-4 mt-6 text-left">
+            <summary className="font-medium text-charcoal cursor-pointer flex items-center gap-2">
+              <svg
+                className="w-5 h-5 text-primary"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              ¿Cómo funciona este diagnóstico?
+            </summary>
+            <div className="mt-4 text-sm text-cool-gray space-y-3 pl-7">
+              <p>
+                <strong className="text-charcoal">Preguntas reales:</strong>{" "}
+                Usamos preguntas PAES oficiales.
+              </p>
+              <p>
+                <strong className="text-charcoal">
+                  Diagnóstico adaptativo:
+                </strong>{" "}
+                Las preguntas se ajustan a tu desempeño.
+              </p>
+              <p>
+                <strong className="text-charcoal">Continuación:</strong> Guarda
+                tu progreso para recibir acceso cuando lancemos la experiencia
+                completa.
+              </p>
+            </div>
+          </details>
+        </div>
       </div>
     </div>
   );

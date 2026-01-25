@@ -35,6 +35,26 @@ export const users = pgTable("users", {
   }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+
+  // Email preferences (for waitlist/launch notifications)
+  unsubscribed: boolean("unsubscribed").notNull().default(false),
+  unsubscribedAt: timestamp("unsubscribed_at", { withTimezone: true }),
+
+  // Results snapshot for email notifications (stored at signup)
+  paesScoreMin: integer("paes_score_min"),
+  paesScoreMax: integer("paes_score_max"),
+  performanceTier: varchar("performance_tier", { length: 20 }),
+  topRouteName: varchar("top_route_name", { length: 100 }),
+  topRouteQuestionsUnlocked: integer("top_route_questions_unlocked"),
+  topRoutePointsGain: integer("top_route_points_gain"),
+
+  // Platform launch notification tracking
+  notifiedPlatformLaunch: boolean("notified_platform_launch")
+    .notNull()
+    .default(false),
+  notifiedPlatformLaunchAt: timestamp("notified_platform_launch_at", {
+    withTimezone: true,
+  }),
 });
 
 // ------------------------------------------------------------------------------

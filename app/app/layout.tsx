@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Merriweather } from "next/font/google";
 import "./globals.css";
+import { PostHogProvider } from "./providers";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -29,7 +30,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${merriweather.variable} antialiased`}
       >
-        {children}
+        <PostHogProvider>{children}</PostHogProvider>
       </body>
     </html>
   );

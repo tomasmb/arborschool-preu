@@ -1,15 +1,14 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import Image from "next/image";
 import {
   type Route,
   type Axis,
   type MSTQuestion,
-  AXIS_NAMES,
 } from "@/lib/diagnostic/config";
 import { Confetti } from "./Confetti";
-import { Icons, AnimatedCounter, CollapsibleSection } from "./shared";
+import { Icons, AnimatedCounter } from "./shared";
 import {
   useLearningRoutes,
   sortRoutesByImpact,
@@ -18,28 +17,20 @@ import {
   QuestionReviewDrawer,
   type ResponseForReview,
 } from "./QuestionReviewDrawer";
+import { SimpleRouteCard, type AxisPerformance } from "./ResultsComponents";
+import { getPerformanceTier, isLowSignalTier } from "@/lib/config/tiers";
+import { trackResultsViewed, trackResultsCtaClicked } from "@/lib/analytics";
 import {
-  AxisProgressBar,
-  RouteCard,
-  getMotivationalMessage,
-  calculateTotalAtomsRemaining,
-  getWeeksByStudyTime,
-  TOTAL_ATOMS,
-  type AxisPerformance,
-  type ActualAxisMastery,
-} from "./ResultsComponents";
-
-// ============================================================================
-// AXIS MAPPING
-// ============================================================================
-
-/** Maps database axis names to frontend Axis codes */
-const DB_AXIS_TO_AXIS: Record<string, Axis> = {
-  algebra_y_funciones: "ALG",
-  numeros: "NUM",
-  geometria: "GEO",
-  probabilidad_y_estadistica: "PROB",
-};
+  TierHeadline,
+  TierMessageCard,
+  LimitationCopy,
+  GenericNextStep,
+  SecondaryScoreDisplay,
+  CtaButton,
+  BottomCtaSection,
+  shouldShowRoutes,
+  getScoreEmphasis,
+} from "./TierContent";
 
 // ============================================================================
 // TYPES
@@ -58,6 +49,14 @@ export interface DiagnosticResponse {
   isCorrect: boolean;
 }
 
+/** Top route info for passing to parent */
+export interface TopRouteInfo {
+  name: string;
+  questionsUnlocked: number;
+  pointsGain: number;
+  studyHours: number;
+}
+
 interface ResultsScreenProps {
   results: {
     paesMin: number;
@@ -72,9 +71,22 @@ interface ResultsScreenProps {
   /** All responses from diagnostic for question review */
   responses?: DiagnosticResponse[];
   onSignup: () => void;
-  /** Callback to set the consistent PAES score (from unlocked questions) for use in SignupScreen */
+  /** Callback to set the consistent PAES score for use in SignupScreen */
   onScoreCalculated?: (score: number) => void;
+  /** Callback to set the top route info for use in ThankYouScreen */
+  onTopRouteCalculated?: (topRoute: TopRouteInfo | null) => void;
 }
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
+// Canonical CTA label - single source of truth
+const CTA_LABEL = "Guardar mi progreso y recibir acceso";
+
+// Expectation line shown under CTA
+const EXPECTATION_LINE =
+  "Te avisamos cuando la plataforma esté lista para continuar. 1–2 correos, sin spam. Puedes darte de baja cuando quieras.";
 
 // ============================================================================
 // MAIN COMPONENT
@@ -82,15 +94,31 @@ interface ResultsScreenProps {
 
 export function ResultsScreen({
   results,
+  // route is passed but not currently used - kept for future tier-specific logic
   route: _route,
   totalCorrect,
   atomResults = [],
   responses = [],
   onSignup,
   onScoreCalculated,
+  onTopRouteCalculated,
 }: ResultsScreenProps) {
+  void _route; // Silence unused warning - route may be needed for future tier logic
+
   const [showContent, setShowContent] = useState(false);
   const [showReviewDrawer, setShowReviewDrawer] = useState(false);
+  const [showMoreRoutes, setShowMoreRoutes] = useState(false);
+  const hasTrackedView = useRef(false);
+
+  // Get performance tier and config
+  const performanceTier = useMemo(
+    () => getPerformanceTier(totalCorrect),
+    [totalCorrect]
+  );
+  const isLowSignal = useMemo(
+    () => isLowSignalTier(performanceTier),
+    [performanceTier]
+  );
 
   // Prepare responses for review drawer
   const responsesForReview: ResponseForReview[] = useMemo(() => {
@@ -101,14 +129,13 @@ export function ResultsScreen({
     }));
   }, [responses]);
 
-  // Use the diagnostic-based score (weighted formula) for main display
-  // This is more appropriate because atom data coverage is incomplete
+  // Calculate score display
   const midScore = Math.round((results.paesMin + results.paesMax) / 2);
   const scoreMin = results.paesMin;
   const scoreMax = results.paesMax;
+  const scoreEmphasis = getScoreEmphasis(performanceTier);
 
   // Fetch personalized learning routes based on diagnostic atom results
-  // Pass diagnostic score so route improvements are properly capped
   const { data: routesData, isLoading: routesLoading } = useLearningRoutes(
     atomResults,
     midScore
@@ -127,90 +154,72 @@ export function ResultsScreen({
     return sortRoutesByImpact(routesData.routes);
   }, [routesData?.routes]);
 
-  // Use the best route's improvement as the main "potential improvement"
-  // This is what the student can achieve by focusing on the top recommended route
-  const potentialImprovement = useMemo(() => {
-    if (sortedRoutes.length > 0) {
-      return sortedRoutes[0].pointsGain;
+  // Notify parent of the top route for ThankYouScreen
+  useEffect(() => {
+    if (onTopRouteCalculated && !routesLoading) {
+      if (sortedRoutes.length > 0) {
+        onTopRouteCalculated({
+          name: sortedRoutes[0].axis,
+          questionsUnlocked: sortedRoutes[0].questionsUnlocked,
+          pointsGain: sortedRoutes[0].pointsGain,
+          studyHours: sortedRoutes[0].studyHours,
+        });
+      } else {
+        onTopRouteCalculated(null);
+      }
     }
-    return 0;
+  }, [sortedRoutes, routesLoading, onTopRouteCalculated]);
+
+  // Use the best route's improvement and study hours as the main value proposition
+  const { potentialImprovement, studyHours } = useMemo(() => {
+    if (sortedRoutes.length > 0) {
+      return {
+        potentialImprovement: sortedRoutes[0].pointsGain,
+        studyHours: sortedRoutes[0].studyHours,
+      };
+    }
+    return { potentialImprovement: 0, studyHours: 0 };
   }, [sortedRoutes]);
 
-  // Check if student has very high mastery (can't improve much due to data coverage)
-  // This happens when they've mastered most atoms that have question mappings
+  // Check if student has very high mastery
   const isHighMastery = useMemo(() => {
     if (!routesData?.summary) return false;
     const { masteredAtoms, totalAtoms, unlockedQuestions, totalQuestions } =
       routesData.summary;
-    // High mastery: >80% atoms mastered OR >90% questions unlocked
     return (
       masteredAtoms / totalAtoms > 0.8 ||
       unlockedQuestions / totalQuestions > 0.9
     );
   }, [routesData?.summary]);
 
-  // Build a lookup map for actual mastery by axis (from API with transitivity)
-  const actualMasteryByAxis = useMemo(() => {
-    const map = new Map<Axis, ActualAxisMastery>();
-    if (routesData?.masteryByAxis) {
-      for (const m of routesData.masteryByAxis) {
-        const axis = DB_AXIS_TO_AXIS[m.axis];
-        if (axis) {
-          map.set(axis, m);
-        }
-      }
-    }
-    return map;
-  }, [routesData?.masteryByAxis]);
-
-  // Sort axes by actual mastery percentage if available, otherwise by question percentage
-  const sortedAxes = useMemo(() => {
-    return (Object.keys(results.axisPerformance) as Axis[]).sort((a, b) => {
-      const aData = actualMasteryByAxis.get(a);
-      const bData = actualMasteryByAxis.get(b);
-      const aPct =
-        aData?.masteryPercentage ?? results.axisPerformance[a].percentage;
-      const bPct =
-        bData?.masteryPercentage ?? results.axisPerformance[b].percentage;
-      return bPct - aPct;
-    });
-  }, [results.axisPerformance, actualMasteryByAxis]);
-
-  const strongestAxis = sortedAxes[0];
-  const weakestAxis = sortedAxes[sortedAxes.length - 1];
-
-  // Calculate motivational message using actual mastery data when available
-  const motivational = useMemo(() => {
-    // Build performance record with actual mastery percentages if available
-    const effectivePerformance: Record<Axis, AxisPerformance> = {
-      ...results.axisPerformance,
-    };
-    for (const axis of Object.keys(effectivePerformance) as Axis[]) {
-      const actual = actualMasteryByAxis.get(axis);
-      if (actual) {
-        effectivePerformance[axis] = {
-          ...effectivePerformance[axis],
-          percentage: actual.masteryPercentage,
-        };
-      }
-    }
-    return getMotivationalMessage(effectivePerformance);
-  }, [results.axisPerformance, actualMasteryByAxis]);
-
-  // Calculate atoms remaining - prefer API data (with transitivity) over estimate
-  const atomsRemaining = useMemo(() => {
-    if (routesData?.summary) {
-      return TOTAL_ATOMS - routesData.summary.masteredAtoms;
-    }
-    return calculateTotalAtomsRemaining(results.axisPerformance);
-  }, [routesData?.summary, results.axisPerformance]);
-
-  const weeksByStudy = getWeeksByStudyTime(atomsRemaining);
-
+  // Animation timing
   useEffect(() => {
     const timer = setTimeout(() => setShowContent(true), 500);
     return () => clearTimeout(timer);
   }, []);
+
+  // Track results viewed (once on mount)
+  useEffect(() => {
+    if (!hasTrackedView.current) {
+      hasTrackedView.current = true;
+      trackResultsViewed(
+        results.paesMin,
+        results.paesMax,
+        performanceTier,
+        totalCorrect,
+        CTA_LABEL
+      );
+    }
+  }, [results.paesMin, results.paesMax, performanceTier, totalCorrect]);
+
+  // Handler for CTA click with analytics tracking
+  const handleCtaClick = () => {
+    trackResultsCtaClicked(performanceTier, CTA_LABEL);
+    onSignup();
+  };
+
+  // Should we show calculated routes?
+  const showRoutes = shouldShowRoutes(performanceTier);
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -220,6 +229,7 @@ export function ResultsScreen({
       <div className="fixed bottom-20 right-1/4 w-40 h-40 sm:w-60 sm:h-60 lg:w-80 lg:h-80 bg-primary/10 rounded-full blur-3xl" />
 
       <div className="relative z-10">
+        {/* Header */}
         <header className="bg-white/80 backdrop-blur-lg border-b border-gray-100 sticky top-0 z-20">
           <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-center gap-3">
             <Image src="/logo-arbor.svg" alt="Arbor" width={36} height={36} />
@@ -230,292 +240,156 @@ export function ResultsScreen({
         </header>
 
         <div className="max-w-4xl mx-auto px-4 py-8">
-          {/* Hero Score */}
+          {/* Completion Badge */}
           <div
-            className={`text-center mb-10 transition-all duration-700 
+            className={`text-center mb-6 transition-all duration-700 
             ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
           >
-            <div className="inline-flex items-center gap-2 text-sm font-medium text-success bg-success/10 px-4 py-2 rounded-full mb-6">
+            <div className="inline-flex items-center gap-2 text-sm font-medium text-success bg-success/10 px-4 py-2 rounded-full">
               <span className="w-2 h-2 bg-success rounded-full animate-pulse" />
               Diagnóstico Completado
             </div>
-            <h1 className="text-3xl sm:text-4xl font-serif font-bold text-charcoal mb-2">
-              Tu Puntaje PAES Estimado
-            </h1>
-            <div className="text-5xl sm:text-6xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary-light my-4">
-              <AnimatedCounter target={midScore} duration={2500} delay={200} />
-            </div>
-            <div className="text-lg text-cool-gray mb-6">
-              Rango: {scoreMin} - {scoreMax} puntos
-            </div>
-            <div className="card inline-block px-6 py-4 bg-gradient-to-r from-amber-50 to-white border-amber-200">
-              <div className="flex items-center justify-center gap-2 mb-1">
-                {Icons.star("w-5 h-5 text-amber-500")}
-                <p className="text-lg text-charcoal font-medium">
-                  {motivational.message}
-                </p>
-              </div>
-              <p className="text-sm text-cool-gray mt-2 flex items-center justify-center gap-1">
-                {Icons.trendUp("w-4 h-4 text-success")}
-                {potentialImprovement > 0 ? (
-                  <>
-                    Con trabajo enfocado puedes subir{" "}
-                    <strong className="text-success ml-1">
-                      +{potentialImprovement} puntos
-                    </strong>
-                  </>
-                ) : isHighMastery ? (
-                  <strong className="text-success ml-1">
-                    Ya dominas la gran mayoria del contenido evaluable
-                  </strong>
-                ) : (
-                  <>
-                    Con trabajo enfocado puedes subir{" "}
-                    <strong className="text-success ml-1">
-                      +{potentialImprovement} puntos
-                    </strong>
-                  </>
-                )}
-              </p>
-            </div>
-
-            {/* Primary CTA - capture interest at emotional peak */}
-            <button
-              onClick={onSignup}
-              className="mt-6 btn-cta px-8 py-3 text-base inline-flex items-center gap-2 
-                shadow-lg hover:scale-105 transition-transform"
-            >
-              Guardar mis Resultados
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 7l5 5m0 0l-5 5m5-5H6"
-                />
-              </svg>
-            </button>
           </div>
 
-          {/* Axis Performance */}
-          <CollapsibleSection
-            title="Tu Perfil por Eje"
-            summary={
-              routesLoading
-                ? "Calculando..."
-                : `${AXIS_NAMES[strongestAxis]} es tu fortaleza`
-            }
-            helpText="Muestra tu dominio en cada eje temático de la PAES. Las barras indican qué porcentaje de los átomos de conocimiento dominas en cada área."
-            defaultExpanded={true}
-            delay={300}
-            className="mb-10"
-          >
-            {routesLoading ? (
-              <div className="card p-6">
-                <div className="flex justify-center py-8">
-                  <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
-                </div>
-              </div>
-            ) : (
-              <div className="card p-6 space-y-5">
-                {sortedAxes.map((axis, index) => {
-                  const mastery = actualMasteryByAxis.get(axis);
-                  if (!mastery) {
-                    console.error(`Missing mastery data for axis ${axis}`);
-                    return null;
-                  }
-                  return (
-                    <AxisProgressBar
-                      key={axis}
-                      axis={axis}
-                      data={results.axisPerformance[axis]}
-                      isStrength={axis === strongestAxis}
-                      isOpportunity={axis === weakestAxis}
-                      delay={600 + index * 150}
-                      actualMastery={mastery}
-                    />
-                  );
-                })}
-              </div>
-            )}
-          </CollapsibleSection>
-
-          {/* Learning Routes */}
-          <CollapsibleSection
-            title="Rutas de Aprendizaje"
-            summary={
-              sortedRoutes[0]
-                ? `Recomendado: ${sortedRoutes[0].title}`
-                : "Cargando..."
-            }
-            helpText="Caminos personalizados basados en tu diagnóstico. Cada ruta te ayuda a dominar átomos de conocimiento que desbloquean más preguntas PAES."
-            defaultExpanded={true}
-            delay={500}
-            className="mb-10"
-          >
-            <p className="text-center text-cool-gray mb-6 text-sm">
-              Caminos personalizados para maximizar tu mejora
-            </p>
-            {routesLoading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {sortedRoutes.slice(0, 3).map((route, i) => (
-                  <RouteCard
-                    key={route.axis}
-                    route={route}
-                    isRecommended={i === 0}
-                    delay={1000 + i * 150}
-                  />
-                ))}
-              </div>
-            )}
-            {routesData?.lowHangingFruit && (
-              <div className="card p-4 mt-4 bg-success/5 border-success/20">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  {Icons.lightbulb("w-5 h-5 text-success")}
-                  <p className="text-sm font-medium text-charcoal">
-                    Preguntas cerca de desbloquear
-                  </p>
-                </div>
-                <p className="text-center text-sm text-cool-gray">
-                  <strong className="text-success">
-                    {routesData.lowHangingFruit.oneAway}
-                  </strong>{" "}
-                  preguntas a 1 átomo de distancia,{" "}
-                  <strong className="text-amber-600">
-                    {routesData.lowHangingFruit.twoAway}
-                  </strong>{" "}
-                  a 2 átomos
-                </p>
-              </div>
-            )}
-            <div className="card p-4 mt-4 bg-primary/5 border-primary/20 flex items-center justify-center gap-2">
-              {Icons.lightbulb("w-5 h-5 text-primary")}
-              <p className="text-sm text-charcoal">
-                <strong>Las rutas son acumulativas.</strong> Al terminar una,
-                desbloqueas nuevos caminos.
-              </p>
+          {/* Limitation Copy (for low-signal tiers - shown first) */}
+          {isLowSignal && (
+            <div
+              className={`mb-6 transition-all duration-700 
+              ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+            >
+              <LimitationCopy
+                tier={performanceTier}
+                className="justify-center text-center"
+              />
             </div>
-          </CollapsibleSection>
+          )}
 
-          {/* Maximum Potential */}
-          <CollapsibleSection
-            title="Tu Potencial Máximo"
-            summary={`${routesData ? TOTAL_ATOMS - routesData.summary.masteredAtoms : atomsRemaining} átomos por dominar`}
-            helpText="Los átomos son unidades de conocimiento. Cada átomo que dominas desbloquea preguntas PAES relacionadas. El tiempo estimado asume práctica diaria constante."
-            defaultExpanded={false}
-            delay={700}
-            className="mb-10"
-          >
-            <div className="card p-6 bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
-              <div className="flex items-center gap-2 mb-1">
-                {Icons.trophy("w-6 h-6 text-accent")}
-                <span className="text-lg font-semibold text-charcoal">
-                  Resumen de progreso
-                </span>
+          {/* Hero Score (primary emphasis only) */}
+          {scoreEmphasis === "primary" && (
+            <div
+              className={`text-center mb-6 transition-all duration-700 
+              ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+            >
+              <h1 className="text-3xl sm:text-4xl font-serif font-bold text-charcoal mb-2">
+                Tu Puntaje PAES Estimado
+              </h1>
+              <div className="text-5xl sm:text-6xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary-light my-4">
+                <AnimatedCounter
+                  target={midScore}
+                  duration={2500}
+                  delay={200}
+                />
               </div>
-              <p className="text-xs text-cool-gray mb-4">
-                Los átomos son conceptos fundamentales — domina más y desbloquea
-                más preguntas PAES
-              </p>
-              <div className="grid sm:grid-cols-2 gap-6">
-                <div>
-                  <p className="text-cool-gray mb-2">Átomos por dominar:</p>
-                  <p className="text-3xl font-bold text-primary">
-                    {routesData
-                      ? TOTAL_ATOMS - routesData.summary.masteredAtoms
-                      : atomsRemaining}
-                  </p>
-                  <p className="text-sm text-cool-gray mt-1">
-                    de {TOTAL_ATOMS} totales
-                  </p>
-                  {routesData && (
-                    <p className="text-sm text-success mt-2">
-                      {routesData.summary.unlockedQuestions} de{" "}
-                      {routesData.summary.totalQuestions} preguntas
-                      desbloqueadas
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <p className="text-cool-gray mb-3">¿Cuánto tiempo toma?</p>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-charcoal">30 min/día</span>
-                      <span className="font-semibold text-primary">
-                        ~{weeksByStudy.thirtyMin} semanas
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-charcoal">45 min/día</span>
-                      <span className="font-semibold text-primary">
-                        ~{weeksByStudy.fortyFiveMin} semanas
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-charcoal">1 hora/día</span>
-                      <span className="font-semibold text-primary">
-                        ~{weeksByStudy.sixtyMin} semanas
-                      </span>
-                    </div>
-                  </div>
-                </div>
+              <div className="text-lg text-cool-gray mb-4">
+                Rango: {scoreMin} - {scoreMax} puntos
               </div>
-              <p className="text-sm text-cool-gray mt-4 text-center italic">
-                No tienes que hacerlo todo de una vez. Cada átomo que dominas te
-                acerca más a tu máximo potencial.
-              </p>
             </div>
-          </CollapsibleSection>
+          )}
 
-          {/* Stats Summary */}
+          {/* Tier Headline */}
           <div
-            className={`grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 transition-all duration-700 delay-300
+            className={`text-center mb-6 transition-all duration-700 delay-100
             ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
           >
-            <div className="card p-5 text-center bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
-              <div className="text-3xl font-bold text-primary mb-1">
-                {totalCorrect}/16
-              </div>
-              <div className="text-sm text-cool-gray font-medium">
-                Respuestas Correctas
-              </div>
-            </div>
-            <div className="card p-5 text-center bg-gradient-to-br from-success/5 to-success/10 border-success/20">
-              <div className="text-3xl font-bold text-success mb-1">
-                {potentialImprovement > 0 || !isHighMastery
-                  ? `+${potentialImprovement}`
-                  : "Max"}
-              </div>
-              <div className="text-sm text-cool-gray font-medium">
-                {potentialImprovement > 0 || !isHighMastery
-                  ? "Puntos Alcanzables"
-                  : "Dominio Alto"}
-              </div>
-            </div>
+            <TierHeadline tier={performanceTier} totalCorrect={totalCorrect} />
           </div>
 
-          {/* Question Review Trigger */}
-          {responsesForReview.length > 0 && (
+          {/* Limitation Copy (for high-signal tiers with missing modules) */}
+          {performanceTier === "perfect" && (
             <div
-              className={`mb-10 transition-all duration-700 delay-500
+              className={`mb-6 transition-all duration-700 delay-150
+              ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+            >
+              <LimitationCopy
+                tier={performanceTier}
+                className="justify-center text-center"
+              />
+            </div>
+          )}
+
+          {/* Improvement Message Card */}
+          <div
+            className={`text-center mb-6 transition-all duration-700 delay-200
+            ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+          >
+            <TierMessageCard
+              tier={performanceTier}
+              potentialImprovement={potentialImprovement}
+              studyHours={studyHours}
+              isHighMastery={isHighMastery}
+            />
+          </div>
+
+          {/* Learning Route OR Generic Next Step */}
+          <div
+            className={`mb-6 transition-all duration-700 delay-300
+            ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+          >
+            {showRoutes ? (
+              <>
+                <p className="text-sm text-cool-gray mb-3">
+                  Tu ruta de mayor impacto:
+                </p>
+                {routesLoading ? (
+                  <div className="card p-6 flex justify-center">
+                    <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+                  </div>
+                ) : sortedRoutes.length > 0 ? (
+                  <SimpleRouteCard
+                    route={sortedRoutes[0]}
+                    isRecommended={true}
+                  />
+                ) : null}
+              </>
+            ) : (
+              <GenericNextStep tier={performanceTier} />
+            )}
+          </div>
+
+          {/* Low Hanging Fruit (only for tiers with routes) */}
+          {showRoutes &&
+            routesData?.lowHangingFruit &&
+            routesData.lowHangingFruit.oneAway > 0 && (
+              <div
+                className={`mb-6 transition-all duration-700 delay-400
+              ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+              >
+                <div className="flex items-center gap-2 text-sm text-cool-gray">
+                  {Icons.lightbulb("w-4 h-4 text-success")}
+                  <span>
+                    Tienes{" "}
+                    <strong className="text-success">
+                      {routesData.lowHangingFruit.oneAway}
+                    </strong>{" "}
+                    preguntas a solo 1 concepto de distancia.
+                  </span>
+                </div>
+              </div>
+            )}
+
+          {/* Primary CTA */}
+          <div
+            className={`text-center mb-8 transition-all duration-700 delay-500
+            ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+          >
+            <CtaButton onClick={handleCtaClick} ctaLabel={CTA_LABEL} />
+            <p className="text-xs text-cool-gray mt-3 max-w-md mx-auto">
+              {EXPECTATION_LINE}
+            </p>
+          </div>
+
+          {/* "Ver más rutas" toggle (only for tiers with routes) */}
+          {showRoutes && sortedRoutes.length > 1 && (
+            <div
+              className={`text-center mb-6 transition-all duration-700 delay-600
               ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
             >
               <button
-                onClick={() => setShowReviewDrawer(true)}
-                className="w-full card p-4 flex items-center justify-center gap-3 
-                  hover:border-primary/50 hover:bg-primary/5 transition-all group"
+                onClick={() => setShowMoreRoutes(!showMoreRoutes)}
+                className="text-cool-gray text-sm flex items-center gap-1 mx-auto hover:text-charcoal transition-colors"
               >
                 <svg
-                  className="w-5 h-5 text-primary"
+                  className={`w-4 h-4 transition-transform ${showMoreRoutes ? "rotate-180" : ""}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -524,14 +398,53 @@ export function ResultsScreen({
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                    d="M19 9l-7 7-7-7"
                   />
                 </svg>
-                <span className="text-charcoal font-medium">
-                  Revisar mis respuestas
-                </span>
+                {showMoreRoutes
+                  ? "Ver menos rutas"
+                  : "Ver más rutas de aprendizaje"}
+              </button>
+            </div>
+          )}
+
+          {/* Additional Routes (expanded) */}
+          {showMoreRoutes && sortedRoutes.length > 1 && (
+            <div className="mb-8 space-y-3 animate-fadeIn">
+              <p className="text-sm text-cool-gray mb-3">
+                Otras rutas de aprendizaje:
+              </p>
+              {sortedRoutes.slice(1, 4).map((route) => (
+                <SimpleRouteCard
+                  key={route.axis}
+                  route={route}
+                  isRecommended={false}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Stats Summary */}
+          <div
+            className={`flex items-center justify-center gap-4 text-sm text-cool-gray mb-6 transition-all duration-700 delay-600
+            ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+          >
+            <span>Tu desempeño: {totalCorrect}/16 correctas</span>
+          </div>
+
+          {/* Question Review Link */}
+          {responsesForReview.length > 0 && (
+            <div
+              className={`text-center mb-6 transition-all duration-700 delay-700
+              ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+            >
+              <button
+                onClick={() => setShowReviewDrawer(true)}
+                className="text-cool-gray text-sm hover:text-charcoal transition-colors inline-flex items-center gap-1"
+              >
+                Revisar mis respuestas
                 <svg
-                  className="w-4 h-4 text-cool-gray group-hover:translate-x-1 transition-transform"
+                  className="w-4 h-4"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -547,47 +460,27 @@ export function ResultsScreen({
             </div>
           )}
 
-          {/* CTA */}
-          <div
-            className={`transition-all duration-700 delay-1000
-            ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-          >
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary-light p-6 sm:p-8 text-center">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
-              <div className="absolute bottom-0 left-0 w-32 h-32 bg-accent/20 rounded-full blur-2xl" />
-              <div className="relative">
-                <h3 className="text-2xl sm:text-3xl font-serif font-bold text-white mb-3">
-                  ¿Listo para mejorar tu puntaje?
-                </h3>
-                <p className="text-white/80 mb-6 max-w-md mx-auto">
-                  Guarda tus resultados y te avisamos cuando tu plan de estudio
-                  personalizado esté listo.
-                </p>
-                <button
-                  onClick={onSignup}
-                  className="btn-cta px-10 py-4 text-lg shadow-xl hover:scale-105 transition-transform"
-                >
-                  Guardar mis Resultados
-                  <svg
-                    className="w-5 h-5 ml-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 7l5 5m0 0l-5 5m5-5H6"
-                    />
-                  </svg>
-                </button>
-                <p className="text-white/60 text-sm mt-4">
-                  Te contactaremos muy pronto
-                </p>
-              </div>
+          {/* Secondary Score Display (for low-signal tiers) */}
+          {scoreEmphasis !== "primary" && (
+            <div
+              className={`transition-all duration-700 delay-700
+              ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+            >
+              <SecondaryScoreDisplay
+                scoreMin={scoreMin}
+                scoreMax={scoreMax}
+                tier={performanceTier}
+              />
             </div>
-          </div>
+          )}
+
+          {/* Bottom CTA Section */}
+          <BottomCtaSection
+            onCtaClick={handleCtaClick}
+            ctaLabel={CTA_LABEL}
+            expectationLine={EXPECTATION_LINE}
+            showContent={showContent}
+          />
         </div>
       </div>
 

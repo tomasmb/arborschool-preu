@@ -32,6 +32,12 @@ import {
   getActualRouteFromStorage,
 } from "@/lib/diagnostic/storage";
 import { type QuestionAtom } from "@/lib/diagnostic/qtiParser";
+import { getPerformanceTier } from "@/lib/config/tiers";
+import {
+  trackDiagnosticStarted,
+  trackDiagnosticCompleted,
+  trackSignupCompleted,
+} from "@/lib/analytics";
 import {
   WelcomeScreen,
   QuestionScreen,
@@ -42,6 +48,7 @@ import {
   MaintenanceScreen,
   DiagnosticHeader,
   OfflineIndicator,
+  type TopRouteInfo,
 } from "./components";
 
 // ============================================================================
@@ -86,12 +93,27 @@ export default function DiagnosticoPage() {
   // This is set by ResultsScreen when the learning routes API returns
   const [consistentScore, setConsistentScore] = useState<number | null>(null);
 
+  // Top route info from ResultsScreen (for ThankYouScreen snapshot)
+  const [topRouteInfo, setTopRouteInfo] = useState<TopRouteInfo | null>(null);
+
   // Signup state
   const [email, setEmail] = useState("");
   const [signupStatus, setSignupStatus] = useState<
     "idle" | "loading" | "success" | "error"
   >("idle");
   const [signupError, setSignupError] = useState("");
+
+  // Results snapshot for ThankYouScreen (captured on successful signup)
+  const [resultsSnapshot, setResultsSnapshot] = useState<{
+    paesMin: number;
+    paesMax: number;
+    topRoute?: {
+      name: string;
+      questionsUnlocked: number;
+      pointsGain: number;
+      studyHours: number;
+    };
+  } | null>(null);
 
   // Timer and tracking state
   const [attemptId, setAttemptId] = useState<string | null>(null);
@@ -252,6 +274,9 @@ export default function DiagnosticoPage() {
 
   // Start the test
   const startTest = async () => {
+    // Track diagnostic started event
+    trackDiagnosticStarted();
+
     // Clear any previous session data when starting fresh
     clearAllDiagnosticData();
 
@@ -454,6 +479,11 @@ export default function DiagnosticoPage() {
       setScreen("maintenance");
       return;
     }
+
+    // Track diagnostic completed event
+    const performanceTier = getPerformanceTier(totalCorrect);
+    trackDiagnosticCompleted(totalCorrect, performanceTier);
+
     showResults();
 
     // Complete test on API if we have a valid (non-local) attempt
@@ -524,24 +554,28 @@ export default function DiagnosticoPage() {
         actualRoute
       );
 
+      // Calculate performance tier for this signup
+      const totalCorrect = storedResponses.filter((r) => r.isCorrect).length;
+      const performanceTier = getPerformanceTier(totalCorrect);
+
       // Build signup payload with all available data
       const signupPayload = {
         email,
         attemptId: isLocal ? null : attemptId,
         atomResults,
-        // Include diagnostic results for local attempts
-        diagnosticData: isLocal
-          ? {
-              responses: storedResponses,
-              results: {
-                paesMin: calculatedResults.paesMin,
-                paesMax: calculatedResults.paesMax,
-                level: calculatedResults.level,
-                route: actualRoute,
-                totalCorrect: storedResponses.filter((r) => r.isCorrect).length,
-              },
-            }
-          : null,
+        // Always include diagnostic results for email sending
+        diagnosticData: {
+          responses: isLocal ? storedResponses : [],
+          results: {
+            paesMin: calculatedResults.paesMin,
+            paesMax: calculatedResults.paesMax,
+            level: calculatedResults.level,
+            route: actualRoute,
+            totalCorrect,
+            performanceTier,
+            topRoute: topRouteInfo ?? undefined,
+          },
+        },
       };
 
       const response = await fetch("/api/diagnostic/signup", {
@@ -552,6 +586,20 @@ export default function DiagnosticoPage() {
       const data = await response.json();
 
       if (data.success) {
+        // Track signup completed event
+        trackSignupCompleted(
+          calculatedResults.paesMin,
+          calculatedResults.paesMax,
+          getPerformanceTier(storedResponses.filter((r) => r.isCorrect).length)
+        );
+
+        // Capture results snapshot for ThankYouScreen
+        setResultsSnapshot({
+          paesMin: calculatedResults.paesMin,
+          paesMax: calculatedResults.paesMax,
+          topRoute: topRouteInfo ?? undefined,
+        });
+
         // Clear all localStorage data after successful signup
         clearAllDiagnosticData();
         setSignupStatus("success");
@@ -675,6 +723,7 @@ export default function DiagnosticoPage() {
         responses={responsesForReview}
         onSignup={() => setScreen("signup")}
         onScoreCalculated={setConsistentScore}
+        onTopRouteCalculated={setTopRouteInfo}
       />
     );
   }
@@ -717,6 +766,7 @@ export default function DiagnosticoPage() {
         onReconsider={
           signupStatus !== "success" ? () => setScreen("signup") : undefined
         }
+        resultsSnapshot={resultsSnapshot ?? undefined}
       />
     );
   }

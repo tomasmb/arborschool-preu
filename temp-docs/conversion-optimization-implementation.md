@@ -1,99 +1,126 @@
 # Conversion Optimization Implementation Plan
 
-**Goal:** Maximize the number of users who complete the diagnostic AND sign up ("I NEED THIS" moment).
+> **Status:** Active | **Last Updated:** 2026-01-25
+
+**Goal:** Maximize users who complete the diagnostic AND sign up.
 
 **Target Audience:**
 - Primary: 18-year-old Chilean students preparing for PAES
-- Secondary: Parents of these students (often the decision-makers)
+- Secondary: Parents (often the decision-makers)
 
-**Document Status:** Ready for implementation  
-**Last Updated:** January 2026
+**Reference:** This document implements the principles from `docs/arbor-poc-conversion-pillars-v2.md`.
 
 ---
 
 ## Table of Contents
 
-1. [Executive Summary](#executive-summary)
-2. [Audience Psychology Insights](#audience-psychology-insights)
-3. [Results Data Analysis: What's Defensible](#results-data-analysis-whats-defensible)
-4. [Expectation Setting & High Performers](#expectation-setting--high-performers)
-5. [Changes Overview](#changes-overview)
-6. [Priority 1: Example Results Preview](#priority-1-example-results-preview)
-7. [Priority 2: Results Screen Simplification](#priority-2-results-screen-simplification)
-8. [Priority 3: Credibility & Trust Elements](#priority-3-credibility--trust-elements)
-9. [Priority 4: Copy & Framing Updates](#priority-4-copy--framing-updates)
-10. [Priority 5: Analytics Instrumentation](#priority-5-analytics-instrumentation)
-11. [Copy Guidelines](#copy-guidelines)
-12. [Analytics Events Specification](#analytics-events-specification)
-13. [Success Metrics](#success-metrics)
-14. [Implementation Checklist](#implementation-checklist)
+1. [Core Principles](#core-principles)
+2. [Audience Psychology](#audience-psychology)
+3. [Data Defensibility](#data-defensibility)
+4. [Performance Tier System](#performance-tier-system)
+5. [Implementation: Results Screen](#implementation-results-screen)
+6. [Implementation: Example Preview Modal](#implementation-example-preview-modal)
+7. [Implementation: Credibility Elements](#implementation-credibility-elements)
+8. [Implementation: Copy Updates](#implementation-copy-updates)
+9. [Post-Signup Operational Contract](#post-signup-operational-contract)
+10. [Configuration Constants](#configuration-constants)
+11. [Analytics Specification](#analytics-specification)
+12. [Success Metrics](#success-metrics)
+13. [Implementation Checklist](#implementation-checklist)
+14. [Files Reference](#files-reference)
+15. [Appendix: Copy Dictionary](#appendix-copy-dictionary-findreplace)
 
 ---
 
-## Executive Summary
+## Core Principles
 
-Based on the Conversion Pillars research, behavioral science analysis, and a thorough review of what data we can actually defend, we need to make the following changes:
+### What We're Changing
 
 | Change | Effort | Impact | Priority |
 |--------|--------|--------|----------|
-| Example Results Preview (modal) | Medium | High | P1 |
-| Results Screen Simplification + Remove Misleading Data | **High** | **Critical** | P2 |
-| Credibility badges + expandable section | Low | Medium | P3 |
-| Copy & framing updates (loss/challenge) | Low | Medium | P4 |
-| Analytics instrumentation (PostHog) | Medium | High | P5 |
+| Analytics instrumentation (PostHog) — MVP only | Medium | High | P0 (engineering prerequisite) |
+| Results Screen — Remove Misleading Data | High | Critical | P1a |
+| Results Screen — Two-Phase Reveal | High | Critical | P1b |
+| Performance Tier System (6 tiers) | High | Critical | P2 |
+| Example Results Preview Modal | Medium | High | P3 |
+| Credibility badges + expandable section | Low | Medium | P4 |
+| Copy & framing updates | Low | Medium | P5 |
+| Post-Signup Operational Flow | Medium | High | P6 |
 
-### Critical Change: Results Screen
+**Note:** Analytics is P0 because we need baseline funnel rates and tier-segmented conversion before changing Results UX. MVP = 6 core events only; additional events added later based on bottleneck diagnosis. P1a/P1b are tightly coupled and should ship together.
 
-The current Results screen shows **misleading data** that implies precision we don't have:
-- Axis mastery percentages (we only sample a subset of atoms)
-- "X/Y átomos" counts (atoms not tested default to "not mastered")
-- Precise time estimates (based on questionable atom counts)
+### What We're NOT Changing
 
-**We MUST remove these** and focus on what we CAN defend:
-- PAES score (range) — based on actual PAES questions
-- +X points projections — grounded in Question Unlock Algorithm
-- Questions unlocked — solid knowledge graph foundation
-- Low hanging fruit — useful, about question proximity
+- Design system (colors, typography, components, spacing)
+- Diagnostic flow (16 questions, adaptive)
+- Signup screen layout
+- Core projection algorithm logic (but filtering input to failed questions only)
+- Visual quality standards (no low-quality assets or inconsistent styling)
 
-See [Results Data Analysis](#results-data-analysis-whats-defensible) for full breakdown.
+### Guardrails (Non-Negotiables)
 
-### Critical: Expectation Setting & High Performers
+These must be preserved during all changes:
 
-Students must understand this is a **16-question estimation**, not a comprehensive test. Additionally, **high performers** (14+/16 correct) need a different experience — we can't show "areas of improvement" when we didn't detect any weaknesses.
+1. **Never add steps before value** unless they increase completion
+2. **One primary action per page**
+3. **Users always know:** where they are, what's next, and the effort level (e.g., "16 preguntas · ~15 min típico")
+4. **Every claim must feel credible** — avoid hype
+5. **Preview output when uncertainty is a barrier**
+6. **Measure before/after** for any meaningful change
+7. **Respect the design system** — use existing components, colors, and typography; no ad-hoc styling
+8. **No low-quality visual elements** — avoid emojis in production UI (see note below)
 
-See [Expectation Setting & High Performers](#expectation-setting--high-performers) for details.
+**Emoji Note:** Wireframes in this document use emojis (🎯, ⭐, 💡, etc.) for quick visual communication during planning. **Do NOT implement emojis in production UI** — they render inconsistently across devices and look unprofessional. Instead, use:
+- Heroicons or Lucide icons from the design system
+- Tailwind-styled badges and visual indicators
+- Color-coded borders/backgrounds for emphasis
 
-**What we're NOT changing:**
-- Design system (colors, typography, components) — already good
-- Diagnostic flow (16 questions, adaptive) — working well
-- Signup screen layout — already follows best practices
-- +X points projections — algorithm is solid and defensible
+### Value Framing Framework
+
+Results must answer these questions to trigger "I need this":
+
+| Question | What to Show |
+|----------|--------------|
+| **Where am I?** | PAES score range (current state) |
+| **What should I do next?** | #1 learning route with clear action |
+| **How much effort?** | Questions to unlock, vague time framing |
+| **Why should I trust this?** | Based on real PAES questions, honest ranges |
+
+The "Aha moment" happens when users connect: current situation → achievable outcome → manageable path.
+
+### Signup Framing Principle
+
+Convert by "saving progress," not "marketing signup":
+
+- Frame as **continuity of value** (see [Results CTA Copy](#results-cta-copy) for canonical text)
+- User understands what they'll receive and when
+- Reduce perceived risk (easy opt-out posture)
+- Ask AFTER value is delivered, not before
 
 ---
 
-## Audience Psychology Insights
+## Audience Psychology
 
 ### 18-Year-Old Students (Gen Z)
 
 | Behavior | Design Implication |
 |----------|-------------------|
-| **8-second attention span** | Capture interest immediately. No text walls. |
-| **Instant gratification expectation** | Show value BEFORE asking for time commitment |
-| **Scan, don't read** | Visual > text. Use gauges, progress bars, cards |
-| **Authenticity detection** | Avoid hype. Conservative, honest claims only. |
-| **Loss aversion affects performance** | Frame as "closing a gap" not just "gaining points" |
-| **Challenge framing > threat framing** | "Discover your potential" not "You'll fail without this" |
+| Low tolerance for uncertainty and irrelevant text | Clear hierarchy, scannable content, promise visible immediately |
+| Instant gratification | Show value BEFORE asking for time commitment |
+| Scan, don't read | Visual > text. Use gauges, progress bars, cards |
+| Authenticity detection | Avoid hype. Conservative, honest claims only. |
+| Loss aversion affects performance | Frame as "closing a gap" not "gaining points" |
+| Challenge framing > threat framing | "Discover your potential" not "You'll fail without this" |
 
 ### Parents
 
 | Behavior | Design Implication |
 |----------|-------------------|
-| **Present-bias** | Show value NOW, not "later when you sign up" |
-| **Trust is behavioral, not rational** | Credibility signals > logical arguments |
-| **Moral weight on education decisions** | Frame as "the responsible choice" |
-| **Want to support, not pressure** | "Help your child" not "Fix your child" |
+| Present-bias | Show value NOW, not "later when you sign up" |
+| Trust is behavioral | Credibility signals > logical arguments |
+| Want to support, not pressure | "Help your child" not "Fix your child" |
 
-### Chile-Specific
+### Chile-Specific Context
 
 | Context | Implication |
 |---------|-------------|
@@ -103,662 +130,859 @@ See [Expectation Setting & High Performers](#expectation-setting--high-performer
 
 ---
 
-## Results Data Analysis: What's Defensible
+## Data Defensibility
 
-**Critical:** Before simplifying the Results screen, we must understand which data points are grounded in solid methodology vs. which imply precision we don't have.
+**Reference:** See `docs/diagnostic-atom-coverage-analysis.md` for full simulation of all 65,536 possible diagnostic outcomes.
 
-### ✅ DEFENSIBLE: Keep Prominently
+### Coverage Source of Truth
 
-| Element | How It's Calculated | Why It's Solid |
-|---------|---------------------|----------------|
-| **PAES Score (range)** | Weighted formula based on 16 real PAES questions, route factor, coverage factor. Range = ±5 questions via official PAES table. | Based on actual performance on real PAES questions. Range communicates uncertainty appropriately. |
-| **+X Points Projections** | Question Unlock Algorithm: mastered atoms → unlocked questions → PAES table lookup. Capped at 1000, includes ±15% uncertainty. | Solid logic chain grounded in knowledge graph. "If you master these atoms, you can answer these questions, which = X points." |
-| **Learning Routes** | Groups atoms by axis, calculates questions each route would unlock, converts to points via PAES table. | Same solid foundation as point projections. Actionable and grounded. |
-| **Low Hanging Fruit** | Counts questions where only 1-2 atoms are missing from being unlocked. | About question proximity, not mastery claims. Useful and accurate. |
+**Canonical statement:** Maximum observable coverage in simulation ranges **55–64%** depending on route; absolute best case observed was **63.8%** (Route B, all 16 correct). All coverage percentages in this document reference this range.
 
-### ❌ NOT DEFENSIBLE: Remove or Reframe
+| Route | Best Case Coverage | Notes |
+|-------|-------------------|-------|
+| Route A (easy) | 60.7% | R1 score 0-3 |
+| Route B (medium) | **63.8%** | R1 score 4-6, highest overall |
+| Route C (hard) | 54.6% | R1 score 7-8, overlapping prerequisites |
 
-| Element | Current Display | Why It's Misleading |
-|---------|-----------------|---------------------|
-| **Axis Mastery Percentages** | "Álgebra: 72% (58/80 átomos)" | We only test a SUBSET of atoms. Atoms not tested default to "not mastered." This systematically underestimates mastery and implies precision we don't have. |
-| **"X/Y atoms mastered" per axis** | "58/80 átomos" | Same problem. A student who knows 90% of Algebra might show 50% because we only tested atoms they happened to miss. |
-| **Specific total atom counts** | "87 átomos por dominar" | Implies we know exactly which atoms the student needs. In reality, "not mastered" often means "not tested and couldn't infer." |
-| **Precise time estimates** | "~12 semanas a 30 min/día" | Based on atom counts, which have the problem above. |
+### Diagnostic Coverage Constraints
 
-### ⚠️ REFRAME: Keep Concept, Change Presentation
+> **Internal-only:** These counts must never appear in user-facing copy.
 
-| Element | Current | Better Approach |
-|---------|---------|-----------------|
-| Axis comparison | Percentages | Qualitative: "Tu mayor oportunidad: Álgebra" (based on which route has highest point gain) |
-| Time framing | "~12 semanas" | Vague: "Con dedicación constante, verás progreso en semanas, no meses" |
-| Atom counts in routes | "12 átomos" | Keep but de-emphasize — focus on questions unlocked and points gained |
+Key constraints from the outcome analysis that inform what we can/cannot show:
+
+| Constraint | Value | Implication |
+|------------|-------|-------------|
+| Total atoms in system | 229 | Never show specific counts to users |
+| Atoms never reachable | 45 (19.7%) | Some knowledge is unknowable from diagnostic |
+| Maximum coverage (best case) | 55–64% | Even perfect scores don't reveal everything |
+| Typical coverage (6-10 correct) | 15-24% | Most students have limited but actionable signal |
+| Below Average coverage (3-5 correct) | ~10% | All have similar coverage; generic messaging appropriate |
+
+**Route coverage paradox:** Route C (hard path, 7-8/8 on R1) provides *less* coverage than Route B (medium path) because advanced atoms share prerequisites. A 15/16 student may have less information than a 13/16 student. The tier system accounts for this via conservative projections for Near-Perfect.
+
+### Critical Rule: Routes From Failed Questions Only {#routes-failed-only}
+
+> **This is a canonical rule referenced throughout the document.**
+
+**Routes must ONLY be based on atoms from questions the student got wrong.** Untested atoms (`source: not_tested`) should NEVER be used to generate route recommendations.
+
+| Atom Source | Use for Routes? | Rationale |
+|-------------|-----------------|-----------|
+| `direct` + `mastered: false` | **Yes** | Student demonstrably doesn't know this |
+| `direct` + `mastered: true` | No (already mastered) | — |
+| `inferred` + `mastered: true` | No (already mastered) | — |
+| `not_tested` | **No** | We have no evidence they don't know this |
+
+**Implications by tier:**
+
+| Tier | Wrong Answers | Route Source |
+|------|---------------|--------------|
+| Perfect (16/16) | 0 | None — no failed questions to base routes on |
+| Near-Perfect (14-15) | 1-2 | Only atoms from those 1-2 wrong answers |
+| High (11-13) | 3-5 | Atoms from 3-5 wrong answers |
+| Average (6-10) | 6-10 | Atoms from 6-10 wrong answers |
+| Below Average (3-5) | 11-13 | Many gaps, but use generic "Fundamentos" |
+| Very Low (0-2) | 14-16 | Too many gaps, generic messaging only |
+
+**Algorithm note:** The current Question Unlock algorithm treats `not_tested` atoms as gaps. For implementation, either:
+1. Filter algorithm output to only include atoms with `source: direct`, OR
+2. Modify algorithm to accept a flag for "direct failures only" mode
+
+### Evidence Rules for Strengths/Weaknesses {#evidence-rules-for-strengthsweaknesses}
+
+Apply the same "direct evidence only" principle to all strength/weakness UI claims:
+
+| UI Element | Evidence Required | Label Guidance |
+|------------|-------------------|----------------|
+| **Weaknesses** | `source: direct` + `mastered: false` (wrong answers only) | Never show weaknesses without direct evidence |
+| **Strengths** | `source: direct` + `mastered: true` (correct answers) | Use "base sólida" not "dominas X%" |
+| **Inferred strengths** | `source: inferred` + `mastered: true` | Optional; if shown, label as "conceptos relacionados" |
+
+**UI Non-Negotiables:**
+- **Never show "Tu mayor oportunidad: X" for perfect scores** — no failed questions = no evidence of gaps
+- **Never show axis comparisons without failed questions** — comparison requires detected weakness
+- **Never show "X% dominio" for any axis** — incomplete coverage makes percentages misleading
+- **Near-Perfect (14-15/16) must stay conservative** — only claim gaps for the 1-2 specific wrong answers
+
+This rule prevents regressions where someone reintroduces weakness claims that lack direct evidence.
+
+### Projection Rules (Implementation Contract) {#projection-rules}
+
+All point projections must follow these rules to prevent overclaiming.
+
+**Inputs:** Same as [Routes From Failed Questions Only](#routes-failed-only):
+- Only atoms with `source: direct` AND `mastered: false` (from wrong answers)
+- Never include `not_tested` or `inferred` atoms in projection calculations
+
+**Output Style:**
+- Always use "hasta +X" or ranges ("+X–Y puntos")
+- Never use "garantizado", "seguro", or absolute language
+- **Always include a conditional clause in the same sentence:** "si sigues la ruta", "al dominar estos conceptos", "con práctica enfocada"
+- **Always scope to the diagnostic:** The projection is about gaps WE IDENTIFIED, not total possible improvement. Use "según este diagnóstico" or similar.
+
+**Tier Caps:**
+
+| Tier | Projection Rule |
+|------|-----------------|
+| Perfect (16/16) | **Off** — no failed questions, no basis for projection |
+| Near-Perfect (14-15/16) | **Micro only** — "+3–6 puntos" tied explicitly to the 1-2 wrong answers |
+| High (11-13/16) | **Full** — aggregate projection from all wrong answers allowed |
+| Average (6-10/16) | **Moderate** — show top route projection only, not aggregate total |
+| Below Average (3-5/16) | **Off** — large numbers are daunting, generic messaging only |
+| Very Low (0-2/16) | **Off** — limited signal, no projections |
+
+**Example compliant copy:**
+- ✅ "Según este diagnóstico, podrías subir hasta +48 puntos al dominar los conceptos identificados."
+- ✅ "Al dominar estos conceptos, podrías desbloquear hasta +48 puntos en preguntas PAES."
+- ✅ "Tu mejora estimada con esta ruta: hasta +48 puntos."
+- ❌ "Estás a 48 puntos de tu potencial." (implies cap on total improvement)
+- ❌ "Ganarás +48 puntos." (implies guarantee)
+- ❌ "Puedes subir +48 puntos en X horas." (time estimates are unreliable)
+
+**What the projection means:** Points from mastering the specific atoms identified in THIS diagnostic → unlocking specific PAES questions. It is NOT a cap on total improvement, nor a time-based promise. Students can always improve more by studying beyond the identified gaps.
+
+### Defensible Elements (Keep Prominently)
+
+| Element | Why It's Solid |
+|---------|----------------|
+| **PAES Score (range)** | Based on actual PAES question performance. Range communicates uncertainty. |
+| **+X Points Projections** | Based on atoms from failed questions only → questions that would unlock → PAES table lookup. |
+| **Learning Routes** | Based on atoms from failed questions. We know these are real gaps. |
+| **Low Hanging Fruit** | Questions where only 1-2 *tested* atoms are missing. About proximity to questions student failed. |
+
+### Not Defensible Elements (Remove)
+
+| Element | Why It's Misleading |
+|---------|---------------------|
+| **Axis Mastery Percentages** | We only test a SUBSET of atoms. Untested atoms default to "not mastered," systematically underestimating real mastery. |
+| **"X/Y átomos mastered"** | Same problem. A student who knows 90% might show 50% because we only tested atoms they happened to miss. |
+| **Specific total atom counts** | "87 átomos por dominar" implies precision we don't have. |
+| **Precise time estimates** | Based on unreliable atom counts. |
 
 ### Summary Decision Table
 
-| Show | Hide/Remove | Reframe |
-|------|-------------|---------|
-| PAES score + range | Axis mastery percentages | Axis comparison → qualitative |
-| +X points projections | "X/Y átomos" displays | Time estimates → vague |
-| Learning route cards | "Maximum Potential" section | Atom counts → de-emphasized |
+| Show | Remove | Reframe |
+|------|--------|---------|
+| PAES score + range | Axis mastery percentages | Time estimates → vague ("progreso en semanas, no meses") |
+| +X points projections (from failed questions only) | "X/Y átomos" displays | |
+| Learning route cards (tiers with signal only) | "Maximum Potential" section | |
 | Low hanging fruit | Precise time calculations | |
-| Questions unlocked | | |
+| Questions unlocked | Axis comparisons (unless direct evidence) | |
+
+**Note:** "Tu mayor oportunidad: Álgebra" can only be shown if there are wrong answers in that axis. See [Evidence Rules](#evidence-rules-for-strengthsweaknesses).
 
 ---
 
-## Expectation Setting & High Performers
+## Performance Tier System
 
-### The Problem
+### Core Insight
 
-A 16-question diagnostic is an **estimation**, not a comprehensive assessment. Two issues arise:
+A 16-question diagnostic gives different amounts of information depending on performance. Different performance levels require fundamentally different messaging strategies.
 
-1. **All students** might think the diagnostic is more precise than it is, leading to:
-   - Frustration when real PAES differs
-   - Loss of trust ("this is crap")
-   
-2. **High performers** (14+/16 correct) get a weird experience:
-   - Score shows 910 (range 880-1000) — confusing ("I got everything right, why not 1000?")
-   - Shows "Tu fortaleza: Álgebra" / "Tu oportunidad: Geometría" — **but we have no evidence of weakness!**
-   - Suggests "+24 puntos de mejora" — **but we don't actually know what they need**
+| Tier | Correct | What We Know | What We Don't Know |
+|------|---------|--------------|-------------------|
+| **Perfect** | 16/16 | Everything tested was correct | Where their gaps actually are |
+| **Near-Perfect** | 14-15/16 | Strong + 1-2 specific weak areas | Whether weak areas are systematic |
+| **High** | 11-13/16 | Clear pattern of strengths/gaps | Full extent of knowledge |
+| **Average** | 6-10/16 | Mix of strengths and gaps | Full picture |
+| **Below Average** | 3-5/16 | Struggling significantly | Whether it's ability, preparation, or test conditions |
+| **Very Low** | 0-2/16 | Very limited signal | Results might be noise |
 
-The current design assumes everyone has clear weaknesses to show. For high performers, we're making up recommendations we can't defend.
+### Why Tiers Matter for Conversion
 
----
+**Wrong message kills conversion:**
 
-### Part 1: Set Expectations (For Everyone)
+| Tier | Wrong Approach | Result |
+|------|----------------|--------|
+| Perfect | "Here are your weaknesses" | "This test is broken" → distrust |
+| Near-Perfect | "+200 points improvement!" | "That's not realistic" → distrust |
+| Average | Show all weaknesses | "This is overwhelming" → abandonment |
+| Below Average | "+500 points possible!" | "That's impossible for me" → defeat |
+| Very Low | Show low score prominently | "I'm terrible at math" → disengagement |
 
-#### Welcome Screen — Add Context
+**Right message builds trust:**
 
-Add a subtle note that frames what this diagnostic IS:
+| Tier | Right Approach | Result |
+|------|----------------|--------|
+| Perfect | "You're advanced, here's what's next" | "They understand my level" → trust |
+| Near-Perfect | "Here's the ONE thing to fix" | "Specific and actionable" → trust |
+| High | "Good foundation + clear path" | Standard full experience |
+| Average | "Good foundation + clear next step" | "I can do this" → motivation |
+| Below Average | "Starting point found, one step at a time" | "Manageable path" → hope |
+| Very Low | "Let's start from foundations" | "They're not judging me" → openness |
 
-```tsx
-// Near the "16 Preguntas · 30 Minutos" info cards
-<p className="text-sm text-cool-gray mt-4 text-center">
-  Estimación basada en 16 preguntas PAES oficiales.
-  Con más práctica, tu perfil se vuelve más preciso.
-</p>
-```
+### Behavioral Science Foundation
 
-#### Results Screen — Explain the Range
+**Self-Determination Theory:** Feedback must make students feel capable of improvement. Every tier preserves "I can do this."
 
-For everyone (not just high performers), add a small explainer below the score:
+**Attribution Theory:**
+| Attribution Type | Effect | Our Approach |
+|------------------|--------|--------------|
+| Internal + Controllable (effort) | Motivating | Frame gaps as "not learned YET" |
+| Internal + Uncontrollable (ability) | Demotivating | Never imply fixed ability |
+| External (test unfair) | Disengaging | Acknowledge test limitations honestly |
 
-```tsx
-<p className="text-xs text-cool-gray mt-2 text-center">
-  Tu rango refleja la incertidumbre de un diagnóstico corto.
-  Mientras más practiques, más preciso será tu perfil.
-</p>
-```
+**Low Performer Research:** Negative feedback distorts learning and affective states. For struggling students: supportive not evaluative, focus on small wins, lead with what they DID get right.
 
-This normalizes uncertainty and sets up the value prop of continued engagement.
+**High Achiever Research:** May have perfectionism tendencies. Don't create anxiety with unfounded weakness claims.
 
----
+### Tier Configuration (Source of Truth)
 
-### Part 2: Special Handling for High Performers
-
-#### Detection Logic
+The `TIER_CONFIG` object below is the **single source of truth** for all tier-specific rules. Individual tier sections below provide wireframes and psychological context, but defer to this config for projection rules, limitation copy, and display flags.
 
 ```typescript
-const isHighPerformer = useMemo(() => {
-  // Got 14+ out of 16 right
-  if (totalCorrect >= 14) return true;
-  
-  // Very little room to improve per algorithm
-  if (potentialImprovement < 20) return true;
-  
-  // Already unlocked most questions
-  if (routesData?.summary) {
-    const unlockRatio = routesData.summary.unlockedQuestions / 
-                        routesData.summary.totalQuestions;
-    if (unlockRatio > 0.85) return true;
-  }
-  
-  return false;
-}, [totalCorrect, potentialImprovement, routesData]);
-```
+type PerformanceTier = 
+  | 'perfect'      // 16/16
+  | 'nearPerfect'  // 14-15/16
+  | 'high'         // 11-13/16
+  | 'average'      // 6-10/16
+  | 'belowAverage' // 3-5/16
+  | 'veryLow';     // 0-2/16
 
-#### High Performer Results Experience
+type SignalQuality = 'high' | 'medium' | 'low';
+type ProjectionRule = 'none' | 'conservative' | 'moderate' | 'full';
 
-When `isHighPerformer` is true, show a DIFFERENT results layout:
+type ScoreEmphasis = 'primary' | 'secondary' | 'minimal';
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  ✓ Diagnóstico Completado                              │
-│                                                         │
-│  Tu Puntaje PAES Estimado                              │
-│                                                         │
-│              ┌───────────┐                              │
-│              │  880-1000 │  ← Show range prominently   │
-│              └───────────┘                              │
-│                                                         │
-│  ┌─────────────────────────────────────────────────┐   │
-│  │ 🎉 ¡Excelente!                                  │   │
-│  │                                                 │   │
-│  │ Respondiste 15/16 correctamente.               │   │
-│  │                                                 │   │
-│  │ Este diagnóstico no detectó debilidades        │   │
-│  │ significativas en los conceptos evaluados.     │   │
-│  └─────────────────────────────────────────────────┘   │
-│                                                         │
-│  ┌─────────────────────────────────────────────────┐   │
-│  │ 📈 ¿Qué sigue?                                  │   │
-│  │                                                 │   │
-│  │ Para mantener este nivel y descubrir áreas     │   │
-│  │ de refinamiento más sutiles, tu plan           │   │
-│  │ personalizado incluirá práctica avanzada       │   │
-│  │ y simulacros completos.                        │   │
-│  └─────────────────────────────────────────────────┘   │
-│                                                         │
-│  ┌─────────────────────────────────────────────────┐   │
-│  │  [  Guardar mis Resultados  ]                  │   │
-│  └─────────────────────────────────────────────────┘   │
-│                                                         │
-│  Te avisamos cuando tu plan avanzado esté listo.      │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
-```
-
-#### What's Different for High Performers
-
-| Normal Experience | High Performer Experience |
-|-------------------|---------------------------|
-| "Puedes subir +48 puntos" | **Skip** — we don't have evidence of what to improve |
-| "Tu fortaleza: X" / "Tu oportunidad: Y" | **Skip** — we didn't detect weaknesses |
-| Learning route cards | **Skip or minimize** — show "práctica avanzada" framing |
-| Low hanging fruit | **Skip** — likely very few questions left to unlock |
-| Focus: **improvement** | Focus: **maintenance + refinement** |
-
-#### Implementation
-
-```tsx
-// In ResultsScreen.tsx
-{isHighPerformer ? (
-  <HighPerformerResults 
-    scoreRange={{ min: results.paesMin, max: results.paesMax }}
-    correctCount={totalCorrect}
-    totalQuestions={16}
-    onSignup={onSignup}
-  />
-) : (
-  <StandardResults 
-    results={results}
-    improvement={potentialImprovement}
-    routes={sortedRoutes}
-    lowHangingFruit={routesData?.lowHangingFruit}
-    onSignup={onSignup}
-  />
-)}
-```
-
-#### New Component: `HighPerformerResults.tsx`
-
-Create a simpler results component for high performers:
-
-```tsx
-interface HighPerformerResultsProps {
-  scoreRange: { min: number; max: number };
-  correctCount: number;
-  totalQuestions: number;
-  onSignup: () => void;
+interface TierConfig {
+  tier: PerformanceTier;
+  signalQuality: SignalQuality;
+  projectionRule: ProjectionRule;
+  limitationCopy: string;
+  showRoutes: boolean;
+  showScore: boolean;
+  scoreEmphasis: ScoreEmphasis; // primary = prominent, secondary = smaller, minimal = present but de-emphasized
 }
 
-export function HighPerformerResults({
-  scoreRange,
-  correctCount,
-  totalQuestions,
-  onSignup,
-}: HighPerformerResultsProps) {
-  return (
-    <div className="text-center">
-      {/* Score */}
-      <h1 className="text-3xl font-serif font-bold text-charcoal mb-2">
-        Tu Puntaje PAES Estimado
-      </h1>
-      <div className="text-5xl font-bold text-primary my-4">
-        {scoreRange.min}-{scoreRange.max}
-      </div>
-      
-      {/* Congratulations */}
-      <div className="card p-6 mb-6 bg-success/5 border-success/20">
-        <div className="text-2xl mb-2">🎉</div>
-        <h2 className="text-xl font-bold text-charcoal mb-2">¡Excelente!</h2>
-        <p className="text-cool-gray">
-          Respondiste <strong>{correctCount}/{totalQuestions}</strong> correctamente.
-        </p>
-        <p className="text-cool-gray mt-2">
-          Este diagnóstico no detectó debilidades significativas 
-          en los conceptos evaluados.
-        </p>
-      </div>
-      
-      {/* Next steps */}
-      <div className="card p-6 mb-6">
-        <h3 className="font-bold text-charcoal mb-2">📈 ¿Qué sigue?</h3>
-        <p className="text-cool-gray">
-          Para mantener este nivel y descubrir áreas de refinamiento 
-          más sutiles, tu plan personalizado incluirá práctica avanzada 
-          y simulacros completos.
-        </p>
-      </div>
-      
-      {/* CTA */}
-      <button onClick={onSignup} className="btn-cta w-full py-4 text-lg">
-        Guardar mis Resultados
-      </button>
-      <p className="text-sm text-cool-gray mt-4">
-        Te avisamos cuando tu plan avanzado esté listo.
-      </p>
-    </div>
-  );
+function getPerformanceTier(totalCorrect: number): PerformanceTier {
+  if (totalCorrect === 16) return 'perfect';
+  if (totalCorrect >= 14) return 'nearPerfect';
+  if (totalCorrect >= 11) return 'high';
+  if (totalCorrect >= 6) return 'average';
+  if (totalCorrect >= 3) return 'belowAverage';
+  return 'veryLow';
 }
+
+const TIER_CONFIG: Record<PerformanceTier, TierConfig> = {
+  perfect: {
+    tier: 'perfect',
+    // Signal is strong on strengths, weak on gap localization; keep medium by design.
+    // Do not "fix" to 'high' — we cannot personalize without knowing gaps.
+    signalQuality: 'medium',
+    projectionRule: 'none',
+    limitationCopy: 'No detectamos áreas de debilidad en los conceptos evaluados.',
+    showRoutes: false,
+    showScore: true,
+    scoreEmphasis: 'primary',
+  },
+  nearPerfect: {
+    tier: 'nearPerfect',
+    signalQuality: 'high',
+    // GUARDRAIL: Always conservative. Projections tied ONLY to the 1-2 wrong answers.
+    // Never aggregate or imply large improvements. See "Near-Perfect Guardrail" section.
+    projectionRule: 'conservative',
+    limitationCopy: 'Identificamos área(s) específica(s) a partir de tus respuestas incorrectas.',
+    showRoutes: true, // specific area only, from wrong answers
+    showScore: true,
+    scoreEmphasis: 'primary',
+  },
+  high: {
+    tier: 'high',
+    signalQuality: 'high',
+    projectionRule: 'full',
+    limitationCopy: 'Basado en tus respuestas, identificamos patrones claros.',
+    showRoutes: true,
+    showScore: true,
+    scoreEmphasis: 'primary',
+  },
+  average: {
+    tier: 'average',
+    signalQuality: 'medium',
+    projectionRule: 'moderate', // top route only
+    limitationCopy: 'Tu diagnóstico nos da información valiosa sobre dónde enfocarnos.',
+    showRoutes: true, // #1 only
+    showScore: true,
+    scoreEmphasis: 'primary',
+  },
+  belowAverage: {
+    tier: 'belowAverage',
+    signalQuality: 'low',
+    projectionRule: 'none',
+    limitationCopy: 'Identificamos un punto de partida. El diagnóstico breve no captura todo.',
+    showRoutes: false, // generic "Fundamentos" next step, not calculated routes
+    showScore: true,
+    scoreEmphasis: 'secondary', // show but smaller/less prominent
+  },
+  veryLow: {
+    tier: 'veryLow',
+    signalQuality: 'low',
+    projectionRule: 'none',
+    limitationCopy: 'Con 16 preguntas, el resultado puede no reflejar todo lo que sabes.',
+    showRoutes: false,
+    showScore: true,
+    scoreEmphasis: 'minimal', // present but de-emphasized, transparency for parents
+  },
+};
 ```
 
+### Quick Reference: Tier Behavior
+
+Derived from `TIER_CONFIG` above. **Do not modify this table directly** — update `TIER_CONFIG` instead.
+
+| Tier | `projectionRule` | `showRoutes` | `scoreEmphasis` |
+|------|------------------|--------------|-----------------|
+| Perfect | `none` | `false` | `primary` |
+| Near-Perfect | `conservative` | `true` (specific area) | `primary` |
+| High | `full` | `true` | `primary` |
+| Average | `moderate` | `true` (#1 only) | `primary` |
+| Below Average | `none` | `false` | `secondary` |
+| Very Low | `none` | `false` | `minimal` |
+
+**Weaknesses:** Only shown when we have direct evidence from wrong answers. See [Evidence Rules](#evidence-rules-for-strengthsweaknesses).
+
+### UX Invariant: Explain Why Something Is Missing
+
+**Rule:** When a module is absent (routes, projections, weaknesses), always show `limitationCopy` near where that module would appear.
+
+This is the strongest protection against "test is broken" reactions, especially for Perfect and Very Low tiers.
+
+| Tier | Missing Module | Explanation Source |
+|------|----------------|-------------------|
+| Perfect | Routes, projections, weaknesses | `TIER_CONFIG.perfect.limitationCopy` |
+| Near-Perfect | Aggregate projections | `TIER_CONFIG.nearPerfect.limitationCopy` |
+| Below Average | Routes, projections | `TIER_CONFIG.belowAverage.limitationCopy` |
+| Very Low | Routes, projections, score emphasis | `TIER_CONFIG.veryLow.limitationCopy` |
+
+**Implementation:** `limitationCopy` from `TIER_CONFIG` is **mandatory** on every results screen. Position it:
+- Near the top for low-signal tiers (Very Low, Below Average)
+- Near absent modules (e.g., where routes would be for Perfect)
+
+### Routes vs. Next Steps (Important Distinction)
+
+| Concept | What It Is | When to Use |
+|---------|-----------|-------------|
+| **Route Card** | Calculated learning path with projections (questions unlocked, points gained) | Tiers with enough signal: high, average, nearPerfect (specific area only) |
+| **Next Step Card** | Generic framing of what comes next, no projections | Tiers with limited signal: perfect, belowAverage, veryLow (`showRoutes: false`) |
+
+**Key:** `showRoutes: false` in config means no calculated route cards, but we still show a "next step" to maintain the "I need this" hook. See [Routes From Failed Questions Only](#routes-failed-only) for the canonical rule.
+
+### Signal Quality Variable (Future-Proofing)
+
+`signalQuality` is included in `TIER_CONFIG` above. For now, tier maps directly to confidence. Later we can incorporate additional factors:
+
+- Item difficulty (harder questions answered = stronger signal)
+- Response time patterns (very fast responses = possible guessing)
+- Adaptive path taken (reached harder questions = more data points)
+
+This structure allows future refinement without restructuring tier logic.
+
+### Edge Case Handling
+
+| Scenario | Handling |
+|----------|----------|
+| **No clear strongest area** (correct answers evenly distributed) | Show "Tienes una base equilibrada" instead of specific axis |
+| **No routes returned** from Question Unlock algorithm | Fall back to generic "Fundamentos" next step (same as Very Low) |
+| **No low hanging fruit** (no questions within 1-2 atoms) | Omit that line from results display |
+| **Calculation error** | Show completion message + contact support option |
+
+### Wireframe Values
+
+Values shown in tier wireframes below (score ranges, points, questions unlocked) are **illustrative examples**. Actual values are calculated by:
+- PAES score range: `lib/diagnostic/paesScoreTable.ts`
+- Points & questions unlocked: `lib/diagnostic/questionUnlock/`
+- Low hanging fruit: `lib/diagnostic/questionUnlock/unlockCalculator.ts`
+- Limitation copy: `TIER_CONFIG[tier].limitationCopy` (see [Tier Configuration](#tier-configuration-source-of-truth))
+
+**Visual Note:** Wireframes use emojis for quick communication. In production, replace with design system icons (Heroicons/Lucide). See [Guardrails](#guardrails-non-negotiables).
+
 ---
 
-### Copy for High Performers
+### Tier 1: Perfect Score (16/16)
 
-| Element | Copy |
-|---------|------|
-| Congratulations | "¡Excelente! Respondiste X/16 correctamente." |
-| Honesty | "Este diagnóstico no detectó debilidades significativas en los conceptos evaluados." |
-| Value prop | "Para mantener este nivel y descubrir áreas de refinamiento más sutiles, tu plan personalizado incluirá práctica avanzada y simulacros completos." |
-| CTA context | "Te avisamos cuando tu plan avanzado esté listo." |
+**Psychology:** Possibly perfectionist. We have NO detected weaknesses — can't claim to know gaps.
+
+**What to Show:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Tu Puntaje PAES Estimado: 807-1000                        │
+│                                                             │
+│  🎉 ¡Resultado excepcional!                                │
+│                                                             │
+│  Respondiste las 16 preguntas correctamente.               │
+│                                                             │
+│  ℹ️ Este diagnóstico no detectó áreas de debilidad en los │
+│     conceptos evaluados. Tu dominio es sólido.             │
+│                                                             │
+│  🎯 Tu siguiente paso (cuando lancemos):                   │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ Práctica avanzada + Simulacros                      │   │
+│  │ • Afinar tu tiempo y estrategia bajo presión       │   │
+│  │ • Preguntas de dificultad máxima                    │   │
+│  │ • Maximizar tu puntaje el día del test             │   │
+│  │ Guarda tu progreso para recibir acceso prioritario │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  [  Guardar mi progreso y recibir acceso  ]                 │
+│  Te avisamos cuando la plataforma esté lista para           │
+│  continuar. 1–2 correos, sin spam. Puedes darte de baja    │
+│  cuando quieras.                                            │
+│                                                             │
+│  ℹ️ ¿Por qué un rango? Con 16 preguntas tenemos alta      │
+│     confianza, pero más práctica permite afinar aún más.  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Key:** Even without calculated routes, we give a concrete next step that feels real and valuable. The "Práctica avanzada + Simulacros" is framed as what will be available when we launch, not a current feature.
+
+**What NOT to Show:**
+- "Tu mayor oportunidad: Geometría" (no failed questions → no evidence of gaps)
+- "+X puntos de mejora" (no failed questions → no basis for improvement claims)
+- Learning route cards (routes require failed questions to identify gaps)
+- Axis comparisons (no basis without failed questions)
 
 ---
 
-### Copy for Setting Expectations (Everyone)
+### Tier 2: Near-Perfect (14-15/16)
 
-| Location | Copy |
-|----------|------|
-| Welcome screen | "Estimación basada en 16 preguntas PAES oficiales. Con más práctica, tu perfil se vuelve más preciso." |
-| Results screen (below score) | "Tu rango refleja la incertidumbre de un diagnóstico corto. Mientras más practiques, más preciso será tu perfil." |
+**Psychology:** High achiever, may be frustrated by 1-2 mistakes. We CAN identify specific areas from wrong answers.
+
+**What to Show:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Tu Puntaje PAES Estimado: 750-950                         │
+│                                                             │
+│  ⭐ ¡Excelente resultado!                                  │
+│                                                             │
+│  Respondiste 15/16 correctamente. Muy cerca del máximo.   │
+│                                                             │
+│  📍 Identificamos 1 área específica a partir de tu        │
+│     respuesta incorrecta:                                  │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ Geometría: Transformaciones isométricas            │   │
+│  │ • 1 concepto por reforzar                          │   │
+│  │ • +3-6 puntos al dominar este tema                 │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  💡 Reforzar este concepto específico puede acercarte     │
+│     al rango más alto.                                    │
+│                                                             │
+│  [  Guardar mi progreso y recibir acceso  ]                 │
+│  Te avisamos cuando la plataforma esté lista para           │
+│  continuar. 1–2 correos, sin spam. Puedes darte de baja    │
+│  cuando quieras.                                            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Key principles:**
+- Show specific concept(s) from wrong questions only
+- Frame as "reforzar" not "debilidad"
+- **Conservative projections:** Only show points from the 1-2 missed concepts ("+3-6 puntos"), never aggregate totals ("+150 puntos")
+- This tier has `projectionRule: 'conservative'` — see `TIER_CONFIG` above
+
+**Near-Perfect Guardrail (Implementation Rule):**
+
+Due to the route coverage paradox (Route C provides less coverage than Route B), a 15/16 student may have less diagnostic information than a 13/16 student. Therefore:
+
+1. **Never imply "higher score = more diagnostic signal"** in messaging
+2. **Always tie projections explicitly to the 1-2 wrong answers** — not aggregate improvements
+3. **Keep improvement claims minimal** — this tier's value is confirmation of strength, not improvement potential
+4. **Edge case:** If `failedDirectAtoms.length === 0` (all wrong question atoms already inferred mastered), show "No detectamos áreas específicas…" and use generic next step
 
 ---
 
-### Why This Matters for Conversion
+### Tier 3: High Performer (11-13/16)
 
-**For normal students:** The "you can improve" message is motivating.
+**Psychology:** Competent and motivated. Clear patterns we can act on. This is the ideal case for standard results flow.
 
-**For high performers:** The same message is confusing/insulting. They might think:
-- "This test is broken — I got everything right but it says I have weaknesses?"
-- "Why should I sign up if they don't even know what I need?"
+**Wireframe:** Uses the standard two-phase design shown in [Implementation: Results Screen](#implementation-results-screen). The Phase 1/Phase 2 wireframes there represent this tier's experience.
 
-A **tailored high-performer experience** says:
-- "We see you're advanced"
-- "We're honest that we can't pinpoint weaknesses from 16 questions"
-- "Your plan will include advanced content to find subtle refinements"
+**What to Show:**
+- Score + range (primary emphasis)
+- Improvement projection (+X puntos, `projectionRule: 'full'`)
+- Top learning route (#1 prominent, with "Ver más rutas" expansion)
+- Low hanging fruit
 
-This builds trust and sets appropriate expectations for ALL users.
+**Tone:** "Buen punto de partida. Al dominar [Axis], podrías subir hasta +X puntos."
 
 ---
 
-## Changes Overview
+### Tier 4: Average (6-10/16)
+
+**Psychology:** May feel uncertain. Need encouragement that improvement is achievable. Don't overwhelm.
+
+**What to Show:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Tu Puntaje PAES Estimado: 520-700                         │
+│                                                             │
+│  📊 Ya tienes una base para construir                      │
+│                                                             │
+│  Respondiste 8/16 correctamente — información valiosa     │
+│  sobre dónde enfocarnos.                                   │
+│                                                             │
+│  ✅ Lo que ya dominas:                                     │
+│  • [Área más fuerte basada en correctas]                  │
+│                                                             │
+│  🎯 Tu ruta de mayor impacto:                              │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ Álgebra y Funciones                                │   │
+│  │ +12 preguntas PAES · +35 puntos potenciales        │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  💡 Tienes 6 preguntas a solo 1 concepto de distancia.    │
+│     Son puntos al alcance.                                 │
+│                                                             │
+│  [  Guardar mi progreso y recibir acceso  ]                 │
+│  Te avisamos cuando la plataforma esté lista para           │
+│  continuar. 1–2 correos, sin spam. Puedes darte de baja    │
+│  cuando quieras.                                            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Key Principles:**
+- Lead with what they got RIGHT
+- Show ONE clear next step
+- Emphasize quick wins (low hanging fruit)
+- Frame as "building" not "fixing"
+
+---
+
+### Tier 5: Below Average (3-5/16)
+
+**Psychology:** May feel defeated. Attribution risk: "I'm bad at math." Large improvement numbers would be daunting.
+
+**What to Show:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│  📋 Tu Diagnóstico                                         │
+│                                                             │
+│  🌱 Hemos identificado tu punto de partida                 │
+│                                                             │
+│  Respondiste 4/16 correctamente. Lo importante es que     │
+│  tomaste el diagnóstico — ahora sabemos por dónde empezar.│
+│                                                             │
+│  ℹ️ Identificamos un punto de partida. El diagnóstico     │
+│     breve no captura todo.                                 │
+│                                                             │
+│  ✅ Ya demuestras dominio en:                              │
+│  • [Concepto específico de las correctas]                 │
+│                                                             │
+│  🎯 Tu primer paso (cuando lancemos):                      │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ Fundamentos de Números                             │   │
+│  │ Cuando la plataforma esté lista, continuaremos    │   │
+│  │ por estos conceptos que desbloquean muchos otros  │   │
+│  │ Guarda tu progreso para recibir acceso prioritario │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  📈 Con los fundamentos sólidos, el progreso se acelera.  │
+│     Un paso a la vez.                                      │
+│                                                             │
+│  [  Guardar mi progreso y recibir acceso  ]                 │
+│  Te avisamos cuando la plataforma esté lista para           │
+│  continuar. 1–2 correos, sin spam. Puedes darte de baja    │
+│  cuando quieras.                                            │
+│                                                             │
+│  Tu rango estimado: 420-550                 (secondary)    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Key Principles:**
+- **Limitation + supportive framing FIRST** — user reads this before any number
+- Score at bottom with "rango estimado" wording (secondary emphasis)
+- Never show huge improvement numbers (daunting)
+- Focus on "starting point discovered"
+- Show what they DID get right
+- Frame first step as "foundations"
+
+**Critical implementation detail:** The first thing the user reads must be supportive framing, NOT the score. This prevents shame-driven drop-off while maintaining transparency for parents.
+
+---
+
+### Tier 6: Very Low (0-2/16)
+
+**Psychology:** Could be testing anxiety, unfamiliarity, or external factors. Very limited signal. Risk of complete disengagement.
+
+**What to Show:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│  📋 Diagnóstico Completado                                 │
+│                                                             │
+│  Gracias por completar el diagnóstico.                    │
+│                                                             │
+│  ℹ️ Con solo 16 preguntas, a veces el resultado no refleja│
+│     todo lo que sabes — especialmente si estabas bajo     │
+│     presión o el formato era nuevo.                        │
+│                                                             │
+│  🎯 Tu siguiente paso (cuando lancemos):                   │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ Fundamentos                                         │   │
+│  │ Cuando la plataforma esté lista, continuaremos    │   │
+│  │ por los conceptos base que desbloquean todo lo    │   │
+│  │ demás. Un paso a la vez.                          │   │
+│  │ Guarda tu progreso para recibir acceso prioritario │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  💡 Muchos estudiantes que empiezan aquí logran mejoras   │
+│     significativas con práctica constante.                 │
+│                                                             │
+│  [  Guardar mi progreso y recibir acceso  ]                 │
+│  Te avisamos cuando la plataforma esté lista para           │
+│  continuar. 1–2 correos, sin spam. Puedes darte de baja    │
+│  cuando quieras.                                            │
+│                                                             │
+│  ¿Tienes dudas? Escríbenos por WhatsApp →  (low-contrast)  │
+│                                                             │
+│  Tu rango estimado: 350-480                   (minimal)    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Key Principles:**
+- **Limitation + supportive framing FIRST** — the first thing user reads, before any number
+- Score at very bottom with "rango estimado" wording (minimal emphasis, small text)
+- Concrete next step ("Fundamentos") even without routes — maintains "I need this"
+- Don't show improvement projections
+- Provide social proof and human support option
+
+**Critical implementation detail:** For veryLow and belowAverage, reading order matters. Limitation copy → supportive framing → next step → CTA → score (last). This prevents shame-driven drop-off while maintaining parent transparency.
+
+**Autonomy Escape Hatches (instead of retake):**
+
+Since retake with identical questions provides no value, offer alternative options:
+
+| Option | Purpose | Implementation |
+|--------|---------|----------------|
+| "Guardar mi progreso" | Preserves progress, reduces pressure | Same as main CTA |
+| "Hablar con nosotros" | Human support for uncertain students | Use `CONTACT_CONFIG` (see [Configuration Constants](#configuration-constants)) |
+| "Ver ejemplo de resultados" | Shows what diagnostic results look like | Link to example or modal |
+
+These maintain engagement without false promise of different results.
+
+---
+
+## Implementation: Results Screen
+
+### Current Flow Change
 
 ```
 CURRENT FLOW:
 Landing → Welcome → Questions (16) → Transition → Results → Signup → Thank You
 
-CHANGES:
-Landing     [+] Add "Ver ejemplo de resultado" button → opens modal
-            [+] Add light social proof
-            [+] Consider parent-aware section
-
-Welcome     [~] Update time messaging ("15 minutos")
-            [+] Add credibility badges
-            [+] Add expandable "¿Cómo funciona?"
-            [~] Update footer (save & resume clarity)
-
-Results     [-] REMOVE axis mastery percentages (misleading)
-            [-] REMOVE "X/Y átomos" displays (misleading)
-            [-] REMOVE "Tu Potencial Máximo" section (misleading)
-            [-] REMOVE precise time estimates (misleading)
-            [~] SIMPLIFY RouteCard (keep questions + points only)
-            [~] Two-phase reveal (score + #1 route → more routes)
-            [~] Update copy framing (loss/challenge)
-            [+] Highlight low hanging fruit (defensible, useful)
-
-All Screens [+] Add analytics events
+RESULTS SCREEN CHANGES:
+[-] REMOVE axis mastery percentages
+[-] REMOVE "X/Y átomos" displays
+[-] REMOVE "Tu Potencial Máximo" section
+[-] REMOVE precise time estimates
+[~] SIMPLIFY RouteCard (keep questions + points only)
+[+] IMPLEMENT 6-tier results system
+[+] Two-phase reveal (essential above fold, details on expand)
 ```
 
-### Key Principle: Show Only Defensible Data
+### Two-Phase Design
+
+#### Phase 1: Essential (Above Fold)
 
 ```
-KEEP (Defensible)           REMOVE (Misleading)
-─────────────────           ───────────────────
-✅ PAES score range         ❌ Axis % mastery
-✅ +X points projection     ❌ "X/Y átomos" per axis
-✅ Questions unlocked       ❌ Precise time estimates
-✅ Low hanging fruit        ❌ "Maximum Potential" section
-✅ #1 learning route        ❌ Atom counts (de-emphasize)
-```
-
----
-
-## Priority 1: Example Results Preview
-
-### Goal
-Reduce uncertainty before users commit 20 minutes. Let them SEE what they'll get.
-
-### Location
-- Landing page: "Ver ejemplo de resultado" button in hero section
-- Optional: Also accessible from Welcome screen
-
-### Format
-Modal/overlay with a **visual dashboard preview** (not text explanation).
-
-### Content Structure
-
-**Important:** The preview should mirror the ACTUAL results page structure — showing only defensible elements (score, points projections, learning routes), NOT the misleading axis percentages.
-
-```
-┌─────────────────────────────────────────────────────────┐
-│  [X] Close                                              │
-│                                                         │
-│  Así se verán tus resultados                           │
-│                                                         │
-│  ┌─────────────────────────────────────────────────┐   │
-│  │         Tu Puntaje PAES Estimado                │   │
-│  │                                                 │   │
-│  │              ┌───────────┐                      │   │
-│  │              │  650-720  │  ← Score RANGE      │   │
-│  │              └───────────┘                      │   │
-│  │                                                 │   │
-│  │  ┌─────────────────────────────────────────┐   │   │
-│  │  │ ⭐ Buen punto de partida                │   │   │
-│  │  │                                         │   │   │
-│  │  │ 📈 Puedes subir hasta +68 puntos       │   │   │
-│  │  │    con un plan enfocado                 │   │   │
-│  │  └─────────────────────────────────────────┘   │   │
-│  └─────────────────────────────────────────────────┘   │
-│                                                         │
-│  Tu ruta de mayor impacto:                             │
-│  ┌─────────────────────────────────────────────────┐   │
-│  │ 🎯 RECOMENDADO                                  │   │
-│  │                                                 │   │
-│  │ Geometría                                       │   │
-│  │                                                 │   │
-│  │ Dominar estos conceptos te permitiría:         │   │
-│  │ • Desbloquear +12 preguntas PAES               │   │
-│  │ • Subir hasta +32 puntos                       │   │
-│  └─────────────────────────────────────────────────┘   │
-│                                                         │
-│  💡 Además: 5 preguntas a solo 1 concepto de          │
-│     distancia — victorias rápidas.                     │
-│                                                         │
-│  ┌─────────────────────────────────────────────────┐   │
-│  │  [  Descubrir mi puntaje real  ]  ← CTA        │   │
-│  └─────────────────────────────────────────────────┘   │
-│                                                         │
-│  16 preguntas · ~15 minutos · Resultados inmediatos   │
-│                                                         │
-│  ℹ️ Ejemplo ilustrativo. Tu resultado será            │
-│     personalizado según tu desempeño.                  │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
-```
-
-### Design Requirements
-
-1. **Highly visual** — Gen Z scans, doesn't read
-   - Large score range (not fake precision)
-   - Card-based layout for learning route
-   - Clean, uncluttered
-
-2. **Show only defensible data**
-   - Score as a RANGE (not single number)
-   - Points improvement projection (grounded in algorithm)
-   - Questions unlocked (grounded in knowledge graph)
-   - Low hanging fruit insight
-   - **NO axis percentages** — these are misleading
-
-3. **Realistic example data**
-   - Score range: 650-720 (mid-range, relatable)
-   - Improvement: +68 puntos (realistic)
-   - Route example: Geometría
-
-4. **Mobile-first** — many students will view on phone
-
-5. **Clear CTA** — "Descubrir mi puntaje real" button at bottom
-
-6. **Subtle disclaimer** — "Ejemplo ilustrativo. Tu resultado será personalizado."
-
-### Implementation Notes
-
-- Create new component: `ExampleResultsModal.tsx`
-- Reuse existing design tokens and card styles
-- Add to Landing page hero section as secondary action
-- Track: `example_preview_opened`, `example_preview_cta_clicked`
-- **Do NOT copy the current ResultsScreen structure** — the preview should match the NEW simplified structure
-
----
-
-## Priority 2: Results Screen Simplification
-
-### Goal
-1. Reduce cognitive load — show the essential "Aha moment" first
-2. Remove misleading data — only show what we can defend
-3. Focus on conversion — CTA visible without scrolling
-
-### Current Problems
-
-1. **Too much information** — overwhelming after a 20-minute test
-2. **Misleading data displayed:**
-   - Axis mastery percentages (based on incomplete atom sampling)
-   - "X/Y átomos" displays (implies knowledge we don't have)
-   - Precise time estimates (based on questionable atom counts)
-3. **CTA buried** — user must scroll past multiple sections
-4. **Competing actions** — multiple sections distract from signup
-
-### What to REMOVE Entirely
-
-| Element | Reason |
-|---------|--------|
-| **Axis progress bars with percentages** | Misleading — we only test a subset of atoms, can't claim "72% mastery" |
-| **"X/Y átomos mastered" displays** | Same problem — false precision |
-| **"Maximum Potential" section** | Depends on misleading atom counts |
-| **Specific time estimates** ("~12 semanas") | Based on atom counts we can't defend |
-| **Multiple route cards initially** | Information overload; show #1 only |
-
-### What to KEEP (Defensible)
-
-| Element | Why It's Solid |
-|---------|----------------|
-| **PAES Score (range)** | Based on actual PAES question performance |
-| **+X Points projection** | Grounded in Question Unlock Algorithm |
-| **#1 Learning Route** | Questions unlocked → points gain is defensible |
-| **Low hanging fruit** | "X questions at 1 atom away" — about question proximity |
-| **Question review** | Useful, not misleading |
-
-### New Two-Phase Design
-
-#### Phase 1: Essential Aha (Always Visible, Above Fold)
-
-```
-┌─────────────────────────────────────────────────────────┐
-│  [Arbor Logo]                                          │
-│                                                         │
-│  ✓ Diagnóstico Completado                              │
-│                                                         │
-│  Tu Puntaje PAES Estimado                              │
-│                                                         │
-│              ┌───────────┐                              │
-│              │  680-740  │  ← Range, animated          │
-│              └───────────┘                              │
-│                                                         │
-│  ┌─────────────────────────────────────────────────┐   │
-│  │ ⭐ Buen punto de partida                        │   │
-│  │                                                 │   │
-│  │ 📈 Puedes subir hasta +48 puntos con un plan  │   │
-│  │    enfocado en los conceptos correctos.        │   │
-│  └─────────────────────────────────────────────────┘   │
-│                                                         │
-│  Tu ruta de mayor impacto:                             │
-│  ┌─────────────────────────────────────────────────┐   │
-│  │ 🎯 RECOMENDADO                                  │   │
-│  │                                                 │   │
-│  │ Álgebra y Funciones                            │   │
-│  │                                                 │   │
-│  │ Dominar estos conceptos te permitiría:         │   │
-│  │ • Desbloquear +8 preguntas PAES                │   │
-│  │ • Subir hasta +24 puntos                       │   │
-│  └─────────────────────────────────────────────────┘   │
-│                                                         │
-│  💡 Tienes 5 preguntas a solo 1 concepto de           │
-│     distancia — victorias rápidas que suman puntos.   │
-│                                                         │
-│  ┌─────────────────────────────────────────────────┐   │
-│  │  [  Guardar mis Resultados  ]  ← Primary CTA   │   │
-│  └─────────────────────────────────────────────────┘   │
-│                                                         │
-│  Guarda tu diagnóstico y te avisamos cuando tu plan   │
-│  de estudio personalizado esté listo.                  │
-│                                                         │
-│  ▼ Ver más rutas de aprendizaje                        │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  [Arbor Logo]                                              │
+│                                                             │
+│  ✓ Diagnóstico Completado                                  │
+│                                                             │
+│  Tu Puntaje PAES Estimado                                  │
+│              ┌───────────┐                                  │
+│              │  680-740  │                                  │
+│              └───────────┘                                  │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ ⭐ Buen punto de partida                            │   │
+│  │ 📈 Al dominar los conceptos identificados, podrías │   │
+│  │    subir hasta +48 puntos en preguntas PAES.       │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  Tu ruta de mayor impacto:                                 │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ 🎯 RECOMENDADO                                      │   │
+│  │ Álgebra y Funciones                                │   │
+│  │ • Desbloquear +8 preguntas PAES                    │   │
+│  │ • Subir hasta +24 puntos                           │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  💡 Tienes 5 preguntas a solo 1 concepto de distancia.    │
+│                                                             │
+│  [  Guardar mi progreso y recibir acceso  ]                 │
+│  Te avisamos cuando la plataforma esté lista para           │
+│  continuar. 1–2 correos, sin spam. Puedes darte de baja    │
+│  cuando quieras.                                            │
+│                                                             │
+│  ▽ Ver más rutas de aprendizaje          (low-contrast)    │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 #### Phase 2: Expanded Details (On Click)
 
-Only show additional DEFENSIBLE information:
-
 ```
-┌─────────────────────────────────────────────────────────┐
-│  Otras rutas de aprendizaje:                           │
-│                                                         │
-│  ┌─────────────────────────────────────────────────┐   │
-│  │ Geometría                                       │   │
-│  │ +6 preguntas · +18 puntos potenciales          │   │
-│  └─────────────────────────────────────────────────┘   │
-│                                                         │
-│  ┌─────────────────────────────────────────────────┐   │
-│  │ Números                                         │   │
-│  │ +4 preguntas · +12 puntos potenciales          │   │
-│  └─────────────────────────────────────────────────┘   │
-│                                                         │
-│  ────────────────────────────────────────────────────  │
-│                                                         │
-│  📊 Tu desempeño en el diagnóstico: 10/16 correctas   │
-│                                                         │
-│  📋 Revisar mis respuestas →                           │
-│                                                         │
-│  ┌─────────────────────────────────────────────────┐   │
-│  │  [  Guardar mis Resultados  ]  ← Secondary CTA │   │
-│  └─────────────────────────────────────────────────┘   │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  Otras rutas de aprendizaje:                               │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ Geometría                                           │   │
+│  │ +6 preguntas · +18 puntos potenciales              │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ Números                                             │   │
+│  │ +4 preguntas · +12 puntos potenciales              │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  📊 Tu desempeño: 10/16 correctas                          │
+│  📋 Revisar mis respuestas →              (low-contrast)   │
+│                                                             │
+│  [  Guardar mi progreso y recibir acceso  ]                 │
+│  Te avisamos cuando la plataforma esté lista para           │
+│  continuar. 1–2 correos, sin spam. Puedes darte de baja    │
+│  cuando quieras.                                            │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### What's Different from Current
+### Secondary Actions Styling Guardrail
 
-| Current | New |
-|---------|-----|
-| Shows axis % mastery bars | **REMOVED** — misleading |
-| Shows "58/80 átomos" | **REMOVED** — misleading |
-| Shows "~12 semanas a 30min/día" | **REMOVED** — misleading |
-| Shows "87 átomos por dominar" | **REMOVED** — misleading |
-| Shows 3 route cards immediately | Shows **1 route** initially |
-| Has "Maximum Potential" section | **REMOVED** |
-| CTA below multiple sections | CTA **above fold** |
-| Multiple collapsible sections | **One expand** for more routes |
+**Rule:** The CTA must be the only high-contrast button on the results screen.
 
-### Implementation Changes
+| Element | Styling | Rationale |
+|---------|---------|-----------|
+| **CTA button** | High contrast, primary color, full-width on mobile | Single primary action |
+| **"Ver más rutas"** | Low-contrast text + chevron, no button styling | Curiosity option, not competing action |
+| **"Revisar mis respuestas"** | Low-contrast link, smaller text | Secondary utility |
 
-#### 1. ResultsScreen.tsx — Major Refactor
+**Implementation:**
 
 ```tsx
-// NEW STATE
-const [showMoreRoutes, setShowMoreRoutes] = useState(false);
+// ❌ Wrong: button styling competes with CTA
+<button className="bg-primary text-white">Ver más rutas</button>
 
-// PHASE 1: Always visible
-// - Score with range
-// - Motivational message + points projection  
-// - ONE recommended route (focus on questions + points, not atoms/time)
-// - Low hanging fruit insight
-// - Primary CTA
-// - "Ver más rutas" toggle
-
-// PHASE 2: On expand
-// - Routes 2-3 (simplified cards)
-// - Stats summary (X/16 correctas)
-// - Review button
-// - Secondary CTA
+// ✅ Correct: disclosure row, low contrast
+<button className="text-cool-gray text-sm flex items-center gap-1 hover:text-charcoal">
+  <ChevronDownIcon className="w-4 h-4" />
+  Ver más rutas de aprendizaje
+</button>
 ```
 
-#### 2. Remove These Components/Sections
+This prevents "Ver más rutas" from becoming a curiosity trap that reduces CTA clicks, especially for Gen Z users.
 
-- `AxisProgressBar` component — or repurpose without percentages
-- "Tu Perfil por Eje" section entirely
-- "Tu Potencial Máximo" section entirely
-- Time estimates from route cards
-- Atom counts from route cards (or de-emphasize significantly)
+---
 
-#### 3. Simplify RouteCard Component
-
-**Current RouteCard shows:**
-- Atom count
-- Questions unlocked
-- Points gain
-- Study hours
-
-**New RouteCard shows:**
-- Questions unlocked (defensible)
-- Points gain (defensible)
-- That's it — clean and focused
+### Simplified RouteCard Component
 
 ```tsx
-// SIMPLIFIED ROUTE CARD
+import { StarIcon, LockOpenIcon, ArrowTrendingUpIcon } from '@heroicons/react/24/solid'
+
 <div className="card p-5">
-  {isRecommended && <Badge>🎯 RECOMENDADO</Badge>}
+  {isRecommended && (
+    <Badge className="bg-primary/10 text-primary">
+      <StarIcon className="w-4 h-4 mr-1" />
+      RECOMENDADO
+    </Badge>
+  )}
   <h4 className="font-bold text-lg">{route.title}</h4>
   <p className="text-cool-gray text-sm mb-4">
     Dominar estos conceptos te permitiría:
   </p>
   <div className="space-y-2">
     <div className="flex items-center gap-2">
-      <UnlockIcon />
+      <LockOpenIcon className="w-5 h-5 text-cool-gray" />
       <span>+{route.questionsUnlocked} preguntas PAES</span>
     </div>
     <div className="flex items-center gap-2 text-success font-semibold">
-      <TrendUpIcon />
+      <ArrowTrendingUpIcon className="w-5 h-5" />
       <span>+{route.pointsGain} puntos</span>
     </div>
   </div>
 </div>
 ```
 
-#### 4. Update Copy Framing
-
-**Current:**
-> "Con trabajo enfocado puedes subir +48 puntos"
-
-**New (challenge framing):**
-> "Puedes subir hasta +48 puntos con un plan enfocado en los conceptos correctos."
-
-Or loss-prevention:
-> "Tienes +48 puntos de potencial esperando. No los dejes sobre la mesa."
-
-#### 5. Low Hanging Fruit — Keep and Highlight
-
-This IS defensible and valuable. Reframe as:
-
-> "💡 Tienes **5 preguntas** a solo 1 concepto de distancia — victorias rápidas que suman puntos fáciles."
-
-### Mobile Considerations
+### Mobile Requirements
 
 - Phase 1 MUST fit on one mobile screen
 - CTA visible without scrolling
 - Score and improvement projection above fold
-- Single route card (not multiple)
+- Single route card initially
 
 ---
 
-## Priority 3: Credibility & Trust Elements
+## Implementation: Example Preview Modal
+
+### Purpose
+
+Reduce uncertainty before users commit time. Let them SEE what they'll get.
+
+### Location
+
+- Landing page: "Ver ejemplo de resultados" button in hero section
+- Optional: Welcome screen
+
+### Design
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  [X] Close                                                  │
+│                                                             │
+│  Así se verán tus resultados                               │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │         Tu Puntaje PAES Estimado                    │   │
+│  │              ┌───────────┐                          │   │
+│  │              │  650-720  │                          │   │
+│  │              └───────────┘                          │   │
+│  │                                                     │   │
+│  │  ⭐ Buen punto de partida                          │   │
+│  │  📈 Podrías subir hasta +68 puntos al dominar     │   │
+│  │     los conceptos identificados                    │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  Tu ruta de mayor impacto:                                 │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ 🎯 RECOMENDADO                                      │   │
+│  │ Geometría                                           │   │
+│  │ • Desbloquear +12 preguntas PAES                   │   │
+│  │ • Hasta +32 puntos al dominar esta ruta           │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  💡 5 preguntas a solo 1 concepto de distancia.            │
+│                                                             │
+│  [  Descubrir mi puntaje real  ]                           │
+│                                                             │
+│  16 preguntas · ~15 min · Puntaje inmediato ·              │
+│  Guardas tu progreso · Continuación cuando lancemos        │
+│                                                             │
+│  ℹ️ Ejemplo ilustrativo. Tu resultado será personalizado.  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Note:** The example preview modal uses "Descubrir mi puntaje real" (not the canonical CTA) because the user hasn't completed the diagnostic yet. This is intentional — it drives to action, not signup.
+
+### Requirements
+
+1. **Highly visual** — Gen Z scans, doesn't read
+2. **Show only defensible data** — Score range, points projection, questions unlocked, low hanging fruit. NO axis percentages.
+3. **Realistic example** — Score range 650-720, +68 points improvement
+4. **Mobile-first**
+5. **Clear CTA** — "Descubrir mi puntaje real"
+6. **Subtle disclaimer** — "Ejemplo ilustrativo"
+
+---
+
+## Implementation: Credibility Elements
+
+**Icon Convention:** All code examples use [Heroicons](https://heroicons.com/) (`@heroicons/react`). Use `24/solid` or `24/outline` variants consistently within each component.
 
 ### Welcome Screen Additions
 
-#### 1. Credibility Badge (near title)
+#### Credibility Badge
 
 ```tsx
+import { CheckCircleIcon } from '@heroicons/react/24/solid'
+
 <div className="inline-flex items-center gap-2 text-sm text-cool-gray 
   bg-primary/5 px-3 py-1.5 rounded-full mb-4">
   <CheckCircleIcon className="w-4 h-4 text-primary" />
@@ -766,198 +990,349 @@ This IS defensible and valuable. Reframe as:
 </div>
 ```
 
-**Placement:** Above or below the main title "Prueba Diagnóstica PAES M1"
-
-#### 2. Expandable "¿Cómo funciona?" Section
+#### Expandable "¿Cómo funciona?"
 
 ```tsx
+import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline'
+
 <details className="bg-white/50 rounded-xl p-4 mt-6 text-left">
-  <summary className="font-medium text-charcoal cursor-pointer 
-    flex items-center gap-2">
+  <summary className="font-medium text-charcoal cursor-pointer flex items-center gap-2">
     <QuestionMarkCircleIcon className="w-5 h-5 text-primary" />
     ¿Cómo funciona este diagnóstico?
   </summary>
   <div className="mt-4 text-sm text-cool-gray space-y-3">
-    <p>
-      <strong>Preguntas reales:</strong> Usamos preguntas de pruebas 
-      PAES oficiales para medir tu nivel actual.
-    </p>
-    <p>
-      <strong>Diagnóstico adaptativo:</strong> Las preguntas se ajustan 
-      a tu desempeño para un resultado más preciso.
-    </p>
-    <p>
-      <strong>Plan personalizado:</strong> Identificamos exactamente qué 
-      conceptos necesitas dominar para subir tu puntaje.
-    </p>
+    <p><strong>Preguntas reales:</strong> Usamos preguntas PAES oficiales.</p>
+    <p><strong>Diagnóstico adaptativo:</strong> Las preguntas se ajustan a tu desempeño.</p>
+    <p><strong>Continuación:</strong> Guarda tu progreso para recibir acceso cuando lancemos la experiencia completa.</p>
   </div>
 </details>
 ```
 
-**Placement:** After the tips section, before the CTA button
+#### Footer Update
 
-#### 3. Updated Footer Text
+Current: "Tu diagnóstico se guarda automáticamente al final"  
+New: "Tus resultados se guardan cuando ingresas tu email."
 
-Current:
-> "Tu diagnóstico se guarda automáticamente al final"
-
-New:
-> "Tu progreso se guarda automáticamente. Puedes cerrar y continuar después."
-
-#### 4. Privacy Note (subtle)
-
-Add to existing trust indicators or as small text:
-> "🔒 Tus datos están seguros y no los compartimos con terceros."
+**Note:** Results are persisted at signup (email submission), not at diagnostic completion. Only say "Puedes cerrar y continuar después" if session resume is actually implemented.
 
 ### Landing Page Additions
 
-#### 1. Light Social Proof
+#### Social Proof (subtle)
 
-In hero section, add subtle social proof:
 ```tsx
 <p className="text-sm text-cool-gray mt-4">
   Únete a estudiantes que ya descubrieron su potencial
 </p>
 ```
 
-**Note:** Keep it subtle. Avoid specific numbers unless real. Gen Z detects fake social proof.
+**Note:** Keep subtle. Avoid specific numbers unless real.
 
-#### 2. Parent-Aware Section (Optional)
-
-Consider adding a small expandable or section:
+#### Parent Section (optional)
 
 ```tsx
+import { UsersIcon } from '@heroicons/react/24/outline'
+
 <div className="mt-8 p-4 bg-primary/5 rounded-xl">
   <h4 className="font-medium text-charcoal flex items-center gap-2">
     <UsersIcon className="w-5 h-5 text-primary" />
     Para padres
   </h4>
   <p className="text-sm text-cool-gray mt-2">
-    Arbor muestra exactamente qué conceptos le faltan a tu hijo y 
-    cuánto tiempo toma dominarlos. Sin horas perdidas en contenido 
-    que ya sabe. Sin estrés innecesario.
+    Arbor detecta qué conceptos reforzar y por dónde empezar, 
+    sin perder tiempo en contenido que ya domina.
   </p>
 </div>
 ```
 
-**Placement:** After "How it works" section or in footer area
-
 ---
 
-## Priority 4: Copy & Framing Updates
+## Implementation: Copy Updates
 
-### Principles
+### Copy Principles
 
-1. **Challenge framing, not threat framing**
-   - ❌ "Si no te preparas, perderás puntos"
-   - ✅ "Descubre qué tan cerca estás de tu meta"
+| Do | Don't |
+|----|-------|
+| Be concrete with defensible data | Use hype language |
+| Use time anchors ("En 15 minutos") | Use threat framing |
+| Challenge framing ("Descubre tu potencial") | Vague promises |
+| Loss prevention subtle ("No dejes puntos sobre la mesa") | Pressure tactics |
+| Conservative claims ("hasta X puntos") | Fake social proof |
+| Use ranges for uncertainty | Precise metrics from incomplete data |
 
-2. **Loss prevention framing (subtle)**
-   - ❌ "Puedes ganar +50 puntos"
-   - ✅ "Estás a 50 puntos de tu potencial"
-   - ✅ "No dejes puntos sobre la mesa"
+### Defensible Language Guardrail
 
-3. **Time-to-value messaging**
-   - Emphasize speed: "En 15 minutos sabrás..."
-   - Make commitment feel small: "Solo 16 preguntas"
+**Core rule:** Say "detectamos" (what we observed) rather than "necesitas" (what we assume globally).
 
-4. **Concrete, not vague**
-   - ❌ "Mejora tu puntaje"
-   - ✅ "Sube hasta 68 puntos con un plan enfocado"
+| Risky (overpromise) | Safe (defensible) |
+|---------------------|-------------------|
+| "exactamente qué conceptos dominar para subir tu puntaje" | "exactamente qué conceptos detectamos en este diagnóstico" |
+| "sabrás todo lo que necesitas aprender" | "sabrás por dónde empezar a mejorar" |
+| "tu ruta personalizada completa" | "los primeros temas que trabajaremos" |
+| "puedes cerrar y continuar después" | Only if resume is actually implemented |
+
+**Where "exactamente" is safe:**
+- ✅ "exactamente qué conceptos detectamos en este diagnóstico"
+- ✅ "exactamente por dónde empezar"
+- ❌ "exactamente todo lo que necesitas" (implies total coverage we don't have)
+
+**Scope pattern:** Add "en este diagnóstico" or "a partir de tus respuestas" anywhere you use "exactamente" or claim knowledge about gaps.
+
+**Example transformations:**
+- "Identificamos exactamente los conceptos que te faltaron" → "Identificamos exactamente los conceptos que detectamos en este diagnóstico"
+- "Ya sabemos qué necesitas dominar" → "Ya sabemos por dónde empezar"
+- "Tu ruta personalizada te espera" → "Estos serán los primeros temas que trabajaremos (cuando la plataforma esté lista)"
 
 ### Specific Copy Changes
 
-#### Landing Page Hero
+| Location | Current | New |
+|----------|---------|-----|
+| Landing CTA | "Tomar el Diagnóstico Gratis" | "Descubrir mi Puntaje" |
+| Welcome Subtitle | "Descubre tu nivel actual y qué necesitas..." | "En ~15 minutos sabrás tu puntaje estimado y exactamente qué conceptos detectamos en este diagnóstico para empezar a mejorar." |
+| Welcome Time | "30 Minutos" | "~15 min" (or "15-20 min típico") |
+| Results Improvement | "Con trabajo enfocado puedes subir +48 puntos" | "Al dominar los conceptos identificados, podrías subir hasta +48 puntos." |
 
-Current:
-> "Alcanza tu puntaje PAES dominando un concepto a la vez"
+**Improvement copy must follow projection rules:** Always "hasta +X", always conditional ("si sigues la ruta", "con práctica enfocada"). See [Projection Rules](#projection-rules).
 
-Keep as-is (good). Add subtitle:
-> "En 15 minutos descubre exactamente qué estudiar para subir tu puntaje."
+### Results CTA Copy
 
-#### Landing Page CTA
+**Canonical CTA:** "Guardar mi progreso y recibir acceso"
 
-Current:
-> "Tomar el Diagnóstico Gratis"
+Use this CTA across all tiers and both phases. Track via `cta_label` property in analytics (see [Core Funnel Events](#core-funnel-events-mvp)).
 
-Update to:
-> "Descubrir mi Puntaje"
+**Later: A/B Test Variants (only when running experiments)**
 
-(More concrete, outcome-focused)
+| Variant | Copy | Hypothesis |
+|---------|------|------------|
+| A (default) | "Guardar mi progreso y recibir acceso" | Students: continuity + access framing |
+| B | "Guardar mis resultados y recibir acceso" | Parents: results-focused |
+| C | "Guardar mi diagnóstico y recibir acceso" | Neutral baseline |
 
-#### Welcome Screen Title
+**Implementation rule:** One CTA label per release. Do not mix labels in the same experiment. Add `variant_cta` property only when actively A/B testing (see [A/B Testing Support](#later-ab-testing-support-only-when-running-experiments)).
 
-Current:
-> "Prueba Diagnóstica PAES M1"
+**Expectation line + privacy reassurance (required under every CTA):**
 
-Keep as-is.
+**Canonical expectation line (platform not yet live):**
 
-#### Welcome Screen Subtitle
+"Te avisamos cuando la plataforma esté lista para continuar. 1–2 correos, sin spam. Puedes darte de baja cuando quieras."
 
-Current:
-> "Descubre tu nivel actual y qué necesitas aprender para alcanzar tu puntaje meta."
+Optional add-on (if true operationally): "Tus resultados quedan guardados."
 
-Update to:
-> "En 15 minutos sabrás exactamente qué conceptos dominar para subir tu puntaje."
+**Future (when platform is live):**
 
-(Added time-to-value, more concrete)
+"Guardamos tu diagnóstico y te enviamos el acceso a la plataforma. 1 correo, sin spam. Puedes darte de baja cuando quieras."
 
-#### Welcome Screen Info Cards
+**Critical:** Match the copy to operational reality. Never promise features that don't exist yet.
 
-Current: "30 Minutos"
-
-Consider: "~15 min" (more accurate for most users, feels less daunting)
-
-Or keep "30 min" as the max but add context:
-> "30 min máx" or show "15-20 min" as typical
-
-#### Results Screen Motivational Message
-
-Current logic in `getMotivationalMessage()` returns messages like:
-> "¡Buen punto de partida!"
-
-Add the loss/challenge frame below it:
-> "Estás a X puntos de tu potencial máximo. Con un plan enfocado, puedes cerrar esa brecha."
-
-#### Results Screen Improvement Display
-
-Current:
-> "Con trabajo enfocado puedes subir **+48 puntos**"
-
-Update to:
-> "Estás a **48 puntos** de tu potencial. Descubre cómo cerrar esa brecha."
-
-Or:
-> "**48 puntos** de mejora esperan. No los dejes sobre la mesa."
-
-#### Signup Screen CTA
-
-Current:
-> "Guardar y Notificarme"
-
-Keep as-is (good framing per Pillar 9).
-
-#### Results CTA Button
-
-Current:
-> "Guardar mis Resultados"
-
-Keep as-is (good).
+This addresses:
+- "What happens next?" uncertainty
+- "Will they spam me?" fear (high sensitivity in Chile)
+- Sets realistic expectation (must match actual delivery)
+- Reduces parent resistance with opt-out reassurance
 
 ---
 
-## Priority 5: Analytics Instrumentation
+## Post-Signup Operational Contract
+
+The UI copy makes specific promises. This section defines what the backend must deliver to fulfill them.
+
+### What the UI Promises
+
+| UI Element | Promise Made |
+|------------|--------------|
+| CTA: "Guardar mi progreso y recibir acceso" | Results are saved; user gets early access |
+| Expectation line: "Te avisamos cuando la plataforma esté lista" | User will be notified (1-2 emails) |
+| Expectation line: "Puedes darte de baja cuando quieras" | Easy opt-out exists |
+
+### Immediate Post-Signup Delivery (Required)
+
+After email submission, the user must **immediately** receive:
+
+| Delivery | Content | Channel |
+|----------|---------|---------|
+| **1. Confirmation** | "Tus resultados están guardados" | Thank You screen + email |
+| **2. Results snapshot** | PAES score range + top route summary | Thank You screen + email |
+| **3. Access timeline** | "Te avisamos cuando la plataforma esté lista" | Thank You screen + email |
+
+**Implementation options:**
+
+**Option A: Thank You Screen + Confirmation Email (Recommended)**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  ✓ ¡Listo! Tus resultados están guardados                  │
+│                                                             │
+│  Tu Puntaje PAES Estimado: 680-740                         │
+│                                                             │
+│  Tu ruta de mayor impacto:                                 │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ Álgebra y Funciones                                │   │
+│  │ +8 preguntas PAES · +24 puntos potenciales         │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  📧 Te enviamos una copia a [email]                        │
+│                                                             │
+│  ¿Qué sigue?                                               │
+│  Te avisamos cuando la plataforma esté lista para          │
+│  continuar con tu ruta personalizada.                      │
+│                                                             │
+│  [  Volver al inicio  ]                                    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Option B: Saved Results Page (permalink)**
+
+Create `/resultados/[session_id]` that shows:
+- Full results (score, route card, low hanging fruit)
+- "Guardado" badge
+- "Te avisamos cuando puedas continuar" note
+
+User can bookmark/share this page. Email links to it.
+
+### Confirmation Email Content
+
+```
+Subject: Tus resultados PAES están guardados
+
+Hola [nombre],
+
+Tu diagnóstico está guardado. Aquí está tu resumen:
+
+📊 Tu Puntaje PAES Estimado: 680-740
+
+🎯 Tu ruta de mayor impacto: Álgebra y Funciones
+   • +8 preguntas PAES que podrías desbloquear
+   • +24 puntos potenciales
+
+¿Qué sigue?
+Te avisamos cuando la plataforma esté lista para continuar 
+con tu ruta personalizada.
+
+—
+El equipo de Arbor
+
+---
+Puedes darte de baja cuando quieras: [unsubscribe_link]
+```
+
+### Platform Launch Email (Later)
+
+When platform is ready:
+
+```
+Subject: Tu ruta de aprendizaje está lista
+
+Hola [nombre],
+
+La plataforma está lista. Puedes continuar donde lo dejaste:
+
+📊 Tu puntaje estimado: 680-740
+🎯 Tu ruta: Álgebra y Funciones
+
+[  Continuar mi ruta  ] → links to platform with session restored
+
+—
+El equipo de Arbor
+```
+
+### Email Cadence Contract
+
+| Email | Trigger | Content |
+|-------|---------|---------|
+| **1. Confirmation** | Immediately after signup | Results snapshot + "te avisamos" |
+| **2. Platform launch** | When platform is live | "Tu ruta está lista" + CTA |
+| **(Optional) Reminder** | 1 week before PAES | Only if platform is live |
+
+**Maximum emails:** 2 (confirmation + launch). No marketing emails unless user opts in separately.
+
+### Database Requirements
+
+Store at signup:
+
+```typescript
+interface SavedDiagnosticResult {
+  sessionId: string;
+  email: string;
+  createdAt: Date;
+  
+  // Results snapshot (immutable)
+  totalCorrect: number;
+  performanceTier: PerformanceTier;
+  paesScoreMin: number;
+  paesScoreMax: number;
+  
+  // Top route snapshot
+  topRoute: {
+    axis: string;
+    questionsUnlocked: number;
+    pointsGain: number;
+  } | null;  // null for tiers without routes
+  
+  // For platform launch notification
+  notifiedPlatformLaunch: boolean;
+  unsubscribed: boolean;
+}
+```
+
+### Operational Checklist
+
+- [ ] Thank You screen shows results snapshot (not just "gracias")
+- [ ] Confirmation email sends immediately with results
+- [ ] Unsubscribe link works and is honored
+- [ ] Results are persisted in database
+- [ ] Platform launch email template is ready (even if not sent yet)
+- [ ] No emails sent beyond confirmation until platform launch
+
+---
+
+### Tone Guidelines
+
+- **For students:** Direct, confident, slightly casual. Peer-to-peer energy.
+- **For parents:** Reassuring, professional, supportive.
+
+---
+
+## Configuration Constants
+
+Centralized configuration objects referenced throughout this document. **Do not hardcode these values** — import from the config files.
+
+### Contact Configuration {#configuration-constants}
+
+```typescript
+// lib/config/contact.ts
+export const CONTACT_CONFIG = {
+  whatsapp: {
+    number: '+56993495075',
+    displayNumber: '+56 9 9349 5075',
+    url: 'https://wa.me/56993495075',
+  },
+  email: 'contacto@arbor.school',
+  // Update here when channels change
+} as const;
+```
+
+### Tier Configuration
+
+See [Performance Tier System](#performance-tier-system) for the full `TIER_CONFIG` object with all tier-specific rules.
+
+---
+
+## Analytics Specification
+
+### Analytics Scope Policy
+
+**MVP (ship now):** 6 core funnel events only.
+
+**Later (only if needed):** abandonment, expansion, viewport, A/B variant plumbing.
+
+**Why P0:** Analytics is required to avoid opinion-driven UI changes; we need baseline funnel rates and tier-segmented conversion before changing Results UX.
+
+**MVP Definition of Done:** Events are firing in PostHog for real sessions, funnel is visible, and `performance_tier` segmentation works on `results_viewed`.
+
+**Rule:** Do not create per-tier events (e.g., `tier_perfect_viewed`). Use `performance_tier` property on shared events instead.
 
 ### Recommended Tool: PostHog
 
-**Why PostHog:**
-- Free tier is generous (1M events/month)
-- Funnel analysis built-in
-- Session recordings (see where users struggle)
-- Feature flags for A/B testing later
-- Self-hosted option if privacy concerns
-
-**Alternative:** If simpler setup preferred, use Vercel Analytics + custom events to a simple backend endpoint.
+Free tier (1M events/month), funnel analysis, session recordings, A/B testing support.
 
 ### Installation
 
@@ -966,115 +1341,116 @@ npm install posthog-js
 ```
 
 ```tsx
-// app/providers.tsx or layout.tsx
-import posthog from 'posthog-js'
-import { PostHogProvider } from 'posthog-js/react'
+// app/providers/PostHogProvider.tsx
+'use client'
 
-if (typeof window !== 'undefined') {
-  posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
-    api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
-    capture_pageview: false // We'll capture manually
-  })
+import posthog from 'posthog-js'
+import { useEffect, useRef } from 'react'
+
+export function PostHogProvider({ children }: { children: React.ReactNode }) {
+  const initialized = useRef(false)
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !initialized.current) {
+      initialized.current = true
+      posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
+        api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+        capture_pageview: false
+      })
+      posthog.register({ build_version: process.env.NEXT_PUBLIC_BUILD_VERSION })
+    }
+  }, [])
+  
+  return <>{children}</>
 }
 ```
 
-### Events to Track
+**Implementation rule (Next.js App Router):** Init in a client component with `'use client'`, guard with a `useRef` to prevent double init (do not use `posthog.__loaded` as it's a private field), use `useEffect` to avoid SSR issues, and call `posthog.register({ build_version })` immediately after init.
 
-See [Analytics Events Specification](#analytics-events-specification) below.
+### Core Funnel Events (MVP)
 
----
+PostHog handles identity via `distinct_id` automatically. Don't add manual `session_id` to avoid duplication and identity edge cases.
 
-## Copy Guidelines
-
-### Core Principles
-
-#### 1. Never Claim Precision You Can't Defend
-
-| ❌ Misleading | ✅ Honest |
-|---------------|-----------|
-| "Dominas 72% de Álgebra" | "Tu mayor oportunidad: Álgebra" |
-| "58/80 átomos" | Don't show atom counts per axis |
-| "~12 semanas exactas" | "Con dedicación constante, verás progreso en semanas" |
-| "87 átomos por dominar" | Focus on questions/points, not atom counts |
-
-**Why:** We only sample a subset of atoms. Claiming percentage mastery implies knowledge we don't have.
-
-#### 2. Focus on Defensible Metrics
-
-| Defensible (show prominently) | Not Defensible (hide or remove) |
-|-------------------------------|--------------------------------|
-| PAES score range | Axis mastery percentages |
-| +X points projection | Specific atom counts |
-| Questions unlocked | Precise time estimates |
-| Low hanging fruit (questions near unlock) | "X/Y átomos" displays |
-
-### Do's
-
-| Principle | Example |
-|-----------|---------|
-| Be concrete (with defensible data) | "Desbloquea +12 preguntas PAES" |
-| Use time anchors | "En 15 minutos" not "Rápidamente" |
-| Challenge framing | "Descubre tu potencial" not "Evita el fracaso" |
-| Loss prevention (subtle) | "No dejes puntos sobre la mesa" |
-| Show the outcome | "Sabrás exactamente qué estudiar" |
-| Conservative claims | "hasta X puntos" not "garantizado X puntos" |
-| Use ranges for uncertainty | "650-720 puntos" not "685 puntos" |
-
-### Don'ts
-
-| Avoid | Why |
-|-------|-----|
-| Hype language ("increíble", "revolucionario") | Gen Z detects inauthenticity |
-| Threat framing ("vas a reprobar") | Decreases engagement per research |
-| Vague promises ("mejora tu futuro") | Not actionable, not credible |
-| Pressure tactics ("última oportunidad") | Creates anxiety, backfires |
-| Fake social proof ("10,000 estudiantes") | Only use real numbers |
-| Precise metrics from incomplete data | Creates false confidence, damages trust |
-| Percentage mastery claims | We can't verify full mastery |
-
-### Tone
-
-- **For students:** Direct, confident, slightly casual. Peer-to-peer energy.
-- **For parents:** Reassuring, professional, supportive. "We've got this handled."
-
----
-
-## Analytics Events Specification
-
-### Core Funnel Events
+**Global property (all events):** `build_version` — git SHA or semver (e.g., `"1.2.3"` or `"abc123"`). Required for before/after comparisons across releases.
 
 | Event | Trigger | Properties |
 |-------|---------|------------|
-| `landing_page_viewed` | Landing page loads | `referrer`, `device_type` |
-| `example_preview_opened` | User clicks "Ver ejemplo" | — |
-| `example_preview_cta_clicked` | User clicks CTA in preview modal | — |
-| `diagnostic_started` | User clicks "Comenzar Diagnóstico" | `source` (landing/welcome) |
-| `question_answered` | User submits an answer | `question_index`, `stage`, `is_correct`, `is_dont_know`, `response_time_seconds` |
-| `stage_1_completed` | User finishes question 8 | `correct_count`, `route_assigned` |
-| `diagnostic_completed` | User finishes question 16 | `total_correct`, `time_elapsed_seconds`, `route` |
-| `results_viewed` | Results screen loads | `paes_score`, `route`, `is_high_performer` |
-| `results_details_expanded` | User clicks "Ver análisis completo" | — |
-| `signup_prompted` | Signup screen loads | `paes_score` |
-| `signup_completed` | User submits email | `paes_score` |
-| `signup_skipped` | User clicks "Continuar sin guardar" | `paes_score` |
-| `thankyou_viewed` | Thank you screen loads | `has_email` |
+| `landing_page_viewed` | Landing loads | `device_type`, `utm_source`, `utm_medium`, `utm_campaign` |
+| `diagnostic_started` | Click "Comenzar" | `utm_source`, `utm_medium`, `utm_campaign` |
+| `diagnostic_completed` | Finish Q16 | `total_correct`, `performance_tier`, `time_elapsed_seconds` |
+| `results_viewed` | Results loads | `paes_score_min`, `paes_score_max`, `performance_tier`, `total_correct`, `cta_label` |
+| `results_cta_clicked` | Click CTA | `performance_tier`, `cta_label`, `signup_intent` |
+| `signup_completed` | Submit email | `paes_score_min`, `paes_score_max`, `performance_tier`, `utm_source`, `utm_medium`, `utm_campaign`, `signup_intent` |
 
-### Secondary Events
+**Important property: `signup_intent`**
 
-| Event | Trigger | Properties |
-|-------|---------|------------|
-| `question_review_opened` | User opens review drawer | — |
-| `route_card_clicked` | User interacts with learning route | `route_axis` |
-| `session_restored` | User returns to in-progress diagnostic | `questions_completed` |
-| `time_expired` | Timer reaches 0 | `questions_completed` |
-| `high_performer_results_viewed` | High performer sees their results | `score_range`, `correct_count` |
+Add `signup_intent: 'access_waitlist'` to `results_cta_clicked` and `signup_completed` events. This distinguishes waitlist conversion from future "product signup" conversion when the platform launches.
 
-### Drop-off Tracking
+```typescript
+// Current phase (platform not live)
+posthog.capture('signup_completed', {
+  ...baseProperties,
+  signup_intent: 'access_waitlist',
+});
 
-Track where users leave:
-- Question index at abandonment
-- Time on results page before leaving (without signup)
-- Device type correlation with drop-offs
+// Future phase (platform live) - update to:
+// signup_intent: 'create_account'
+```
+
+**Property notes:**
+- `build_version`: Essential for release comparisons.
+  
+  **Implementation rule:** Set via `posthog.register({ build_version })` once on app init, so it's automatically attached to every event. Do not rely on adding it manually per `capture()` call.
+- `paes_score_min`, `paes_score_max`: Numeric values (e.g., `680`, `740`). Use min/max for analysis flexibility.
+- `cta_label`: The actual CTA text shown (e.g., `"Guardar mi progreso y recibir acceso"`). Enables historical comparison across releases without A/B plumbing.
+
+**UTM Attribution Implementation:**
+
+```typescript
+// On landing_page_viewed, capture and persist UTMs:
+const utmData = {
+  utm_source: getUrlParam('utm_source'),
+  utm_medium: getUrlParam('utm_medium'),
+  utm_campaign: getUrlParam('utm_campaign'),
+};
+sessionStorage.setItem('arbor_utms', JSON.stringify(utmData));
+
+// Include UTMs on conversion events: diagnostic_started, signup_completed
+// Let PostHog handle distinct_id and session tracking automatically
+```
+
+**Decision Rule:** If baseline shows low completion, add `diagnostic_abandoned`. If results→CTA is low, add `results_expanded`. If running A/B tests, add `variant_cta`.
+
+### Later: Additional Events (Only When Needed)
+
+Add these events only when diagnosing specific bottlenecks:
+
+| Event | When to Add | Properties |
+|-------|-------------|------------|
+| `diagnostic_abandoned` | If completion rate < 70% | `last_question_index`, `time_elapsed_seconds` |
+| `results_expanded` | If results→CTA rate is low | — |
+| `example_preview_opened` | If adding preview modal | — |
+| `results_cta_viewed` | If investigating above-fold issues | — |
+
+### Later: A/B Testing Support (Only When Running Experiments)
+
+Add variant tracking only when `EXPERIMENT_FLAGS.enabled === true`:
+
+```typescript
+// Only include when actively running experiments
+interface VariantProperties {
+  variant_cta?: 'A' | 'B' | 'C';        // CTA label variant
+  variant_summary?: 'v1' | 'v2';        // Results summary copy variant
+}
+
+// Add to results_viewed, results_cta_clicked, signup_completed
+posthog.capture('results_viewed', {
+  ...baseProperties,
+  variant_cta: getActiveVariant('results_cta'),  // Only when experimenting
+});
+```
+
+**Rule:** Without variant tracking, A/B test results are inconclusive. Only add this when you're actually running experiments.
 
 ---
 
@@ -1082,153 +1458,221 @@ Track where users leave:
 
 ### Primary Metrics
 
-| Metric | Current (estimate) | Target | How to Measure |
-|--------|-------------------|--------|----------------|
-| **Start Rate** | Unknown | >60% | `diagnostic_started` / `landing_page_viewed` |
-| **Completion Rate** | Unknown | >70% | `diagnostic_completed` / `diagnostic_started` |
-| **Signup Rate** | Unknown | >40% | `signup_completed` / `results_viewed` |
+| Metric | Target | How to Measure |
+|--------|--------|----------------|
+| **Start Rate** | >60% | `diagnostic_started` / `landing_page_viewed` |
+| **Completion Rate** | >70% | `diagnostic_completed` / `diagnostic_started` |
+| **Signup Rate** | >40% | `signup_completed` / `results_viewed` |
+
+**Note:** Signup rate target assumes qualified traffic. If missed, evaluate by `utm_source` and `device_type` before concluding "copy is bad" — channel quality may be the real issue.
+
+**Interpretation rule:** Evaluate metrics by `performance_tier` first. A drop in overall signup can be caused by traffic shifting to more low-signal tiers, not copy/UI regression.
 
 ### Secondary Metrics
 
 | Metric | Target | Notes |
 |--------|--------|-------|
-| Example preview engagement | >15% of landing visitors | If low, make more prominent |
-| Results details expansion | >50% | Shows users want depth |
-| Time on results (before CTA) | <60 seconds | If high, simplify more |
+| **CTA click rate** | >50% | `results_cta_clicked / results_viewed` — measures CTA appeal |
 | Mobile completion rate | Within 10% of desktop | Parity across devices |
 
-### Diagnostic Questions
+**Later metrics (add when investigating specific issues):**
 
-Use data to answer:
-1. **Low start rate?** → Uncertainty problem → Improve preview / credibility
-2. **Low completion rate?** → Friction problem → Simplify diagnostic
-3. **High completion, low signup?** → Value/CTA problem → Improve framing
+| Metric | When to Add | Notes |
+|--------|-------------|-------|
+| Example preview engagement | After adding preview modal | If low, make more prominent |
+| Results details expansion | If results→CTA is low | Shows users want depth |
+| Abandonment question index | If completion < 70% | Requires `diagnostic_abandoned` event |
+
+### Funnel Diagnosis Rule
+
+Use metrics to diagnose problems and prioritize fixes:
+
+| Symptom | Likely Cause | Solution Focus |
+|---------|--------------|----------------|
+| Low start rate (<60%) | Uncertainty/trust problem | Improve preview, add credibility signals |
+| Low completion rate (<70%) | Friction/cognitive load | Shorten, simplify, clarify diagnostic |
+| High completion, low signup (<40%) | Value framing or CTA problem | Improve results messaging, CTA placement/copy |
+
+**Key insight:** Fix ability (simplify) before trying to increase motivation (hype).
 
 ---
 
 ## Implementation Checklist
 
-### Phase 1: Foundation (Week 1)
+**Sequencing Rule:** Do not deploy P1+ without MVP analytics live for at least a small internal test cohort. Phase 1 must ship first.
 
-- [ ] Set up PostHog (or chosen analytics)
-- [ ] Add core funnel events
-- [ ] Establish baseline metrics
+**Priority → Phase Mapping:**
+| Priority | Phase | Description |
+|----------|-------|-------------|
+| P0 | Phase 1 | Analytics Foundation (MVP) |
+| P1a | Phase 2 | Results Screen — Remove Misleading Data |
+| P1b | Phase 3 | Results Screen — Two-Phase Reveal |
+| P2 | Phase 4 | Performance Tier System |
+| P3 | Phase 5 | Example Preview Modal |
+| P4+P5 | Phase 6 | Credibility & Copy |
+| P6 | Phase 7 | Post-Signup Operational Flow |
+| — | Phase 8 | Iteration (ongoing) |
 
-### Phase 2: Quick Wins (Week 1-2)
+### Phase 1: Analytics Foundation (P0)
 
-- [ ] Update copy per guidelines (Welcome, Results, Landing)
-- [ ] Add credibility badge to Welcome screen
-- [ ] Add expandable "¿Cómo funciona?" to Welcome
-- [ ] Update footer text (save & resume clarity)
-- [ ] Update time messaging ("~15 minutos")
-- [ ] **Add expectation-setting copy** to Welcome screen ("Estimación basada en 16 preguntas...")
+- [x] Install PostHog
+- [x] Implement 6 core funnel events (MVP)
+- [x] Add `signup_intent: 'access_waitlist'` to `results_cta_clicked` and `signup_completed` events
+- [x] Use `useRef` guard for PostHog init (not `posthog.__loaded`)
+- [x] Persist UTMs on landing, attach to `diagnostic_started` + `signup_completed`
+- [ ] Baseline dashboard: Start Rate, Completion Rate, Signup Rate + breakdown by `performance_tier` and `device_type` *(requires PostHog setup in production)*
 
-### Phase 3: Results Screen Cleanup — Remove Misleading Data (Week 2)
+### Phase 2: Results Screen — Remove Misleading Data (P1a)
 
-**Critical — Do this BEFORE adding new features:**
+- [x] Remove "Tu Perfil por Eje" section (axis percentages)
+- [x] Remove "Tu Potencial Máximo" section
+- [x] Remove "X/Y átomos" displays
+- [x] Remove specific time estimates
+- [x] Simplify RouteCard (questions + points only)
+- [x] Remove/repurpose `AxisProgressBar` component
+- [x] Clean up unused helper functions
 
-- [ ] **Remove** "Tu Perfil por Eje" section entirely (axis mastery percentages)
-- [ ] **Remove** "Tu Potencial Máximo" section entirely
-- [ ] **Remove** axis progress bars with percentages
-- [ ] **Remove** "X/Y átomos" displays
-- [ ] **Remove** specific time estimates ("~12 semanas")
-- [ ] **Simplify** RouteCard to show only questions + points (remove atom counts, study hours)
-- [ ] **Remove** `AxisProgressBar` component (or repurpose without percentages)
-- [ ] **Clean up** unused helper functions in ResultsComponents.tsx
-- [ ] **Add** range explanation note below score for all users
+### Phase 3: Results Screen — Two-Phase Reveal (P1b)
 
-### Phase 4: Results Screen Redesign — Two-Phase Reveal (Week 2-3)
+- [x] Implement Phase 1 (essential above fold)
+- [x] Add "Ver más rutas" toggle
+- [x] Implement Phase 2 (expanded details)
+- [x] Ensure CTA above fold on mobile
+- [x] Update copy to loss/challenge framing
 
-- [ ] Implement Phase 1 (essential Aha): Score + improvement + #1 route + CTA
-- [ ] Add "Ver más rutas" toggle for Phase 2
-- [ ] Phase 2: Additional routes + stats summary + review button
-- [ ] Ensure CTA is above fold on mobile
-- [ ] Update copy to loss/challenge framing
-- [ ] Keep and highlight low hanging fruit insight
+### Phase 4: Performance Tier System (P2)
 
-### Phase 5: High Performer Handling (Week 3)
+- [x] Add `getPerformanceTier()` function and `TIER_CONFIG` object
+- [x] **Filter routes to failed questions only** — see [canonical rule](#routes-failed-only)
+- [x] Implement tier-based conditional rendering
+- [x] Implement tier-specific projection rules (per `TIER_CONFIG`):
+  - [x] Perfect: no projections (no failed questions)
+  - [x] Near-perfect: conservative, tied to 1-2 wrong answers only
+  - [x] High: projections from 3-5 wrong answers
+  - [x] Average: moderate (top route from 6-10 wrong answers)
+  - [x] Below Average: no projections (generic "Fundamentos")
+  - [x] Very Low: no projections (generic messaging)
+- [x] Create tier components in `TierContent.tsx` (consolidated approach instead of separate files)
+- [x] Test edge cases: 0, 2, 3, 5, 6, 10, 11, 13, 14, 15, 16
 
-**Critical for trust with advanced students:**
+### Phase 5: Example Preview Modal (P3)
 
-- [ ] Add `isHighPerformer` detection logic in ResultsScreen
-- [ ] Create `HighPerformerResults.tsx` component
-- [ ] Implement conditional rendering (high performer vs standard)
-- [ ] High performer experience: Skip improvement claims, show congratulations
-- [ ] High performer copy: "No detectó debilidades significativas"
-- [ ] High performer CTA: "Plan avanzado" framing
-- [ ] Test edge cases: 14/16, 15/16, 16/16 correct
+- [x] Create `ExampleResultsModal.tsx`
+- [x] Add "Ver ejemplo de resultados" button to Landing
+- [x] Mobile optimization
+- [ ] (Optional) Add `example_preview_opened` event if measuring preview engagement
 
-### Phase 6: Example Preview (Week 3-4)
+### Phase 6: Credibility & Copy (P4+P5)
 
-- [ ] Design ExampleResultsModal component (matching new simplified Results structure)
-- [ ] Implement modal with visual preview
-- [ ] Add "Ver ejemplo" button to Landing page
-- [ ] Track preview engagement events
-- [ ] Mobile optimization
-- [ ] **Important:** Preview should NOT show axis percentages (match new Results)
+- [x] Add credibility badge to Welcome
+- [x] Add expandable "¿Cómo funciona?" (with platform-accurate copy)
+- [x] Update footer text
+- [x] Update all "plan" copy to "acceso/progreso" language
+- [x] Add expectation-setting copy to Welcome
 
-### Phase 7: Polish & Iterate (Week 4+)
+### Phase 7: Post-Signup Flow (P6)
 
-- [ ] Review analytics data
-- [ ] A/B test copy variants if traffic allows
-- [ ] Add parent section if data suggests need
+- [x] **Thank You screen** shows results snapshot (score + top route), not just "gracias"
+- [x] **Database:** persist `SavedDiagnosticResult` with score, tier, top route snapshot
+- [x] **Confirmation email** sends immediately with results summary
+- [x] **Unsubscribe link** works and is honored
+- [x] **(Optional)** Saved Results page at `/resultados/[session_id]`
+- [x] **Platform launch email template** ready (send when platform is live)
+- [x] Verify: no emails sent beyond confirmation until platform launch
+
+### Phase 8: Iteration (Ongoing)
+
+Data-driven improvements after baseline is established:
+
+- [ ] Review baseline analytics data
+- [ ] If completion < 70%, add `diagnostic_abandoned` event
+- [ ] If results→CTA is low, add `results_expanded` event
+- [ ] Only when A/B testing, add `variant_cta` to events
+- [ ] A/B test copy variants (requires variant tracking)
+- [ ] Add parent section if data suggests
+- [ ] When platform launches, update `signup_intent` from `'access_waitlist'` to `'create_account'`
+- [ ] When platform launches, send platform launch email to waitlist
 - [ ] Iterate based on funnel analysis
 
 ---
 
-## Files to Modify
+## Files Reference
 
-### Major Changes (Results Simplification)
+### Major Changes
 
 | File | Changes |
 |------|---------|
-| `app/diagnostico/components/ResultsScreen.tsx` | **Major refactor:** Remove axis breakdown, simplify to two-phase reveal, remove misleading sections |
-| `app/diagnostico/components/ResultsComponents.tsx` | **Remove** `AxisProgressBar` component, **Simplify** `RouteCard` (remove atom counts, time estimates), **Remove** atom-related helper functions |
+| `app/diagnostico/components/ResultsScreen.tsx` | Major refactor: remove misleading sections, two-phase reveal, tier-based rendering |
+| `app/diagnostico/components/ResultsComponents.tsx` | Remove `AxisProgressBar`, simplify `RouteCard`, remove atom-related helpers |
 
 ### Moderate Changes
 
 | File | Changes |
 |------|---------|
-| `app/page.tsx` | Add example preview button, social proof, optional parent section |
-| `app/diagnostico/components/WelcomeScreen.tsx` | Credibility badge, expandable section, copy updates, footer |
-| `app/diagnostico/page.tsx` | Add analytics event calls |
-| `app/layout.tsx` | Add PostHog provider |
+| `app/page.tsx` | Example preview button, social proof |
+| `app/diagnostico/components/WelcomeScreen.tsx` | Credibility badge, expandable section, copy updates |
+| `app/diagnostico/page.tsx` | Analytics events |
+| `app/layout.tsx` | PostHog provider |
+| `app/diagnostico/components/SignupScreen.tsx` | Pass results data to Thank You screen |
+| `app/diagnostico/components/ThankYouScreen.tsx` | Show results snapshot (score + top route), not just "gracias" |
+| `app/api/diagnostic/signup/route.ts` | Persist `SavedDiagnosticResult`, trigger confirmation email |
 
 ### New Files
 
 | File | Purpose |
 |------|---------|
-| `app/components/ExampleResultsModal.tsx` | Example results preview modal for landing page |
-| `app/diagnostico/components/HighPerformerResults.tsx` | Simplified results for students with 14+/16 correct |
-| `app/lib/analytics.ts` | Analytics helper functions for PostHog events |
+| `app/diagnostico/components/ExampleResultsModal.tsx` | Preview modal |
+| `app/diagnostico/components/TierContent.tsx` | All tier-specific components (headlines, messages, CTAs) |
+| `lib/analytics/tracker.ts` | Analytics event tracking with PostHog |
+| `lib/analytics/types.ts` | Analytics type definitions |
+| `lib/config/tiers.ts` | Tier detection, signal quality, limitation copy |
+| `lib/config/contact.ts` | Contact channels configuration |
+| `lib/email/index.ts` | Email module exports |
+| `lib/email/service.ts` | Resend email service wrapper |
+| `lib/email/types.ts` | Email type definitions |
+| `lib/email/confirmationEmail.ts` | Confirmation email template with results snapshot |
+| `lib/email/platformLaunchEmail.ts` | Platform launch notification template |
+| `app/api/unsubscribe/route.ts` | Unsubscribe endpoint for email links |
+| `app/api/resultados/[sessionId]/route.ts` | API for fetching saved results |
+| `app/resultados/[sessionId]/page.tsx` | Saved results permalink page |
 
-### Summary of Removals
+**Note:** Results snapshot fields were added to existing `users` table instead of creating a separate `savedResults` table.
 
-From `ResultsScreen.tsx`:
-- [ ] Remove "Tu Perfil por Eje" section (axis mastery percentages)
-- [ ] Remove "Tu Potencial Máximo" section (atom counts, time estimates)
-- [ ] Remove multiple route cards from initial view (show only #1)
-- [ ] Remove `masteryByAxis` usage and related displays
+### Components/Functions to Remove
 
-From `ResultsComponents.tsx`:
-- [ ] Remove or repurpose `AxisProgressBar` component
-- [ ] Remove `ATOM_COUNTS` constant (no longer displayed)
-- [ ] Remove `calculateAtomsDominated` function
-- [ ] Remove `calculateTotalAtomsRemaining` function  
-- [ ] Remove `getWeeksByStudyTime` function
-- [ ] Simplify `RouteCard` to show only questions + points
-
----
-
-## Appendix: Research Sources
-
-- Gen Z UX research (Nielsen Norman Group, Smashing Magazine)
-- Behavioral economics in education (NBER, IZA)
-- Loss aversion and academic performance (Mannheim University)
-- Fear appeals research (Journal of Educational Psychology)
-- Chilean PAES context (AACRAO, Frontiers in Education)
-- Nudging in education (EdTech Hub, ideas42)
+From `app/diagnostico/components/ResultsComponents.tsx`:
+- `AxisProgressBar` component
+- `ATOM_COUNTS` constant
+- `calculateAtomsDominated` function
+- `calculateTotalAtomsRemaining` function
+- `getWeeksByStudyTime` function
 
 ---
 
-*This document should be treated as a living spec. Update as we learn from analytics.*
+## Appendix: Copy Dictionary (Find/Replace)
+
+Quick reference for migrating from "plan" language to "platform/access" language. **Source of truth for canonical copy:** [Results CTA Copy](#results-cta-copy) section.
+
+### Legacy → Current Mappings
+
+| Legacy Copy | Current Copy |
+|-------------|--------------|
+| `Guardar y recibir mi plan` | `Guardar mi progreso y recibir acceso` |
+| `Guardar mi diagnóstico` | `Guardar mi progreso` |
+| `Ver ejemplo de plan` | `Ver ejemplo de resultados` |
+| `Guardar y seguir después` | `Guardar mi progreso` |
+| `Te avisamos cuando tu plan esté listo` | `Te avisamos cuando la plataforma esté lista para continuar` |
+| `Puedes darte de baja en cualquier momento` | `Puedes darte de baja cuando quieras` |
+| `Resultados inmediatos` | `Puntaje inmediato · Guardas tu progreso · Continuación cuando lancemos` |
+| `Plan personalizado: Identificamos exactamente qué conceptos dominar` | `Continuación guiada: te mostraremos qué detectamos y por dónde empezar cuando la plataforma esté lista` |
+| `Tu plan partirá por...` | `Cuando la plataforma esté lista, continuaremos por...` |
+| `Tu siguiente paso:` (low-signal tiers) | `Tu siguiente paso (cuando lancemos):` |
+
+### Canonical Copy Summary
+
+| Element | Copy |
+|---------|------|
+| **Results CTA** | `Guardar mi progreso y recibir acceso` |
+| **Expectation Line** | `Te avisamos cuando la plataforma esté lista para continuar. 1–2 correos, sin spam. Puedes darte de baja cuando quieras.` |
+| **Modal Footer** | `16 preguntas · ~15 min · Puntaje inmediato · Guardas tu progreso · Continuación cuando lancemos` |
+| **Analytics: signup_intent** | `'access_waitlist'` (on `results_cta_clicked`, `signup_completed`) |

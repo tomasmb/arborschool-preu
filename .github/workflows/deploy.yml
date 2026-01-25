@@ -69,9 +69,14 @@ jobs:
       - name: Build Docker image
         working-directory: ./app
         run: |
-          docker build -t ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/preu/preu:${{ github.sha }} \
-                       -t ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/preu/preu:latest \
-                       .
+          docker build \
+            --build-arg NEXT_PUBLIC_POSTHOG_KEY=${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }} \
+            --build-arg NEXT_PUBLIC_POSTHOG_HOST=${{ secrets.NEXT_PUBLIC_POSTHOG_HOST }} \
+            --build-arg NEXT_PUBLIC_BASE_URL=https://preu.arbor.school \
+            --build-arg NEXT_PUBLIC_BUILD_VERSION=${{ github.sha }} \
+            -t ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/preu/preu:${{ github.sha }} \
+            -t ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/preu/preu:latest \
+            .
 
       - name: Push Docker image
         run: |
@@ -97,4 +102,4 @@ jobs:
             --set-env-vars="DB_HOST=/cloudsql/${{ env.PROJECT_ID }}:${{ env.REGION }}:${{ env.DB_INSTANCE }}" \
             --set-env-vars="DB_NAME=${{ env.DB_NAME }}" \
             --set-env-vars="DB_USER=${{ env.DB_USER }}" \
-            --set-secrets="DB_PASSWORD=preu-db-password:latest"
+            --set-secrets="DB_PASSWORD=preu-db-password:latest,RESEND_API_KEY=preu-resend-api-key:latest"

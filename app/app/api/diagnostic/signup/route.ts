@@ -8,6 +8,7 @@ import {
 } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { computeFullMasteryWithTransitivity } from "@/lib/diagnostic/atomMastery";
+import { sendConfirmationEmail, isEmailConfigured } from "@/lib/email";
 
 interface StoredResponse {
   questionId: string;
@@ -19,6 +20,12 @@ interface StoredResponse {
   answeredAt: string;
 }
 
+interface TopRouteData {
+  name: string;
+  questionsUnlocked: number;
+  pointsGain: number;
+}
+
 interface DiagnosticData {
   responses: StoredResponse[];
   results: {
@@ -27,6 +34,8 @@ interface DiagnosticData {
     level: string;
     route: string;
     totalCorrect: number;
+    performanceTier?: string;
+    topRoute?: TopRouteData;
   } | null;
 }
 
@@ -71,15 +80,41 @@ export async function POST(request: NextRequest) {
 
     let userId: string;
 
+    // Prepare results snapshot for storage
+    const resultsSnapshot = diagnosticData?.results;
+    const userDataWithResults = {
+      email: email.toLowerCase(),
+      role: "student" as const,
+      // Store results snapshot for email notifications
+      paesScoreMin: resultsSnapshot?.paesMin ?? null,
+      paesScoreMax: resultsSnapshot?.paesMax ?? null,
+      performanceTier: resultsSnapshot?.performanceTier ?? null,
+      topRouteName: resultsSnapshot?.topRoute?.name ?? null,
+      topRouteQuestionsUnlocked:
+        resultsSnapshot?.topRoute?.questionsUnlocked ?? null,
+      topRoutePointsGain: resultsSnapshot?.topRoute?.pointsGain ?? null,
+    };
+
     if (existingUsers.length > 0) {
       userId = existingUsers[0].id;
+      // Update existing user with latest results snapshot
+      await db
+        .update(users)
+        .set({
+          paesScoreMin: userDataWithResults.paesScoreMin,
+          paesScoreMax: userDataWithResults.paesScoreMax,
+          performanceTier: userDataWithResults.performanceTier,
+          topRouteName: userDataWithResults.topRouteName,
+          topRouteQuestionsUnlocked:
+            userDataWithResults.topRouteQuestionsUnlocked,
+          topRoutePointsGain: userDataWithResults.topRoutePointsGain,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, userId));
     } else {
       const [newUser] = await db
         .insert(users)
-        .values({
-          email: email.toLowerCase(),
-          role: "student",
-        })
+        .values(userDataWithResults)
         .returning({ id: users.id });
       userId = newUser.id;
     }
@@ -197,11 +232,40 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Send confirmation email (non-blocking, don't fail signup if email fails)
+    if (resultsSnapshot && isEmailConfigured()) {
+      try {
+        const emailResult = await sendConfirmationEmail(
+          {
+            email: email.toLowerCase(),
+            userId,
+            firstName: undefined, // We don't collect first name at signup
+          },
+          {
+            paesMin: resultsSnapshot.paesMin,
+            paesMax: resultsSnapshot.paesMax,
+            performanceTier: resultsSnapshot.performanceTier ?? "average",
+            topRoute: resultsSnapshot.topRoute,
+          }
+        );
+
+        if (emailResult.success) {
+          console.log(`[Signup] Confirmation email sent to ${email}`);
+        } else {
+          console.warn(`[Signup] Failed to send email: ${emailResult.error}`);
+        }
+      } catch (emailError) {
+        // Log but don't fail the signup
+        console.error("[Signup] Email exception:", emailError);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       userId,
       attemptId: finalAttemptId,
       message: "Account created and diagnostic saved",
+      emailSent: isEmailConfigured() && !!resultsSnapshot,
     });
   } catch (error) {
     console.error("Failed to signup:", error);

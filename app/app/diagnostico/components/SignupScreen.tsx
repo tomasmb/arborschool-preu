@@ -76,7 +76,7 @@ export function SignupScreen({
             className={`text-2xl sm:text-3xl font-serif font-bold text-charcoal mb-3 transition-all duration-700 delay-100
               ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
-            Guarda tus Resultados
+            Guarda tu Progreso
           </h2>
 
           {/* Score reminder - reinforces what they're saving */}
@@ -97,8 +97,8 @@ export function SignupScreen({
             className={`text-cool-gray mb-8 transition-all duration-700 delay-200
               ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
-            Ingresa tu email para guardar tu diagnóstico y recibir tu plan de
-            estudio personalizado cuando esté listo.
+            Ingresa tu email para guardar tu diagnóstico y recibir acceso cuando
+            la plataforma esté lista.
           </p>
 
           <form
@@ -172,12 +172,12 @@ export function SignupScreen({
               aria-label={
                 status === "loading"
                   ? "Guardando email..."
-                  : "Guardar email y recibir notificaciones"
+                  : "Guardar progreso y recibir acceso"
               }
               className="btn-cta w-full py-4 text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] 
                 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
-              Guardar y Notificarme
+              Guardar mi progreso y recibir acceso
               <svg
                 className="w-5 h-5 ml-2"
                 fill="none"
@@ -189,10 +189,16 @@ export function SignupScreen({
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M5 13l4 4L19 7"
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"
                 />
               </svg>
             </LoadingButton>
+
+            {/* Expectation Line */}
+            <p className="text-xs text-cool-gray mt-3 text-center">
+              Te avisamos cuando la plataforma esté lista para continuar. 1–2
+              correos, sin spam. Puedes darte de baja cuando quieras.
+            </p>
           </form>
 
           <button

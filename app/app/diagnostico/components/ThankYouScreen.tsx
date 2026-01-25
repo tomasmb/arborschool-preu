@@ -5,10 +5,43 @@ import Image from "next/image";
 import Link from "next/link";
 import { Confetti } from "./Confetti";
 
+/**
+ * Results snapshot to display on Thank You screen.
+ * Shows score range and top route summary.
+ */
+interface ResultsSnapshot {
+  /** Minimum PAES score in range */
+  paesMin: number;
+  /** Maximum PAES score in range */
+  paesMax: number;
+  /** Top route info (optional - some tiers don't have routes) */
+  topRoute?: {
+    name: string;
+    questionsUnlocked: number;
+    pointsGain: number;
+    studyHours: number;
+  };
+}
+
+/**
+ * Formats study hours for display.
+ */
+function formatStudyHours(hours: number): string {
+  if (hours >= 1) {
+    const rounded = Math.round(hours * 2) / 2;
+    if (rounded === 1) return "~1 hora";
+    return `~${rounded} horas`;
+  }
+  const minutes = Math.round(hours * 60);
+  return `~${minutes} min`;
+}
+
 interface ThankYouScreenProps {
   hasEmail: boolean;
   /** Callback for users who skipped but want to reconsider */
   onReconsider?: () => void;
+  /** Results snapshot to display (only for users who signed up) */
+  resultsSnapshot?: ResultsSnapshot;
 }
 
 // ============================================================================
@@ -18,6 +51,7 @@ interface ThankYouScreenProps {
 export function ThankYouScreen({
   hasEmail,
   onReconsider,
+  resultsSnapshot,
 }: ThankYouScreenProps) {
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -85,9 +119,48 @@ export function ThankYouScreen({
                 className={`text-lg text-cool-gray mb-6 transition-all duration-700 delay-300
                   ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
               >
-                Tu diagnóstico está guardado. Te contactaremos muy pronto con tu
-                plan de estudio personalizado.
+                Tu diagnóstico está guardado. Te avisamos cuando la plataforma
+                esté lista para continuar.
               </p>
+
+              {/* Results Snapshot */}
+              {resultsSnapshot && (
+                <div
+                  className={`bg-gradient-to-br from-cream to-off-white rounded-xl p-5 mb-6 border border-gray-100
+                    transition-all duration-700 delay-350 ${isLoaded ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
+                >
+                  <p className="text-sm text-cool-gray mb-1 text-center">
+                    Tu Puntaje PAES Estimado
+                  </p>
+                  <p className="text-3xl font-bold text-primary text-center mb-3">
+                    {resultsSnapshot.paesMin}-{resultsSnapshot.paesMax}
+                  </p>
+
+                  {resultsSnapshot.topRoute && (
+                    <div className="bg-white rounded-lg p-3 border border-primary/10">
+                      <p className="text-xs text-cool-gray mb-1">
+                        Tu ruta de mayor impacto:
+                      </p>
+                      <p className="font-semibold text-charcoal text-sm mb-1">
+                        {resultsSnapshot.topRoute.name}
+                      </p>
+                      {/* Key value proposition: points + time */}
+                      <p className="text-sm">
+                        <span className="text-success font-semibold">
+                          +{resultsSnapshot.topRoute.pointsGain} puntos
+                        </span>{" "}
+                        en{" "}
+                        <span className="text-charcoal font-medium">
+                          {formatStudyHours(
+                            resultsSnapshot.topRoute.studyHours
+                          )}
+                        </span>
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div
                 className={`p-4 bg-gradient-to-br from-success/10 to-success/5 border border-success/20 rounded-xl mb-8
                   transition-all duration-700 delay-400 ${isLoaded ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
@@ -106,7 +179,7 @@ export function ThankYouScreen({
                       d="M5 13l4 4L19 7"
                     />
                   </svg>
-                  Te avisaremos cuando tu plan esté listo
+                  Te avisamos cuando la plataforma esté lista
                 </p>
               </div>
             </>
