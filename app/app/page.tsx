@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { LoadingButton } from "@/app/components/ui";
+import { trackLandingPageViewed } from "@/lib/analytics";
 
 /**
  * Browser frame component for displaying app mockups
@@ -85,6 +86,11 @@ function DiagnosticCTA({
 
 export default function Home() {
   const [isNavigating, setIsNavigating] = useState(false);
+
+  // Track landing page view on mount
+  useEffect(() => {
+    trackLandingPageViewed();
+  }, []);
 
   const goToDiagnostic = () => {
     setIsNavigating(true);

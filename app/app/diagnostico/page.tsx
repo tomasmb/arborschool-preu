@@ -32,6 +32,12 @@ import {
   getActualRouteFromStorage,
 } from "@/lib/diagnostic/storage";
 import { type QuestionAtom } from "@/lib/diagnostic/qtiParser";
+import { getPerformanceTier } from "@/lib/config/tiers";
+import {
+  trackDiagnosticStarted,
+  trackDiagnosticCompleted,
+  trackSignupCompleted,
+} from "@/lib/analytics";
 import {
   WelcomeScreen,
   QuestionScreen,
@@ -252,6 +258,9 @@ export default function DiagnosticoPage() {
 
   // Start the test
   const startTest = async () => {
+    // Track diagnostic started event
+    trackDiagnosticStarted();
+
     // Clear any previous session data when starting fresh
     clearAllDiagnosticData();
 
@@ -454,6 +463,11 @@ export default function DiagnosticoPage() {
       setScreen("maintenance");
       return;
     }
+
+    // Track diagnostic completed event
+    const performanceTier = getPerformanceTier(totalCorrect);
+    trackDiagnosticCompleted(totalCorrect, performanceTier);
+
     showResults();
 
     // Complete test on API if we have a valid (non-local) attempt
@@ -552,6 +566,13 @@ export default function DiagnosticoPage() {
       const data = await response.json();
 
       if (data.success) {
+        // Track signup completed event
+        trackSignupCompleted(
+          calculatedResults.paesMin,
+          calculatedResults.paesMax,
+          getPerformanceTier(storedResponses.filter((r) => r.isCorrect).length)
+        );
+
         // Clear all localStorage data after successful signup
         clearAllDiagnosticData();
         setSignupStatus("success");
