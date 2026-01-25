@@ -553,24 +553,28 @@ export default function DiagnosticoPage() {
         actualRoute
       );
 
+      // Calculate performance tier for this signup
+      const totalCorrect = storedResponses.filter((r) => r.isCorrect).length;
+      const performanceTier = getPerformanceTier(totalCorrect);
+
       // Build signup payload with all available data
       const signupPayload = {
         email,
         attemptId: isLocal ? null : attemptId,
         atomResults,
-        // Include diagnostic results for local attempts
-        diagnosticData: isLocal
-          ? {
-              responses: storedResponses,
-              results: {
-                paesMin: calculatedResults.paesMin,
-                paesMax: calculatedResults.paesMax,
-                level: calculatedResults.level,
-                route: actualRoute,
-                totalCorrect: storedResponses.filter((r) => r.isCorrect).length,
-              },
-            }
-          : null,
+        // Always include diagnostic results for email sending
+        diagnosticData: {
+          responses: isLocal ? storedResponses : [],
+          results: {
+            paesMin: calculatedResults.paesMin,
+            paesMax: calculatedResults.paesMax,
+            level: calculatedResults.level,
+            route: actualRoute,
+            totalCorrect,
+            performanceTier,
+            topRoute: topRouteInfo ?? undefined,
+          },
+        },
       };
 
       const response = await fetch("/api/diagnostic/signup", {
