@@ -266,7 +266,7 @@ export function ThankYouScreen({
               className="opacity-70"
             />
             <span className="text-sm text-cool-gray font-medium">
-              Arbor PreU — Domina un concepto a la vez
+              Arbor PreU — Una mini-clase a la vez
             </span>
           </div>
         </div>

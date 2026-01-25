@@ -112,7 +112,7 @@ export function getTierImprovementMessage(
     const timeDisplay = formatStudyTimeForMessage(studyHours);
     return (
       <>
-        Reforzar este concepto te acerca al rango más alto:{" "}
+        Reforzar esta mini-clase te acerca al rango más alto:{" "}
         <strong className="text-success">+{potentialImprovement} puntos</strong>{" "}
         en <strong className="text-charcoal">{timeDisplay}</strong>
       </>
@@ -229,12 +229,12 @@ const GENERIC_NEXT_STEPS: Record<
   belowAverage: {
     title: "Fundamentos de Números",
     description:
-      "Cuando la plataforma esté lista, continuaremos por estos conceptos que desbloquean muchos otros.",
+      "Cuando la plataforma esté lista, continuaremos por estas mini-clases que desbloquean muchas otras.",
   },
   veryLow: {
     title: "Fundamentos",
     description:
-      "Cuando la plataforma esté lista, continuaremos por los conceptos base que desbloquean todo lo demás. Un paso a la vez.",
+      "Cuando la plataforma esté lista, continuaremos por las mini-clases base que desbloquean todo lo demás. Un paso a la vez.",
   },
 };
 
