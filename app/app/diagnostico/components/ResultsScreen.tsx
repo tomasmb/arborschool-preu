@@ -2,11 +2,6 @@
 
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import Image from "next/image";
-import {
-  type Route,
-  type Axis,
-  type MSTQuestion,
-} from "@/lib/diagnostic/config";
 import { Confetti } from "./Confetti";
 import { Icons, AnimatedCounter } from "./shared";
 import {
@@ -17,8 +12,13 @@ import {
   QuestionReviewDrawer,
   type ResponseForReview,
 } from "./QuestionReviewDrawer";
-import { SimpleRouteCard, type AxisPerformance } from "./ResultsComponents";
-import { getPerformanceTier, isLowSignalTier } from "@/lib/config/tiers";
+import { SimpleRouteCard } from "./ResultsComponents";
+import { NextConceptsPreview } from "./NextConceptsPreview";
+import {
+  getPerformanceTier,
+  isLowSignalTier,
+  getNextConceptsConfig,
+} from "@/lib/config";
 import { trackResultsViewed, trackResultsCtaClicked } from "@/lib/analytics";
 import {
   TierHeadline,
@@ -31,51 +31,13 @@ import {
   shouldShowRoutes,
   getScoreEmphasis,
 } from "./TierContent";
+import {
+  buildNextConceptsFromResponses,
+  type ResultsScreenProps,
+} from "../utils";
 
-// ============================================================================
-// TYPES
-// ============================================================================
-
-/** Atom mastery result from diagnostic */
-export interface AtomResult {
-  atomId: string;
-  mastered: boolean;
-}
-
-/** Response data for question review */
-export interface DiagnosticResponse {
-  question: MSTQuestion;
-  selectedAnswer: string | null;
-  isCorrect: boolean;
-}
-
-/** Top route info for passing to parent */
-export interface TopRouteInfo {
-  name: string;
-  questionsUnlocked: number;
-  pointsGain: number;
-  studyHours: number;
-}
-
-interface ResultsScreenProps {
-  results: {
-    paesMin: number;
-    paesMax: number;
-    level: string;
-    axisPerformance: Record<Axis, AxisPerformance>;
-  };
-  route: Route;
-  totalCorrect: number;
-  /** Atom mastery results from diagnostic for computing learning routes */
-  atomResults?: AtomResult[];
-  /** All responses from diagnostic for question review */
-  responses?: DiagnosticResponse[];
-  onSignup: () => void;
-  /** Callback to set the consistent PAES score for use in SignupScreen */
-  onScoreCalculated?: (score: number) => void;
-  /** Callback to set the top route info for use in ThankYouScreen */
-  onTopRouteCalculated?: (topRoute: TopRouteInfo | null) => void;
-}
+// Re-export types for backward compatibility
+export type { AtomResult, TopRouteInfo } from "../utils";
 
 // ============================================================================
 // CONSTANTS
@@ -191,6 +153,20 @@ export function ResultsScreen({
       unlockedQuestions / totalQuestions > 0.9
     );
   }, [routesData?.summary]);
+
+  // Build next concepts from wrong answers and recommended route
+  const nextConcepts = useMemo(() => {
+    const recommendedRoute = sortedRoutes.length > 0 ? sortedRoutes[0] : null;
+    return buildNextConceptsFromResponses(responses, recommendedRoute);
+  }, [responses, sortedRoutes]);
+
+  // Check if we should show next concepts based on tier
+  const nextConceptsConfig = useMemo(
+    () => getNextConceptsConfig(performanceTier),
+    [performanceTier]
+  );
+  const showNextConcepts =
+    nextConceptsConfig.showPersonalized || nextConceptsConfig.showGenericLadder;
 
   // Animation timing
   useEffect(() => {
@@ -361,7 +337,7 @@ export function ResultsScreen({
                     <strong className="text-success">
                       {routesData.lowHangingFruit.oneAway}
                     </strong>{" "}
-                    preguntas a solo 1 concepto de distancia.
+                    preguntas a solo 1 mini-clase de distancia.
                   </span>
                 </div>
               </div>
@@ -405,6 +381,16 @@ export function ResultsScreen({
                   ? "Ver menos rutas"
                   : "Ver más rutas de aprendizaje"}
               </button>
+            </div>
+          )}
+
+          {/* Next Concepts Preview (expanded) */}
+          {showMoreRoutes && showNextConcepts && (
+            <div className="mb-6 animate-fadeIn">
+              <NextConceptsPreview
+                tier={performanceTier}
+                concepts={nextConcepts}
+              />
             </div>
           )}
 

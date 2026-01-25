@@ -6,3 +6,4 @@
 
 export * from "./tiers";
 export * from "./contact";
+export * from "./nextConcepts";

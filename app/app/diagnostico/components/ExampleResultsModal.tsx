@@ -19,19 +19,42 @@ interface ExampleResultsModalProps {
 }
 
 // ============================================================================
-// EXAMPLE DATA (Illustrative values - consistent single route message)
+// EXAMPLE DATA (Illustrative values - verified against PAES table)
 // ============================================================================
 
+/**
+ * Example scenario (verified against PAES table):
+ * - Student scores 620-680 (mid: 650) ≈ 38-39 correct out of 60
+ * - Route unlocks 8 questions, student likely gets 6-7 correct
+ * - 39 correct (660 pts) → 45 correct (723 pts) = +63 points (6/8 correct)
+ * - 39 correct (660 pts) → 46 correct (738 pts) = +78 points (7/8 correct)
+ * - Study time: 8 mini-clases × 20 min = ~2.5-3 hours
+ *
+ * @see app/lib/diagnostic/paesScoreTable.ts
+ */
 const EXAMPLE_DATA = {
-  scoreMin: 650,
-  scoreMax: 720,
+  scoreMin: 620,
+  scoreMax: 680,
   topRoute: {
     name: "Geometría",
-    questionsUnlocked: 12,
-    pointsGain: 48,
-    studyHours: 4, // ~12 atoms × 20 min = 4 hours
+    questionsUnlocked: 8,
+    pointsGain: 70, // Middle estimate: ~6.5/8 correct → 660→~730 (+70 pts)
+    studyHours: 3, // 8 mini-clases × ~20 min each
   },
-  lowHangingFruit: 5,
+  lowHangingFruit: 4,
+  // Example mini-clases (real atom titles + question counts from local DB)
+  // Total unlocks should match questionsUnlocked (8)
+  nextMiniClases: [
+    {
+      title: "Resolución de problemas integrados de perímetro y área",
+      unlocksQuestions: 3,
+    },
+    { title: "Cálculo del área de paralelogramos", unlocksQuestions: 3 },
+    {
+      title: "Distinción conceptual entre perímetro y área",
+      unlocksQuestions: 2,
+    },
+  ],
 };
 
 // ============================================================================
@@ -205,14 +228,46 @@ export function ExampleResultsModal({
           </div>
 
           {/* Low Hanging Fruit */}
-          <div className="flex items-center gap-2 text-sm text-cool-gray mb-6">
+          <div className="flex items-center gap-2 text-sm text-cool-gray mb-5">
             {Icons.lightbulb("w-4 h-4 text-success")}
             <span>
               <strong className="text-success">
                 {EXAMPLE_DATA.lowHangingFruit}
               </strong>{" "}
-              preguntas a solo 1 concepto de distancia.
+              preguntas a solo 1 mini-clase de distancia.
             </span>
+          </div>
+
+          {/* Example Next Mini-Clases Preview */}
+          <div className="border border-gray-100 rounded-lg p-4 bg-gradient-to-br from-gray-50/50 to-white mb-5">
+            <div className="mb-2">
+              <h4 className="text-xs font-semibold text-charcoal">
+                Tus próximas mini-clases{" "}
+                <span className="font-normal text-cool-gray">
+                  (según este diagnóstico)
+                </span>
+              </h4>
+            </div>
+            <ol className="space-y-1.5">
+              {EXAMPLE_DATA.nextMiniClases.map((miniClase, index) => (
+                <li key={index} className="flex items-start gap-2">
+                  <span
+                    className="flex-shrink-0 w-4 h-4 rounded-full bg-primary/10 text-primary 
+                      text-[10px] font-medium flex items-center justify-center mt-0.5"
+                  >
+                    {index + 1}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-charcoal leading-tight">
+                      {miniClase.title}
+                    </p>
+                    <span className="text-[10px] text-cool-gray">
+                      Desbloquea {miniClase.unlocksQuestions} preguntas
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ol>
           </div>
 
           {/* CTA */}

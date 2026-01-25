@@ -196,7 +196,7 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
             </h1>
             <p className="text-lg text-cool-gray max-w-md mx-auto leading-relaxed">
               En ~15 minutos sabrás tu puntaje estimado y exactamente qué
-              conceptos detectamos en este diagnóstico para empezar a mejorar.
+              mini-clases detectamos en este diagnóstico para empezar a mejorar.
             </p>
           </div>
 

@@ -20,6 +20,10 @@ export {
   type ResponseForReview,
 } from "./QuestionReviewDrawer";
 export {
+  NextConceptsPreview,
+  GenericFoundationsLadder,
+} from "./NextConceptsPreview";
+export {
   Timer,
   formatTime,
   TIMER_THRESHOLDS,
