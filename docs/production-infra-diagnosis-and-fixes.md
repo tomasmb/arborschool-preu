@@ -68,6 +68,40 @@ Files:
 - `GCP_WORKLOAD_IDENTITY_PROVIDER`
 - `GCP_SERVICE_ACCOUNT`
 
+### 3) Migrations run in CI (not in the runtime container)
+
+**Fix**:
+
+- Deploy workflow runs `db:migrate` before `terraform apply`.
+- The container starts the app server only (no startup migrations).
+- The manual migrations workflow only supports `db:migrate` (no `db:push`).
+
+### 4) Secret Manager access scoped per-secret
+
+**Fix**:
+
+- Removed project-wide `roles/secretmanager.secretAccessor` from the Cloud Run
+  service account.
+- Added per-secret IAM bindings for:
+  - `preu-db-password`
+  - `preu-resend-api-key`
+
+### 5) Cloud SQL encrypted connections enforced
+
+**Fix**:
+
+- Set Cloud SQL `ssl_mode` to `ENCRYPTED_ONLY`.
+
+### 6) CI/CD hardening improvements
+
+**Fix**:
+
+- Deploy uses immutable `image@sha256` digest references.
+- Deploy runs `terraform fmt`, `terraform validate`, and `terraform plan` before
+  applying.
+- Deploy/migrate workflows pin third-party GitHub Actions to commit SHAs.
+- CI verifies the sha256 of the downloaded Cloud SQL Proxy binary.
+
 ## Remaining fixes (prioritized)
 
 ### P0 — must fix to avoid outages / unsafe changes
@@ -87,10 +121,7 @@ Files:
 - Make migrations **fail the workflow** on error.
 - Ensure migrations are **serialized** (one runner at a time).
 
-Concrete changes to make:
-
-- Update `.github/workflows/deploy.yml` to run migrations before `terraform apply`.
-- Remove startup migrations from `app/Dockerfile`.
+**Status**: done.
 
 #### B) Remove the `push` migration option for production
 
@@ -131,6 +162,8 @@ connections when using TCP.
   migrations inside GCP (e.g. Cloud Run Job / Cloud Build) and then disable
   public IPv4.
 
+**Status**: done (Cloud SQL `ssl_mode` is `ENCRYPTED_ONLY`).
+
 #### E) Reduce Secret Manager permissions to per-secret bindings
 
 **Problem**: Cloud Run service account has `roles/secretmanager.secretAccessor`
@@ -148,6 +181,8 @@ at the project level (can read all secrets).
   - add a matching `google_secret_manager_secret_iam_member` granting the Cloud
     Run service account `roles/secretmanager.secretAccessor` for that secret.
 
+**Status**: done.
+
 #### F) Pin supply-chain inputs
 
 **Problem**:
@@ -162,6 +197,8 @@ at the project level (can read all secrets).
 - Verify `cloud-sql-proxy` download with a checksum (or use an official action).
 - Consider pinning `node:20-alpine` by digest for reproducibility.
 
+**Status**: partially done (Actions pinned, proxy checksum verified).
+
 ### P2 — reliability / operability improvements
 
 #### G) Deploy by image digest (optional but recommended)
@@ -173,12 +210,16 @@ at the project level (can read all secrets).
 - After pushing the image, resolve the **digest** and pass it to Terraform as
   `cloud_run_image=...@sha256:...`.
 
+**Status**: done.
+
 #### H) Add an explicit Terraform plan step in CI
 
 **Fix**:
 
 - Run `terraform fmt -check`, `terraform validate`, and `terraform plan` in CI.
 - Store plan output in job logs to improve change review.
+
+**Status**: done.
 
 #### I) Align docs with real production config
 
