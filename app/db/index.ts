@@ -67,17 +67,24 @@ function getPoolMax(): number {
   return parsed;
 }
 
-// Connection pool options
-// Cloud Run instances can handle multiple concurrent requests
-// Pool size is per-instance. Keep headroom vs Cloud SQL max_connections.
-const CONNECTION_OPTIONS = {
-  max: getPoolMax(), // Pool connections per instance (configurable)
-  idle_timeout: 30, // Close idle connections after 30 seconds
-  connect_timeout: 10, // Fail connection attempts after 10s
-  connection: {
-    statement_timeout: 15000, // Kill queries after 15 seconds
-  },
-};
+function getConnectionOptions(): {
+  max: number;
+  idle_timeout: number;
+  connect_timeout: number;
+  connection: { statement_timeout: number };
+} {
+  // Connection pool options
+  // Cloud Run instances can handle multiple concurrent requests
+  // Pool size is per-instance. Keep headroom vs Cloud SQL max_connections.
+  return {
+    max: getPoolMax(), // Pool connections per instance (configurable)
+    idle_timeout: 30, // Close idle connections after 30 seconds
+    connect_timeout: 10, // Fail connection attempts after 10s
+    connection: {
+      statement_timeout: 15000, // Kill queries after 15 seconds
+    },
+  };
+}
 
 // Singleton connection pool - created once, reused for all requests
 let _client: ReturnType<typeof postgres> | null = null;
@@ -86,10 +93,11 @@ let _db: ReturnType<typeof drizzle<typeof schema>> | null = null;
 function getClient() {
   if (!_client) {
     const config = getConnectionConfig();
+    const options = getConnectionOptions();
     if (config.connectionString) {
-      _client = postgres(config.connectionString, CONNECTION_OPTIONS);
+      _client = postgres(config.connectionString, options);
     } else {
-      _client = postgres({ ...config, ...CONNECTION_OPTIONS });
+      _client = postgres({ ...config, ...options });
     }
   }
   return _client;
