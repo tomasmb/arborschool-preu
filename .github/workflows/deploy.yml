@@ -107,8 +107,10 @@ jobs:
             exit 0
           fi
 
-          if git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" \
-            | grep -qE '^app/db/migrations/'; then
+          # Best practice: migration files are immutable. Only auto-run migrations
+          # when a NEW migration SQL file is added.
+          if git diff --name-status "${{ github.event.before }}" "${{ github.sha }}" \
+            | grep -qE '^A[[:space:]]+app/db/migrations/[^/]+\\.sql$'; then
             echo "changed=true" >> $GITHUB_OUTPUT
           fi
 

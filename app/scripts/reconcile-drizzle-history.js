@@ -165,7 +165,8 @@ async function main() {
   const sql = postgres(databaseUrl, { max: 1, connect_timeout: 10 });
 
   try {
-    const table = await sql`SELECT to_regclass('drizzle.__drizzle_migrations') AS name`;
+    const table =
+      await sql`SELECT to_regclass('drizzle.__drizzle_migrations') AS name`;
     if (!table[0]?.name) {
       throw new Error(
         "drizzle.__drizzle_migrations does not exist. Run drizzle-kit migrate once first."
@@ -177,11 +178,15 @@ async function main() {
 
     const missing = migrations.filter((m) => !existingHashes.has(m.hash));
     if (missing.length === 0) {
-      console.log("[reconcile] Migration history already matches journal hashes");
+      console.log(
+        "[reconcile] Migration history already matches journal hashes"
+      );
       return;
     }
 
-    console.log(`[reconcile] Missing ${missing.length} migration(s) in history`);
+    console.log(
+      `[reconcile] Missing ${missing.length} migration(s) in history`
+    );
 
     for (const m of missing) {
       await verifyMigration(sql, m.tag);
@@ -206,4 +211,3 @@ main().catch((err) => {
   console.error(`[reconcile] Failed: ${message}`);
   process.exitCode = 1;
 });
-
