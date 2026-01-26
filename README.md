@@ -2,7 +2,7 @@
 
 Plataforma de preparación para la PAES con aprendizaje personalizado basado en dominio de habilidades.
 
-🌐 **Live:** https://preu.arbor.school
+**Live:** https://preu.arbor.school
 
 ## Estructura del proyecto
 
@@ -10,8 +10,7 @@ Plataforma de preparación para la PAES con aprendizaje personalizado basado en 
 .
 ├── app/              # Next.js 15 application
 ├── design-system/    # Brand assets and design tokens
-├── terraform/        # Infrastructure as code (GCP)
-└── .github/          # CI/CD workflows
+└── docs/             # Technical documentation
 ```
 
 ## Desarrollo local
@@ -27,6 +26,12 @@ La aplicación estará disponible en http://localhost:3000
 ## Stack tecnológico
 
 - **Frontend:** Next.js 15, React 19, TypeScript, Tailwind CSS 4
-- **Infrastructure:** GCP Cloud Run, Artifact Registry
-- **CI/CD:** GitHub Actions (automated deployment on push to main)
+- **Database:** PostgreSQL (Neon)
+- **Hosting:** Vercel
 - **Code Quality:** ESLint, Prettier, Husky, lint-staged
+
+## Deployment
+
+Push to `main` triggers automatic deployment via Vercel.
+
+See [app/README.md](./app/README.md) for detailed setup instructions.

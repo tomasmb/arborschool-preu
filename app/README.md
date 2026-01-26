@@ -5,7 +5,7 @@ Next.js application for PAES preparation with adaptive diagnostic testing.
 ## Prerequisites
 
 - Node.js 20+
-- PostgreSQL 15+
+- PostgreSQL 15+ (local dev) or Neon account (production)
 
 ## Local Development Setup
 
@@ -72,7 +72,7 @@ app/
 ├── app/                 # Next.js App Router pages
 │   ├── api/            # API routes
 │   ├── diagnostico/    # Diagnostic test feature
-│   └── graph/          # Knowledge graph visualization
+│   └── resultados/     # Results page
 ├── db/                  # Database layer
 │   ├── migrations/     # SQL migration files
 │   └── schema/         # Drizzle schema definitions
@@ -81,28 +81,59 @@ app/
 └── public/             # Static assets
 ```
 
-## Deployment
+## Deployment (Vercel + Neon)
 
-Deployed automatically to Google Cloud Run on push to `main`.
+### Initial Setup
 
-### Migration Workflow
+1. **Create Neon Database**:
+   - Go to [console.neon.tech](https://console.neon.tech)
+   - Create a new project
+   - Copy the **pooled** connection string
 
-- **Automatic**: Migrations run in CI before Terraform deploy
-- **Manual**: Run migrations manually via GitHub Actions → "Run Database Migrations"
+2. **Deploy to Vercel**:
+   - Import your GitHub repo at [vercel.com/new](https://vercel.com/new)
+   - Set root directory to `app`
+   - Add environment variables (see below)
+   - Deploy
 
-### Environment Variables (Production)
+3. **Run Migrations**:
+   ```bash
+   # Set your Neon connection string
+   export DATABASE_URL="postgresql://..."
+   
+   # Run migrations
+   npm run db:migrate
+   ```
 
-Set via Cloud Run env vars + secrets:
+4. **Configure Domain** (optional):
+   - In Vercel dashboard → Settings → Domains
+   - Add your custom domain
 
-- `DB_HOST` - Cloud SQL Unix socket path (from Terraform)
-- `DB_NAME` - Database name (from Terraform)
-- `DB_USER` - Database user (from Terraform)
-- `DB_PASSWORD` - Database password (Secret Manager)
-- `DB_POOL_MAX` - Max DB connections per Cloud Run instance (from Terraform)
+### Environment Variables (Vercel)
 
-Notes:
+| Variable                   | Description                    |
+| -------------------------- | ------------------------------ |
+| `DATABASE_URL`             | Neon pooled connection string  |
+| `RESEND_API_KEY`           | Resend API key for emails      |
+| `NEXT_PUBLIC_POSTHOG_KEY`  | PostHog project API key        |
+| `NEXT_PUBLIC_POSTHOG_HOST` | PostHog host URL               |
+| `NEXT_PUBLIC_BASE_URL`     | Your app URL (for email links) |
 
-- In production, Terraform injects `DB_PASSWORD` from Secret Manager.
-  Don’t set it manually in Cloud Run.
-- For local development, you can use `DATABASE_URL` instead of `DB_*`.
-- Pool settings (idle timeout, keepalive, etc.) are tuned in `db/index.ts`.
+### Deploying Updates
+
+Just push to `main`. Vercel automatically builds and deploys.
+
+### Running Migrations
+
+Before deploying schema changes:
+
+```bash
+# Generate migration from schema changes
+npm run db:generate
+
+# Apply to production (set DATABASE_URL to Neon)
+DATABASE_URL="postgresql://..." npm run db:migrate
+
+# Then push code changes
+git add . && git commit -m "Add migration" && git push
+```

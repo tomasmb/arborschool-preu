@@ -1,73 +1,34 @@
 #!/usr/bin/env node
 
 /**
- * Database migration script for production
+ * Database migration script
  * Runs pending migrations using the postgres driver directly
- * This is executed before the Next.js server starts
  *
- * IMPORTANT: This script should NOT block server startup on failures.
- * If migrations fail, log the error and let the server start anyway.
+ * Usage: DATABASE_URL=... node scripts/migrate.js
+ *
+ * For Vercel deployments, run migrations locally or via CI before deploying:
+ *   npx drizzle-kit migrate
  */
 
 const postgres = require("postgres");
 const fs = require("fs");
 const path = require("path");
 
-// Build connection config from environment
-function getConnectionConfig() {
-  if (process.env.DATABASE_URL) {
-    return { connectionString: process.env.DATABASE_URL };
-  }
-
-  const user = process.env.DB_USER || "preu_app";
-  const password = process.env.DB_PASSWORD || "";
-  const host = process.env.DB_HOST || "localhost";
-  const database = process.env.DB_NAME || "preu";
-  const port = process.env.DB_PORT || "5432";
-
-  // Cloud Run uses Unix socket via Cloud SQL Auth Proxy
-  // postgres.js requires host to be the socket path directly
-  if (host.startsWith("/cloudsql/")) {
-    return { host, database, username: user, password };
-  }
-
-  return { host, port: parseInt(port, 10), database, username: user, password };
-}
-
 async function runMigrations() {
-  console.log("[migrate] Starting database migration check...");
-
-  const config = getConnectionConfig();
-
-  // Log connection info (mask password)
-  if (config.connectionString) {
-    const maskedUrl = config.connectionString.replace(/:[^:@]+@/, ":***@");
-    console.log("[migrate] Connecting to:", maskedUrl);
-  } else {
-    console.log(
-      "[migrate] Connecting to:",
-      config.host,
-      "database:",
-      config.database
-    );
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    console.error("[migrate] DATABASE_URL environment variable is required");
+    process.exit(1);
   }
 
-  const sql = config.connectionString
-    ? postgres(config.connectionString, {
-        max: 1,
-        connect_timeout: 10,
-        idle_timeout: 5,
-      })
-    : postgres({
-        host: config.host,
-        port: config.port,
-        database: config.database,
-        username: config.username,
-        password: config.password,
-        max: 1,
-        connect_timeout: 10,
-        idle_timeout: 5,
-      });
+  const maskedUrl = connectionString.replace(/:[^:@]+@/, ":***@");
+  console.log("[migrate] Connecting to:", maskedUrl);
+
+  const sql = postgres(connectionString, {
+    max: 1,
+    connect_timeout: 10,
+    idle_timeout: 5,
+  });
 
   try {
     // Quick connection test
@@ -128,7 +89,7 @@ async function runMigrations() {
             err.code === "42701" || // column already exists
             err.code === "42710" || // object already exists
             err.code === "42P07" || // relation already exists
-            err.code === "42P16" // invalid table definition (often means already correct)
+            err.code === "42P16" // invalid table definition
           ) {
             console.log(`[migrate] Skipping (already applied): ${err.message}`);
           } else {
@@ -150,16 +111,15 @@ async function runMigrations() {
     }
 
     await sql.end();
+    console.log("[migrate] Done");
   } catch (error) {
     console.error("[migrate] Migration failed:", error.message);
-    console.error("[migrate] Will continue server startup anyway");
     try {
       await sql.end();
     } catch (e) {
       // Ignore close errors
     }
-    // DON'T exit with error - let the server start anyway
-    // The app might still work for some operations
+    process.exit(1);
   }
 }
 
