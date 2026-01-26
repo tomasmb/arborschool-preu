@@ -87,12 +87,14 @@ Deployed automatically to Google Cloud Run on push to `main`.
 
 ### Migration Workflow
 
-- **Automatic**: Migrations run automatically before deploy when migration files change
+- **Automatic**: Migrations run in CI before Terraform deploy
 - **Manual**: Run migrations manually via GitHub Actions → "Run Database Migrations"
 
 ### Environment Variables (Production)
 
-Set via Cloud Run secrets:
+Set via Cloud Run env vars + secrets:
 
-- `DATABASE_URL` - PostgreSQL connection string
-- `DB_PASSWORD` - Database password (from Secret Manager)
+- `DB_HOST` - Cloud SQL Unix socket path (from Terraform)
+- `DB_NAME` - Database name (from Terraform)
+- `DB_USER` - Database user (from Terraform)
+- `DB_PASSWORD` - Database password (Secret Manager)

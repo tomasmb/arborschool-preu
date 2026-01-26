@@ -2,15 +2,6 @@ name: Run Database Migrations
 
 on:
   workflow_dispatch:
-    inputs:
-      action:
-        description: "Migration action"
-        required: true
-        default: "migrate"
-        type: choice
-        options:
-          - migrate
-          - push
 
 env:
   PROJECT_ID: arbor-school-473319
@@ -75,9 +66,4 @@ jobs:
         working-directory: ./app
         env:
           DATABASE_URL: postgresql://${{ env.DB_USER }}:${{ steps.db-password.outputs.password }}@127.0.0.1:5432/${{ env.DB_NAME }}
-        run: |
-          if [ "${{ inputs.action }}" = "push" ]; then
-            npm run db:push
-          else
-            npm run db:migrate
-          fi
+        run: npm run db:migrate

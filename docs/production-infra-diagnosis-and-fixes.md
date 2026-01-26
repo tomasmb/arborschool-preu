@@ -76,9 +76,10 @@ Files:
 
 **Problem**:
 
-- Container runs `node scripts/migrate.js` on every boot.
-- It explicitly **does not fail startup** when migrations fail.
-- Scale-out can cause concurrent migration runs.
+- Running migrations inside the app container is unsafe:
+  - scale-out can cause concurrent migration runs,
+  - failures can be hidden,
+  - app can start with a schema mismatch.
 
 **Fix**:
 
@@ -88,10 +89,8 @@ Files:
 
 Concrete changes to make:
 
-- Update `.github/workflows/deploy.yml` to call a migration step before apply
-  (reuse the logic in `.github/workflows/migrate.yml`).
-- Remove the startup migration call from `app/Dockerfile` (or gate it behind an
-  explicit env var like `RUN_MIGRATIONS_ON_STARTUP=false`).
+- Update `.github/workflows/deploy.yml` to run migrations before `terraform apply`.
+- Remove startup migrations from `app/Dockerfile`.
 
 #### B) Remove the `push` migration option for production
 

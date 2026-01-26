@@ -44,13 +44,6 @@ RUN chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy migration script and migration files
-COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
-COPY --from=builder --chown=nextjs:nodejs /app/db/migrations ./db/migrations
-
-# Copy postgres package for migrations (standalone doesn't include node_modules)
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/postgres ./node_modules/postgres
-
 USER nextjs
 
 EXPOSE 8080
@@ -58,5 +51,5 @@ EXPOSE 8080
 ENV PORT=8080
 ENV HOSTNAME="0.0.0.0"
 
-# Run migrations then start the server (migrations are non-blocking)
-CMD ["sh", "-c", "node scripts/migrate.js; node server.js"]
+# Migrations run in CI before deploy.
+CMD ["node", "server.js"]

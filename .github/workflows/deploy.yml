@@ -15,10 +15,13 @@ env:
   REGION: us-central1
   SERVICE_NAME: preu
   REGISTRY: us-central1-docker.pkg.dev
+  DB_INSTANCE: preu-postgres
+  DB_NAME: preu
+  DB_USER: preu_app
 
 concurrency:
   group: deploy-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   # Build image and apply Terraform (Terraform is source of truth)
@@ -81,6 +84,29 @@ jobs:
       - name: Push Docker image
         run: |
           docker push ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/preu/preu:${{ github.sha }}
+
+      - name: Install Cloud SQL Auth Proxy
+        run: |
+          curl -o cloud-sql-proxy https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.14.2/cloud-sql-proxy.linux.amd64
+          chmod +x cloud-sql-proxy
+
+      - name: Get database password
+        id: db-password
+        run: |
+          PASSWORD=$(gcloud secrets versions access latest --secret=preu-db-password)
+          echo "::add-mask::$PASSWORD"
+          echo "password=$PASSWORD" >> $GITHUB_OUTPUT
+
+      - name: Start Cloud SQL Proxy
+        run: |
+          ./cloud-sql-proxy --port 5432 ${{ env.PROJECT_ID }}:${{ env.REGION }}:${{ env.DB_INSTANCE }} &
+          sleep 5
+
+      - name: Run migrations
+        working-directory: ./app
+        env:
+          DATABASE_URL: postgresql://${{ env.DB_USER }}:${{ steps.db-password.outputs.password }}@127.0.0.1:5432/${{ env.DB_NAME }}
+        run: npm run db:migrate
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
