@@ -122,7 +122,14 @@ connections when using TCP.
 **Fix**:
 
 - Prefer Unix socket / Cloud SQL connector (already used by Cloud Run).
-- If TCP is needed, switch to an SSL-only mode and enforce it end-to-end.
+- If TCP is needed, switch to an SSL-only mode (e.g. `ENCRYPTED_ONLY`).
+
+**Note**:
+
+- If your CI migrations run from GitHub-hosted runners using Cloud SQL Proxy,
+  disabling public IPv4 may break migrations. The clean path is to run
+  migrations inside GCP (e.g. Cloud Run Job / Cloud Build) and then disable
+  public IPv4.
 
 #### E) Reduce Secret Manager permissions to per-secret bindings
 
