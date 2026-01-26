@@ -234,7 +234,7 @@ export function ExampleResultsModal({
               <strong className="text-success">
                 {EXAMPLE_DATA.lowHangingFruit}
               </strong>{" "}
-              preguntas a solo 1 mini-clase de distancia.
+              preguntas a 1 sola mini-clase de distancia.
             </span>
           </div>
 

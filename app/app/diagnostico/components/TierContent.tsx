@@ -112,9 +112,9 @@ export function getTierImprovementMessage(
     const timeDisplay = formatStudyTimeForMessage(studyHours);
     return (
       <>
-        Reforzar esta mini-clase te acerca al rango más alto:{" "}
+        Hasta{" "}
         <strong className="text-success">+{potentialImprovement} puntos</strong>{" "}
-        en <strong className="text-charcoal">{timeDisplay}</strong>
+        en <strong className="text-charcoal">{timeDisplay}</strong> de estudio
       </>
     );
   }
