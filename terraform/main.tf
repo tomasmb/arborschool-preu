@@ -57,10 +57,10 @@ resource "google_sql_database_instance" "preu" {
     }
 
     ip_configuration {
-      ipv4_enabled    = true
-      ssl_mode        = "ENCRYPTED_ONLY"
-      # Restricted access - Cloud Run uses Auth Proxy via Unix socket
-      # Public IP kept for local dev access but no authorized networks = no access
+      ipv4_enabled = true
+      # Cloud SQL Auth Proxy Unix socket connections don't use PostgreSQL-level SSL
+      # (the proxy provides encryption). Must allow unencrypted for Auth Proxy to work.
+      ssl_mode     = "ALLOW_UNENCRYPTED_AND_ENCRYPTED"
       # TODO: Add your dev IP here if needed: authorized_networks { name = "dev" value = "x.x.x.x/32" }
     }
 
