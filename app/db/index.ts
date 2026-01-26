@@ -12,6 +12,18 @@ import * as schema from "./schema";
  * Uses a true singleton pattern - one connection pool shared across all requests.
  */
 
+function isProduction(): boolean {
+  return process.env.NODE_ENV === "production";
+}
+
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`[db] Missing required environment variable: ${name}`);
+  }
+  return value;
+}
+
 // Build connection string based on environment
 function getConnectionConfig() {
   // If DATABASE_URL is provided directly, use it
@@ -20,22 +32,35 @@ function getConnectionConfig() {
   }
 
   // Otherwise, build from individual components
-  const user = process.env.DB_USER || "preu_app";
-  const password = process.env.DB_PASSWORD || "";
-  const host = process.env.DB_HOST || "localhost";
-  const database = process.env.DB_NAME || "preu";
-  const port = process.env.DB_PORT || "5432";
+  const user = isProduction()
+    ? requireEnv("DB_USER")
+    : process.env.DB_USER || "preu_app";
+  const password = isProduction()
+    ? requireEnv("DB_PASSWORD")
+    : process.env.DB_PASSWORD || "";
+  const host = isProduction()
+    ? requireEnv("DB_HOST")
+    : process.env.DB_HOST || "localhost";
+  const database = isProduction()
+    ? requireEnv("DB_NAME")
+    : process.env.DB_NAME || "preu";
+  const port = isProduction()
+    ? process.env.DB_PORT
+    : process.env.DB_PORT || "5432";
 
   // Cloud Run uses Unix socket via Cloud SQL Auth Proxy
   if (host.startsWith("/cloudsql/")) {
     return { host, database, username: user, password };
   }
 
-  return { host, port: parseInt(port, 10), database, username: user, password };
+  const parsedPort = port ? Number.parseInt(port, 10) : 5432;
+  return { host, port: parsedPort, database, username: user, password };
 }
 
 function getPoolMax(): number {
-  const raw = process.env.DB_POOL_MAX;
+  const raw = isProduction()
+    ? requireEnv("DB_POOL_MAX")
+    : process.env.DB_POOL_MAX;
   if (!raw) return 5;
   const parsed = Number.parseInt(raw, 10);
   if (!Number.isFinite(parsed) || parsed <= 0) return 5;

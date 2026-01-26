@@ -109,6 +109,13 @@ Files:
 - Cloud Run limits per-instance request concurrency (`max_instance_request_concurrency = 20`).
 - Database pool size is configurable and set in Cloud Run (`DB_POOL_MAX=5`).
 
+### 8) Fail-fast production env validation
+
+**Fix**:
+
+- In production, DB config is required explicitly (no silent defaults). Missing
+  vars cause a clear startup error instead of latent runtime failures.
+
 ## Remaining fixes (prioritized)
 
 ### P0 — must fix to avoid outages / unsafe changes
