@@ -9,7 +9,7 @@
  * @see docs/diagnostic-score-methodology.md
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 // ============================================================================
 // TYPES
@@ -101,6 +101,13 @@ export function useLearningRoutes(
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Stabilize atomResults reference - only change when content changes
+  const atomResultsKey = JSON.stringify(atomResults);
+  const stableAtomResults = useRef(atomResults);
+  if (JSON.stringify(stableAtomResults.current) !== atomResultsKey) {
+    stableAtomResults.current = atomResults;
+  }
+
   useEffect(() => {
     let cancelled = false;
 
@@ -112,7 +119,10 @@ export function useLearningRoutes(
         const response = await fetch("/api/diagnostic/learning-routes", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ atomResults, diagnosticScore }),
+          body: JSON.stringify({
+            atomResults: stableAtomResults.current,
+            diagnosticScore,
+          }),
         });
 
         if (!response.ok) {
@@ -147,7 +157,7 @@ export function useLearningRoutes(
     return () => {
       cancelled = true;
     };
-  }, [atomResults, diagnosticScore]);
+  }, [atomResultsKey, diagnosticScore]);
 
   return { data, isLoading, error };
 }

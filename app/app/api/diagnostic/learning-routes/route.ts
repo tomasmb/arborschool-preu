@@ -84,6 +84,7 @@ export async function POST(request: NextRequest) {
     }));
 
     // Get quick wins (atoms with immediate impact and no prereqs)
+    // questionsUnlocked is per-test average for consistency
     const quickWins = analysis.topAtomsByEfficiency
       .filter((a) => a.immediateUnlocks.length > 0 && a.totalCost === 1)
       .slice(0, 5)
@@ -91,7 +92,7 @@ export async function POST(request: NextRequest) {
         atomId: a.atomId,
         title: a.axis,
         axis: a.axis,
-        questionsUnlocked: a.immediateUnlocks.length,
+        questionsUnlocked: Math.round(a.immediateUnlocks.length / numTests),
       }));
 
     // Calculate overall improvement using diagnostic score as baseline
@@ -110,11 +111,16 @@ export async function POST(request: NextRequest) {
         routes: formattedRoutes,
         quickWins,
         improvement,
+        // Convert to per-test average (consistent with route questionsUnlocked)
         lowHangingFruit: {
-          oneAway: analysis.lowHangingFruit.filter((q) => q.atomsToUnlock === 1)
-            .length,
-          twoAway: analysis.lowHangingFruit.filter((q) => q.atomsToUnlock === 2)
-            .length,
+          oneAway: Math.round(
+            analysis.lowHangingFruit.filter((q) => q.atomsToUnlock === 1)
+              .length / numTests
+          ),
+          twoAway: Math.round(
+            analysis.lowHangingFruit.filter((q) => q.atomsToUnlock === 2)
+              .length / numTests
+          ),
         },
       },
     });
