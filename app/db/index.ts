@@ -71,17 +71,30 @@ function getConnectionOptions(): {
   max: number;
   idle_timeout: number;
   connect_timeout: number;
+  max_lifetime: number;
+  keep_alive: number;
   connection: { statement_timeout: number };
+  onclose: (connectionId: number) => void;
 } {
   // Connection pool options
   // Cloud Run instances can handle multiple concurrent requests
   // Pool size is per-instance. Keep headroom vs Cloud SQL max_connections.
   return {
     max: getPoolMax(), // Pool connections per instance (configurable)
-    idle_timeout: 30, // Close idle connections after 30 seconds
-    connect_timeout: 10, // Fail connection attempts after 10s
+    // Close idle connections quickly to avoid stale sockets on low traffic.
+    idle_timeout: 30,
+    // Cloud Run cold starts and Cloud SQL maintenance can make connects slower.
+    connect_timeout: 30,
+    // Recycle long-lived connections (helps with maintenance / NAT / idle resets).
+    max_lifetime: 1800,
+    // TCP keepalive interval in seconds (ignored for Unix sockets).
+    keep_alive: 60,
     connection: {
       statement_timeout: 15000, // Kill queries after 15 seconds
+    },
+    onclose: (connectionId: number) => {
+      if (!isProduction()) return;
+      console.warn(`[db] connection closed (id=${connectionId})`);
     },
   };
 }

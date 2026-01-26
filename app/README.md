@@ -98,3 +98,11 @@ Set via Cloud Run env vars + secrets:
 - `DB_NAME` - Database name (from Terraform)
 - `DB_USER` - Database user (from Terraform)
 - `DB_PASSWORD` - Database password (Secret Manager)
+- `DB_POOL_MAX` - Max DB connections per Cloud Run instance (from Terraform)
+
+Notes:
+
+- In production, Terraform injects `DB_PASSWORD` from Secret Manager.
+  Don’t set it manually in Cloud Run.
+- For local development, you can use `DATABASE_URL` instead of `DB_*`.
+- Pool settings (idle timeout, keepalive, etc.) are tuned in `db/index.ts`.
