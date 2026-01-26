@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { questions } from "@/db/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, or } from "drizzle-orm";
 
 /**
  * POST /api/diagnostic/review
@@ -32,8 +32,16 @@ export async function POST(request: NextRequest) {
       qNum: parseInt(q.questionNumber.replace(/\D/g, ""), 10),
     }));
 
-    // Fetch all questions in one query
-    const allQuestions = await db
+    // Build conditions for each question we need
+    const conditions = lookupKeys.map((key) =>
+      and(
+        eq(questions.sourceTestId, key.exam),
+        eq(questions.sourceQuestionNumber, key.qNum)
+      )
+    );
+
+    // Fetch only the questions we need
+    const matchedQuestions = await db
       .select({
         id: questions.id,
         qtiXml: questions.qtiXml,
@@ -44,15 +52,8 @@ export async function POST(request: NextRequest) {
         sourceTestId: questions.sourceTestId,
         sourceQuestionNumber: questions.sourceQuestionNumber,
       })
-      .from(questions);
-
-    // Filter to matching questions
-    const matchedQuestions = allQuestions.filter((q) =>
-      lookupKeys.some(
-        (key) =>
-          q.sourceTestId === key.exam && q.sourceQuestionNumber === key.qNum
-      )
-    );
+      .from(questions)
+      .where(or(...conditions));
 
     // Build response map keyed by exam-questionNumber
     const questionDataMap: Record<string, QuestionReviewData> = {};

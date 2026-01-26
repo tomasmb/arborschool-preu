@@ -166,28 +166,34 @@ export async function POST(request: NextRequest) {
 
       finalAttemptId = newAttempt.id;
 
-      // Insert all responses
-      for (const response of diagnosticData.responses) {
-        if (!response.questionId) {
+      // Filter valid responses and batch insert
+      const validResponses = diagnosticData.responses.filter((r) => {
+        if (!r.questionId) {
           console.error(
-            `Response at stage ${response.stage}, index ${response.questionIndex} has no questionId`
+            `Response at stage ${r.stage}, index ${r.questionIndex} has no questionId`
           );
-          continue;
+          return false;
         }
+        return true;
+      });
+
+      if (validResponses.length > 0) {
+        const responseValues = validResponses.map((response) => ({
+          userId,
+          testAttemptId: newAttempt.id,
+          questionId: response.questionId,
+          selectedAnswer: response.selectedAnswer,
+          isCorrect: response.isCorrect,
+          responseTimeSeconds: response.responseTimeSeconds,
+          stage: response.stage,
+          questionIndex: response.questionIndex,
+          answeredAt: new Date(response.answeredAt),
+        }));
+
         try {
-          await db.insert(studentResponses).values({
-            userId,
-            testAttemptId: newAttempt.id,
-            questionId: response.questionId,
-            selectedAnswer: response.selectedAnswer,
-            isCorrect: response.isCorrect,
-            responseTimeSeconds: response.responseTimeSeconds,
-            stage: response.stage,
-            questionIndex: response.questionIndex,
-            answeredAt: new Date(response.answeredAt),
-          });
+          await db.insert(studentResponses).values(responseValues);
         } catch (err) {
-          console.warn(`Failed to insert response:`, err);
+          console.warn("Failed to batch insert responses:", err);
         }
       }
     }

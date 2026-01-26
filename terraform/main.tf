@@ -57,12 +57,9 @@ resource "google_sql_database_instance" "preu" {
     }
 
     ip_configuration {
-      ipv4_enabled = true
-      # Allow Cloud Run to connect via Cloud SQL Auth Proxy
-      authorized_networks {
-        name  = "allow-all"
-        value = "0.0.0.0/0"
-      }
+      # Cloud Run connects via Cloud SQL Auth Proxy (Unix socket)
+      # Public IP disabled for security - no internet exposure
+      ipv4_enabled = false
     }
 
     database_flags {

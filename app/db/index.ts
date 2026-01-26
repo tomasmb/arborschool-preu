@@ -61,7 +61,7 @@ function getConnectionConfig(): ConnectionConfig {
 // This adds ~10-50ms latency but is 100% reliable.
 const CONNECTION_OPTIONS = {
   max: 1, // Single connection per request - no pooling
-  idle_timeout: 0, // Close connection immediately when idle
+  idle_timeout: 20, // Close idle connections after 20 seconds
   connect_timeout: 10, // Fail connection attempts after 10s
   // Set PostgreSQL statement timeout - kills queries after 15 seconds
   connection: {
