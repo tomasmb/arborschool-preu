@@ -188,7 +188,7 @@ resource "google_cloud_run_v2_service" "preu" {
         name = "DB_PASSWORD"
         value_source {
           secret_key_ref {
-            secret  = google_secret_manager_secret.db_password.secret_id
+            secret = google_secret_manager_secret.db_password.secret_id
             # Pin to the Terraform-managed secret version so rotations trigger a
             # Cloud Run revision rollout (avoids old instances using old creds).
             version = google_secret_manager_secret_version.db_password.version
