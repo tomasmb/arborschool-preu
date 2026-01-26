@@ -34,11 +34,19 @@ function getConnectionConfig() {
   return { host, port: parseInt(port, 10), database, username: user, password };
 }
 
+function getPoolMax(): number {
+  const raw = process.env.DB_POOL_MAX;
+  if (!raw) return 5;
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return 5;
+  return parsed;
+}
+
 // Connection pool options
 // Cloud Run instances can handle multiple concurrent requests
-// Pool size is per-instance, so with max 10 instances * 10 connections = 100 max
+// Pool size is per-instance. Keep headroom vs Cloud SQL max_connections.
 const CONNECTION_OPTIONS = {
-  max: 10, // Pool up to 10 connections per instance
+  max: getPoolMax(), // Pool connections per instance (configurable)
   idle_timeout: 30, // Close idle connections after 30 seconds
   connect_timeout: 10, // Fail connection attempts after 10s
   connection: {

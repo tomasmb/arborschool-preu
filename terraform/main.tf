@@ -143,6 +143,8 @@ resource "google_cloud_run_v2_service" "preu" {
   ingress  = "INGRESS_TRAFFIC_ALL"
 
   template {
+    max_instance_request_concurrency = 20
+
     containers {
       image = var.cloud_run_image
 
@@ -177,6 +179,10 @@ resource "google_cloud_run_v2_service" "preu" {
       env {
         name  = "DB_USER"
         value = google_sql_user.preu.name
+      }
+      env {
+        name  = "DB_POOL_MAX"
+        value = "5"
       }
       env {
         name = "DB_PASSWORD"
