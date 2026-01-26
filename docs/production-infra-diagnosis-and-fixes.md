@@ -116,6 +116,13 @@ Files:
 - In production, DB config is required explicitly (no silent defaults). Missing
   vars cause a clear startup error instead of latent runtime failures.
 
+### 9) Basic uptime monitoring
+
+**Fix**:
+
+- Terraform provisions an uptime check for `preu.arbor.school` and an alert
+  policy tied to that check.
+
 ## Remaining fixes (prioritized)
 
 ### P0 — must fix to avoid outages / unsafe changes

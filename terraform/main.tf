@@ -264,3 +264,59 @@ resource "google_cloud_run_domain_mapping" "preu" {
     ignore_changes  = [metadata, spec]
   }
 }
+
+# ------------------------------------------------------------------------------
+# MONITORING (basic uptime)
+# ------------------------------------------------------------------------------
+
+resource "google_monitoring_uptime_check_config" "preu" {
+  display_name = "preu.arbor.school uptime"
+  timeout      = "10s"
+  period       = "60s"
+
+  monitored_resource {
+    type = "uptime_url"
+    labels = {
+      project_id = var.project_id
+      host       = "preu.arbor.school"
+    }
+  }
+
+  http_check {
+    use_ssl      = true
+    validate_ssl = true
+    path         = "/"
+    port         = 443
+  }
+}
+
+resource "google_monitoring_alert_policy" "preu_uptime_failed" {
+  display_name          = "preu uptime check failing"
+  combiner              = "OR"
+  notification_channels = var.monitoring_notification_channels
+
+  conditions {
+    display_name = "uptime check passed < 1"
+
+    condition_threshold {
+      filter = format(
+        "metric.type=\"monitoring.googleapis.com/uptime_check/check_passed\" AND metric.label.\"check_id\"=\"%s\" AND resource.type=\"uptime_url\"",
+        google_monitoring_uptime_check_config.preu.uptime_check_id
+      )
+
+      comparison      = "COMPARISON_LT"
+      threshold_value = 1
+      duration        = "120s"
+
+      aggregations {
+        alignment_period     = "60s"
+        per_series_aligner   = "ALIGN_NEXT_OLDER"
+        cross_series_reducer = "REDUCE_MEAN"
+      }
+    }
+  }
+
+  documentation {
+    content = "PreU is failing uptime checks. Investigate Cloud Run health and domain mapping."
+  }
+}

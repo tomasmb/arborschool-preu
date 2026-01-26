@@ -21,3 +21,9 @@ variable "cloud_run_image" {
   type        = string
   default     = "us-central1-docker.pkg.dev/arbor-school-473319/preu/preu:latest"
 }
+
+variable "monitoring_notification_channels" {
+  description = "Monitoring notification channel IDs to notify on alerts."
+  type        = list(string)
+  default     = []
+}
