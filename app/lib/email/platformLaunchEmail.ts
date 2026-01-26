@@ -42,7 +42,7 @@ function generateLaunchHtml(
   
   <!-- Header -->
   <div style="text-align: center; margin-bottom: 32px;">
-    <img src="${EMAIL_CONFIG.baseUrl}/logo-arbor.svg" alt="Arbor" 
+    <img src="${EMAIL_CONFIG.baseUrl}/logo-arbor.png" alt="Arbor" 
       style="height: 32px; margin-bottom: 16px;" />
   </div>
 
