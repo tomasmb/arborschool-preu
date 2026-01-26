@@ -71,14 +71,14 @@ export async function POST(request: NextRequest) {
       0
     );
 
-    // Format routes for frontend display (questionsUnlocked becomes per-test average)
+    // Format routes for frontend display (all questionsUnlocked are per-test average)
     const formattedRoutes = topRoutes.map((route) => ({
       ...formatRouteForDisplay(route),
       axis: route.axis,
       atoms: route.atoms.map((a) => ({
         id: a.atomId,
         title: a.title,
-        questionsUnlocked: a.questionsUnlockedHere,
+        questionsUnlocked: Math.round(a.questionsUnlockedHere / numTests),
         isPrerequisite: a.isPrerequisite,
       })),
     }));
@@ -146,6 +146,7 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   try {
     const analysis = await analyzeLearningPotential([]);
+    const numTests = DEFAULT_SCORING_CONFIG.numOfficialTests;
 
     const formattedRoutes = analysis.routes.slice(0, 4).map((route) => ({
       ...formatRouteForDisplay(route),
@@ -153,7 +154,7 @@ export async function GET() {
       atoms: route.atoms.slice(0, 5).map((a) => ({
         id: a.atomId,
         title: a.title,
-        questionsUnlocked: a.questionsUnlockedHere,
+        questionsUnlocked: Math.round(a.questionsUnlockedHere / numTests),
       })),
     }));
 
