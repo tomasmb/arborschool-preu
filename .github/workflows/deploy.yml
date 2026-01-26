@@ -85,6 +85,10 @@ jobs:
         run: |
           docker push ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/preu/preu:${{ github.sha }}
 
+      - name: Set deploy image reference
+        run: |
+          echo "CLOUD_RUN_IMAGE=${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/preu/preu:${{ github.sha }}" >> $GITHUB_ENV
+
       - name: Install Cloud SQL Auth Proxy
         run: |
           curl -o cloud-sql-proxy https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.14.2/cloud-sql-proxy.linux.amd64
@@ -113,10 +117,22 @@ jobs:
 
       - name: Terraform init
         working-directory: ./terraform
-        run: terraform init
+        run: terraform init -input=false
+
+      - name: Terraform format check
+        working-directory: ./terraform
+        run: terraform fmt -check
+
+      - name: Terraform validate
+        working-directory: ./terraform
+        run: terraform validate
+
+      - name: Terraform plan
+        working-directory: ./terraform
+        run: |
+          terraform plan -input=false -lock-timeout=5m -no-color -out=tfplan \
+            -var="cloud_run_image=${{ env.CLOUD_RUN_IMAGE }}"
 
       - name: Terraform apply (deploy new revision)
         working-directory: ./terraform
-        run: |
-          terraform apply -auto-approve \
-            -var="cloud_run_image=${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/preu/preu:${{ github.sha }}"
+        run: terraform apply -input=false -auto-approve tfplan
