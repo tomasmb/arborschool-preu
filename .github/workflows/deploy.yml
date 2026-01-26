@@ -85,9 +85,13 @@ jobs:
         run: |
           docker push ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/preu/preu:${{ github.sha }}
 
-      - name: Set deploy image reference
+      - name: Resolve deploy image digest
+        id: image
         run: |
-          echo "CLOUD_RUN_IMAGE=${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/preu/preu:${{ github.sha }}" >> $GITHUB_ENV
+          DIGEST=$(gcloud artifacts docker images describe \
+            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/preu/preu:${{ github.sha }} \
+            --format='value(image_summary.digest)')
+          echo "cloud_run_image=${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/preu/preu@${DIGEST}" >> $GITHUB_OUTPUT
 
       - name: Install Cloud SQL Auth Proxy
         run: |
@@ -131,7 +135,7 @@ jobs:
         working-directory: ./terraform
         run: |
           terraform plan -input=false -lock-timeout=5m -no-color -out=tfplan \
-            -var="cloud_run_image=${{ env.CLOUD_RUN_IMAGE }}"
+            -var="cloud_run_image=${{ steps.image.outputs.cloud_run_image }}"
 
       - name: Terraform apply (deploy new revision)
         working-directory: ./terraform
