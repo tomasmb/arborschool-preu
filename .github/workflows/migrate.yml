@@ -47,7 +47,9 @@ jobs:
 
       - name: Install Cloud SQL Auth Proxy
         run: |
-          curl -o cloud-sql-proxy https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.14.2/cloud-sql-proxy.linux.amd64
+          curl -fsSL -o cloud-sql-proxy \
+            https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.14.2/cloud-sql-proxy.linux.amd64
+          echo "2f819e6e47e9026fa467cf55ca88eb674c698f8a93aecf940a364b4432c933f5  cloud-sql-proxy" | sha256sum -c -
           chmod +x cloud-sql-proxy
 
       - name: Get database password
