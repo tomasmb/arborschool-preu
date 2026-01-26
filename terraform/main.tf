@@ -269,10 +269,18 @@ resource "google_cloud_run_domain_mapping" "preu" {
 # MONITORING (basic uptime)
 # ------------------------------------------------------------------------------
 
+resource "google_project_iam_member" "github_actions_monitoring" {
+  project = var.project_id
+  role    = "roles/monitoring.editor"
+  member  = "serviceAccount:github-actions@${var.project_id}.iam.gserviceaccount.com"
+}
+
 resource "google_monitoring_uptime_check_config" "preu" {
   display_name = "preu.arbor.school uptime"
   timeout      = "10s"
   period       = "60s"
+
+  depends_on = [google_project_iam_member.github_actions_monitoring]
 
   monitored_resource {
     type = "uptime_url"
