@@ -1,4 +1,4 @@
-DROP INDEX "idx_student_responses_question";--> statement-breakpoint
+DROP INDEX IF EXISTS "idx_student_responses_question";--> statement-breakpoint
 ALTER TABLE "student_responses" ALTER COLUMN "user_id" DROP NOT NULL;--> statement-breakpoint
 ALTER TABLE "student_responses" ALTER COLUMN "question_id" DROP NOT NULL;--> statement-breakpoint
 ALTER TABLE "student_responses" ALTER COLUMN "test_attempt_id" SET NOT NULL;--> statement-breakpoint
