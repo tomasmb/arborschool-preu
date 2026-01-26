@@ -123,6 +123,23 @@ Files:
 - Terraform provisions an uptime check for `preu.arbor.school` and an alert
   policy tied to that check.
 
+### 10) Long-term fix for Drizzle migration drift
+
+**Problem**:
+
+- Drizzle records applied migrations by **hash** in `drizzle.__drizzle_migrations`.
+- If schema changes were applied via another path (e.g. `db:push`, manual SQL,
+  or older custom migration scripts), the DB can have changes that Drizzle
+  doesn't recognize as applied.
+- Then `drizzle-kit migrate` attempts to re-apply migrations and can fail with
+  "already exists" errors.
+
+**Fix**:
+
+- Use the manual workflow `Reconcile Drizzle Migration History` to mark
+  migrations as applied **only when the schema changes already exist**.
+- After reconciliation, `drizzle-kit migrate` stops re-running those migrations.
+
 ## Remaining fixes (prioritized)
 
 ### P0 — must fix to avoid outages / unsafe changes
