@@ -57,9 +57,10 @@ resource "google_sql_database_instance" "preu" {
     }
 
     ip_configuration {
-      # Cloud Run connects via Cloud SQL Auth Proxy (Unix socket)
-      # Public IP disabled for security - no internet exposure
-      ipv4_enabled = false
+      ipv4_enabled = true
+      # Restricted access - Cloud Run uses Auth Proxy via Unix socket
+      # Public IP kept for local dev access but no longer open to internet
+      # TODO: Add your dev IP here if needed: authorized_networks { name = "dev" value = "x.x.x.x/32" }
     }
 
     database_flags {
@@ -152,6 +153,11 @@ resource "google_cloud_run_v2_service" "preu" {
         cpu_idle = false
       }
 
+      env {
+        name  = "NODE_ENV"
+        value = "production"
+      }
+
       # Database connection via Cloud SQL Auth Proxy (built into Cloud Run)
       env {
         name  = "DB_HOST"
@@ -170,6 +176,17 @@ resource "google_cloud_run_v2_service" "preu" {
         value_source {
           secret_key_ref {
             secret  = google_secret_manager_secret.db_password.secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      # Email service
+      env {
+        name = "RESEND_API_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = "preu-resend-api-key"
             version = "latest"
           }
         }
