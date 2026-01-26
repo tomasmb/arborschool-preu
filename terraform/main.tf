@@ -60,7 +60,7 @@ resource "google_sql_database_instance" "preu" {
       ipv4_enabled = true
       # Cloud SQL Auth Proxy Unix socket connections don't use PostgreSQL-level SSL
       # (the proxy provides encryption). Must allow unencrypted for Auth Proxy to work.
-      ssl_mode     = "ALLOW_UNENCRYPTED_AND_ENCRYPTED"
+      ssl_mode = "ALLOW_UNENCRYPTED_AND_ENCRYPTED"
       # TODO: Add your dev IP here if needed: authorized_networks { name = "dev" value = "x.x.x.x/32" }
     }
 
@@ -138,7 +138,7 @@ resource "google_cloud_run_v2_service" "preu" {
 
   template {
     containers {
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/preu/preu:latest"
+      image = var.cloud_run_image
 
       ports {
         container_port = 8080
@@ -228,8 +228,8 @@ resource "google_cloud_run_v2_service" "preu" {
   ]
 }
 
-resource "google_cloud_run_service_iam_member" "public" {
-  service  = google_cloud_run_v2_service.preu.name
+resource "google_cloud_run_v2_service_iam_member" "public" {
+  name     = google_cloud_run_v2_service.preu.name
   location = google_cloud_run_v2_service.preu.location
   role     = "roles/run.invoker"
   member   = "allUsers"

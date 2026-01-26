@@ -19,6 +19,10 @@ env:
   DB_NAME: preu
   DB_USER: preu_app
 
+concurrency:
+  group: migrate-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   migrate:
     runs-on: ubuntu-latest

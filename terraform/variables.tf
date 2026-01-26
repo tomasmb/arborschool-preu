@@ -15,3 +15,9 @@ variable "db_tier" {
   type        = string
   default     = "db-f1-micro"
 }
+
+variable "cloud_run_image" {
+  description = "Full container image reference for Cloud Run (tag or digest)."
+  type        = string
+  default     = "us-central1-docker.pkg.dev/arbor-school-473319/preu/preu:latest"
+}
