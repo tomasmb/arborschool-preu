@@ -110,13 +110,6 @@ resource "google_project_iam_member" "cloud_run_sql" {
   member  = "serviceAccount:${google_service_account.cloud_run.email}"
 }
 
-# Grant Cloud Run SA access to Secret Manager
-resource "google_project_iam_member" "cloud_run_secrets" {
-  project = var.project_id
-  role    = "roles/secretmanager.secretAccessor"
-  member  = "serviceAccount:${google_service_account.cloud_run.email}"
-}
-
 # Store database password in Secret Manager
 resource "google_secret_manager_secret" "db_password" {
   secret_id = "preu-db-password"
@@ -129,6 +122,19 @@ resource "google_secret_manager_secret" "db_password" {
 resource "google_secret_manager_secret_version" "db_password" {
   secret      = google_secret_manager_secret.db_password.id
   secret_data = random_password.db_password.result
+}
+
+# Grant Cloud Run SA access to only the required secrets
+resource "google_secret_manager_secret_iam_member" "cloud_run_db_password" {
+  secret_id = google_secret_manager_secret.db_password.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.cloud_run.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "cloud_run_resend_api_key" {
+  secret_id = "preu-resend-api-key"
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.cloud_run.email}"
 }
 
 resource "google_cloud_run_v2_service" "preu" {

@@ -134,6 +134,13 @@ at the project level (can read all secrets).
 - Replace project-level IAM with per-secret IAM:
   - allow access only to `preu-db-password` and `preu-resend-api-key`.
 
+**Important (ongoing maintenance)**:
+
+- Any time you add a new Secret Manager secret that the app needs, you must:
+  - reference it in the Cloud Run service `env.value_source.secret_key_ref`, and
+  - add a matching `google_secret_manager_secret_iam_member` granting the Cloud
+    Run service account `roles/secretmanager.secretAccessor` for that secret.
+
 #### F) Pin supply-chain inputs
 
 **Problem**:
