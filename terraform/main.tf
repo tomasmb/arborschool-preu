@@ -317,9 +317,8 @@ resource "google_monitoring_alert_policy" "preu_uptime_failed" {
       duration        = "120s"
 
       aggregations {
-        alignment_period     = "60s"
-        per_series_aligner   = "ALIGN_NEXT_OLDER"
-        cross_series_reducer = "REDUCE_MEAN"
+        alignment_period   = "60s"
+        per_series_aligner = "ALIGN_NEXT_OLDER"
       }
     }
   }
