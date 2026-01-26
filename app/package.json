@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "drizzle-orm": "^0.38.3",
-    "next": "15.5.4",
+    "next": "15.5.10",
     "postgres": "^3.4.5",
     "posthog-js": "^1.335.2",
     "react": "19.1.0",
@@ -34,7 +34,7 @@
     "@types/react-dom": "^19",
     "drizzle-kit": "^0.30.1",
     "eslint": "^9.36.0",
-    "eslint-config-next": "^15.5.4",
+    "eslint-config-next": "^15.5.7",
     "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.1",
