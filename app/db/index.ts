@@ -1,5 +1,5 @@
 import { drizzle } from "drizzle-orm/postgres-js";
-import postgres, { type Sql } from "postgres";
+import postgres from "postgres";
 import * as schema from "./schema";
 
 /**
@@ -9,20 +9,11 @@ import * as schema from "./schema";
  * In production (Cloud Run), connects via Unix socket to Cloud SQL Auth Proxy.
  * In development, connects via TCP to local database or Cloud SQL Auth Proxy.
  *
- * Uses lazy initialization to avoid connection issues in serverless environments.
+ * Uses a true singleton pattern - one connection pool shared across all requests.
  */
 
-// Build connection options based on environment
-interface ConnectionConfig {
-  connectionString?: string;
-  host?: string;
-  port?: number;
-  database?: string;
-  username?: string;
-  password?: string;
-}
-
-function getConnectionConfig(): ConnectionConfig {
+// Build connection string based on environment
+function getConnectionConfig() {
   // If DATABASE_URL is provided directly, use it
   if (process.env.DATABASE_URL) {
     return { connectionString: process.env.DATABASE_URL };
@@ -36,67 +27,49 @@ function getConnectionConfig(): ConnectionConfig {
   const port = process.env.DB_PORT || "5432";
 
   // Cloud Run uses Unix socket via Cloud SQL Auth Proxy
-  // postgres.js requires host to be the socket path directly
   if (host.startsWith("/cloudsql/")) {
-    return {
-      host,
-      database,
-      username: user,
-      password,
-    };
+    return { host, database, username: user, password };
   }
 
-  return {
-    host,
-    port: parseInt(port, 10),
-    database,
-    username: user,
-    password,
-  };
+  return { host, port: parseInt(port, 10), database, username: user, password };
 }
 
-// Connection options for serverless (Cloud Run)
-// IMPORTANT: We disable pooling to avoid stale connection issues with Cloud SQL
-// Auth Proxy Unix sockets. Each request gets a fresh connection.
-// This adds ~10-50ms latency but is 100% reliable.
+// Connection pool options
+// Cloud Run instances can handle multiple concurrent requests
+// Pool size is per-instance, so with max 10 instances * 10 connections = 100 max
 const CONNECTION_OPTIONS = {
-  max: 1, // Single connection per request - no pooling
-  idle_timeout: 20, // Close idle connections after 20 seconds
+  max: 10, // Pool up to 10 connections per instance
+  idle_timeout: 30, // Close idle connections after 30 seconds
   connect_timeout: 10, // Fail connection attempts after 10s
-  // Set PostgreSQL statement timeout - kills queries after 15 seconds
   connection: {
-    statement_timeout: 15000,
+    statement_timeout: 15000, // Kill queries after 15 seconds
   },
 };
 
-/**
- * Get the database instance.
- * Creates a fresh connection each time to avoid stale connection issues
- * with Cloud SQL Auth Proxy in serverless environments.
- */
-export function getDb() {
-  const config = getConnectionConfig();
+// Singleton connection pool - created once, reused for all requests
+let _client: ReturnType<typeof postgres> | null = null;
+let _db: ReturnType<typeof drizzle<typeof schema>> | null = null;
 
-  // Create fresh connection each time
-  let client: Sql;
-  if (config.connectionString) {
-    client = postgres(config.connectionString, CONNECTION_OPTIONS);
-  } else {
-    client = postgres({
-      host: config.host,
-      port: config.port,
-      database: config.database,
-      username: config.username,
-      password: config.password,
-      ...CONNECTION_OPTIONS,
-    });
+function getClient() {
+  if (!_client) {
+    const config = getConnectionConfig();
+    if (config.connectionString) {
+      _client = postgres(config.connectionString, CONNECTION_OPTIONS);
+    } else {
+      _client = postgres({ ...config, ...CONNECTION_OPTIONS });
+    }
   }
-
-  return drizzle(client, { schema });
+  return _client;
 }
 
-// For convenience, export a proxy that lazily initializes
-// This allows `import { db } from './db'` syntax while still being lazy
+function getDb() {
+  if (!_db) {
+    _db = drizzle(getClient(), { schema });
+  }
+  return _db;
+}
+
+// Export singleton db instance via lazy proxy
 export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
   get(_, prop) {
     return getDb()[prop as keyof ReturnType<typeof drizzle<typeof schema>>];
