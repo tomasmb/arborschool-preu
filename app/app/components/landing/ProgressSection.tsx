@@ -62,20 +62,20 @@ function ProgressCard() {
 
       <div className="grid grid-cols-2 gap-4 mb-8">
         <div className="bg-white/5 rounded-xl p-4 text-center">
-          <p className="text-3xl font-bold text-white">748</p>
+          <p className="text-3xl font-bold text-white">647</p>
           <p className="text-sm text-white/60">Puntaje actual</p>
         </div>
         <div className="bg-accent/20 rounded-xl p-4 text-center border border-accent/30">
-          <p className="text-3xl font-bold text-accent">780</p>
+          <p className="text-3xl font-bold text-accent">753</p>
           <p className="text-sm text-white/60">Tu meta</p>
         </div>
       </div>
 
       <div className="pt-6 border-t border-white/10">
-        <p className="text-white/60 text-sm mb-2">Con 30 min/día:</p>
         <p className="text-white text-lg">
           Alcanzas tu meta en{" "}
-          <span className="font-bold text-accent">12 semanas</span>
+          <span className="font-bold text-accent">~5.8 horas</span> de estudio
+          enfocado
         </p>
       </div>
     </div>
