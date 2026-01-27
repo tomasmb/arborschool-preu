@@ -247,7 +247,7 @@ export function GenericNextStep({ tier }: GenericNextStepProps) {
   if (!stepData) return null;
 
   return (
-    <div className="card p-5 bg-gradient-to-br from-primary/5 to-white border-primary/20">
+    <div className="card p-5 bg-gradient-to-br from-primary/5 to-white border-primary/20 text-center">
       <p className="text-sm text-cool-gray mb-2">
         Tu siguiente paso (cuando lancemos):
       </p>
@@ -301,8 +301,9 @@ export function ScoreDisplay({
       <div className="text-5xl sm:text-6xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary-light my-4">
         {midScore}
       </div>
-      <div className="text-lg text-cool-gray mb-6">
-        Rango: {scoreMin} - {scoreMax} puntos
+      <div className="text-base text-cool-gray mb-6">
+        Rango probable: {scoreMin}–{scoreMax}{" "}
+        <span className="text-sm">(≈ ±5 preguntas)</span>
       </div>
     </div>
   );
@@ -324,11 +325,16 @@ export function SecondaryScoreDisplay({
 
   if (config.scoreEmphasis === "primary") return null;
 
+  const midScore = Math.round((scoreMin + scoreMax) / 2);
   const textSize = config.scoreEmphasis === "minimal" ? "text-sm" : "text-base";
 
   return (
     <div className={`text-center ${textSize} text-cool-gray mt-6`}>
-      Tu rango estimado: {scoreMin} - {scoreMax}
+      <span className="font-semibold text-charcoal">{midScore}</span> puntos
+      estimados{" "}
+      <span className="text-xs">
+        (rango: {scoreMin}–{scoreMax})
+      </span>
     </div>
   );
 }
@@ -369,10 +375,11 @@ export function CtaButton({
 }: CtaButtonProps) {
   const baseClasses =
     "inline-flex items-center gap-2 shadow-lg hover:scale-105 transition-transform";
+  // Both variants now use larger sizing for better visibility
   const variantClasses =
     variant === "white"
       ? "btn-cta px-10 py-4 text-lg shadow-xl"
-      : "btn-cta px-8 py-3 text-base";
+      : "btn-cta px-10 py-4 text-lg";
 
   return (
     <button
@@ -381,7 +388,7 @@ export function CtaButton({
     >
       {ctaLabel}
       <svg
-        className="w-4 h-4"
+        className="w-5 h-5"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"

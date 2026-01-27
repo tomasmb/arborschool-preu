@@ -27,7 +27,6 @@ import {
   GenericNextStep,
   SecondaryScoreDisplay,
   CtaButton,
-  BottomCtaSection,
   shouldShowRoutes,
   getScoreEmphasis,
 } from "./TierContent";
@@ -44,11 +43,28 @@ export type { AtomResult, TopRouteInfo } from "../utils";
 // ============================================================================
 
 // Canonical CTA label - single source of truth
-const CTA_LABEL = "Guardar mi progreso y recibir acceso";
+const CTA_LABEL = "Guardar y recibir acceso";
 
 // Expectation line shown under CTA
 const EXPECTATION_LINE =
   "Te avisamos cuando la plataforma esté lista para continuar. 1–2 correos, sin spam. Puedes darte de baja cuando quieras.";
+
+// ============================================================================
+// HELPERS
+// ============================================================================
+
+/**
+ * Generates animation classes for staggered fade-in effect.
+ * @param showContent - Whether content should be visible
+ * @param delay - Tailwind delay class (e.g., "100", "200", "300")
+ */
+function getAnimationClasses(showContent: boolean, delay?: string): string {
+  const delayClass = delay ? `delay-${delay}` : "";
+  const visibilityClass = showContent
+    ? "opacity-100 translate-y-0"
+    : "opacity-0 translate-y-8";
+  return `transition-all duration-700 ${delayClass} ${visibilityClass}`.trim();
+}
 
 // ============================================================================
 // MAIN COMPONENT
@@ -64,12 +80,14 @@ export function ResultsScreen({
   onSignup,
   onScoreCalculated,
   onTopRouteCalculated,
+  precomputedRoutes,
+  precomputedNextConcepts,
 }: ResultsScreenProps) {
   void _route; // Silence unused warning - route may be needed for future tier logic
 
   const [showContent, setShowContent] = useState(false);
   const [showReviewDrawer, setShowReviewDrawer] = useState(false);
-  const [showMoreRoutes, setShowMoreRoutes] = useState(false);
+  const [showMoreDetails, setShowMoreDetails] = useState(false);
   const hasTrackedView = useRef(false);
 
   // Get performance tier and config
@@ -98,10 +116,12 @@ export function ResultsScreen({
   const scoreEmphasis = getScoreEmphasis(performanceTier);
 
   // Fetch personalized learning routes based on diagnostic atom results
-  const { data: routesData, isLoading: routesLoading } = useLearningRoutes(
-    atomResults,
-    midScore
-  );
+  // Skip API call entirely if precomputed routes are provided (example mode)
+  const liveRoutes = useLearningRoutes(atomResults, midScore, {
+    skip: !!precomputedRoutes,
+  });
+  const routesData = precomputedRoutes ?? liveRoutes.data;
+  const routesLoading = precomputedRoutes ? false : liveRoutes.isLoading;
 
   // Notify parent of the diagnostic score for SignupScreen
   useEffect(() => {
@@ -155,10 +175,14 @@ export function ResultsScreen({
   }, [routesData?.summary]);
 
   // Build next concepts from wrong answers and recommended route
+  // Use precomputed data if provided (example mode)
   const nextConcepts = useMemo(() => {
+    if (precomputedNextConcepts) {
+      return precomputedNextConcepts;
+    }
     const recommendedRoute = sortedRoutes.length > 0 ? sortedRoutes[0] : null;
     return buildNextConceptsFromResponses(responses, recommendedRoute);
-  }, [responses, sortedRoutes]);
+  }, [responses, sortedRoutes, precomputedNextConcepts]);
 
   // Check if we should show next concepts based on tier
   const nextConceptsConfig = useMemo(
@@ -218,8 +242,7 @@ export function ResultsScreen({
         <div className="max-w-4xl mx-auto px-4 py-8">
           {/* Completion Badge */}
           <div
-            className={`text-center mb-6 transition-all duration-700 
-            ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+            className={`text-center mb-6 ${getAnimationClasses(showContent)}`}
           >
             <div className="inline-flex items-center gap-2 text-sm font-medium text-success bg-success/10 px-4 py-2 rounded-full">
               <span className="w-2 h-2 bg-success rounded-full animate-pulse" />
@@ -229,10 +252,7 @@ export function ResultsScreen({
 
           {/* Limitation Copy (for low-signal tiers - shown first) */}
           {isLowSignal && (
-            <div
-              className={`mb-6 transition-all duration-700 
-              ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-            >
+            <div className={`mb-6 ${getAnimationClasses(showContent)}`}>
               <LimitationCopy
                 tier={performanceTier}
                 className="justify-center text-center"
@@ -243,8 +263,7 @@ export function ResultsScreen({
           {/* Hero Score (primary emphasis only) */}
           {scoreEmphasis === "primary" && (
             <div
-              className={`text-center mb-6 transition-all duration-700 
-              ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+              className={`text-center mb-6 ${getAnimationClasses(showContent)}`}
             >
               <h1 className="text-3xl sm:text-4xl font-serif font-bold text-charcoal mb-2">
                 Tu Puntaje PAES Estimado
@@ -256,179 +275,25 @@ export function ResultsScreen({
                   delay={200}
                 />
               </div>
-              <div className="text-lg text-cool-gray mb-4">
-                Rango: {scoreMin} - {scoreMax} puntos
+              <div className="text-base text-cool-gray mb-2">
+                Rango probable: {scoreMin}–{scoreMax}{" "}
+                <span className="text-sm">(≈ ±5 preguntas)</span>
+              </div>
+              <div className="text-sm text-cool-gray">
+                {totalCorrect}/16 correctas
               </div>
             </div>
           )}
 
-          {/* Tier Headline */}
-          <div
-            className={`text-center mb-6 transition-all duration-700 delay-100
-            ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-          >
-            <TierHeadline tier={performanceTier} totalCorrect={totalCorrect} />
-          </div>
-
-          {/* Limitation Copy (for high-signal tiers with missing modules) */}
-          {performanceTier === "perfect" && (
-            <div
-              className={`mb-6 transition-all duration-700 delay-150
-              ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-            >
-              <LimitationCopy
-                tier={performanceTier}
-                className="justify-center text-center"
-              />
-            </div>
-          )}
-
-          {/* Improvement Message Card */}
-          <div
-            className={`text-center mb-6 transition-all duration-700 delay-200
-            ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-          >
-            <TierMessageCard
-              tier={performanceTier}
-              potentialImprovement={potentialImprovement}
-              studyHours={studyHours}
-              isHighMastery={isHighMastery}
-            />
-          </div>
-
-          {/* Learning Route OR Generic Next Step */}
-          <div
-            className={`mb-6 transition-all duration-700 delay-300
-            ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-          >
-            {showRoutes ? (
-              <>
-                <p className="text-sm text-cool-gray mb-3">
-                  Tu ruta de mayor impacto:
-                </p>
-                {routesLoading ? (
-                  <div className="card p-6 flex justify-center">
-                    <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
-                  </div>
-                ) : sortedRoutes.length > 0 ? (
-                  <SimpleRouteCard
-                    route={sortedRoutes[0]}
-                    isRecommended={true}
-                  />
-                ) : null}
-              </>
-            ) : (
-              <GenericNextStep tier={performanceTier} />
-            )}
-          </div>
-
-          {/* Low Hanging Fruit (only for tiers with routes) */}
-          {showRoutes &&
-            routesData?.lowHangingFruit &&
-            routesData.lowHangingFruit.oneAway > 0 && (
-              <div
-                className={`mb-6 transition-all duration-700 delay-400
-              ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-              >
-                <div className="flex items-center gap-2 text-sm text-cool-gray">
-                  {Icons.lightbulb("w-4 h-4 text-success")}
-                  <span>
-                    Tienes{" "}
-                    <strong className="text-success">
-                      {routesData.lowHangingFruit.oneAway}
-                    </strong>{" "}
-                    preguntas a 1 sola mini-clase de distancia.
-                  </span>
-                </div>
-              </div>
-            )}
-
-          {/* Primary CTA */}
-          <div
-            className={`text-center mb-8 transition-all duration-700 delay-500
-            ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-          >
-            <CtaButton onClick={handleCtaClick} ctaLabel={CTA_LABEL} />
-            <p className="text-xs text-cool-gray mt-3 max-w-md mx-auto">
-              {EXPECTATION_LINE}
-            </p>
-          </div>
-
-          {/* "Ver más rutas" toggle (only for tiers with routes) */}
-          {showRoutes && sortedRoutes.length > 1 && (
-            <div
-              className={`text-center mb-6 transition-all duration-700 delay-600
-              ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-            >
-              <button
-                onClick={() => setShowMoreRoutes(!showMoreRoutes)}
-                className="text-cool-gray text-sm flex items-center gap-1 mx-auto hover:text-charcoal transition-colors"
-              >
-                <svg
-                  className={`w-4 h-4 transition-transform ${showMoreRoutes ? "rotate-180" : ""}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-                {showMoreRoutes
-                  ? "Ver menos rutas"
-                  : "Ver más rutas de aprendizaje"}
-              </button>
-            </div>
-          )}
-
-          {/* Next Concepts Preview (expanded) */}
-          {showMoreRoutes && showNextConcepts && (
-            <div className="mb-6 animate-fadeIn">
-              <NextConceptsPreview
-                tier={performanceTier}
-                concepts={nextConcepts}
-              />
-            </div>
-          )}
-
-          {/* Additional Routes (expanded) */}
-          {showMoreRoutes && sortedRoutes.length > 1 && (
-            <div className="mb-8 space-y-3 animate-fadeIn">
-              <p className="text-sm text-cool-gray mb-3">
-                Otras rutas de aprendizaje:
-              </p>
-              {sortedRoutes.slice(1, 4).map((route) => (
-                <SimpleRouteCard
-                  key={route.axis}
-                  route={route}
-                  isRecommended={false}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Stats Summary */}
-          <div
-            className={`flex items-center justify-center gap-4 text-sm text-cool-gray mb-6 transition-all duration-700 delay-600
-            ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-          >
-            <span>Tu desempeño: {totalCorrect}/16 correctas</span>
-          </div>
-
-          {/* Question Review Link */}
+          {/* Question Review Link (early - users want to know WHY) */}
           {responsesForReview.length > 0 && (
             <div
-              className={`text-center mb-6 transition-all duration-700 delay-700
-              ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+              className={`text-center mb-6 ${getAnimationClasses(showContent, "100")}`}
             >
               <button
                 onClick={() => setShowReviewDrawer(true)}
-                className="text-cool-gray text-sm hover:text-charcoal transition-colors inline-flex items-center gap-1"
+                className="text-primary text-sm hover:text-primary-light transition-colors inline-flex items-center gap-1.5 font-medium"
               >
-                Revisar mis respuestas
                 <svg
                   className="w-4 h-4"
                   fill="none"
@@ -439,19 +304,201 @@ export function ResultsScreen({
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M9 5l7 7-7 7"
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
                   />
                 </svg>
+                Revisar mis respuestas
               </button>
+            </div>
+          )}
+
+          {/* Tier Headline */}
+          <div
+            className={`text-center mb-6 ${getAnimationClasses(showContent, "150")}`}
+          >
+            <TierHeadline tier={performanceTier} totalCorrect={totalCorrect} />
+          </div>
+
+          {/* Limitation Copy (for high-signal tiers with missing modules) */}
+          {performanceTier === "perfect" && (
+            <div className={`mb-6 ${getAnimationClasses(showContent, "200")}`}>
+              <LimitationCopy
+                tier={performanceTier}
+                className="justify-center text-center"
+              />
+            </div>
+          )}
+
+          {/* Improvement Message Card */}
+          <div
+            className={`text-center mb-6 ${getAnimationClasses(showContent, "250")}`}
+          >
+            <TierMessageCard
+              tier={performanceTier}
+              potentialImprovement={potentialImprovement}
+              studyHours={studyHours}
+              isHighMastery={isHighMastery}
+            />
+          </div>
+
+          {/* Primary CTA (early - right after value proposition) */}
+          <div
+            className={`text-center mb-6 ${getAnimationClasses(showContent, "300")}`}
+          >
+            <CtaButton onClick={handleCtaClick} ctaLabel={CTA_LABEL} />
+            <p className="text-xs text-cool-gray mt-3 max-w-md mx-auto">
+              {EXPECTATION_LINE}
+            </p>
+          </div>
+
+          {/* Generic Next Step (for tiers without calculated routes) */}
+          {!showRoutes && (
+            <div className={`mb-6 ${getAnimationClasses(showContent, "350")}`}>
+              <GenericNextStep tier={performanceTier} />
+            </div>
+          )}
+
+          {/* "Explorar mi ruta" toggle - contains all route details */}
+          {showRoutes && (
+            <div
+              className={`text-center mb-6 ${getAnimationClasses(showContent, "350")}`}
+            >
+              <button
+                onClick={() => setShowMoreDetails(!showMoreDetails)}
+                className="text-primary text-sm font-medium flex items-center gap-1.5 mx-auto hover:text-primary-light transition-colors"
+                aria-expanded={showMoreDetails}
+              >
+                {showMoreDetails ? (
+                  <>
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 15l7-7 7 7"
+                      />
+                    </svg>
+                    Ocultar detalles
+                  </>
+                ) : (
+                  <>
+                    Explorar mi ruta personalizada
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </>
+                )}
+              </button>
+
+              {/* Expanded content - all route details inside toggle */}
+              {showMoreDetails && (
+                <div className="mt-6 space-y-6 animate-fadeIn text-left">
+                  {/* Recommended Route Card */}
+                  <div>
+                    <p className="text-sm text-cool-gray mb-3 text-center">
+                      Tu ruta de mayor impacto:
+                    </p>
+                    {routesLoading ? (
+                      <div className="card p-6 flex justify-center">
+                        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+                      </div>
+                    ) : sortedRoutes.length > 0 ? (
+                      <SimpleRouteCard
+                        route={sortedRoutes[0]}
+                        isRecommended={true}
+                      />
+                    ) : null}
+                  </div>
+
+                  {/* Low Hanging Fruit */}
+                  {routesData?.lowHangingFruit &&
+                    routesData.lowHangingFruit.oneAway > 0 && (
+                      <div className="flex items-center justify-center gap-2 text-sm text-cool-gray">
+                        {Icons.lightbulb("w-4 h-4 text-success")}
+                        <span>
+                          Tienes{" "}
+                          <strong className="text-success">
+                            {routesData.lowHangingFruit.oneAway}
+                          </strong>{" "}
+                          preguntas a 1 sola mini-clase de distancia.
+                        </span>
+                      </div>
+                    )}
+
+                  {/* Next Mini-Clases (from recommended route) */}
+                  {showNextConcepts && nextConcepts.length > 0 && (
+                    <NextConceptsPreview
+                      tier={performanceTier}
+                      concepts={nextConcepts}
+                    />
+                  )}
+
+                  {/* Other Routes */}
+                  {sortedRoutes.length > 1 && (
+                    <div>
+                      <p className="text-sm text-cool-gray mb-3 text-center">
+                        Otras rutas disponibles
+                      </p>
+                      <div className="space-y-3">
+                        {sortedRoutes.slice(1, 4).map((route) => (
+                          <SimpleRouteCard
+                            key={route.axis}
+                            route={route}
+                            isRecommended={false}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Secondary CTA inside toggle for engaged readers */}
+                  <div className="text-center pt-4 border-t border-gray-100">
+                    <p className="text-sm text-cool-gray mb-3">
+                      ¿Listo para comenzar tu ruta?
+                    </p>
+                    <button
+                      onClick={handleCtaClick}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-primary/10 text-primary font-semibold rounded-xl hover:bg-primary/20 transition-colors"
+                    >
+                      Continuar
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 7l5 5m0 0l-5 5m5-5H6"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
           {/* Secondary Score Display (for low-signal tiers) */}
           {scoreEmphasis !== "primary" && (
-            <div
-              className={`transition-all duration-700 delay-700
-              ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-            >
+            <div className={getAnimationClasses(showContent, "400")}>
               <SecondaryScoreDisplay
                 scoreMin={scoreMin}
                 scoreMax={scoreMax}
@@ -459,14 +506,6 @@ export function ResultsScreen({
               />
             </div>
           )}
-
-          {/* Bottom CTA Section */}
-          <BottomCtaSection
-            onCtaClick={handleCtaClick}
-            ctaLabel={CTA_LABEL}
-            expectationLine={EXPECTATION_LINE}
-            showContent={showContent}
-          />
         </div>
       </div>
 

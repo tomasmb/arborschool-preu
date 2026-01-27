@@ -56,36 +56,36 @@ export function SimpleRouteCard({
       className={`card p-5 ${isRecommended ? "ring-2 ring-accent ring-offset-2 bg-gradient-to-br from-accent/5 to-white" : ""}`}
     >
       {isRecommended && (
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-accent/10 text-accent text-xs font-semibold rounded-full mb-3">
-          {Icons.target("w-3.5 h-3.5")}
-          RECOMENDADO
+        <div className="flex justify-center mb-3">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-accent/10 text-accent text-xs font-semibold rounded-full">
+            {Icons.target("w-3.5 h-3.5")}
+            RECOMENDADO
+          </div>
         </div>
       )}
 
-      <div className="flex items-start gap-4">
-        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+      <div className="flex flex-col items-center text-center">
+        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
           {AxisIcon("w-5 h-5 text-primary")}
         </div>
 
-        <div className="flex-1">
-          <h4 className="font-bold text-charcoal">{route.title}</h4>
+        <h4 className="font-bold text-charcoal">{route.title}</h4>
 
-          {/* Key value proposition: points + time */}
-          <div className="flex items-center gap-2 mt-2">
-            <span className="text-success font-bold text-lg">
-              +{route.pointsGain} puntos
-            </span>
-            <span className="text-cool-gray">en</span>
-            <span className="text-charcoal font-semibold">
-              {studyTimeDisplay}
-            </span>
-          </div>
+        {/* Key value proposition: points + time */}
+        <div className="flex items-center justify-center gap-2 mt-2">
+          <span className="text-success font-bold text-lg">
+            +{route.pointsGain} puntos
+          </span>
+          <span className="text-cool-gray">en</span>
+          <span className="text-charcoal font-semibold">
+            {studyTimeDisplay}
+          </span>
+        </div>
 
-          {/* Secondary info: questions unlocked */}
-          <div className="flex items-center gap-1.5 mt-1.5 text-sm text-cool-gray">
-            {Icons.unlock("w-4 h-4")}
-            <span>+{route.questionsUnlocked} preguntas PAES</span>
-          </div>
+        {/* Secondary info: questions unlocked */}
+        <div className="flex items-center justify-center gap-1.5 mt-1.5 text-sm text-cool-gray">
+          {Icons.unlock("w-4 h-4")}
+          <span>+{route.questionsUnlocked} preguntas PAES</span>
         </div>
       </div>
     </div>
