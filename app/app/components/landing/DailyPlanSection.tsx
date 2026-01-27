@@ -55,8 +55,8 @@ function DailyPlanPreview() {
         />
         <TaskCard
           icon={<BookIcon />}
-          title="Nuevo concepto"
-          description="Factorización – Lección + práctica"
+          title="Mini-clase"
+          description="Factorización – Ejemplos + práctica"
           time="12 min"
           variant="primary"
         />

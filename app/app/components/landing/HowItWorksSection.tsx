@@ -30,7 +30,7 @@ export function HowItWorksSection() {
           <StepCard
             number={3}
             title="Aprende y Domina"
-            description="Lección corta, práctica adaptativa. Solo avanzas cuando demuestras que lo dominaste."
+            description="Cada mini-clase tiene ejemplos resueltos y práctica adaptativa. Solo avanzas cuando demuestras que lo dominaste."
             variant="accent"
           />
         </div>
