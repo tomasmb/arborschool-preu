@@ -27,7 +27,6 @@ import {
   GenericNextStep,
   SecondaryScoreDisplay,
   CtaButton,
-  BottomCtaSection,
   shouldShowRoutes,
   getScoreEmphasis,
 } from "./TierContent";
@@ -344,7 +343,7 @@ export function ResultsScreen({
 
           {/* Primary CTA (early - right after value proposition) */}
           <div
-            className={`text-center mb-8 ${getAnimationClasses(showContent, "300")}`}
+            className={`text-center mb-6 ${getAnimationClasses(showContent, "300")}`}
           >
             <CtaButton onClick={handleCtaClick} ctaLabel={CTA_LABEL} />
             <p className="text-xs text-cool-gray mt-3 max-w-md mx-auto">
@@ -352,77 +351,95 @@ export function ResultsScreen({
             </p>
           </div>
 
-          {/* Learning Route OR Generic Next Step (proof for skeptics) */}
-          <div className={`mb-6 ${getAnimationClasses(showContent, "350")}`}>
-            {showRoutes ? (
-              <>
-                <p className="text-sm text-cool-gray mb-3 text-center">
-                  Tu ruta de mayor impacto:
-                </p>
-                {routesLoading ? (
-                  <div className="card p-6 flex justify-center">
-                    <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
-                  </div>
-                ) : sortedRoutes.length > 0 ? (
-                  <SimpleRouteCard
-                    route={sortedRoutes[0]}
-                    isRecommended={true}
-                  />
-                ) : null}
-              </>
-            ) : (
+          {/* Generic Next Step (for tiers without calculated routes) */}
+          {!showRoutes && (
+            <div className={`mb-6 ${getAnimationClasses(showContent, "350")}`}>
               <GenericNextStep tier={performanceTier} />
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* Low Hanging Fruit (only for tiers with routes) */}
-          {showRoutes &&
-            routesData?.lowHangingFruit &&
-            routesData.lowHangingFruit.oneAway > 0 && (
-              <div
-                className={`mb-6 ${getAnimationClasses(showContent, "400")}`}
-              >
-                <div className="flex items-center justify-center gap-2 text-sm text-cool-gray">
-                  {Icons.lightbulb("w-4 h-4 text-success")}
-                  <span>
-                    Tienes{" "}
-                    <strong className="text-success">
-                      {routesData.lowHangingFruit.oneAway}
-                    </strong>{" "}
-                    preguntas a 1 sola mini-clase de distancia.
-                  </span>
-                </div>
-              </div>
-            )}
-
-          {/* "Ver más sobre tu ruta" toggle */}
-          {showRoutes && (showNextConcepts || sortedRoutes.length > 1) && (
+          {/* "Explorar mi ruta" toggle - contains all route details */}
+          {showRoutes && (
             <div
-              className={`text-center mb-6 ${getAnimationClasses(showContent, "450")}`}
+              className={`text-center mb-6 ${getAnimationClasses(showContent, "350")}`}
             >
               <button
                 onClick={() => setShowMoreDetails(!showMoreDetails)}
-                className="text-cool-gray text-sm flex items-center gap-1 mx-auto hover:text-charcoal transition-colors"
+                className="text-primary text-sm font-medium flex items-center gap-1.5 mx-auto hover:text-primary-light transition-colors"
+                aria-expanded={showMoreDetails}
               >
-                <svg
-                  className={`w-4 h-4 transition-transform ${showMoreDetails ? "rotate-180" : ""}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-                {showMoreDetails ? "Ocultar detalles" : "Ver más sobre tu ruta"}
+                {showMoreDetails ? (
+                  <>
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 15l7-7 7 7"
+                      />
+                    </svg>
+                    Ocultar detalles
+                  </>
+                ) : (
+                  <>
+                    Explorar mi ruta personalizada
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </>
+                )}
               </button>
 
-              {/* Expanded content */}
+              {/* Expanded content - all route details inside toggle */}
               {showMoreDetails && (
                 <div className="mt-6 space-y-6 animate-fadeIn text-left">
+                  {/* Recommended Route Card */}
+                  <div>
+                    <p className="text-sm text-cool-gray mb-3 text-center">
+                      Tu ruta de mayor impacto:
+                    </p>
+                    {routesLoading ? (
+                      <div className="card p-6 flex justify-center">
+                        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+                      </div>
+                    ) : sortedRoutes.length > 0 ? (
+                      <SimpleRouteCard
+                        route={sortedRoutes[0]}
+                        isRecommended={true}
+                      />
+                    ) : null}
+                  </div>
+
+                  {/* Low Hanging Fruit */}
+                  {routesData?.lowHangingFruit &&
+                    routesData.lowHangingFruit.oneAway > 0 && (
+                      <div className="flex items-center justify-center gap-2 text-sm text-cool-gray">
+                        {Icons.lightbulb("w-4 h-4 text-success")}
+                        <span>
+                          Tienes{" "}
+                          <strong className="text-success">
+                            {routesData.lowHangingFruit.oneAway}
+                          </strong>{" "}
+                          preguntas a 1 sola mini-clase de distancia.
+                        </span>
+                      </div>
+                    )}
+
                   {/* Next Mini-Clases (from recommended route) */}
                   {showNextConcepts && nextConcepts.length > 0 && (
                     <NextConceptsPreview
@@ -448,6 +465,32 @@ export function ResultsScreen({
                       </div>
                     </div>
                   )}
+
+                  {/* Secondary CTA inside toggle for engaged readers */}
+                  <div className="text-center pt-4 border-t border-gray-100">
+                    <p className="text-sm text-cool-gray mb-3">
+                      ¿Listo para comenzar tu ruta?
+                    </p>
+                    <button
+                      onClick={handleCtaClick}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-primary/10 text-primary font-semibold rounded-xl hover:bg-primary/20 transition-colors"
+                    >
+                      Continuar
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 7l5 5m0 0l-5 5m5-5H6"
+                        />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -455,7 +498,7 @@ export function ResultsScreen({
 
           {/* Secondary Score Display (for low-signal tiers) */}
           {scoreEmphasis !== "primary" && (
-            <div className={getAnimationClasses(showContent, "700")}>
+            <div className={getAnimationClasses(showContent, "400")}>
               <SecondaryScoreDisplay
                 scoreMin={scoreMin}
                 scoreMax={scoreMax}
@@ -463,14 +506,6 @@ export function ResultsScreen({
               />
             </div>
           )}
-
-          {/* Bottom CTA Section */}
-          <BottomCtaSection
-            onCtaClick={handleCtaClick}
-            ctaLabel={CTA_LABEL}
-            expectationLine={EXPECTATION_LINE}
-            showContent={showContent}
-          />
         </div>
       </div>
 
