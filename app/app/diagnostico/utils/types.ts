@@ -8,6 +8,8 @@ import {
   type MSTQuestion,
 } from "@/lib/diagnostic/config";
 import { type AxisPerformance } from "../components/ResultsComponents";
+import { type LearningRoutesResponse } from "../hooks/useLearningRoutes";
+import { type NextConcept } from "@/lib/config";
 
 // ============================================================================
 // ATOM MASTERY TYPES
@@ -64,4 +66,8 @@ export interface ResultsScreenProps {
   onScoreCalculated?: (score: number) => void;
   /** Callback to set the top route info for use in ThankYouScreen */
   onTopRouteCalculated?: (topRoute: TopRouteInfo | null) => void;
+  /** Pre-computed routes data (skips API call when provided - for example mode) */
+  precomputedRoutes?: LearningRoutesResponse;
+  /** Pre-computed next concepts (skips building from responses - for example mode) */
+  precomputedNextConcepts?: NextConcept[];
 }

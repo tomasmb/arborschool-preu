@@ -64,6 +64,8 @@ export function ResultsScreen({
   onSignup,
   onScoreCalculated,
   onTopRouteCalculated,
+  precomputedRoutes,
+  precomputedNextConcepts,
 }: ResultsScreenProps) {
   void _route; // Silence unused warning - route may be needed for future tier logic
 
@@ -98,10 +100,12 @@ export function ResultsScreen({
   const scoreEmphasis = getScoreEmphasis(performanceTier);
 
   // Fetch personalized learning routes based on diagnostic atom results
-  const { data: routesData, isLoading: routesLoading } = useLearningRoutes(
-    atomResults,
-    midScore
-  );
+  // Skip API call entirely if precomputed routes are provided (example mode)
+  const liveRoutes = useLearningRoutes(atomResults, midScore, {
+    skip: !!precomputedRoutes,
+  });
+  const routesData = precomputedRoutes ?? liveRoutes.data;
+  const routesLoading = precomputedRoutes ? false : liveRoutes.isLoading;
 
   // Notify parent of the diagnostic score for SignupScreen
   useEffect(() => {
@@ -155,10 +159,14 @@ export function ResultsScreen({
   }, [routesData?.summary]);
 
   // Build next concepts from wrong answers and recommended route
+  // Use precomputed data if provided (example mode)
   const nextConcepts = useMemo(() => {
+    if (precomputedNextConcepts) {
+      return precomputedNextConcepts;
+    }
     const recommendedRoute = sortedRoutes.length > 0 ? sortedRoutes[0] : null;
     return buildNextConceptsFromResponses(responses, recommendedRoute);
-  }, [responses, sortedRoutes]);
+  }, [responses, sortedRoutes, precomputedNextConcepts]);
 
   // Check if we should show next concepts based on tier
   const nextConceptsConfig = useMemo(

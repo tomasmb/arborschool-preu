@@ -78,6 +78,11 @@ interface UseLearningRoutesResult {
   error: string | null;
 }
 
+interface UseLearningRoutesOptions {
+  /** Skip fetching (e.g., when precomputed data is available) */
+  skip?: boolean;
+}
+
 // ============================================================================
 // HOOK
 // ============================================================================
@@ -91,14 +96,18 @@ interface UseLearningRoutesResult {
  *
  * @param atomResults - Array of {atomId, mastered} from diagnostic
  * @param diagnosticScore - Current PAES score from diagnostic (for improvement calc)
+ * @param options - Optional configuration (e.g., skip fetching)
  * @returns Loading state, data, and any errors
  */
 export function useLearningRoutes(
   atomResults: Array<{ atomId: string; mastered: boolean }>,
-  diagnosticScore?: number
+  diagnosticScore?: number,
+  options: UseLearningRoutesOptions = {}
 ): UseLearningRoutesResult {
+  const { skip = false } = options;
+
   const [data, setData] = useState<LearningRoutesResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!skip);
   const [error, setError] = useState<string | null>(null);
 
   // Stabilize atomResults reference - only change when content changes
@@ -109,6 +118,12 @@ export function useLearningRoutes(
   }
 
   useEffect(() => {
+    // Skip fetching if explicitly disabled
+    if (skip) {
+      setIsLoading(false);
+      return;
+    }
+
     let cancelled = false;
 
     async function fetchRoutes() {
@@ -157,7 +172,7 @@ export function useLearningRoutes(
     return () => {
       cancelled = true;
     };
-  }, [atomResultsKey, diagnosticScore]);
+  }, [atomResultsKey, diagnosticScore, skip]);
 
   return { data, isLoading, error };
 }
