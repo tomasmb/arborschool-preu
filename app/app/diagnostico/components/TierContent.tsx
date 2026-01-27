@@ -247,7 +247,7 @@ export function GenericNextStep({ tier }: GenericNextStepProps) {
   if (!stepData) return null;
 
   return (
-    <div className="card p-5 bg-gradient-to-br from-primary/5 to-white border-primary/20">
+    <div className="card p-5 bg-gradient-to-br from-primary/5 to-white border-primary/20 text-center">
       <p className="text-sm text-cool-gray mb-2">
         Tu siguiente paso (cuando lancemos):
       </p>
@@ -375,10 +375,11 @@ export function CtaButton({
 }: CtaButtonProps) {
   const baseClasses =
     "inline-flex items-center gap-2 shadow-lg hover:scale-105 transition-transform";
+  // Both variants now use larger sizing for better visibility
   const variantClasses =
     variant === "white"
       ? "btn-cta px-10 py-4 text-lg shadow-xl"
-      : "btn-cta px-8 py-3 text-base";
+      : "btn-cta px-10 py-4 text-lg";
 
   return (
     <button
@@ -387,7 +388,7 @@ export function CtaButton({
     >
       {ctaLabel}
       <svg
-        className="w-4 h-4"
+        className="w-5 h-5"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"

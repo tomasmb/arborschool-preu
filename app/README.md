@@ -97,10 +97,11 @@ app/
    - Deploy
 
 3. **Run Migrations**:
+
    ```bash
    # Set your Neon connection string
    export DATABASE_URL="postgresql://..."
-   
+
    # Run migrations
    npm run db:migrate
    ```
