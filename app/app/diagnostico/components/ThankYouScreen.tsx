@@ -132,8 +132,14 @@ export function ThankYouScreen({
                   <p className="text-sm text-cool-gray mb-1 text-center">
                     Tu Puntaje PAES Estimado
                   </p>
-                  <p className="text-3xl font-bold text-primary text-center mb-3">
-                    {resultsSnapshot.paesMin}-{resultsSnapshot.paesMax}
+                  <p className="text-3xl font-bold text-primary text-center mb-1">
+                    {Math.round(
+                      (resultsSnapshot.paesMin + resultsSnapshot.paesMax) / 2
+                    )}
+                  </p>
+                  <p className="text-xs text-cool-gray text-center mb-3">
+                    Rango probable: {resultsSnapshot.paesMin}–
+                    {resultsSnapshot.paesMax}
                   </p>
 
                   {resultsSnapshot.topRoute && (

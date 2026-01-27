@@ -256,8 +256,9 @@ export function ResultsScreen({
                   delay={200}
                 />
               </div>
-              <div className="text-lg text-cool-gray mb-4">
-                Rango: {scoreMin} - {scoreMax} puntos
+              <div className="text-base text-cool-gray mb-4">
+                Rango probable: {scoreMin}–{scoreMax}{" "}
+                <span className="text-sm">(≈ ±5 preguntas)</span>
               </div>
             </div>
           )}

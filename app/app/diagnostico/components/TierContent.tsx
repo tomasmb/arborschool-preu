@@ -301,8 +301,9 @@ export function ScoreDisplay({
       <div className="text-5xl sm:text-6xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary-light my-4">
         {midScore}
       </div>
-      <div className="text-lg text-cool-gray mb-6">
-        Rango: {scoreMin} - {scoreMax} puntos
+      <div className="text-base text-cool-gray mb-6">
+        Rango probable: {scoreMin}–{scoreMax}{" "}
+        <span className="text-sm">(≈ ±5 preguntas)</span>
       </div>
     </div>
   );
@@ -324,11 +325,16 @@ export function SecondaryScoreDisplay({
 
   if (config.scoreEmphasis === "primary") return null;
 
+  const midScore = Math.round((scoreMin + scoreMax) / 2);
   const textSize = config.scoreEmphasis === "minimal" ? "text-sm" : "text-base";
 
   return (
     <div className={`text-center ${textSize} text-cool-gray mt-6`}>
-      Tu rango estimado: {scoreMin} - {scoreMax}
+      <span className="font-semibold text-charcoal">{midScore}</span> puntos
+      estimados{" "}
+      <span className="text-xs">
+        (rango: {scoreMin}–{scoreMax})
+      </span>
     </div>
   );
 }

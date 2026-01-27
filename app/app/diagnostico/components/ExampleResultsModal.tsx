@@ -160,9 +160,13 @@ export function ExampleResultsModal({
             <p className="text-sm text-cool-gray mb-2 text-center">
               Tu Puntaje PAES Estimado
             </p>
-            <div className="text-4xl sm:text-5xl font-bold text-primary text-center mb-2">
-              {EXAMPLE_DATA.scoreMin}-{EXAMPLE_DATA.scoreMax}
+            <div className="text-4xl sm:text-5xl font-bold text-primary text-center mb-1">
+              {Math.round((EXAMPLE_DATA.scoreMin + EXAMPLE_DATA.scoreMax) / 2)}
             </div>
+            <p className="text-sm text-cool-gray text-center mb-3">
+              Rango probable: {EXAMPLE_DATA.scoreMin}–{EXAMPLE_DATA.scoreMax}{" "}
+              <span className="text-xs">(≈ ±5 preguntas)</span>
+            </p>
 
             {/* Key Value Proposition: X points in Y hours */}
             <div className="flex items-center justify-center gap-2 mt-4 text-charcoal">

@@ -151,7 +151,11 @@ export default function SavedResultsPage() {
               Tu Puntaje PAES Estimado
             </p>
             <p className="text-5xl font-bold text-primary">
-              {result.paesScoreMin}-{result.paesScoreMax}
+              {Math.round((result.paesScoreMin + result.paesScoreMax) / 2)}
+            </p>
+            <p className="text-sm text-cool-gray mt-2">
+              Rango probable: {result.paesScoreMin}–{result.paesScoreMax}{" "}
+              <span className="text-xs">(≈ ±5 preguntas)</span>
             </p>
           </div>
 
