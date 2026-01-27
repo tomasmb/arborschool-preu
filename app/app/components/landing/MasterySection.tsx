@@ -20,13 +20,13 @@ export function MasterySection() {
               <FeatureItem
                 icon={<BoltIcon />}
                 title="Victorias rápidas"
-                description="Priorizamos conceptos que estás cerca de dominar—puntos fáciles que suben tu puntaje rápido."
+                description="Para conceptos que probablemente ya sabes, saltas directo a practicar y demostrar dominio—puntos rápidos."
                 color="accent"
               />
               <FeatureItem
                 icon={<ShieldIcon />}
                 title="Sin huecos"
-                description="Si te trabas, detectamos qué concepto previo te falta y lo trabajamos primero."
+                description="Si te trabas, detectamos qué concepto previo te falta y te damos la mini-clase correspondiente."
                 color="primary"
               />
               <FeatureItem
@@ -109,11 +109,11 @@ function DashboardPreview() {
         <div className="flex justify-between items-end">
           <div>
             <p className="text-sm text-cool-gray mb-1">Puntaje proyectado</p>
-            <p className="text-4xl font-bold text-charcoal">748</p>
+            <p className="text-4xl font-bold text-charcoal">647</p>
           </div>
           <div className="text-right">
             <p className="text-sm text-cool-gray mb-1">Tu meta</p>
-            <p className="text-2xl font-bold text-accent">780</p>
+            <p className="text-2xl font-bold text-accent">753</p>
           </div>
         </div>
       </div>

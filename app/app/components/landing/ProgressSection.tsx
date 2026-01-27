@@ -49,13 +49,13 @@ function ProgressCard() {
         <div className="flex justify-between items-center mb-3">
           <span className="text-white/80">Conceptos dominados</span>
           <span className="text-2xl font-bold text-accent">
-            24<span className="text-white/60 font-normal">/87</span>
+            54<span className="text-white/60 font-normal">/229</span>
           </span>
         </div>
         <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
           <div
             className="bg-gradient-to-r from-accent to-accent-light rounded-full h-3 transition-all duration-1000"
-            style={{ width: "28%" }}
+            style={{ width: "24%" }}
           ></div>
         </div>
       </div>
