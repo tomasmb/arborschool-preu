@@ -52,6 +52,16 @@ export interface LandingPageViewedProperties extends BaseEventProperties {
   utm_campaign?: string;
 }
 
+/** Landing CTA clicked event - user clicks to go to diagnostic */
+export interface LandingCtaClickedProperties extends BaseEventProperties {
+  cta_location: "hero" | "navbar" | "bottom" | "other";
+}
+
+/** Diagnostic intro viewed event - user sees welcome screen */
+export interface DiagnosticIntroViewedProperties extends BaseEventProperties {
+  device_type: DeviceType;
+}
+
 /** Diagnostic started event */
 export interface DiagnosticStartedProperties extends BaseEventProperties {
   utm_source?: string;
@@ -94,11 +104,13 @@ export interface SignupCompletedProperties extends BaseEventProperties {
 }
 
 // ============================================================================
-// EVENT NAMES (MVP - 6 core events)
+// EVENT NAMES (8 core funnel events)
 // ============================================================================
 
 export type AnalyticsEventName =
   | "landing_page_viewed"
+  | "landing_cta_clicked"
+  | "diagnostic_intro_viewed"
   | "diagnostic_started"
   | "diagnostic_completed"
   | "results_viewed"
@@ -111,6 +123,8 @@ export type AnalyticsEventName =
 
 export interface AnalyticsEventMap {
   landing_page_viewed: LandingPageViewedProperties;
+  landing_cta_clicked: LandingCtaClickedProperties;
+  diagnostic_intro_viewed: DiagnosticIntroViewedProperties;
   diagnostic_started: DiagnosticStartedProperties;
   diagnostic_completed: DiagnosticCompletedProperties;
   results_viewed: ResultsViewedProperties;

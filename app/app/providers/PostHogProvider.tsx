@@ -43,8 +43,8 @@ export function PostHogProvider({ children }: PostHogProviderProps) {
       capture_pageview: false,
       // Respect Do Not Track browser setting
       respect_dnt: true,
-      // Disable session recording by default (can enable later)
-      disable_session_recording: true,
+      // Enable session recording for user behavior insights
+      disable_session_recording: false,
     });
 
     // Register global properties (attached to all events)

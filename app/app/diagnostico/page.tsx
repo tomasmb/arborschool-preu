@@ -34,6 +34,7 @@ import {
 import { type QuestionAtom } from "@/lib/diagnostic/qtiParser";
 import { getPerformanceTier } from "@/lib/config/tiers";
 import {
+  trackDiagnosticIntroViewed,
   trackDiagnosticStarted,
   trackDiagnosticCompleted,
   trackSignupCompleted,
@@ -130,6 +131,11 @@ export default function DiagnosticoPage() {
   useEffect(() => {
     routeRef.current = route;
   }, [route]);
+
+  // Track diagnostic intro view on mount (before user clicks "Comenzar")
+  useEffect(() => {
+    trackDiagnosticIntroViewed();
+  }, []);
 
   // Restore session from localStorage on mount
   useEffect(() => {

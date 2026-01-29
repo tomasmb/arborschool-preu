@@ -172,6 +172,26 @@ export function trackLandingPageViewed(): void {
 }
 
 /**
+ * Tracks landing CTA click. Call when user clicks any CTA to go to diagnostic.
+ */
+export function trackLandingCtaClicked(
+  ctaLocation: AnalyticsEventMap["landing_cta_clicked"]["cta_location"]
+): void {
+  trackEvent("landing_cta_clicked", {
+    cta_location: ctaLocation,
+  });
+}
+
+/**
+ * Tracks diagnostic intro/welcome screen view. Call when welcome screen mounts.
+ */
+export function trackDiagnosticIntroViewed(): void {
+  trackEvent("diagnostic_intro_viewed", {
+    device_type: getDeviceType(),
+  });
+}
+
+/**
  * Tracks diagnostic start. Call when user clicks "Comenzar".
  */
 export function trackDiagnosticStarted(): void {
