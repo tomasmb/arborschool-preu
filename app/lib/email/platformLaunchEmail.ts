@@ -10,6 +10,7 @@ import type { EmailResult, ResultsSnapshot, EmailRecipient } from "./types";
 
 /**
  * Generate the platform launch email HTML.
+ * Matches the design system and score display from results page.
  */
 function generateLaunchHtml(
   recipient: EmailRecipient,
@@ -19,11 +20,14 @@ function generateLaunchHtml(
   const continueUrl = `${EMAIL_CONFIG.baseUrl}/continuar?user=${encodeURIComponent(recipient.userId)}`;
   const name = recipient.firstName || "estudiante";
 
+  // Calculate midpoint score (matches results page display)
+  const midScore = Math.round((results.paesMin + results.paesMax) / 2);
+
   // Route section HTML (only if route exists)
   const routeSection = results.topRoute
     ? `
     <p style="color: #64748b; font-size: 14px; margin: 8px 0 0 0;">
-      🎯 Tu ruta: <strong>${results.topRoute.name}</strong>
+      🎯 Tu ruta: <strong style="color: #1a1d1e;">${results.topRoute.name}</strong>
     </p>
   `
     : "";
@@ -37,8 +41,8 @@ function generateLaunchHtml(
   <title>Tu ruta de aprendizaje está lista</title>
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-  line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 20px; 
-  background-color: #ffffff;">
+  line-height: 1.6; color: #1a1d1e; max-width: 600px; margin: 0 auto; padding: 20px; 
+  background-color: #fffbf5;">
   
   <!-- Header -->
   <div style="text-align: center; margin-bottom: 32px;">
@@ -47,10 +51,11 @@ function generateLaunchHtml(
   </div>
 
   <!-- Main Content -->
-  <div style="background-color: #ffffff; border-radius: 12px; padding: 32px; 
-    border: 1px solid #e5e7eb;">
+  <div style="background-color: #ffffff; border-radius: 16px; padding: 32px; 
+    border: 1px solid #e2e8f0;">
     
-    <h1 style="color: #1e293b; font-size: 24px; margin: 0 0 16px 0; text-align: center;">
+    <h1 style="color: #1a1d1e; font-size: 24px; margin: 0 0 16px 0; text-align: center;
+      font-family: Georgia, serif;">
       🎉 Tu ruta de aprendizaje está lista
     </h1>
 
@@ -63,18 +68,20 @@ function generateLaunchHtml(
     </p>
 
     <!-- Score Summary -->
-    <div style="background-color: #f8f7f5; border-radius: 8px; padding: 16px; margin: 16px 0;">
+    <div style="background-color: #fffbf5; border-radius: 12px; padding: 16px; margin: 16px 0;">
       <p style="color: #64748b; font-size: 14px; margin: 0;">
-        📊 Tu puntaje estimado: <strong>${results.paesMin}-${results.paesMax}</strong>
+        📊 Tu puntaje estimado: <strong style="color: #0b3a5b; font-size: 18px;">${midScore}</strong>
+        <span style="color: #94a3b8; font-size: 13px;"> (rango: ${results.paesMin}–${results.paesMax})</span>
       </p>
       ${routeSection}
     </div>
 
-    <!-- CTA Button -->
+    <!-- CTA Button - uses accent gold like results page CTA -->
     <div style="text-align: center; margin: 32px 0;">
-      <a href="${continueUrl}" style="display: inline-block; background-color: #0f172a; 
-        color: #ffffff; font-size: 16px; font-weight: 600; padding: 14px 32px; 
-        border-radius: 8px; text-decoration: none;">
+      <a href="${continueUrl}" style="display: inline-block; 
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: #1a1d1e; font-size: 16px; font-weight: 600; padding: 14px 32px; 
+        border-radius: 12px; text-decoration: none;">
         Continuar mi ruta →
       </a>
     </div>
@@ -87,7 +94,7 @@ function generateLaunchHtml(
 
   <!-- Footer -->
   <div style="text-align: center; margin-top: 32px; padding-top: 24px; 
-    border-top: 1px solid #e5e7eb;">
+    border-top: 1px solid #e2e8f0;">
     <p style="color: #94a3b8; font-size: 12px; margin: 0 0 8px 0;">
       El equipo de Arbor
     </p>
@@ -105,6 +112,7 @@ function generateLaunchHtml(
 
 /**
  * Generate plain text version of the email.
+ * Matches the results page score display format.
  */
 function generateLaunchText(
   recipient: EmailRecipient,
@@ -114,6 +122,9 @@ function generateLaunchText(
   const continueUrl = `${EMAIL_CONFIG.baseUrl}/continuar?user=${encodeURIComponent(recipient.userId)}`;
   const name = recipient.firstName || "estudiante";
 
+  // Calculate midpoint score (matches results page display)
+  const midScore = Math.round((results.paesMin + results.paesMax) / 2);
+
   let text = `
 Tu ruta de aprendizaje está lista
 
@@ -121,7 +132,7 @@ Hola ${name},
 
 La plataforma está lista. Puedes continuar donde lo dejaste:
 
-📊 Tu puntaje estimado: ${results.paesMin}-${results.paesMax}
+📊 Tu puntaje estimado: ${midScore} (rango: ${results.paesMin}–${results.paesMax})
 `;
 
   if (results.topRoute) {
