@@ -18,8 +18,10 @@ export type {
 export {
   initializeTracker,
   trackEvent,
-  // Convenience functions (MVP events)
+  // Convenience functions (funnel events)
   trackLandingPageViewed,
+  trackLandingCtaClicked,
+  trackDiagnosticIntroViewed,
   trackDiagnosticStarted,
   trackDiagnosticCompleted,
   trackResultsViewed,

@@ -3,7 +3,10 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { LoadingButton } from "@/app/components/ui";
-import { trackLandingPageViewed } from "@/lib/analytics";
+import {
+  trackLandingPageViewed,
+  trackLandingCtaClicked,
+} from "@/lib/analytics";
 import { ExampleResultsModal } from "@/app/diagnostico/components";
 import {
   HeroSection,
@@ -72,25 +75,28 @@ export default function Home() {
     trackLandingPageViewed();
   }, []);
 
-  const goToDiagnostic = () => {
+  const goToDiagnostic = (
+    ctaLocation: "hero" | "navbar" | "bottom" | "other" = "other"
+  ) => {
+    trackLandingCtaClicked(ctaLocation);
     setIsNavigating(true);
     window.location.href = "/diagnostico";
   };
 
   const handleExampleModalStart = () => {
     setShowExampleModal(false);
-    goToDiagnostic();
+    goToDiagnostic("hero"); // Modal is triggered from hero section
   };
 
   return (
     <main className="min-h-screen overflow-hidden">
       <Navigation
-        onStartDiagnostic={goToDiagnostic}
+        onStartDiagnostic={() => goToDiagnostic("navbar")}
         isNavigating={isNavigating}
       />
 
       <HeroSection
-        onStartDiagnostic={goToDiagnostic}
+        onStartDiagnostic={() => goToDiagnostic("hero")}
         onShowExample={() => setShowExampleModal(true)}
         isNavigating={isNavigating}
       />
@@ -101,7 +107,7 @@ export default function Home() {
       <ProgressSection />
 
       <CtaSection
-        onStartDiagnostic={goToDiagnostic}
+        onStartDiagnostic={() => goToDiagnostic("bottom")}
         isNavigating={isNavigating}
       />
 
