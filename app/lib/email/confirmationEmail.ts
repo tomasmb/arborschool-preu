@@ -17,24 +17,36 @@ function generateConfirmationHtml(
   results: ResultsSnapshot
 ): string {
   const unsubscribeUrl = `${EMAIL_CONFIG.baseUrl}/api/unsubscribe?token=${encodeURIComponent(recipient.userId)}`;
-  const name = recipient.firstName || "estudiante";
 
   // Calculate midpoint score (matches results page hero display)
   const midScore = Math.round((results.paesMin + results.paesMax) / 2);
 
+  // Personalized greeting if we have a name
+  const greeting = recipient.firstName
+    ? `¡Hola ${recipient.firstName}!`
+    : "¡Hola!";
+
   // Route section HTML (only if route exists)
   const routeSection = results.topRoute
     ? `
-    <div style="background-color: #fffbf5; border-radius: 12px; padding: 16px; margin: 16px 0;">
-      <p style="color: #64748b; font-size: 14px; margin: 0 0 8px 0;">
-        Tu ruta de mayor impacto:
-      </p>
-      <p style="color: #1a1d1e; font-size: 18px; font-weight: 600; margin: 0 0 4px 0;">
+    <div style="background: linear-gradient(135deg, #fef7ed 0%, #fffbf5 100%); 
+      border-radius: 16px; padding: 20px; margin: 24px 0; border: 1px solid #fed7aa;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+        <span style="display: inline-block; background-color: #f97316; color: white; 
+          font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 9999px; 
+          text-transform: uppercase; letter-spacing: 0.5px;">
+          Tu ruta de mayor impacto
+        </span>
+      </div>
+      <p style="color: #1a1d1e; font-size: 20px; font-weight: 700; margin: 0 0 8px 0;
+        font-family: Georgia, serif;">
         ${results.topRoute.name}
       </p>
-      <p style="color: #64748b; font-size: 14px; margin: 0;">
-        +${results.topRoute.questionsUnlocked} preguntas PAES · 
+      <p style="color: #059669; font-size: 16px; font-weight: 600; margin: 0 0 4px 0;">
         +${results.topRoute.pointsGain} puntos potenciales
+      </p>
+      <p style="color: #64748b; font-size: 14px; margin: 0;">
+        +${results.topRoute.questionsUnlocked} preguntas PAES que podrías desbloquear
       </p>
     </div>
   `
@@ -49,35 +61,45 @@ function generateConfirmationHtml(
   <title>Tus resultados PAES están guardados</title>
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-  line-height: 1.6; color: #1a1d1e; max-width: 600px; margin: 0 auto; padding: 20px; 
+  line-height: 1.6; color: #1a1d1e; max-width: 600px; margin: 0 auto; padding: 24px; 
   background-color: #fffbf5;">
   
   <!-- Header -->
-  <div style="text-align: center; margin-bottom: 32px;">
+  <div style="text-align: center; margin-bottom: 24px;">
     <img src="${EMAIL_CONFIG.baseUrl}/logo-arbor.png" alt="Arbor" 
-      style="height: 32px; margin-bottom: 16px;" />
+      style="height: 36px;" />
+  </div>
+
+  <!-- Completion Badge -->
+  <div style="text-align: center; margin-bottom: 24px;">
+    <span style="display: inline-block; background-color: #dcfce7; color: #16a34a; 
+      font-size: 13px; font-weight: 500; padding: 8px 16px; border-radius: 9999px;">
+      ✓ Diagnóstico Completado
+    </span>
   </div>
 
   <!-- Main Content -->
-  <div style="background-color: #ffffff; border-radius: 16px; padding: 32px; 
-    border: 1px solid #e2e8f0;">
+  <div style="background-color: #ffffff; border-radius: 20px; padding: 32px; 
+    border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
     
-    <h1 style="color: #1a1d1e; font-size: 24px; margin: 0 0 16px 0; text-align: center;
-      font-family: Georgia, serif;">
-      ¡Listo! Tus resultados están guardados
-    </h1>
-
-    <p style="color: #64748b; font-size: 16px; margin: 0 0 24px 0; text-align: center;">
-      Hola ${name}, tu diagnóstico está guardado. Aquí está tu resumen:
+    <p style="color: #64748b; font-size: 16px; margin: 0 0 8px 0; text-align: center;">
+      ${greeting}
     </p>
+    
+    <h1 style="color: #1a1d1e; font-size: 26px; margin: 0 0 24px 0; text-align: center;
+      font-family: Georgia, serif; font-weight: 700;">
+      Tu diagnóstico está guardado
+    </h1>
 
     <!-- Score Box - matches results page hero display -->
     <div style="background: linear-gradient(135deg, #0b3a5b 0%, #072a42 100%); 
-      border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 24px;">
-      <p style="color: #94a3b8; font-size: 14px; margin: 0 0 8px 0;">
+      border-radius: 16px; padding: 28px; text-align: center; margin-bottom: 24px;">
+      <p style="color: #94a3b8; font-size: 13px; margin: 0 0 8px 0; text-transform: uppercase;
+        letter-spacing: 0.5px;">
         Tu Puntaje PAES Estimado
       </p>
-      <p style="color: #ffffff; font-size: 48px; font-weight: 700; margin: 0 0 8px 0;">
+      <p style="color: #ffffff; font-size: 56px; font-weight: 700; margin: 0 0 8px 0;
+        line-height: 1;">
         ${midScore}
       </p>
       <p style="color: #94a3b8; font-size: 14px; margin: 0;">
@@ -88,12 +110,12 @@ function generateConfirmationHtml(
     ${routeSection}
 
     <!-- What's Next -->
-    <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; 
-      padding: 16px; margin: 24px 0;">
-      <p style="color: #059669; font-size: 15px; margin: 0; font-weight: 500;">
+    <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 16px; 
+      padding: 20px; margin: 24px 0;">
+      <p style="color: #16a34a; font-size: 16px; margin: 0 0 8px 0; font-weight: 600;">
         ¿Qué sigue?
       </p>
-      <p style="color: #059669; font-size: 14px; margin: 8px 0 0 0;">
+      <p style="color: #15803d; font-size: 14px; margin: 0; line-height: 1.5;">
         Te avisamos cuando la plataforma esté lista para continuar con tu ruta personalizada.
       </p>
     </div>
@@ -101,9 +123,8 @@ function generateConfirmationHtml(
   </div>
 
   <!-- Footer -->
-  <div style="text-align: center; margin-top: 32px; padding-top: 24px; 
-    border-top: 1px solid #e2e8f0;">
-    <p style="color: #94a3b8; font-size: 12px; margin: 0 0 8px 0;">
+  <div style="text-align: center; margin-top: 32px; padding-top: 24px;">
+    <p style="color: #64748b; font-size: 13px; margin: 0 0 8px 0;">
       El equipo de Arbor
     </p>
     <p style="color: #94a3b8; font-size: 11px; margin: 0;">
@@ -127,15 +148,19 @@ function generateConfirmationText(
   results: ResultsSnapshot
 ): string {
   const unsubscribeUrl = `${EMAIL_CONFIG.baseUrl}/api/unsubscribe?token=${encodeURIComponent(recipient.userId)}`;
-  const name = recipient.firstName || "estudiante";
 
   // Calculate midpoint score (matches results page hero display)
   const midScore = Math.round((results.paesMin + results.paesMax) / 2);
 
-  let text = `
-¡Listo! Tus resultados están guardados
+  // Personalized greeting if we have a name
+  const greeting = recipient.firstName
+    ? `¡Hola ${recipient.firstName}!`
+    : "¡Hola!";
 
-Hola ${name},
+  let text = `
+✓ Diagnóstico Completado
+
+${greeting}
 
 Tu diagnóstico está guardado. Aquí está tu resumen:
 
@@ -146,8 +171,8 @@ Tu diagnóstico está guardado. Aquí está tu resumen:
   if (results.topRoute) {
     text += `
 🎯 Tu ruta de mayor impacto: ${results.topRoute.name}
-   • +${results.topRoute.questionsUnlocked} preguntas PAES que podrías desbloquear
    • +${results.topRoute.pointsGain} puntos potenciales
+   • +${results.topRoute.questionsUnlocked} preguntas PAES que podrías desbloquear
 `;
   }
 
