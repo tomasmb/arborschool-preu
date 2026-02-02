@@ -49,9 +49,11 @@ export function PostHogProvider({ children }: PostHogProviderProps) {
 
     // Register global properties (attached to all events)
     const buildVersion = process.env.NEXT_PUBLIC_BUILD_VERSION;
-    if (buildVersion) {
-      posthog.register({ build_version: buildVersion });
-    }
+    const isPreview = window.location.hostname.includes("vercel.app");
+    posthog.register({
+      ...(buildVersion && { build_version: buildVersion }),
+      environment: isPreview ? "preview" : "production",
+    });
 
     // Connect PostHog to our tracker interface
     initializeTracker(
