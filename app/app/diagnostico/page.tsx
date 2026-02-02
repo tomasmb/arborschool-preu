@@ -488,7 +488,7 @@ export default function DiagnosticoPage() {
 
     // Track diagnostic completed event
     const performanceTier = getPerformanceTier(totalCorrect);
-    trackDiagnosticCompleted(totalCorrect, performanceTier);
+    trackDiagnosticCompleted(totalCorrect, performanceTier, route);
 
     showResults();
 
@@ -592,11 +592,14 @@ export default function DiagnosticoPage() {
       const data = await response.json();
 
       if (data.success) {
-        // Track signup completed event
+        // Track signup completed event with user identification
         trackSignupCompleted(
+          email,
           calculatedResults.paesMin,
           calculatedResults.paesMax,
-          getPerformanceTier(storedResponses.filter((r) => r.isCorrect).length)
+          performanceTier,
+          totalCorrect,
+          actualRoute
         );
 
         // Capture results snapshot for ThankYouScreen

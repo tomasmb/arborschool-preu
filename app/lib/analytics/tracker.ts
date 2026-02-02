@@ -123,14 +123,44 @@ type CaptureFunction = (
   properties?: Record<string, unknown>
 ) => void;
 
+/** Callback type for identifying users */
+type IdentifyFunction = (
+  distinctId: string,
+  properties?: Record<string, unknown>
+) => void;
+
 let captureFunction: CaptureFunction | null = null;
+let identifyFunction: IdentifyFunction | null = null;
 
 /**
- * Initializes the analytics tracker with a capture function.
+ * Initializes the analytics tracker with capture and identify functions.
  * Called by PostHogProvider after PostHog is initialized.
  */
-export function initializeTracker(capture: CaptureFunction): void {
+export function initializeTracker(
+  capture: CaptureFunction,
+  identify?: IdentifyFunction
+): void {
   captureFunction = capture;
+  identifyFunction = identify || null;
+}
+
+/**
+ * Identifies a user in the analytics system.
+ * Links all previous anonymous events to this user.
+ * Call this when a user signs up or logs in.
+ */
+export function identifyUser(
+  email: string,
+  properties?: Record<string, unknown>
+): void {
+  if (!identifyFunction) {
+    if (process.env.NODE_ENV === "development") {
+      console.log("[Analytics] identify", email, properties);
+    }
+    return;
+  }
+
+  identifyFunction(email, { email, ...properties });
 }
 
 /**
@@ -208,12 +238,14 @@ export function trackDiagnosticStarted(): void {
  */
 export function trackDiagnosticCompleted(
   totalCorrect: number,
-  performanceTier: AnalyticsEventMap["diagnostic_completed"]["performance_tier"]
+  performanceTier: AnalyticsEventMap["diagnostic_completed"]["performance_tier"],
+  route: AnalyticsEventMap["diagnostic_completed"]["route"]
 ): void {
   trackEvent("diagnostic_completed", {
     total_correct: totalCorrect,
     performance_tier: performanceTier,
     time_elapsed_seconds: getDiagnosticElapsedSeconds(),
+    route,
   });
 }
 
@@ -225,6 +257,7 @@ export function trackResultsViewed(
   paesScoreMax: number,
   performanceTier: AnalyticsEventMap["results_viewed"]["performance_tier"],
   totalCorrect: number,
+  route: AnalyticsEventMap["results_viewed"]["route"],
   ctaLabel: string
 ): void {
   trackEvent("results_viewed", {
@@ -232,6 +265,7 @@ export function trackResultsViewed(
     paes_score_max: paesScoreMax,
     performance_tier: performanceTier,
     total_correct: totalCorrect,
+    route,
     cta_label: ctaLabel,
   });
 }
@@ -252,18 +286,37 @@ export function trackResultsCtaClicked(
 
 /**
  * Tracks successful signup. Call after email is submitted successfully.
+ * Also identifies the user to link all their events to their email.
  */
 export function trackSignupCompleted(
+  email: string,
   paesScoreMin: number,
   paesScoreMax: number,
-  performanceTier: AnalyticsEventMap["signup_completed"]["performance_tier"]
+  performanceTier: AnalyticsEventMap["signup_completed"]["performance_tier"],
+  totalCorrect: number,
+  route: AnalyticsEventMap["signup_completed"]["route"]
 ): void {
   const utmParams = getPersistedUTMParams();
+  const timeElapsed = getDiagnosticElapsedSeconds();
 
-  trackEvent("signup_completed", {
+  // First, identify the user so all their events are linked to their email
+  identifyUser(email, {
     paes_score_min: paesScoreMin,
     paes_score_max: paesScoreMax,
     performance_tier: performanceTier,
+    total_correct: totalCorrect,
+    route,
+  });
+
+  // Then track the signup event
+  trackEvent("signup_completed", {
+    email,
+    paes_score_min: paesScoreMin,
+    paes_score_max: paesScoreMax,
+    performance_tier: performanceTier,
+    total_correct: totalCorrect,
+    route,
+    time_elapsed_seconds: timeElapsed,
     signup_intent: "access_waitlist",
     ...utmParams,
   });
