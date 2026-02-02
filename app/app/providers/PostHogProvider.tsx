@@ -54,9 +54,16 @@ export function PostHogProvider({ children }: PostHogProviderProps) {
     }
 
     // Connect PostHog to our tracker interface
-    initializeTracker((eventName, properties) => {
-      posthog.capture(eventName, properties);
-    });
+    initializeTracker(
+      // Capture function for events
+      (eventName, properties) => {
+        posthog.capture(eventName, properties);
+      },
+      // Identify function to link anonymous events to a user
+      (distinctId, properties) => {
+        posthog.identify(distinctId, properties);
+      }
+    );
 
     initialized.current = true;
   }, []);

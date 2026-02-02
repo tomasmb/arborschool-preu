@@ -72,8 +72,7 @@ function getAnimationClasses(showContent: boolean, delay?: string): string {
 
 export function ResultsScreen({
   results,
-  // route is passed but not currently used - kept for future tier-specific logic
-  route: _route,
+  route,
   totalCorrect,
   atomResults = [],
   responses = [],
@@ -83,8 +82,6 @@ export function ResultsScreen({
   precomputedRoutes,
   precomputedNextConcepts,
 }: ResultsScreenProps) {
-  void _route; // Silence unused warning - route may be needed for future tier logic
-
   const [showContent, setShowContent] = useState(false);
   const [showReviewDrawer, setShowReviewDrawer] = useState(false);
   const [showMoreDetails, setShowMoreDetails] = useState(false);
@@ -207,10 +204,11 @@ export function ResultsScreen({
         results.paesMax,
         performanceTier,
         totalCorrect,
+        route,
         CTA_LABEL
       );
     }
-  }, [results.paesMin, results.paesMax, performanceTier, totalCorrect]);
+  }, [results.paesMin, results.paesMax, performanceTier, totalCorrect, route]);
 
   // Handler for CTA click with analytics tracking
   const handleCtaClick = () => {

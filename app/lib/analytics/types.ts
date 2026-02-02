@@ -74,6 +74,8 @@ export interface DiagnosticCompletedProperties extends BaseEventProperties {
   total_correct: number;
   performance_tier: PerformanceTier;
   time_elapsed_seconds: number;
+  /** MST route taken: A=Fundamental, B=Intermedio, C=Avanzado */
+  route: "A" | "B" | "C";
 }
 
 /** Results viewed event */
@@ -82,6 +84,8 @@ export interface ResultsViewedProperties extends BaseEventProperties {
   paes_score_max: number;
   performance_tier: PerformanceTier;
   total_correct: number;
+  /** MST route taken: A=Fundamental, B=Intermedio, C=Avanzado */
+  route: "A" | "B" | "C";
   cta_label: string;
 }
 
@@ -94,9 +98,14 @@ export interface ResultsCtaClickedProperties extends BaseEventProperties {
 
 /** Signup completed event */
 export interface SignupCompletedProperties extends BaseEventProperties {
+  email: string;
   paes_score_min: number;
   paes_score_max: number;
   performance_tier: PerformanceTier;
+  total_correct: number;
+  /** MST route taken: A=Fundamental, B=Intermedio, C=Avanzado */
+  route: "A" | "B" | "C";
+  time_elapsed_seconds: number;
   signup_intent: SignupIntent;
   utm_source?: string;
   utm_medium?: string;

@@ -18,6 +18,7 @@ export type {
 export {
   initializeTracker,
   trackEvent,
+  identifyUser,
   // Convenience functions (funnel events)
   trackLandingPageViewed,
   trackLandingCtaClicked,
