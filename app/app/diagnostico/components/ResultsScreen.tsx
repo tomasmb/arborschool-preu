@@ -19,7 +19,11 @@ import {
   isLowSignalTier,
   getNextConceptsConfig,
 } from "@/lib/config";
-import { trackResultsViewed, trackResultsCtaClicked } from "@/lib/analytics";
+import {
+  trackResultsViewed,
+  trackResultsCtaClicked,
+  trackRouteExplored,
+} from "@/lib/analytics";
 import {
   TierHeadline,
   TierMessageCard,
@@ -216,6 +220,15 @@ export function ResultsScreen({
     onSignup();
   };
 
+  // Handler for route exploration toggle with analytics tracking
+  const handleRouteToggle = () => {
+    // Only track when expanding, not collapsing
+    if (!showMoreDetails) {
+      trackRouteExplored(performanceTier, route);
+    }
+    setShowMoreDetails(!showMoreDetails);
+  };
+
   // Should we show calculated routes?
   const showRoutes = shouldShowRoutes(performanceTier);
 
@@ -362,7 +375,7 @@ export function ResultsScreen({
               className={`text-center mb-6 ${getAnimationClasses(showContent, "350")}`}
             >
               <button
-                onClick={() => setShowMoreDetails(!showMoreDetails)}
+                onClick={handleRouteToggle}
                 className="text-primary text-sm font-medium flex items-center gap-1.5 mx-auto hover:text-primary-light transition-colors"
                 aria-expanded={showMoreDetails}
               >

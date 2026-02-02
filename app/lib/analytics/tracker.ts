@@ -285,6 +285,19 @@ export function trackResultsCtaClicked(
 }
 
 /**
+ * Tracks when user expands "Explorar mi ruta personalizada" on results screen.
+ */
+export function trackRouteExplored(
+  performanceTier: AnalyticsEventMap["route_explored"]["performance_tier"],
+  route: AnalyticsEventMap["route_explored"]["route"]
+): void {
+  trackEvent("route_explored", {
+    performance_tier: performanceTier,
+    route,
+  });
+}
+
+/**
  * Tracks successful signup. Call after email is submitted successfully.
  * Also identifies the user to link all their events to their email.
  */

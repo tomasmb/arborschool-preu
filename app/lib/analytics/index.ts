@@ -27,6 +27,7 @@ export {
   trackDiagnosticCompleted,
   trackResultsViewed,
   trackResultsCtaClicked,
+  trackRouteExplored,
   trackSignupCompleted,
   // Utilities
   extractUTMParams,

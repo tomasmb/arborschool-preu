@@ -96,6 +96,12 @@ export interface ResultsCtaClickedProperties extends BaseEventProperties {
   signup_intent: SignupIntent;
 }
 
+/** Route details expanded event - user clicked "Explorar mi ruta personalizada" */
+export interface RouteExploredProperties extends BaseEventProperties {
+  performance_tier: PerformanceTier;
+  route: "A" | "B" | "C";
+}
+
 /** Signup completed event */
 export interface SignupCompletedProperties extends BaseEventProperties {
   email: string;
@@ -124,6 +130,7 @@ export type AnalyticsEventName =
   | "diagnostic_completed"
   | "results_viewed"
   | "results_cta_clicked"
+  | "route_explored"
   | "signup_completed";
 
 // ============================================================================
@@ -138,5 +145,6 @@ export interface AnalyticsEventMap {
   diagnostic_completed: DiagnosticCompletedProperties;
   results_viewed: ResultsViewedProperties;
   results_cta_clicked: ResultsCtaClickedProperties;
+  route_explored: RouteExploredProperties;
   signup_completed: SignupCompletedProperties;
 }
