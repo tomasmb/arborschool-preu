@@ -30,6 +30,7 @@ import {
   getResponsesForReview,
   reconstructFullResponses,
   getActualRouteFromStorage,
+  getResponseCounts,
 } from "@/lib/diagnostic/storage";
 import { type QuestionAtom } from "@/lib/diagnostic/qtiParser";
 import { getPerformanceTier } from "@/lib/config/tiers";
@@ -49,6 +50,7 @@ import {
   MaintenanceScreen,
   DiagnosticHeader,
   OfflineIndicator,
+  TimeUpModal,
   type TopRouteInfo,
 } from "./components";
 
@@ -120,6 +122,8 @@ export default function DiagnosticoPage() {
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [timeRemaining, setTimeRemaining] = useState(TOTAL_TIME_SECONDS);
   const [timerStartedAt, setTimerStartedAt] = useState<number | null>(null);
+  const [timeExpiredAt, setTimeExpiredAt] = useState<number | null>(null);
+  const [showTimeUpModal, setShowTimeUpModal] = useState(false);
   const [isRestored, setIsRestored] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const questionStartTime = useRef<number>(Date.now());
@@ -154,15 +158,27 @@ export default function DiagnosticoPage() {
         setRoute(storedSession.route);
         setTimerStartedAt(storedSession.timerStartedAt);
 
-        // Calculate remaining time based on when timer started
-        if (
+        // Restore time expired state if set
+        if (storedSession.timeExpiredAt) {
+          setTimeExpiredAt(storedSession.timeExpiredAt);
+          setTimeRemaining(0);
+        } else if (
           storedSession.screen === "question" ||
           storedSession.screen === "transition"
         ) {
+          // Calculate remaining time based on when timer started
           const remaining = calculateRemainingTime(
             storedSession.timerStartedAt
           );
-          setTimeRemaining(remaining);
+          // If time has expired during the page being closed, set timeExpiredAt
+          if (remaining <= 0) {
+            const expiredAt =
+              storedSession.timerStartedAt + TOTAL_TIME_SECONDS * 1000;
+            setTimeExpiredAt(expiredAt);
+            setTimeRemaining(0);
+          } else {
+            setTimeRemaining(remaining);
+          }
         }
 
         // Restore results if on results/signup screen
@@ -205,6 +221,7 @@ export default function DiagnosticoPage() {
       r1Correct: storedR1Correct,
       totalCorrect: storedTotalCorrect,
       timerStartedAt,
+      timeExpiredAt,
       results: results
         ? {
             paesMin: results.paesMin,
@@ -221,45 +238,69 @@ export default function DiagnosticoPage() {
     questionIndex,
     route,
     timerStartedAt,
+    timeExpiredAt,
     results,
   ]);
 
-  // Calculate results when time runs out
+  // Handle time expiration - show modal to let user choose to continue or see results
   const handleTimeUp = useCallback(() => {
-    const currentRoute = routeRef.current;
-    if (!currentRoute) {
-      console.error("handleTimeUp called but route is not set");
-      setScreen("maintenance");
-      return;
-    }
+    // Mark the exact moment time expired
+    const now = Date.now();
+    setTimeExpiredAt(now);
+    setTimeRemaining(0);
 
-    // Get data from localStorage (source of truth after refreshes)
-    const reconstructedResponses = reconstructFullResponses();
-    const actualRoute = getActualRouteFromStorage(currentRoute);
-
-    const calculatedResults = calculateDiagnosticResults(
-      reconstructedResponses,
-      actualRoute
-    );
-    setResults(calculatedResults);
-
+    // Clear the timer interval
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
 
+    // Show the time-up modal instead of going directly to results
+    setShowTimeUpModal(true);
+  }, []);
+
+  // Handler for "Continue" button in time-up modal
+  const handleContinueAfterTimeUp = useCallback(() => {
+    setShowTimeUpModal(false);
+    // User can continue answering, but responses will be marked as overtime
+  }, []);
+
+  // Handler for "View Results" button in time-up modal (or when all questions done)
+  const handleViewResultsAfterTimeUp = useCallback(() => {
+    setShowTimeUpModal(false);
+
+    const currentRoute = routeRef.current;
+    if (!currentRoute) {
+      console.error("handleViewResultsAfterTimeUp called but route is not set");
+      setScreen("maintenance");
+      return;
+    }
+
+    // Get ONLY responses answered before time expired (for scoring)
+    const scoredResponses = reconstructFullResponses({ excludeOvertime: true });
+    const actualRoute = getActualRouteFromStorage(currentRoute);
+
+    const calculatedResults = calculateDiagnosticResults(
+      scoredResponses,
+      actualRoute
+    );
+    setResults(calculatedResults);
+
     setScreen("results");
   }, []);
 
-  // Timer effect
+  // Timer effect - only runs if time hasn't expired yet
   useEffect(() => {
+    // Don't start timer if time has already expired (overtime mode)
+    if (timeExpiredAt !== null) return;
+
     if (screen === "question" && !timerRef.current) {
       timerRef.current = setInterval(() => {
         setTimeRemaining((prev) => {
           if (prev <= 1) {
             if (timerRef.current) clearInterval(timerRef.current);
             timerRef.current = null;
-            // Time's up - calculate results
+            // Time's up - show modal
             setTimeout(() => {
               handleTimeUp();
             }, 0);
@@ -276,7 +317,7 @@ export default function DiagnosticoPage() {
         timerRef.current = null;
       }
     };
-  }, [screen, handleTimeUp]);
+  }, [screen, handleTimeUp, timeExpiredAt]);
 
   // Start the test
   const startTest = async () => {
@@ -296,6 +337,8 @@ export default function DiagnosticoPage() {
     setRoute(null);
     setResults(null);
     setTimeRemaining(TOTAL_TIME_SECONDS);
+    setTimeExpiredAt(null);
+    setShowTimeUpModal(false);
 
     try {
       // Timeout after 10s to prevent hanging on stale DB connections
@@ -388,6 +431,7 @@ export default function DiagnosticoPage() {
 
       // Always save to localStorage as backup (in case API fails or is local)
       // Include atoms for mastery calculation (needed for PAES score from unlocked questions)
+      // Mark as overtime if time has already expired (for diagnostic only, not scoring)
       saveResponseToLocalStorage({
         questionId,
         selectedAnswer: selectedAnswer || "skip",
@@ -398,6 +442,7 @@ export default function DiagnosticoPage() {
         route: stage === 2 ? route : null, // Save route for stage 2 reconstruction
         answeredAt: new Date().toISOString(),
         atoms: atoms.map((a) => ({ atomId: a.atomId, relevance: a.relevance })),
+        answeredAfterTimeUp: timeExpiredAt !== null,
       });
 
       // Also save response to API if we have a valid (non-local) attempt
@@ -462,6 +507,7 @@ export default function DiagnosticoPage() {
       attemptId,
       r1Responses,
       stage2Responses,
+      timeExpiredAt,
     ]
   );
 
@@ -494,12 +540,8 @@ export default function DiagnosticoPage() {
   const calculateAndShowResults = async (
     _finalStage2Responses: DiagnosticResponse[]
   ) => {
-    // Get all data from localStorage (source of truth after refreshes)
-    const storedResponses = getStoredResponses();
-    const totalCorrect = storedResponses.filter((r) => r.isCorrect).length;
-    const stage1Correct = storedResponses
-      .filter((r) => r.stage === 1)
-      .filter((r) => r.isCorrect).length;
+    // Get response counts (only scored responses for scoring, all for diagnostics)
+    const counts = getResponseCounts();
 
     if (!route) {
       console.error("calculateAndShowResults called but route is not set");
@@ -507,11 +549,17 @@ export default function DiagnosticoPage() {
       return;
     }
 
-    // Track diagnostic completed event
-    const performanceTier = getPerformanceTier(totalCorrect);
-    trackDiagnosticCompleted(totalCorrect, performanceTier, route);
+    // Track diagnostic completed event (use scored correct only)
+    const performanceTier = getPerformanceTier(counts.scoredCorrect);
+    trackDiagnosticCompleted(counts.scoredCorrect, performanceTier, route);
 
     showResults();
+
+    // Calculate stage 1 correct from scored responses only
+    const storedResponses = getStoredResponses();
+    const stage1Correct = storedResponses
+      .filter((r) => r.stage === 1 && !r.answeredAfterTimeUp)
+      .filter((r) => r.isCorrect).length;
 
     // Complete test on API if we have a valid (non-local) attempt
     if (!isLocalAttempt(attemptId)) {
@@ -522,7 +570,7 @@ export default function DiagnosticoPage() {
           body: JSON.stringify({
             attemptId,
             totalQuestions: 16,
-            correctAnswers: totalCorrect,
+            correctAnswers: counts.scoredCorrect,
             stage1Score: stage1Correct,
             stage2Difficulty: route,
           }),
@@ -540,11 +588,12 @@ export default function DiagnosticoPage() {
       setScreen("maintenance");
       return;
     }
-    const reconstructedResponses = reconstructFullResponses();
+    // Only use responses answered before time expired for scoring
+    const scoredResponses = reconstructFullResponses({ excludeOvertime: true });
     const actualRoute = getActualRouteFromStorage(route);
 
     const calculatedResults = calculateDiagnosticResults(
-      reconstructedResponses,
+      scoredResponses,
       actualRoute
     );
     setResults(calculatedResults);
@@ -571,19 +620,25 @@ export default function DiagnosticoPage() {
       if (!route) {
         throw new Error("Cannot sign up: route is not set");
       }
-      const reconstructedResponses = reconstructFullResponses();
       const actualRoute = getActualRouteFromStorage(route);
 
-      const atomResults = computeAtomMastery(reconstructedResponses);
+      // Use ALL responses for atom mastery (diagnostic purposes)
+      const allResponses = reconstructFullResponses();
+      const atomResults = computeAtomMastery(allResponses);
+
+      // Use only SCORED responses for results calculation
+      const scoredResponses = reconstructFullResponses({
+        excludeOvertime: true,
+      });
       const isLocal = isLocalAttempt(attemptId);
       const calculatedResults = calculateDiagnosticResults(
-        reconstructedResponses,
+        scoredResponses,
         actualRoute
       );
 
-      // Calculate performance tier for this signup
-      const totalCorrect = storedResponses.filter((r) => r.isCorrect).length;
-      const performanceTier = getPerformanceTier(totalCorrect);
+      // Calculate performance tier from scored responses only
+      const counts = getResponseCounts();
+      const performanceTier = getPerformanceTier(counts.scoredCorrect);
 
       // Build signup payload with all available data
       const signupPayload = {
@@ -598,7 +653,7 @@ export default function DiagnosticoPage() {
             paesMax: calculatedResults.paesMax,
             level: calculatedResults.level,
             route: actualRoute,
-            totalCorrect,
+            totalCorrect: counts.scoredCorrect,
             performanceTier,
             topRoute: topRouteInfo ?? undefined,
           },
@@ -619,7 +674,7 @@ export default function DiagnosticoPage() {
           calculatedResults.paesMin,
           calculatedResults.paesMax,
           performanceTier,
-          totalCorrect,
+          counts.scoredCorrect,
           actualRoute
         );
 
@@ -661,6 +716,10 @@ export default function DiagnosticoPage() {
     const currentQuestionNumber =
       stage === 1 ? questionIndex + 1 : 8 + questionIndex + 1;
     const isOfflineMode = isLocalAttempt(attemptId);
+    const isOvertime = timeExpiredAt !== null;
+    const answeredCount = getStoredResponses().filter(
+      (r) => !r.answeredAfterTimeUp
+    ).length;
 
     return (
       <div className="min-h-screen relative">
@@ -682,6 +741,7 @@ export default function DiagnosticoPage() {
           timeRemaining={timeRemaining}
           stage={stage}
           route={route}
+          isOvertime={isOvertime}
         />
 
         <div className="relative z-10">
@@ -699,6 +759,15 @@ export default function DiagnosticoPage() {
 
         {/* Offline mode indicator */}
         {isOfflineMode && <OfflineIndicator />}
+
+        {/* Time up modal */}
+        <TimeUpModal
+          isOpen={showTimeUpModal}
+          answeredCount={answeredCount}
+          totalQuestions={totalQuestions}
+          onViewResults={handleViewResultsAfterTimeUp}
+          onContinue={handleContinueAfterTimeUp}
+        />
       </div>
     );
   }
@@ -721,34 +790,37 @@ export default function DiagnosticoPage() {
 
   // Results screen
   if (screen === "results") {
-    // Always get data from localStorage (source of truth after refreshes)
-    const storedResponses = getStoredResponses();
-    const totalCorrect = storedResponses.filter((r) => r.isCorrect).length;
     if (!route) {
       console.error("Results screen rendered but route is not set");
       return <MaintenanceScreen />;
     }
-    const reconstructedResponses = reconstructFullResponses();
+
+    // Get response counts (only scored responses for scoring)
+    const counts = getResponseCounts();
     const actualRoute = getActualRouteFromStorage(route);
 
-    // ALWAYS recalculate results from localStorage data (source of truth)
+    // Only use responses answered before time expired for scoring
+    const scoredResponses = reconstructFullResponses({ excludeOvertime: true });
+
+    // ALWAYS recalculate results from scored responses only (source of truth)
     // This ensures axisPerformance and skillPerformance are correct after refresh
     const calculatedResults = calculateDiagnosticResults(
-      reconstructedResponses,
+      scoredResponses,
       actualRoute
     );
 
-    // Compute atom results from reconstructed responses
-    const atomResults = computeAtomMastery(reconstructedResponses);
+    // Compute atom results from ALL responses (including overtime - for diagnostic)
+    const allResponses = reconstructFullResponses();
+    const atomResults = computeAtomMastery(allResponses);
 
-    // Prepare responses for review drawer
+    // Prepare responses for review drawer (show all answers for review)
     const responsesForReview = getResponsesForReview();
 
     return (
       <ResultsScreen
         results={calculatedResults}
         route={actualRoute}
-        totalCorrect={totalCorrect}
+        totalCorrect={counts.scoredCorrect}
         atomResults={atomResults}
         responses={responsesForReview}
         onSignup={() => setScreen("signup")}
