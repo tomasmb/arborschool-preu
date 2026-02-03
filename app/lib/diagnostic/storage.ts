@@ -48,6 +48,8 @@ export interface StoredResponse {
   answeredAt: string;
   /** Atoms associated with this question (needed for mastery calculation) */
   atoms?: StoredAtom[];
+  /** Whether this response was submitted after the timer expired (for diagnostic only) */
+  answeredAfterTimeUp?: boolean;
 }
 
 // ============================================================================
@@ -182,6 +184,8 @@ export interface SessionState {
   totalCorrect: number;
   /** Timestamp when timer started (for calculating remaining time) */
   timerStartedAt: number;
+  /** Timestamp when timer expired (null if still running) */
+  timeExpiredAt: number | null;
   /** Results data if test is completed */
   results: StoredResults | null;
   /** Timestamp when session was saved */
@@ -378,16 +382,30 @@ export interface ReconstructedResponse {
   atoms: StoredAtom[];
 }
 
+/** Options for reconstructing responses */
+export interface ReconstructOptions {
+  /** If true, exclude responses answered after time expired (for scoring) */
+  excludeOvertime?: boolean;
+}
+
 /**
  * Reconstructs full DiagnosticResponse objects from localStorage.
  * Used for results calculation, signup, and time-up scenarios.
  * Requires stored route for stage 2 responses.
  *
+ * @param options - Options for filtering responses
  * @returns Array of reconstructed responses with MSTQuestion objects
  */
-export function reconstructFullResponses(): ReconstructedResponse[] {
-  const storedResponses = getStoredResponses();
+export function reconstructFullResponses(
+  options: ReconstructOptions = {}
+): ReconstructedResponse[] {
+  let storedResponses = getStoredResponses();
   if (storedResponses.length === 0) return [];
+
+  // Filter out overtime responses if requested (for scoring)
+  if (options.excludeOvertime) {
+    storedResponses = storedResponses.filter((r) => !r.answeredAfterTimeUp);
+  }
 
   const responses: ReconstructedResponse[] = [];
 
@@ -451,4 +469,40 @@ export function getActualRouteFromStorage(expectedRoute: Route): Route {
 
   // Stage 2 response exists but has no route - this is a bug
   throw new Error("Stage 2 response found but has no route stored");
+}
+
+// ============================================================================
+// SCORING HELPERS
+// ============================================================================
+
+/** Response counts for scoring vs diagnostic */
+export interface ResponseCounts {
+  /** Responses answered before time expired (count for scoring) */
+  scoredCount: number;
+  /** Correct answers before time expired */
+  scoredCorrect: number;
+  /** Responses answered after time expired (diagnostic only) */
+  overtimeCount: number;
+  /** Total responses (scored + overtime) */
+  totalAnswered: number;
+}
+
+/**
+ * Get counts of scored vs overtime responses.
+ * Used to display "X/16 correctas" with proper breakdown.
+ */
+export function getResponseCounts(): ResponseCounts {
+  const storedResponses = getStoredResponses();
+
+  const scoredResponses = storedResponses.filter((r) => !r.answeredAfterTimeUp);
+  const overtimeResponses = storedResponses.filter(
+    (r) => r.answeredAfterTimeUp
+  );
+
+  return {
+    scoredCount: scoredResponses.length,
+    scoredCorrect: scoredResponses.filter((r) => r.isCorrect).length,
+    overtimeCount: overtimeResponses.length,
+    totalAnswered: storedResponses.length,
+  };
 }

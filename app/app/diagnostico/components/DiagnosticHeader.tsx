@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Timer } from "./shared";
+import { Timer, OvertimeIndicator } from "./shared";
 import type { Route } from "@/lib/diagnostic/config";
 
 // ============================================================================
@@ -14,6 +14,8 @@ interface DiagnosticHeaderProps {
   timeRemaining: number;
   stage: 1 | 2;
   route: Route | null;
+  /** Whether the user is continuing after time expired (overtime mode) */
+  isOvertime?: boolean;
 }
 
 // ============================================================================
@@ -61,6 +63,7 @@ export function DiagnosticHeader({
   timeRemaining,
   stage,
   route,
+  isOvertime = false,
 }: DiagnosticHeaderProps) {
   return (
     <header className="relative z-20 bg-white/80 backdrop-blur-lg border-b border-gray-100 sticky top-0">
@@ -95,8 +98,12 @@ export function DiagnosticHeader({
             />
           </div>
 
-          {/* Timer */}
-          <Timer seconds={timeRemaining} />
+          {/* Timer or Overtime indicator */}
+          {isOvertime ? (
+            <OvertimeIndicator />
+          ) : (
+            <Timer seconds={timeRemaining} />
+          )}
         </div>
 
         {/* Mobile progress bar - shown only on small screens */}
