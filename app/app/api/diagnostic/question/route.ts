@@ -6,6 +6,7 @@ import { eq, and } from "drizzle-orm";
 /**
  * GET /api/diagnostic/question
  * Fetch question content by exam and question number
+ * Always returns alternate questions (never official ones)
  * Includes atoms associated with the question for mastery tracking
  */
 export async function GET(request: Request) {
@@ -27,26 +28,37 @@ export async function GET(request: Request) {
     // Normalize exam name to lowercase for DB matching
     const examNormalized = exam.toLowerCase();
 
-    // Query by source test and question number
+    // Build the original (official) question ID to find its alternate
+    const originalQuestionId = `${examNormalized}-Q${qNum}`;
+
+    // Query for alternate question by parent_question_id
+    // We always use alternates instead of official questions
     const result = await db
       .select({
         id: questions.id,
         qtiXml: questions.qtiXml,
         correctAnswer: questions.correctAnswer,
         title: questions.title,
+        source: questions.source,
       })
       .from(questions)
       .where(
         and(
-          eq(questions.sourceTestId, examNormalized),
-          eq(questions.sourceQuestionNumber, qNum)
+          eq(questions.parentQuestionId, originalQuestionId),
+          eq(questions.source, "alternate")
         )
       )
       .limit(1);
 
     if (result.length === 0) {
+      console.error(
+        `No alternate question found for parent: ${originalQuestionId}`
+      );
       return NextResponse.json(
-        { success: false, error: "Question not found" },
+        {
+          success: false,
+          error: `Alternate question not found for ${originalQuestionId}`,
+        },
         { status: 404 }
       );
     }
