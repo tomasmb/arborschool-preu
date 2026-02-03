@@ -65,14 +65,15 @@ export async function GET(request: Request) {
 
     const question = result[0];
 
-    // Fetch atoms linked to this question
+    // Fetch atoms linked to the ORIGINAL (parent) question
+    // Atoms are stored against the official question ID, not the alternate
     const atoms = await db
       .select({
         atomId: questionAtoms.atomId,
         relevance: questionAtoms.relevance,
       })
       .from(questionAtoms)
-      .where(eq(questionAtoms.questionId, question.id));
+      .where(eq(questionAtoms.questionId, originalQuestionId));
 
     // Convert "ChoiceA" -> "A", "ChoiceB" -> "B", etc.
     let correctAnswer = question.correctAnswer;
