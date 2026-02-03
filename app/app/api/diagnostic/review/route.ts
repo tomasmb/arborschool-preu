@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { questions } from "@/db/schema";
-import { eq, and, or } from "drizzle-orm";
+import { eq, and, or, inArray } from "drizzle-orm";
 
 /**
  * POST /api/diagnostic/review
  *
  * Fetch question content and feedback for review after diagnostic.
  * Returns QTI XML, correct answer, and feedback for each question.
+ * Always returns alternate questions (never official ones).
  *
  * Request body:
  * {
@@ -26,21 +27,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Build lookup keys: exam-questionNumber
-    const lookupKeys = questionRefs.map((q) => ({
-      exam: q.exam.toLowerCase(),
-      qNum: parseInt(q.questionNumber.replace(/\D/g, ""), 10),
-    }));
+    // Build parent question IDs to find alternates
+    // Format: exam-Q{num} (e.g., "prueba-invierno-2025-Q28")
+    const parentQuestionIds = questionRefs.map((q) => {
+      const exam = q.exam.toLowerCase();
+      const qNum = parseInt(q.questionNumber.replace(/\D/g, ""), 10);
+      return `${exam}-Q${qNum}`;
+    });
 
-    // Build conditions for each question we need
-    const conditions = lookupKeys.map((key) =>
-      and(
-        eq(questions.sourceTestId, key.exam),
-        eq(questions.sourceQuestionNumber, key.qNum)
-      )
-    );
-
-    // Fetch only the questions we need
+    // Fetch alternate questions by parent_question_id
     const matchedQuestions = await db
       .select({
         id: questions.id,
@@ -49,17 +44,22 @@ export async function POST(request: NextRequest) {
         title: questions.title,
         feedbackGeneral: questions.feedbackGeneral,
         feedbackPerOption: questions.feedbackPerOption,
-        sourceTestId: questions.sourceTestId,
-        sourceQuestionNumber: questions.sourceQuestionNumber,
+        parentQuestionId: questions.parentQuestionId,
       })
       .from(questions)
-      .where(or(...conditions));
+      .where(
+        and(
+          inArray(questions.parentQuestionId, parentQuestionIds),
+          eq(questions.source, "alternate")
+        )
+      );
 
-    // Build response map keyed by exam-questionNumber
+    // Build response map keyed by parent question ID (exam-Q{num})
     const questionDataMap: Record<string, QuestionReviewData> = {};
 
     for (const q of matchedQuestions) {
-      const key = `${q.sourceTestId}-Q${q.sourceQuestionNumber}`;
+      // Use parent question ID as the key (matches frontend expectations)
+      const key = q.parentQuestionId!;
 
       // Normalize correct answer (ChoiceA -> A)
       let correctAnswer = q.correctAnswer;
