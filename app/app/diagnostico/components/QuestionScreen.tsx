@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, memo } from "react";
 import Link from "next/link";
 import {
   AXIS_NAMES,
@@ -107,7 +107,11 @@ function OptionButton({
 // MAIN COMPONENT
 // ============================================================================
 
-export function QuestionScreen({
+/**
+ * QuestionScreen is memoized to prevent unnecessary re-renders from the parent's
+ * timer state updates (every second). Only re-renders when its props actually change.
+ */
+export const QuestionScreen = memo(function QuestionScreen({
   question,
   questionIndex,
   selectedAnswer,
@@ -426,4 +430,4 @@ export function QuestionScreen({
       </div>
     </div>
   );
-}
+});

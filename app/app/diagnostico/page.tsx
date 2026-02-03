@@ -347,107 +347,128 @@ export default function DiagnosticoPage() {
     return getStage2Questions(route)[questionIndex];
   };
 
-  // Handle answer selection
-  const handleSelectAnswer = (answer: string) => {
+  // Handle answer selection (memoized to prevent QuestionScreen re-renders)
+  const handleSelectAnswer = useCallback((answer: string) => {
     setSelectedAnswer(answer);
     setIsDontKnow(false);
-  };
-  const handleSelectDontKnow = () => {
+  }, []);
+
+  const handleSelectDontKnow = useCallback(() => {
     setIsDontKnow(true);
     setSelectedAnswer(null);
-  };
+  }, []);
 
-  // Submit response and advance
-  const handleNext = async (
-    correctAnswer: string | null,
-    atoms: QuestionAtom[]
-  ) => {
-    const question = getCurrentQuestion();
-    const responseTime = Math.floor(
-      (Date.now() - questionStartTime.current) / 1000
-    );
+  // Submit response and advance (memoized to prevent QuestionScreen re-renders from timer)
+  const handleNext = useCallback(
+    async (correctAnswer: string | null, atoms: QuestionAtom[]) => {
+      const question = getCurrentQuestion();
+      const responseTime = Math.floor(
+        (Date.now() - questionStartTime.current) / 1000
+      );
 
-    // Determine correctness - check against real correct answer from DB
-    const isCorrect =
-      !isDontKnow &&
-      selectedAnswer !== null &&
-      correctAnswer !== null &&
-      selectedAnswer === correctAnswer;
+      // Determine correctness - check against real correct answer from DB
+      const isCorrect =
+        !isDontKnow &&
+        selectedAnswer !== null &&
+        correctAnswer !== null &&
+        selectedAnswer === correctAnswer;
 
-    const responseData: DiagnosticResponse = {
-      question,
+      const responseData: DiagnosticResponse = {
+        question,
+        selectedAnswer,
+        isCorrect,
+        responseTime,
+        atoms,
+      };
+
+      const questionId = buildQuestionId(
+        question.exam,
+        question.questionNumber
+      );
+
+      // Always save to localStorage as backup (in case API fails or is local)
+      // Include atoms for mastery calculation (needed for PAES score from unlocked questions)
+      saveResponseToLocalStorage({
+        questionId,
+        selectedAnswer: selectedAnswer || "skip",
+        isCorrect,
+        responseTimeSeconds: responseTime,
+        stage,
+        questionIndex,
+        route: stage === 2 ? route : null, // Save route for stage 2 reconstruction
+        answeredAt: new Date().toISOString(),
+        atoms: atoms.map((a) => ({ atomId: a.atomId, relevance: a.relevance })),
+      });
+
+      // Also save response to API if we have a valid (non-local) attempt
+      if (!isLocalAttempt(attemptId)) {
+        try {
+          await fetch("/api/diagnostic/response", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              attemptId,
+              questionId,
+              selectedAnswer: selectedAnswer || "skip",
+              isCorrect,
+              responseTime,
+              stage,
+              questionIndex,
+            }),
+          });
+        } catch (error) {
+          console.error("Failed to save response to API:", error);
+          // Response is still saved in localStorage as backup
+        }
+      }
+
+      // Update state based on stage
+      if (stage === 1) {
+        const newResponses = [...r1Responses, responseData];
+        setR1Responses(newResponses);
+
+        if (questionIndex === QUESTIONS_PER_STAGE - 1) {
+          // Get correct count from localStorage (source of truth after refreshes)
+          const storedR1 = getStoredResponses().filter((r) => r.stage === 1);
+          const correctCount = storedR1.filter((r) => r.isCorrect).length;
+          const determinedRoute = getRoute(correctCount);
+          setRoute(determinedRoute);
+          setScreen("transition");
+        } else {
+          setQuestionIndex(questionIndex + 1);
+          resetQuestionState();
+        }
+      } else {
+        const newResponses = [...stage2Responses, responseData];
+        setStage2Responses(newResponses);
+
+        if (questionIndex === QUESTIONS_PER_STAGE - 1) {
+          calculateAndShowResults(newResponses);
+        } else {
+          setQuestionIndex(questionIndex + 1);
+          resetQuestionState();
+        }
+      }
+    },
+    // Note: getCurrentQuestion, resetQuestionState, calculateAndShowResults are intentionally omitted.
+    // They only use state values already in this dependency array, so they don't need to be listed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      isDontKnow,
       selectedAnswer,
-      isCorrect,
-      responseTime,
-      atoms,
-    };
-
-    const questionId = buildQuestionId(question.exam, question.questionNumber);
-
-    // Always save to localStorage as backup (in case API fails or is local)
-    // Include atoms for mastery calculation (needed for PAES score from unlocked questions)
-    saveResponseToLocalStorage({
-      questionId,
-      selectedAnswer: selectedAnswer || "skip",
-      isCorrect,
-      responseTimeSeconds: responseTime,
       stage,
       questionIndex,
-      route: stage === 2 ? route : null, // Save route for stage 2 reconstruction
-      answeredAt: new Date().toISOString(),
-      atoms: atoms.map((a) => ({ atomId: a.atomId, relevance: a.relevance })),
-    });
+      route,
+      attemptId,
+      r1Responses,
+      stage2Responses,
+    ]
+  );
 
-    // Also save response to API if we have a valid (non-local) attempt
-    if (!isLocalAttempt(attemptId)) {
-      try {
-        await fetch("/api/diagnostic/response", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            attemptId,
-            questionId,
-            selectedAnswer: selectedAnswer || "skip",
-            isCorrect,
-            responseTime,
-            stage,
-            questionIndex,
-          }),
-        });
-      } catch (error) {
-        console.error("Failed to save response to API:", error);
-        // Response is still saved in localStorage as backup
-      }
-    }
-
-    // Update state based on stage
-    if (stage === 1) {
-      const newResponses = [...r1Responses, responseData];
-      setR1Responses(newResponses);
-
-      if (questionIndex === QUESTIONS_PER_STAGE - 1) {
-        // Get correct count from localStorage (source of truth after refreshes)
-        const storedR1 = getStoredResponses().filter((r) => r.stage === 1);
-        const correctCount = storedR1.filter((r) => r.isCorrect).length;
-        const determinedRoute = getRoute(correctCount);
-        setRoute(determinedRoute);
-        setScreen("transition");
-      } else {
-        setQuestionIndex(questionIndex + 1);
-        resetQuestionState();
-      }
-    } else {
-      const newResponses = [...stage2Responses, responseData];
-      setStage2Responses(newResponses);
-
-      if (questionIndex === QUESTIONS_PER_STAGE - 1) {
-        calculateAndShowResults(newResponses);
-      } else {
-        setQuestionIndex(questionIndex + 1);
-        resetQuestionState();
-      }
-    }
-  };
+  // Stable callback for fatal errors (memoized to prevent QuestionScreen re-renders)
+  const handleFatalError = useCallback(() => {
+    setScreen("maintenance");
+  }, []);
 
   const resetQuestionState = () => {
     setSelectedAnswer(null);
@@ -672,7 +693,7 @@ export default function DiagnosticoPage() {
             onSelectAnswer={handleSelectAnswer}
             onSelectDontKnow={handleSelectDontKnow}
             onNext={handleNext}
-            onFatalError={() => setScreen("maintenance")}
+            onFatalError={handleFatalError}
           />
         </div>
 
