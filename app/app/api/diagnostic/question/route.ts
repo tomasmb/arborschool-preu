@@ -2,12 +2,15 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { questions, questionAtoms } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { parseQtiXml } from "@/lib/diagnostic/qtiParser";
 
 /**
  * GET /api/diagnostic/question
  * Fetch question content by exam and question number
  * Always returns alternate questions (never official ones)
  * Includes atoms associated with the question for mastery tracking
+ *
+ * Note: correctAnswer is parsed from qtiXml (single source of truth)
  */
 export async function GET(request: Request) {
   try {
@@ -37,9 +40,7 @@ export async function GET(request: Request) {
       .select({
         id: questions.id,
         qtiXml: questions.qtiXml,
-        correctAnswer: questions.correctAnswer,
         title: questions.title,
-        source: questions.source,
       })
       .from(questions)
       .where(
@@ -65,6 +66,15 @@ export async function GET(request: Request) {
 
     const question = result[0];
 
+    // Parse qtiXml to extract correctAnswer (single source of truth)
+    const parsed = parseQtiXml(question.qtiXml);
+
+    // Convert "ChoiceA" -> "A", "ChoiceB" -> "B", etc.
+    let correctAnswer = parsed.correctAnswer;
+    if (correctAnswer?.startsWith("Choice")) {
+      correctAnswer = correctAnswer.replace("Choice", "");
+    }
+
     // Fetch atoms linked to the ORIGINAL (parent) question
     // Atoms are stored against the official question ID, not the alternate
     const atoms = await db
@@ -74,12 +84,6 @@ export async function GET(request: Request) {
       })
       .from(questionAtoms)
       .where(eq(questionAtoms.questionId, originalQuestionId));
-
-    // Convert "ChoiceA" -> "A", "ChoiceB" -> "B", etc.
-    let correctAnswer = question.correctAnswer;
-    if (correctAnswer?.startsWith("Choice")) {
-      correctAnswer = correctAnswer.replace("Choice", "");
-    }
 
     return NextResponse.json({
       success: true,

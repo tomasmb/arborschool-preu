@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { questions } from "@/db/schema";
-import { eq, and, or, inArray } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
+import { parseQtiXml } from "@/lib/diagnostic/qtiParser";
 
 /**
  * POST /api/diagnostic/review
  *
- * Fetch question content and feedback for review after diagnostic.
- * Returns QTI XML, correct answer, and feedback for each question.
+ * Fetch question content for review after diagnostic.
+ * Returns QTI XML and correct answer (parsed from qtiXml) for each question.
  * Always returns alternate questions (never official ones).
+ *
+ * Note: correctAnswer is parsed from qtiXml (single source of truth)
  *
  * Request body:
  * {
@@ -40,10 +43,7 @@ export async function POST(request: NextRequest) {
       .select({
         id: questions.id,
         qtiXml: questions.qtiXml,
-        correctAnswer: questions.correctAnswer,
         title: questions.title,
-        feedbackGeneral: questions.feedbackGeneral,
-        feedbackPerOption: questions.feedbackPerOption,
         parentQuestionId: questions.parentQuestionId,
       })
       .from(questions)
@@ -61,8 +61,11 @@ export async function POST(request: NextRequest) {
       // Use parent question ID as the key (matches frontend expectations)
       const key = q.parentQuestionId!;
 
+      // Parse qtiXml to extract correctAnswer (single source of truth)
+      const parsed = parseQtiXml(q.qtiXml);
+
       // Normalize correct answer (ChoiceA -> A)
-      let correctAnswer = q.correctAnswer;
+      let correctAnswer = parsed.correctAnswer;
       if (correctAnswer?.startsWith("Choice")) {
         correctAnswer = correctAnswer.replace("Choice", "");
       }
@@ -72,8 +75,6 @@ export async function POST(request: NextRequest) {
         qtiXml: q.qtiXml,
         correctAnswer,
         title: q.title,
-        feedbackGeneral: q.feedbackGeneral,
-        feedbackPerOption: q.feedbackPerOption as Record<string, string> | null,
       };
     }
 
@@ -95,6 +96,4 @@ interface QuestionReviewData {
   qtiXml: string;
   correctAnswer: string | null;
   title: string | null;
-  feedbackGeneral: string | null;
-  feedbackPerOption: Record<string, string> | null;
 }

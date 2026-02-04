@@ -75,10 +75,19 @@ async function runMigrations() {
       const content = fs.readFileSync(filePath, "utf-8");
 
       // Split by statement breakpoint marker and filter empty statements
+      // Strip leading comment lines from each chunk (comments start with --)
       const statements = content
         .split("--> statement-breakpoint")
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0 && !s.startsWith("--"));
+        .map((s) => {
+          // Remove leading comment lines but keep the SQL
+          const lines = s.split("\n");
+          const firstNonCommentIndex = lines.findIndex(
+            (line) => line.trim() && !line.trim().startsWith("--")
+          );
+          if (firstNonCommentIndex === -1) return "";
+          return lines.slice(firstNonCommentIndex).join("\n").trim();
+        })
+        .filter((s) => s.length > 0);
 
       for (const statement of statements) {
         try {
