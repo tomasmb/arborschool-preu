@@ -23,8 +23,6 @@ export interface ResponseForReview {
 export interface QuestionReviewData {
   qtiXml: string;
   correctAnswer: string | null;
-  feedbackGeneral: string | null;
-  feedbackPerOption: Record<string, string> | null;
 }
 
 export interface ParsedOption {

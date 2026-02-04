@@ -139,15 +139,11 @@ export const questions = pgTable(
     questionSetId: varchar("question_set_id", { length: 100 }).references(
       () => questionSets.id
     ),
+    // qtiXml is the single source of truth for question content and correct answer
     qtiXml: text("qti_xml").notNull(),
     title: varchar("title", { length: 255 }),
-    correctAnswer: varchar("correct_answer", { length: 50 }).notNull(),
     difficultyLevel: difficultyLevelEnum("difficulty_level").notNull(),
     difficultyScore: decimal("difficulty_score", { precision: 3, scale: 2 }),
-    difficultyAnalysis: text("difficulty_analysis"),
-    generalAnalysis: text("general_analysis"),
-    feedbackGeneral: text("feedback_general"),
-    feedbackPerOption: jsonb("feedback_per_option"),
     sourceTestId: varchar("source_test_id", { length: 100 }),
     sourceQuestionNumber: integer("source_question_number"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
