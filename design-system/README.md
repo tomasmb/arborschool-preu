@@ -99,7 +99,7 @@ When setting up a Google Slides theme, use these mappings:
 ```
 design-system/
 ├── README.md
-├── logo-arbor.svg          ← Original (navy)
+├── logo-arbor.svg          ← Original isotipo (navy)
 ├── logo-arbor-navy.svg
 ├── logo-arbor-navy.png
 ├── logo-arbor-white.svg
@@ -107,5 +107,33 @@ design-system/
 ├── logo-arbor-gold.svg
 ├── logo-arbor-gold.png
 ├── logo-arbor-charcoal.svg
-└── logo-arbor-charcoal.png
+├── logo-arbor-charcoal.png
+└── email-signature.html    ← Gmail signature template
 ```
+
+---
+
+## Email Signature
+
+### Setup Instructions
+
+1. **Host the isotipo PNG:**
+   - Upload `logo-arbor-navy.png` to your website or Imgur
+   - Copy the direct image URL
+
+2. **Configure signature:**
+   - Open `email-signature.html` in a text editor
+   - Replace `LOGO_URL_HERE` with your hosted image URL
+   - Open the HTML file in a browser
+   - Select all (Cmd+A) → Copy (Cmd+C)
+   - Go to Gmail → Settings → See all settings → General → Signature
+   - Paste (Cmd+V)
+
+### Email Signature Colors
+
+| Element | Color | Hex |
+|---------|-------|-----|
+| Name | Charcoal | `#1A1D1E` |
+| Title | Cool Gray | `#64748B` |
+| Accent line | Gold | `#D97706` |
+| Links | Navy | `#0B3A5B` |
