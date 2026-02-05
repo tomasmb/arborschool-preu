@@ -9,6 +9,10 @@
 
 import { parseHTML } from "linkedom";
 
+// Node type constants (browser globals not available in server environment)
+const ELEMENT_NODE = 1;
+const TEXT_NODE = 3;
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -34,11 +38,11 @@ export interface QuestionAtom {
  * Applies consistent Tailwind styling to elements.
  */
 function serializeNodeToHtml(node: Node): string {
-  if (node.nodeType === Node.TEXT_NODE) {
+  if (node.nodeType === TEXT_NODE) {
     return node.textContent || "";
   }
 
-  if (node.nodeType === Node.ELEMENT_NODE) {
+  if (node.nodeType === ELEMENT_NODE) {
     const el = node as Element;
     const tagName = el.localName || el.tagName.toLowerCase();
 
@@ -167,7 +171,7 @@ function processItemBody(itemBody: Element): string {
   let html = "";
 
   itemBody.childNodes.forEach((child) => {
-    if (child.nodeType === Node.ELEMENT_NODE) {
+    if (child.nodeType === ELEMENT_NODE) {
       const el = child as Element;
       const tagName = el.localName || el.tagName.toLowerCase();
       // Skip QTI interaction elements - these are handled separately
@@ -183,7 +187,7 @@ function processItemBody(itemBody: Element): string {
     if (content.trim()) {
       // Wrap loose text/content in paragraph if not already wrapped
       if (
-        child.nodeType === Node.ELEMENT_NODE &&
+        child.nodeType === ELEMENT_NODE &&
         ["p", "div", "table"].includes(
           (
             (child as Element).localName || (child as Element).tagName
