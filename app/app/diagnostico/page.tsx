@@ -108,10 +108,21 @@ export default function DiagnosticoPage() {
     "idle" | "loading" | "success" | "error"
   >("idle");
   const [signupError, setSignupError] = useState("");
-  // Cached responses for review (used after signup clears localStorage)
+
+  // Cached data for results screen after signup (localStorage gets cleared)
   const [cachedResponsesForReview, setCachedResponsesForReview] = useState<
     ResponseForReview[]
   >([]);
+  const [cachedResults, setCachedResults] = useState<DiagnosticResults | null>(
+    null
+  );
+  const [cachedAtomResults, setCachedAtomResults] = useState<
+    { atomId: string; mastered: boolean }[]
+  >([]);
+  const [cachedScoredCorrect, setCachedScoredCorrect] = useState<number>(0);
+  const [cachedActualRoute, setCachedActualRoute] = useState<Route | null>(
+    null
+  );
 
   // Timer and tracking state
   const [attemptId, setAttemptId] = useState<string | null>(null);
@@ -692,10 +703,14 @@ export default function DiagnosticoPage() {
           actualRoute
         );
 
-        // Cache responses for review BEFORE clearing localStorage
-        // ResultsScreen needs these to show the question review drawer
+        // Cache ALL data BEFORE clearing localStorage
+        // ResultsScreen needs these since localStorage will be cleared
         const responsesToCache = getResponsesForReview();
         setCachedResponsesForReview(responsesToCache);
+        setCachedResults(calculatedResults);
+        setCachedAtomResults(atomResults);
+        setCachedScoredCorrect(counts.scoredCorrect);
+        setCachedActualRoute(actualRoute);
 
         // Clear all localStorage data after successful signup
         clearAllDiagnosticData();
@@ -837,44 +852,56 @@ export default function DiagnosticoPage() {
 
   // Full Results screen (shown after signup - this is the endpoint for signed-up users)
   if (screen === "results") {
-    if (!route) {
-      console.error("Results screen rendered but route is not set");
-      return <MaintenanceScreen />;
-    }
-
-    // Get response counts (only scored responses for scoring)
-    const counts = getResponseCounts();
-    const actualRoute = getActualRouteFromStorage(route);
-
-    // Only use responses answered before time expired for scoring
-    const scoredResponses = reconstructFullResponses({ excludeOvertime: true });
-
-    // ALWAYS recalculate results from scored responses only (source of truth)
-    // This ensures axisPerformance and skillPerformance are correct after refresh
-    const calculatedResults = calculateDiagnosticResults(
-      scoredResponses,
-      actualRoute
-    );
-
-    // Compute atom results from ALL responses (including overtime - for diagnostic)
-    const allResponses = reconstructFullResponses();
-    const atomResults = computeAtomMastery(allResponses);
-
     // Check if user has signed up (came through signup flow)
     const hasSignedUp = signupStatus === "success";
 
-    // Prepare responses for review drawer (show all answers for review)
-    // Use cached responses if user signed up (localStorage was cleared)
-    const responsesForReview = hasSignedUp
-      ? cachedResponsesForReview
-      : getResponsesForReview();
+    // After signup, localStorage is cleared - use cached data
+    // Otherwise (session restore, etc.) read from localStorage
+    let finalResults: DiagnosticResults;
+    let finalAtomResults: { atomId: string; mastered: boolean }[];
+    let finalScoredCorrect: number;
+    let finalRoute: Route;
+    let responsesForReview: ResponseForReview[];
+
+    if (hasSignedUp && cachedResults && cachedActualRoute) {
+      // Use cached data (localStorage was cleared after signup)
+      finalResults = cachedResults;
+      finalAtomResults = cachedAtomResults;
+      finalScoredCorrect = cachedScoredCorrect;
+      finalRoute = cachedActualRoute;
+      responsesForReview = cachedResponsesForReview;
+    } else {
+      // Read from localStorage (session restore or non-signup flow)
+      if (!route) {
+        console.error("Results screen rendered but route is not set");
+        return <MaintenanceScreen />;
+      }
+
+      const counts = getResponseCounts();
+      const actualRoute = getActualRouteFromStorage(route);
+      const scoredResponses = reconstructFullResponses({
+        excludeOvertime: true,
+      });
+      const calculatedResults = calculateDiagnosticResults(
+        scoredResponses,
+        actualRoute
+      );
+      const allResponses = reconstructFullResponses();
+      const atomResults = computeAtomMastery(allResponses);
+
+      finalResults = calculatedResults;
+      finalAtomResults = atomResults;
+      finalScoredCorrect = counts.scoredCorrect;
+      finalRoute = actualRoute;
+      responsesForReview = getResponsesForReview();
+    }
 
     return (
       <ResultsScreen
-        results={calculatedResults}
-        route={actualRoute}
-        totalCorrect={counts.scoredCorrect}
-        atomResults={atomResults}
+        results={finalResults}
+        route={finalRoute}
+        totalCorrect={finalScoredCorrect}
+        atomResults={finalAtomResults}
         responses={responsesForReview}
         onScoreCalculated={setConsistentScore}
         onTopRouteCalculated={setTopRouteInfo}
