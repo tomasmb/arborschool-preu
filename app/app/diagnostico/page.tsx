@@ -31,6 +31,7 @@ import {
   reconstructFullResponses,
   getActualRouteFromStorage,
   getResponseCounts,
+  type ResponseForReview,
 } from "@/lib/diagnostic/storage";
 import { type QuestionAtom } from "@/lib/diagnostic/qtiParser";
 import { getPerformanceTier } from "@/lib/config/tiers";
@@ -107,6 +108,10 @@ export default function DiagnosticoPage() {
     "idle" | "loading" | "success" | "error"
   >("idle");
   const [signupError, setSignupError] = useState("");
+  // Cached responses for review (used after signup clears localStorage)
+  const [cachedResponsesForReview, setCachedResponsesForReview] = useState<
+    ResponseForReview[]
+  >([]);
 
   // Timer and tracking state
   const [attemptId, setAttemptId] = useState<string | null>(null);
@@ -276,6 +281,12 @@ export default function DiagnosticoPage() {
     );
     setResults(calculatedResults);
 
+    // Set consistent score for signup screen (midpoint of range)
+    const midScore = Math.round(
+      (calculatedResults.paesMin + calculatedResults.paesMax) / 2
+    );
+    setConsistentScore(midScore);
+
     // Go to partial results first (gated flow)
     setScreen("partial-results");
   }, []);
@@ -394,7 +405,11 @@ export default function DiagnosticoPage() {
 
   // Submit response and advance (memoized to prevent QuestionScreen re-renders from timer)
   const handleNext = useCallback(
-    async (correctAnswer: string | null, atoms: QuestionAtom[]) => {
+    async (
+      correctAnswer: string | null,
+      atoms: QuestionAtom[],
+      alternateQuestionId: string | null
+    ) => {
       const question = getCurrentQuestion();
       const responseTime = Math.floor(
         (Date.now() - questionStartTime.current) / 1000
@@ -434,6 +449,7 @@ export default function DiagnosticoPage() {
         answeredAt: new Date().toISOString(),
         atoms: atoms.map((a) => ({ atomId: a.atomId, relevance: a.relevance })),
         answeredAfterTimeUp: timeExpiredAt !== null,
+        alternateQuestionId: alternateQuestionId ?? undefined,
       });
 
       // Also save response to API if we have a valid (non-local) attempt
@@ -589,6 +605,12 @@ export default function DiagnosticoPage() {
     );
     setResults(calculatedResults);
 
+    // Set consistent score for signup screen (midpoint of range)
+    const midScore = Math.round(
+      (calculatedResults.paesMin + calculatedResults.paesMax) / 2
+    );
+    setConsistentScore(midScore);
+
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -669,6 +691,11 @@ export default function DiagnosticoPage() {
           counts.scoredCorrect,
           actualRoute
         );
+
+        // Cache responses for review BEFORE clearing localStorage
+        // ResultsScreen needs these to show the question review drawer
+        const responsesToCache = getResponsesForReview();
+        setCachedResponsesForReview(responsesToCache);
 
         // Clear all localStorage data after successful signup
         clearAllDiagnosticData();
@@ -794,10 +821,6 @@ export default function DiagnosticoPage() {
       actualRoute
     );
 
-    // Get potential improvement from learning routes (if available)
-    // This data comes from the useLearningRoutes hook in PartialResultsScreen
-    // For now, pass 0 and let the component handle it with generic messaging
-
     return (
       <PartialResultsScreen
         paesMin={calculatedResults.paesMin}
@@ -837,11 +860,14 @@ export default function DiagnosticoPage() {
     const allResponses = reconstructFullResponses();
     const atomResults = computeAtomMastery(allResponses);
 
-    // Prepare responses for review drawer (show all answers for review)
-    const responsesForReview = getResponsesForReview();
-
     // Check if user has signed up (came through signup flow)
     const hasSignedUp = signupStatus === "success";
+
+    // Prepare responses for review drawer (show all answers for review)
+    // Use cached responses if user signed up (localStorage was cleared)
+    const responsesForReview = hasSignedUp
+      ? cachedResponsesForReview
+      : getResponsesForReview();
 
     return (
       <ResultsScreen

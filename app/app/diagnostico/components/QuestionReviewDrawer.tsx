@@ -18,6 +18,8 @@ export interface ResponseForReview {
   question: MSTQuestion;
   selectedAnswer: string | null;
   isCorrect: boolean;
+  /** The actual alternate question ID shown (for accurate review) */
+  alternateQuestionId?: string;
 }
 
 export interface QuestionReviewData {
@@ -196,6 +198,8 @@ export function QuestionReviewDrawer({
       const questionRefs = responses.map((r) => ({
         exam: r.question.exam,
         questionNumber: r.question.questionNumber,
+        // Include alternateQuestionId for exact matching when available
+        alternateQuestionId: r.alternateQuestionId,
       }));
 
       const response = await fetch("/api/diagnostic/review", {

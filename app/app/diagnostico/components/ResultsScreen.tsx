@@ -329,17 +329,43 @@ export function ResultsScreen({
             </div>
           )}
 
-          {/* Question Review Link (early - users want to know WHY) */}
-          {responsesForReview.length > 0 && (
+          {/* Question Review Card - prominent for signed-up users (their reward) */}
+          {hasSignedUp && responsesForReview.length > 0 && (
             <div
-              className={`text-center mb-6 ${getAnimationClasses(showContent, "100")}`}
+              className={`mb-6 ${getAnimationClasses(showContent, "100")}`}
             >
               <button
                 onClick={() => setShowReviewDrawer(true)}
-                className="text-primary text-sm hover:text-primary-light transition-colors inline-flex items-center gap-1.5 font-medium"
+                className="w-full max-w-md mx-auto flex items-center gap-4 p-4 rounded-xl 
+                  bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20
+                  hover:from-primary/15 hover:to-primary/10 hover:border-primary/30
+                  transition-all duration-300 group"
               >
+                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                  <svg
+                    className="w-6 h-6 text-primary"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                    />
+                  </svg>
+                </div>
+                <div className="flex-1 text-left">
+                  <div className="font-semibold text-charcoal">
+                    Revisar mis respuestas
+                  </div>
+                  <div className="text-sm text-cool-gray">
+                    {responsesForReview.length} preguntas · Ver correctas e incorrectas
+                  </div>
+                </div>
                 <svg
-                  className="w-4 h-4"
+                  className="w-5 h-5 text-primary group-hover:translate-x-1 transition-transform"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -348,10 +374,9 @@ export function ResultsScreen({
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                    d="M9 5l7 7-7 7"
                   />
                 </svg>
-                Revisar mis respuestas
               </button>
             </div>
           )}
