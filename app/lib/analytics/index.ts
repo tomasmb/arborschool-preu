@@ -25,8 +25,9 @@ export {
   trackDiagnosticIntroViewed,
   trackDiagnosticStarted,
   trackDiagnosticCompleted,
+  trackPartialResultsViewed,
+  trackPartialResultsCtaClicked,
   trackResultsViewed,
-  trackResultsCtaClicked,
   trackRouteExplored,
   trackSignupCompleted,
   // Utilities

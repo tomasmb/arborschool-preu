@@ -1,7 +1,20 @@
 "use client";
 
+/**
+ * Full Results Screen
+ *
+ * Shows complete diagnostic results including learning routes, question review,
+ * and personalized recommendations. This is the endpoint for signed-up users.
+ *
+ * When hasSignedUp=true (user came from signup flow):
+ * - Shows success banner confirming signup
+ * - Hides signup CTA (already done)
+ * - Shows "Volver al Inicio" link at bottom
+ */
+
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Confetti } from "./Confetti";
 import { Icons, AnimatedCounter } from "./shared";
 import {
@@ -19,11 +32,7 @@ import {
   isLowSignalTier,
   getNextConceptsConfig,
 } from "@/lib/config";
-import {
-  trackResultsViewed,
-  trackResultsCtaClicked,
-  trackRouteExplored,
-} from "@/lib/analytics";
+import { trackResultsViewed, trackRouteExplored } from "@/lib/analytics";
 import {
   TierHeadline,
   TierMessageCard,
@@ -85,6 +94,7 @@ export function ResultsScreen({
   onTopRouteCalculated,
   precomputedRoutes,
   precomputedNextConcepts,
+  hasSignedUp = false,
 }: ResultsScreenProps) {
   const [showContent, setShowContent] = useState(false);
   const [showReviewDrawer, setShowReviewDrawer] = useState(false);
@@ -214,10 +224,9 @@ export function ResultsScreen({
     }
   }, [results.paesMin, results.paesMax, performanceTier, totalCorrect, route]);
 
-  // Handler for CTA click with analytics tracking
+  // Handler for CTA click (only used in ExampleResultsModal preview)
   const handleCtaClick = () => {
-    trackResultsCtaClicked(performanceTier, CTA_LABEL);
-    onSignup();
+    onSignup?.();
   };
 
   // Handler for route exploration toggle with analytics tracking
@@ -260,6 +269,30 @@ export function ResultsScreen({
               Diagnóstico Completado
             </div>
           </div>
+
+          {/* Success Banner - shown when user signed up */}
+          {hasSignedUp && (
+            <div className={`mb-6 ${getAnimationClasses(showContent)}`}>
+              <div className="flex items-center justify-center gap-2 p-4 bg-gradient-to-r from-success/10 to-success/5 border border-success/20 rounded-xl">
+                <svg
+                  className="w-5 h-5 text-success shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                <span className="text-success font-medium">
+                  Tu diagnóstico está guardado. Te avisamos cuando lancemos.
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Limitation Copy (for low-signal tiers - shown first) */}
           {isLowSignal && (
@@ -352,15 +385,17 @@ export function ResultsScreen({
             />
           </div>
 
-          {/* Primary CTA (early - right after value proposition) */}
-          <div
-            className={`text-center mb-6 ${getAnimationClasses(showContent, "300")}`}
-          >
-            <CtaButton onClick={handleCtaClick} ctaLabel={CTA_LABEL} />
-            <p className="text-xs text-cool-gray mt-3 max-w-md mx-auto">
-              {EXPECTATION_LINE}
-            </p>
-          </div>
+          {/* Primary CTA (early - right after value proposition) - hidden if already signed up */}
+          {!hasSignedUp && (
+            <div
+              className={`text-center mb-6 ${getAnimationClasses(showContent, "300")}`}
+            >
+              <CtaButton onClick={handleCtaClick} ctaLabel={CTA_LABEL} />
+              <p className="text-xs text-cool-gray mt-3 max-w-md mx-auto">
+                {EXPECTATION_LINE}
+              </p>
+            </div>
+          )}
 
           {/* Generic Next Step (for tiers without calculated routes) */}
           {!showRoutes && (
@@ -477,31 +512,33 @@ export function ResultsScreen({
                     </div>
                   )}
 
-                  {/* Secondary CTA inside toggle for engaged readers */}
-                  <div className="text-center pt-4 border-t border-gray-100">
-                    <p className="text-sm text-cool-gray mb-3">
-                      ¿Listo para comenzar tu ruta?
-                    </p>
-                    <button
-                      onClick={handleCtaClick}
-                      className="inline-flex items-center gap-2 px-6 py-3 bg-primary/10 text-primary font-semibold rounded-xl hover:bg-primary/20 transition-colors"
-                    >
-                      Continuar
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                  {/* Secondary CTA inside toggle for engaged readers - hidden if already signed up */}
+                  {!hasSignedUp && (
+                    <div className="text-center pt-4 border-t border-gray-100">
+                      <p className="text-sm text-cool-gray mb-3">
+                        ¿Listo para comenzar tu ruta?
+                      </p>
+                      <button
+                        onClick={handleCtaClick}
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-primary/10 text-primary font-semibold rounded-xl hover:bg-primary/20 transition-colors"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M13 7l5 5m0 0l-5 5m5-5H6"
-                        />
-                      </svg>
-                    </button>
-                  </div>
+                        Continuar
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13 7l5 5m0 0l-5 5m5-5H6"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -515,6 +552,36 @@ export function ResultsScreen({
                 scoreMax={scoreMax}
                 tier={performanceTier}
               />
+            </div>
+          )}
+
+          {/* Home Link - shown when user signed up (this is the endpoint) */}
+          {hasSignedUp && (
+            <div
+              className={`text-center mt-10 pb-8 ${getAnimationClasses(showContent, "500")}`}
+            >
+              <Link
+                href="/"
+                className="btn-cta inline-flex items-center gap-2 px-8 py-4 text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300"
+              >
+                Volver al Inicio
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                  />
+                </svg>
+              </Link>
+              <p className="text-sm text-cool-gray mt-4">
+                Esta experiencia fue solo el comienzo
+              </p>
             </div>
           )}
         </div>

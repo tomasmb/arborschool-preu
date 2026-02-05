@@ -89,17 +89,25 @@ export interface ResultsViewedProperties extends BaseEventProperties {
   cta_label: string;
 }
 
-/** Results CTA clicked event */
-export interface ResultsCtaClickedProperties extends BaseEventProperties {
-  performance_tier: PerformanceTier;
-  cta_label: string;
-  signup_intent: SignupIntent;
-}
-
 /** Route details expanded event - user clicked "Explorar mi ruta personalizada" */
 export interface RouteExploredProperties extends BaseEventProperties {
   performance_tier: PerformanceTier;
   route: "A" | "B" | "C";
+}
+
+/** Partial results viewed event - gated screen before signup */
+export interface PartialResultsViewedProperties extends BaseEventProperties {
+  paes_score_min: number;
+  paes_score_max: number;
+  performance_tier: PerformanceTier;
+  total_correct: number;
+}
+
+/** Partial results CTA clicked - user clicks to continue to signup */
+export interface PartialResultsCtaClickedProperties
+  extends BaseEventProperties {
+  performance_tier: PerformanceTier;
+  cta_label: string;
 }
 
 /** Signup completed event */
@@ -128,8 +136,9 @@ export type AnalyticsEventName =
   | "diagnostic_intro_viewed"
   | "diagnostic_started"
   | "diagnostic_completed"
+  | "partial_results_viewed"
+  | "partial_results_cta_clicked"
   | "results_viewed"
-  | "results_cta_clicked"
   | "route_explored"
   | "signup_completed";
 
@@ -143,8 +152,9 @@ export interface AnalyticsEventMap {
   diagnostic_intro_viewed: DiagnosticIntroViewedProperties;
   diagnostic_started: DiagnosticStartedProperties;
   diagnostic_completed: DiagnosticCompletedProperties;
+  partial_results_viewed: PartialResultsViewedProperties;
+  partial_results_cta_clicked: PartialResultsCtaClickedProperties;
   results_viewed: ResultsViewedProperties;
-  results_cta_clicked: ResultsCtaClickedProperties;
   route_explored: RouteExploredProperties;
   signup_completed: SignupCompletedProperties;
 }

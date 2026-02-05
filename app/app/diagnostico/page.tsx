@@ -44,6 +44,7 @@ import {
   WelcomeScreen,
   QuestionScreen,
   TransitionScreen,
+  PartialResultsScreen,
   ResultsScreen,
   SignupScreen,
   ThankYouScreen,
@@ -62,6 +63,7 @@ type Screen =
   | "welcome"
   | "question"
   | "transition"
+  | "partial-results"
   | "results"
   | "signup"
   | "thankyou"
@@ -105,18 +107,6 @@ export default function DiagnosticoPage() {
     "idle" | "loading" | "success" | "error"
   >("idle");
   const [signupError, setSignupError] = useState("");
-
-  // Results snapshot for ThankYouScreen (captured on successful signup)
-  const [resultsSnapshot, setResultsSnapshot] = useState<{
-    paesMin: number;
-    paesMax: number;
-    topRoute?: {
-      name: string;
-      questionsUnlocked: number;
-      pointsGain: number;
-      studyHours: number;
-    };
-  } | null>(null);
 
   // Timer and tracking state
   const [attemptId, setAttemptId] = useState<string | null>(null);
@@ -286,7 +276,8 @@ export default function DiagnosticoPage() {
     );
     setResults(calculatedResults);
 
-    setScreen("results");
+    // Go to partial results first (gated flow)
+    setScreen("partial-results");
   }, []);
 
   // Timer effect - only runs if time hasn't expired yet
@@ -581,7 +572,7 @@ export default function DiagnosticoPage() {
     }
   };
 
-  // Shared results display logic
+  // Shared results display logic - shows partial results first (gated flow)
   const showResults = () => {
     if (!route) {
       console.error("showResults called but route is not set");
@@ -603,7 +594,8 @@ export default function DiagnosticoPage() {
       timerRef.current = null;
     }
 
-    setScreen("results");
+    // Go to partial results first (gated flow)
+    setScreen("partial-results");
   };
 
   // Handle email signup
@@ -678,17 +670,13 @@ export default function DiagnosticoPage() {
           actualRoute
         );
 
-        // Capture results snapshot for ThankYouScreen
-        setResultsSnapshot({
-          paesMin: calculatedResults.paesMin,
-          paesMax: calculatedResults.paesMax,
-          topRoute: topRouteInfo ?? undefined,
-        });
-
         // Clear all localStorage data after successful signup
         clearAllDiagnosticData();
         setSignupStatus("success");
-        setScreen("thankyou");
+
+        // Go to full results screen (with hasSignedUp=true)
+        // This is the endpoint for signed-up users
+        setScreen("results");
       } else {
         throw new Error(data.error || "Error al guardar");
       }
@@ -788,7 +776,43 @@ export default function DiagnosticoPage() {
     );
   }
 
-  // Results screen
+  // Partial Results screen (gated - shows score, teases full results)
+  if (screen === "partial-results") {
+    if (!route) {
+      console.error("Partial results screen rendered but route is not set");
+      return <MaintenanceScreen />;
+    }
+
+    // Get response counts (only scored responses for scoring)
+    const counts = getResponseCounts();
+    const actualRoute = getActualRouteFromStorage(route);
+
+    // Calculate results for display
+    const scoredResponses = reconstructFullResponses({ excludeOvertime: true });
+    const calculatedResults = calculateDiagnosticResults(
+      scoredResponses,
+      actualRoute
+    );
+
+    // Get potential improvement from learning routes (if available)
+    // This data comes from the useLearningRoutes hook in PartialResultsScreen
+    // For now, pass 0 and let the component handle it with generic messaging
+
+    return (
+      <PartialResultsScreen
+        paesMin={calculatedResults.paesMin}
+        paesMax={calculatedResults.paesMax}
+        totalCorrect={counts.scoredCorrect}
+        onContinue={() => setScreen("signup")}
+        onSkip={() => {
+          clearAllDiagnosticData();
+          setScreen("thankyou");
+        }}
+      />
+    );
+  }
+
+  // Full Results screen (shown after signup - this is the endpoint for signed-up users)
   if (screen === "results") {
     if (!route) {
       console.error("Results screen rendered but route is not set");
@@ -816,6 +840,9 @@ export default function DiagnosticoPage() {
     // Prepare responses for review drawer (show all answers for review)
     const responsesForReview = getResponsesForReview();
 
+    // Check if user has signed up (came through signup flow)
+    const hasSignedUp = signupStatus === "success";
+
     return (
       <ResultsScreen
         results={calculatedResults}
@@ -823,9 +850,9 @@ export default function DiagnosticoPage() {
         totalCorrect={counts.scoredCorrect}
         atomResults={atomResults}
         responses={responsesForReview}
-        onSignup={() => setScreen("signup")}
         onScoreCalculated={setConsistentScore}
         onTopRouteCalculated={setTopRouteInfo}
+        hasSignedUp={hasSignedUp}
       />
     );
   }
@@ -860,17 +887,9 @@ export default function DiagnosticoPage() {
     );
   }
 
-  // Thank you screen
+  // Thank you screen (only for users who skip signup)
   if (screen === "thankyou") {
-    return (
-      <ThankYouScreen
-        hasEmail={signupStatus === "success"}
-        onReconsider={
-          signupStatus !== "success" ? () => setScreen("signup") : undefined
-        }
-        resultsSnapshot={resultsSnapshot ?? undefined}
-      />
-    );
+    return <ThankYouScreen onReconsider={() => setScreen("signup")} />;
   }
 
   // Maintenance screen - shown when questions fail to load after retries

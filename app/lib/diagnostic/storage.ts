@@ -157,6 +157,7 @@ type Screen =
   | "welcome"
   | "question"
   | "transition"
+  | "partial-results"
   | "results"
   | "signup"
   | "thankyou"

@@ -1,5 +1,18 @@
 "use client";
 
+/**
+ * Signup Screen
+ *
+ * Collects user email to unlock full diagnostic results.
+ * Positioned after PartialResultsScreen to create a clear value exchange:
+ * email = access to detailed learning routes, question review, and recommendations.
+ *
+ * Conversion optimization:
+ * - Clear value proposition with unlock benefits list
+ * - Score reminder reinforces what they're saving
+ * - De-emphasized skip to reduce abandonment while respecting user choice
+ */
+
 import { useState, useEffect } from "react";
 import { LoadingButton } from "@/app/components/ui";
 
@@ -76,7 +89,7 @@ export function SignupScreen({
             className={`text-2xl sm:text-3xl font-serif font-bold text-charcoal mb-3 transition-all duration-700 delay-100
               ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
-            Guarda tu Progreso
+            Desbloquea tu Plan Personalizado
           </h2>
 
           {/* Score reminder - reinforces what they're saving */}
@@ -94,12 +107,66 @@ export function SignupScreen({
           )}
 
           <p
-            className={`text-cool-gray mb-8 transition-all duration-700 delay-200
+            className={`text-cool-gray mb-4 transition-all duration-700 delay-200
               ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
-            Ingresa tu email para guardar tu diagnóstico y recibir acceso cuando
-            la plataforma esté lista.
+            Ingresa tu email para ver tus resultados completos:
           </p>
+
+          {/* Unlock benefits list */}
+          <div
+            className={`text-left text-sm text-cool-gray space-y-2 mb-6 transition-all duration-700 delay-250
+              ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+          >
+            <div className="flex items-start gap-2">
+              <svg
+                className="w-4 h-4 text-success mt-0.5 shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              <span>Tu ruta de estudio personalizada</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <svg
+                className="w-4 h-4 text-success mt-0.5 shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              <span>Revisión detallada de cada respuesta</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <svg
+                className="w-4 h-4 text-success mt-0.5 shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              <span>Acceso prioritario cuando lancemos</span>
+            </div>
+          </div>
 
           <form
             onSubmit={onSubmit}
@@ -168,16 +235,16 @@ export function SignupScreen({
               type="submit"
               disabled={!email}
               isLoading={status === "loading"}
-              loadingText="Guardando..."
+              loadingText="Desbloqueando..."
               aria-label={
                 status === "loading"
-                  ? "Guardando email..."
-                  : "Guardar progreso y recibir acceso"
+                  ? "Desbloqueando resultados..."
+                  : "Ver mis resultados completos"
               }
               className="btn-cta w-full py-4 text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] 
                 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
-              Guardar mi progreso y recibir acceso
+              Ver mis resultados completos
               <svg
                 className="w-5 h-5 ml-2"
                 fill="none"
@@ -189,7 +256,7 @@ export function SignupScreen({
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M13 7l5 5m0 0l-5 5m5-5H6"
+                  d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"
                 />
               </svg>
             </LoadingButton>
@@ -201,14 +268,15 @@ export function SignupScreen({
             </p>
           </form>
 
+          {/* De-emphasized skip - subtle gray text, loss aversion framing */}
           <button
             onClick={onSkip}
-            aria-label="Continuar sin guardar email"
-            className={`mt-6 text-cool-gray hover:text-charcoal transition-all duration-300 text-sm 
-              hover:underline underline-offset-4 transition-all duration-700 delay-400
+            aria-label="Salir sin ver resultados completos"
+            className={`mt-8 text-xs text-gray-400 hover:text-gray-500 transition-colors
               ${isLoaded ? "opacity-100" : "opacity-0"}`}
+            style={{ transitionDelay: "400ms" }}
           >
-            Continuar sin guardar
+            Salir sin ver resultados
           </button>
         </div>
 
