@@ -18,13 +18,13 @@ function getConnectionString(): string {
   return url;
 }
 
-// Connection pool configuration optimized for serverless (Vercel)
-// Neon recommends these settings for serverless environments
+// Connection pool configuration optimized for serverless (Vercel + Neon)
+// Neon auto-suspends after inactivity; cold starts can take 5-10+ seconds
 function getConnectionOptions() {
   return {
     max: 1, // Serverless: one connection per function instance
     idle_timeout: 20, // Close idle connections quickly
-    connect_timeout: 10, // Reasonable timeout for serverless cold starts
+    connect_timeout: 30, // Extended for Neon cold starts (wake from suspend)
     connection: {
       statement_timeout: 15000, // Kill queries after 15 seconds
     },
