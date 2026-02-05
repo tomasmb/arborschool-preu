@@ -20,6 +20,7 @@
   "dependencies": {
     "@sentry/nextjs": "^10.38.0",
     "drizzle-orm": "^0.38.3",
+    "jsdom": "^27.0.1",
     "next": "15.5.10",
     "postgres": "^3.4.5",
     "posthog-js": "^1.335.2",
@@ -31,6 +32,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "@tailwindcss/postcss": "^4",
+    "@types/jsdom": "^27.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

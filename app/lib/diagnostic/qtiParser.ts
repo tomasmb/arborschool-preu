@@ -3,7 +3,11 @@
  *
  * Parses QTI XML format used for standardized test questions.
  * Preserves MathML, tables, and other rich content.
+ *
+ * Uses jsdom for server-side compatibility (DOMParser is browser-only).
  */
+
+import { JSDOM } from "jsdom";
 
 // ============================================================================
 // TYPES
@@ -38,12 +42,12 @@ function serializeNodeToHtml(node: Node): string {
     const el = node as Element;
     const tagName = el.localName || el.tagName.toLowerCase();
 
-    // Preserve MathML elements as-is
+    // Preserve MathML elements as-is (use outerHTML for server compatibility)
     if (
       tagName === "math" ||
       el.namespaceURI === "http://www.w3.org/1998/Math/MathML"
     ) {
-      return new XMLSerializer().serializeToString(el);
+      return (el as Element & { outerHTML: string }).outerHTML;
     }
 
     // Handle images
@@ -119,13 +123,14 @@ function serializeChildNodes(el: Element): string {
  * Parse QTI XML to extract question content and options.
  *
  * Supports both QTI 2.x and QTI 3.x element naming conventions.
+ * Uses jsdom for server-side compatibility.
  *
  * @param xmlString - Raw QTI XML string
  * @returns Parsed question with HTML content, options, and correct answer
  */
 export function parseQtiXml(xmlString: string): ParsedQuestion {
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+  const dom = new JSDOM(xmlString, { contentType: "text/xml" });
+  const xmlDoc = dom.window.document;
 
   // Extract question content (supports both QTI 2.x and 3.x)
   const itemBody = xmlDoc.querySelector("itemBody, qti-item-body");
