@@ -3,7 +3,15 @@
  *
  * Parses QTI XML format used for standardized test questions.
  * Preserves MathML, tables, and other rich content.
+ *
+ * Uses linkedom for server-side compatibility - designed for serverless environments.
  */
+
+import { parseHTML } from "linkedom";
+
+// Node type constants (browser globals not available in server environment)
+const ELEMENT_NODE = 1;
+const TEXT_NODE = 3;
 
 // ============================================================================
 // TYPES
@@ -30,20 +38,20 @@ export interface QuestionAtom {
  * Applies consistent Tailwind styling to elements.
  */
 function serializeNodeToHtml(node: Node): string {
-  if (node.nodeType === Node.TEXT_NODE) {
+  if (node.nodeType === TEXT_NODE) {
     return node.textContent || "";
   }
 
-  if (node.nodeType === Node.ELEMENT_NODE) {
+  if (node.nodeType === ELEMENT_NODE) {
     const el = node as Element;
     const tagName = el.localName || el.tagName.toLowerCase();
 
-    // Preserve MathML elements as-is
+    // Preserve MathML elements as-is (use outerHTML for linkedom compatibility)
     if (
       tagName === "math" ||
       el.namespaceURI === "http://www.w3.org/1998/Math/MathML"
     ) {
-      return new XMLSerializer().serializeToString(el);
+      return (el as unknown as { outerHTML: string }).outerHTML;
     }
 
     // Handle images
@@ -119,13 +127,14 @@ function serializeChildNodes(el: Element): string {
  * Parse QTI XML to extract question content and options.
  *
  * Supports both QTI 2.x and QTI 3.x element naming conventions.
+ * Uses jsdom for server-side compatibility.
  *
  * @param xmlString - Raw QTI XML string
  * @returns Parsed question with HTML content, options, and correct answer
  */
 export function parseQtiXml(xmlString: string): ParsedQuestion {
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+  // linkedom parseHTML handles XML content well for our QTI parsing needs
+  const { document: xmlDoc } = parseHTML(xmlString);
 
   // Extract question content (supports both QTI 2.x and 3.x)
   const itemBody = xmlDoc.querySelector("itemBody, qti-item-body");
@@ -162,7 +171,7 @@ function processItemBody(itemBody: Element): string {
   let html = "";
 
   itemBody.childNodes.forEach((child) => {
-    if (child.nodeType === Node.ELEMENT_NODE) {
+    if (child.nodeType === ELEMENT_NODE) {
       const el = child as Element;
       const tagName = el.localName || el.tagName.toLowerCase();
       // Skip QTI interaction elements - these are handled separately
@@ -178,7 +187,7 @@ function processItemBody(itemBody: Element): string {
     if (content.trim()) {
       // Wrap loose text/content in paragraph if not already wrapped
       if (
-        child.nodeType === Node.ELEMENT_NODE &&
+        child.nodeType === ELEMENT_NODE &&
         ["p", "div", "table"].includes(
           (
             (child as Element).localName || (child as Element).tagName

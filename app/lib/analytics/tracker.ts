@@ -250,7 +250,38 @@ export function trackDiagnosticCompleted(
 }
 
 /**
- * Tracks results screen view. Call when results screen mounts.
+ * Tracks partial results screen view (gated screen before signup).
+ * Call when partial results screen mounts.
+ */
+export function trackPartialResultsViewed(
+  paesScoreMin: number,
+  paesScoreMax: number,
+  performanceTier: AnalyticsEventMap["partial_results_viewed"]["performance_tier"],
+  totalCorrect: number
+): void {
+  trackEvent("partial_results_viewed", {
+    paes_score_min: paesScoreMin,
+    paes_score_max: paesScoreMax,
+    performance_tier: performanceTier,
+    total_correct: totalCorrect,
+  });
+}
+
+/**
+ * Tracks CTA click on partial results screen. Call when user clicks to continue to signup.
+ */
+export function trackPartialResultsCtaClicked(
+  performanceTier: AnalyticsEventMap["partial_results_cta_clicked"]["performance_tier"],
+  ctaLabel: string
+): void {
+  trackEvent("partial_results_cta_clicked", {
+    performance_tier: performanceTier,
+    cta_label: ctaLabel,
+  });
+}
+
+/**
+ * Tracks full results screen view. Call when results screen mounts.
  */
 export function trackResultsViewed(
   paesScoreMin: number,
@@ -267,20 +298,6 @@ export function trackResultsViewed(
     total_correct: totalCorrect,
     route,
     cta_label: ctaLabel,
-  });
-}
-
-/**
- * Tracks CTA click on results screen. Call when user clicks signup CTA.
- */
-export function trackResultsCtaClicked(
-  performanceTier: AnalyticsEventMap["results_cta_clicked"]["performance_tier"],
-  ctaLabel: string
-): void {
-  trackEvent("results_cta_clicked", {
-    performance_tier: performanceTier,
-    cta_label: ctaLabel,
-    signup_intent: "access_waitlist",
   });
 }
 

@@ -25,7 +25,11 @@ interface QuestionScreenProps {
   isDontKnow: boolean;
   onSelectAnswer: (answer: string) => void;
   onSelectDontKnow: () => void;
-  onNext: (correctAnswer: string | null, atoms: QuestionAtom[]) => void;
+  onNext: (
+    correctAnswer: string | null,
+    atoms: QuestionAtom[],
+    alternateQuestionId: string | null
+  ) => void;
   onFatalError: () => void;
 }
 
@@ -128,6 +132,10 @@ export const QuestionScreen = memo(function QuestionScreen({
     null
   );
   const [isExiting, setIsExiting] = useState(false);
+  // Store the actual alternate question ID for accurate review later
+  const [alternateQuestionId, setAlternateQuestionId] = useState<string | null>(
+    null
+  );
 
   const canProceed = selectedAnswer !== null || isDontKnow;
   const MAX_RETRIES = 2;
@@ -165,6 +173,8 @@ export const QuestionScreen = memo(function QuestionScreen({
           }
           parsed.atoms = data.question.atoms;
           setParsedQuestion(parsed);
+          // Store the actual alternate question ID for accurate review
+          setAlternateQuestionId(data.question.id || null);
           setError(null);
         } else {
           console.error("API error:", data.error);
@@ -191,7 +201,11 @@ export const QuestionScreen = memo(function QuestionScreen({
     }
     setIsExiting(true);
     setTimeout(() => {
-      onNext(parsedQuestion.correctAnswer ?? null, parsedQuestion.atoms);
+      onNext(
+        parsedQuestion.correctAnswer ?? null,
+        parsedQuestion.atoms,
+        alternateQuestionId
+      );
     }, 200);
   };
 

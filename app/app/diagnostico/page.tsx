@@ -31,6 +31,7 @@ import {
   reconstructFullResponses,
   getActualRouteFromStorage,
   getResponseCounts,
+  type ResponseForReview,
 } from "@/lib/diagnostic/storage";
 import { type QuestionAtom } from "@/lib/diagnostic/qtiParser";
 import { getPerformanceTier } from "@/lib/config/tiers";
@@ -44,6 +45,7 @@ import {
   WelcomeScreen,
   QuestionScreen,
   TransitionScreen,
+  PartialResultsScreen,
   ResultsScreen,
   SignupScreen,
   ThankYouScreen,
@@ -53,6 +55,10 @@ import {
   TimeUpModal,
   type TopRouteInfo,
 } from "./components";
+import {
+  type LearningRoutesResponse,
+  sortRoutesByImpact,
+} from "./hooks/useLearningRoutes";
 
 // ============================================================================
 // TYPES
@@ -62,6 +68,7 @@ type Screen =
   | "welcome"
   | "question"
   | "transition"
+  | "partial-results"
   | "results"
   | "signup"
   | "thankyou"
@@ -106,17 +113,28 @@ export default function DiagnosticoPage() {
   >("idle");
   const [signupError, setSignupError] = useState("");
 
-  // Results snapshot for ThankYouScreen (captured on successful signup)
-  const [resultsSnapshot, setResultsSnapshot] = useState<{
-    paesMin: number;
-    paesMax: number;
-    topRoute?: {
-      name: string;
-      questionsUnlocked: number;
-      pointsGain: number;
-      studyHours: number;
-    };
-  } | null>(null);
+  // Cached data for results screen after signup (localStorage gets cleared)
+  const [cachedResponsesForReview, setCachedResponsesForReview] = useState<
+    ResponseForReview[]
+  >([]);
+  const [cachedResults, setCachedResults] = useState<DiagnosticResults | null>(
+    null
+  );
+  const [cachedAtomResults, setCachedAtomResults] = useState<
+    { atomId: string; mastered: boolean }[]
+  >([]);
+  const [cachedScoredCorrect, setCachedScoredCorrect] = useState<number>(0);
+  const [cachedActualRoute, setCachedActualRoute] = useState<Route | null>(
+    null
+  );
+
+  // Learning routes state (fetched when showing partial results)
+  const [routesData, setRoutesData] = useState<LearningRoutesResponse | null>(
+    null
+  );
+  const [routesLoading, setRoutesLoading] = useState(false);
+  const [cachedRoutesData, setCachedRoutesData] =
+    useState<LearningRoutesResponse | null>(null);
 
   // Timer and tracking state
   const [attemptId, setAttemptId] = useState<string | null>(null);
@@ -286,7 +304,14 @@ export default function DiagnosticoPage() {
     );
     setResults(calculatedResults);
 
-    setScreen("results");
+    // Set consistent score for signup screen (midpoint of range)
+    const midScore = Math.round(
+      (calculatedResults.paesMin + calculatedResults.paesMax) / 2
+    );
+    setConsistentScore(midScore);
+
+    // Go to partial results first (gated flow)
+    setScreen("partial-results");
   }, []);
 
   // Timer effect - only runs if time hasn't expired yet
@@ -403,7 +428,11 @@ export default function DiagnosticoPage() {
 
   // Submit response and advance (memoized to prevent QuestionScreen re-renders from timer)
   const handleNext = useCallback(
-    async (correctAnswer: string | null, atoms: QuestionAtom[]) => {
+    async (
+      correctAnswer: string | null,
+      atoms: QuestionAtom[],
+      alternateQuestionId: string | null
+    ) => {
       const question = getCurrentQuestion();
       const responseTime = Math.floor(
         (Date.now() - questionStartTime.current) / 1000
@@ -443,6 +472,7 @@ export default function DiagnosticoPage() {
         answeredAt: new Date().toISOString(),
         atoms: atoms.map((a) => ({ atomId: a.atomId, relevance: a.relevance })),
         answeredAfterTimeUp: timeExpiredAt !== null,
+        alternateQuestionId: alternateQuestionId ?? undefined,
       });
 
       // Also save response to API if we have a valid (non-local) attempt
@@ -581,7 +611,7 @@ export default function DiagnosticoPage() {
     }
   };
 
-  // Shared results display logic
+  // Shared results display logic - shows partial results first (gated flow)
   const showResults = () => {
     if (!route) {
       console.error("showResults called but route is not set");
@@ -598,12 +628,55 @@ export default function DiagnosticoPage() {
     );
     setResults(calculatedResults);
 
+    // Set consistent score for signup screen (midpoint of range)
+    const midScore = Math.round(
+      (calculatedResults.paesMin + calculatedResults.paesMax) / 2
+    );
+    setConsistentScore(midScore);
+
+    // Compute atom mastery from ALL responses (for learning routes)
+    const allResponses = reconstructFullResponses();
+    const atomResults = computeAtomMastery(allResponses);
+
+    // Fetch learning routes for improvement data (used in PartialResultsScreen)
+    fetchLearningRoutes(atomResults, midScore);
+
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
 
-    setScreen("results");
+    // Go to partial results first (gated flow)
+    setScreen("partial-results");
+  };
+
+  // Fetch learning routes for improvement predictions
+  const fetchLearningRoutes = async (
+    atomResults: { atomId: string; mastered: boolean }[],
+    diagnosticScore: number
+  ) => {
+    setRoutesLoading(true);
+    try {
+      const response = await fetch("/api/diagnostic/learning-routes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ atomResults, diagnosticScore }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      if (result.success && result.data) {
+        setRoutesData(result.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch learning routes:", error);
+      // Routes will remain null - UI will show generic message
+    } finally {
+      setRoutesLoading(false);
+    }
   };
 
   // Handle email signup
@@ -678,17 +751,23 @@ export default function DiagnosticoPage() {
           actualRoute
         );
 
-        // Capture results snapshot for ThankYouScreen
-        setResultsSnapshot({
-          paesMin: calculatedResults.paesMin,
-          paesMax: calculatedResults.paesMax,
-          topRoute: topRouteInfo ?? undefined,
-        });
+        // Cache ALL data BEFORE clearing localStorage
+        // ResultsScreen needs these since localStorage will be cleared
+        const responsesToCache = getResponsesForReview();
+        setCachedResponsesForReview(responsesToCache);
+        setCachedResults(calculatedResults);
+        setCachedAtomResults(atomResults);
+        setCachedScoredCorrect(counts.scoredCorrect);
+        setCachedActualRoute(actualRoute);
+        setCachedRoutesData(routesData);
 
         // Clear all localStorage data after successful signup
         clearAllDiagnosticData();
         setSignupStatus("success");
-        setScreen("thankyou");
+
+        // Go to full results screen (with hasSignedUp=true)
+        // This is the endpoint for signed-up users
+        setScreen("results");
       } else {
         throw new Error(data.error || "Error al guardar");
       }
@@ -788,10 +867,10 @@ export default function DiagnosticoPage() {
     );
   }
 
-  // Results screen
-  if (screen === "results") {
+  // Partial Results screen (gated - shows score, teases full results)
+  if (screen === "partial-results") {
     if (!route) {
-      console.error("Results screen rendered but route is not set");
+      console.error("Partial results screen rendered but route is not set");
       return <MaintenanceScreen />;
     }
 
@@ -799,33 +878,99 @@ export default function DiagnosticoPage() {
     const counts = getResponseCounts();
     const actualRoute = getActualRouteFromStorage(route);
 
-    // Only use responses answered before time expired for scoring
+    // Calculate results for display
     const scoredResponses = reconstructFullResponses({ excludeOvertime: true });
-
-    // ALWAYS recalculate results from scored responses only (source of truth)
-    // This ensures axisPerformance and skillPerformance are correct after refresh
     const calculatedResults = calculateDiagnosticResults(
       scoredResponses,
       actualRoute
     );
 
-    // Compute atom results from ALL responses (including overtime - for diagnostic)
-    const allResponses = reconstructFullResponses();
-    const atomResults = computeAtomMastery(allResponses);
+    // Get improvement data from the top route (if routes have loaded)
+    let potentialImprovement = 0;
+    let studyHours = 0;
+    if (routesData?.routes && routesData.routes.length > 0) {
+      const sortedRoutes = sortRoutesByImpact(routesData.routes);
+      potentialImprovement = sortedRoutes[0].pointsGain;
+      studyHours = sortedRoutes[0].studyHours;
+    }
 
-    // Prepare responses for review drawer (show all answers for review)
-    const responsesForReview = getResponsesForReview();
+    return (
+      <PartialResultsScreen
+        paesMin={calculatedResults.paesMin}
+        paesMax={calculatedResults.paesMax}
+        totalCorrect={counts.scoredCorrect}
+        potentialImprovement={potentialImprovement}
+        studyHours={studyHours}
+        routesLoading={routesLoading}
+        onContinue={() => setScreen("signup")}
+        onSkip={() => {
+          clearAllDiagnosticData();
+          setScreen("thankyou");
+        }}
+      />
+    );
+  }
+
+  // Full Results screen (shown after signup - this is the endpoint for signed-up users)
+  if (screen === "results") {
+    // Check if user has signed up (came through signup flow)
+    const hasSignedUp = signupStatus === "success";
+
+    // After signup, localStorage is cleared - use cached data
+    // Otherwise (session restore, etc.) read from localStorage
+    let finalResults: DiagnosticResults;
+    let finalAtomResults: { atomId: string; mastered: boolean }[];
+    let finalScoredCorrect: number;
+    let finalRoute: Route;
+    let responsesForReview: ResponseForReview[];
+    let precomputedRoutes: LearningRoutesResponse | null = null;
+
+    if (hasSignedUp && cachedResults && cachedActualRoute) {
+      // Use cached data (localStorage was cleared after signup)
+      finalResults = cachedResults;
+      finalAtomResults = cachedAtomResults;
+      finalScoredCorrect = cachedScoredCorrect;
+      finalRoute = cachedActualRoute;
+      responsesForReview = cachedResponsesForReview;
+      precomputedRoutes = cachedRoutesData;
+    } else {
+      // Read from localStorage (session restore or non-signup flow)
+      if (!route) {
+        console.error("Results screen rendered but route is not set");
+        return <MaintenanceScreen />;
+      }
+
+      const counts = getResponseCounts();
+      const actualRoute = getActualRouteFromStorage(route);
+      const scoredResponses = reconstructFullResponses({
+        excludeOvertime: true,
+      });
+      const calculatedResults = calculateDiagnosticResults(
+        scoredResponses,
+        actualRoute
+      );
+      const allResponses = reconstructFullResponses();
+      const atomResults = computeAtomMastery(allResponses);
+
+      finalResults = calculatedResults;
+      finalAtomResults = atomResults;
+      finalScoredCorrect = counts.scoredCorrect;
+      finalRoute = actualRoute;
+      responsesForReview = getResponsesForReview();
+      precomputedRoutes = routesData;
+    }
 
     return (
       <ResultsScreen
-        results={calculatedResults}
-        route={actualRoute}
-        totalCorrect={counts.scoredCorrect}
-        atomResults={atomResults}
+        results={finalResults}
+        route={finalRoute}
+        totalCorrect={finalScoredCorrect}
+        atomResults={finalAtomResults}
         responses={responsesForReview}
-        onSignup={() => setScreen("signup")}
         onScoreCalculated={setConsistentScore}
         onTopRouteCalculated={setTopRouteInfo}
+        hasSignedUp={hasSignedUp}
+        precomputedRoutes={precomputedRoutes ?? undefined}
       />
     );
   }
@@ -860,17 +1005,9 @@ export default function DiagnosticoPage() {
     );
   }
 
-  // Thank you screen
+  // Thank you screen (only for users who skip signup)
   if (screen === "thankyou") {
-    return (
-      <ThankYouScreen
-        hasEmail={signupStatus === "success"}
-        onReconsider={
-          signupStatus !== "success" ? () => setScreen("signup") : undefined
-        }
-        resultsSnapshot={resultsSnapshot ?? undefined}
-      />
-    );
+    return <ThankYouScreen onReconsider={() => setScreen("signup")} />;
   }
 
   // Maintenance screen - shown when questions fail to load after retries

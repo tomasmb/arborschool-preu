@@ -50,6 +50,8 @@ export interface StoredResponse {
   atoms?: StoredAtom[];
   /** Whether this response was submitted after the timer expired (for diagnostic only) */
   answeredAfterTimeUp?: boolean;
+  /** The actual alternate question ID shown (for accurate review) */
+  alternateQuestionId?: string;
 }
 
 // ============================================================================
@@ -157,6 +159,7 @@ type Screen =
   | "welcome"
   | "question"
   | "transition"
+  | "partial-results"
   | "results"
   | "signup"
   | "thankyou"
@@ -275,6 +278,8 @@ export interface ResponseForReview {
   question: MSTQuestion;
   selectedAnswer: string | null;
   isCorrect: boolean;
+  /** The actual alternate question ID shown (for accurate review) */
+  alternateQuestionId?: string;
 }
 
 /**
@@ -316,6 +321,7 @@ export function getResponsesForReview(): ResponseForReview[] {
       question,
       selectedAnswer: stored.selectedAnswer,
       isCorrect: stored.isCorrect,
+      alternateQuestionId: stored.alternateQuestionId,
     });
   }
 

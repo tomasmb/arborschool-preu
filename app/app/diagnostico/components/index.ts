@@ -4,6 +4,7 @@
 export { WelcomeScreen } from "./WelcomeScreen";
 export { QuestionScreen } from "./QuestionScreen";
 export { TransitionScreen } from "./TransitionScreen";
+export { PartialResultsScreen } from "./PartialResultsScreen";
 export {
   ResultsScreen,
   type AtomResult,
@@ -32,3 +33,4 @@ export {
   TimeUpModal,
   OvertimeIndicator,
 } from "./shared";
+export { ImprovementHeroCard, formatStudyTime } from "./ImprovementHeroCard";

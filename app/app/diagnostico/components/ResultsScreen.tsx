@@ -1,7 +1,20 @@
 "use client";
 
+/**
+ * Full Results Screen
+ *
+ * Shows complete diagnostic results including learning routes, question review,
+ * and personalized recommendations. This is the endpoint for signed-up users.
+ *
+ * When hasSignedUp=true (user came from signup flow):
+ * - Shows success banner confirming signup
+ * - Hides signup CTA (already done)
+ * - Shows "Volver al Inicio" link at bottom
+ */
+
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Confetti } from "./Confetti";
 import { Icons, AnimatedCounter } from "./shared";
 import {
@@ -19,14 +32,9 @@ import {
   isLowSignalTier,
   getNextConceptsConfig,
 } from "@/lib/config";
-import {
-  trackResultsViewed,
-  trackResultsCtaClicked,
-  trackRouteExplored,
-} from "@/lib/analytics";
+import { trackResultsViewed, trackRouteExplored } from "@/lib/analytics";
 import {
   TierHeadline,
-  TierMessageCard,
   LimitationCopy,
   GenericNextStep,
   SecondaryScoreDisplay,
@@ -34,6 +42,7 @@ import {
   shouldShowRoutes,
   getScoreEmphasis,
 } from "./TierContent";
+import { ImprovementHeroCard } from "./ImprovementHeroCard";
 import {
   buildNextConceptsFromResponses,
   type ResultsScreenProps,
@@ -85,6 +94,7 @@ export function ResultsScreen({
   onTopRouteCalculated,
   precomputedRoutes,
   precomputedNextConcepts,
+  hasSignedUp = false,
 }: ResultsScreenProps) {
   const [showContent, setShowContent] = useState(false);
   const [showReviewDrawer, setShowReviewDrawer] = useState(false);
@@ -214,10 +224,9 @@ export function ResultsScreen({
     }
   }, [results.paesMin, results.paesMax, performanceTier, totalCorrect, route]);
 
-  // Handler for CTA click with analytics tracking
+  // Handler for CTA click (only used in ExampleResultsModal preview)
   const handleCtaClick = () => {
-    trackResultsCtaClicked(performanceTier, CTA_LABEL);
-    onSignup();
+    onSignup?.();
   };
 
   // Handler for route exploration toggle with analytics tracking
@@ -261,6 +270,30 @@ export function ResultsScreen({
             </div>
           </div>
 
+          {/* Success Banner - shown when user signed up */}
+          {hasSignedUp && (
+            <div className={`mb-6 ${getAnimationClasses(showContent)}`}>
+              <div className="flex items-center justify-center gap-2 p-4 bg-gradient-to-r from-success/10 to-success/5 border border-success/20 rounded-xl">
+                <svg
+                  className="w-5 h-5 text-success shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                <span className="text-success font-medium">
+                  Tu diagnóstico está guardado. Te avisamos cuando lancemos.
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Limitation Copy (for low-signal tiers - shown first) */}
           {isLowSignal && (
             <div className={`mb-6 ${getAnimationClasses(showContent)}`}>
@@ -296,17 +329,43 @@ export function ResultsScreen({
             </div>
           )}
 
-          {/* Question Review Link (early - users want to know WHY) */}
-          {responsesForReview.length > 0 && (
+          {/* Question Review Card - prominent for signed-up users (their reward) */}
+          {hasSignedUp && responsesForReview.length > 0 && (
             <div
-              className={`text-center mb-6 ${getAnimationClasses(showContent, "100")}`}
+              className={`mb-6 ${getAnimationClasses(showContent, "100")}`}
             >
               <button
                 onClick={() => setShowReviewDrawer(true)}
-                className="text-primary text-sm hover:text-primary-light transition-colors inline-flex items-center gap-1.5 font-medium"
+                className="w-full max-w-md mx-auto flex items-center gap-4 p-4 rounded-xl 
+                  bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20
+                  hover:from-primary/15 hover:to-primary/10 hover:border-primary/30
+                  transition-all duration-300 group"
               >
+                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                  <svg
+                    className="w-6 h-6 text-primary"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                    />
+                  </svg>
+                </div>
+                <div className="flex-1 text-left">
+                  <div className="font-semibold text-charcoal">
+                    Revisar mis respuestas
+                  </div>
+                  <div className="text-sm text-cool-gray">
+                    {responsesForReview.length} preguntas · Ver correctas e incorrectas
+                  </div>
+                </div>
                 <svg
-                  className="w-4 h-4"
+                  className="w-5 h-5 text-primary group-hover:translate-x-1 transition-transform"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -315,10 +374,9 @@ export function ResultsScreen({
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                    d="M9 5l7 7-7 7"
                   />
                 </svg>
-                Revisar mis respuestas
               </button>
             </div>
           )}
@@ -340,27 +398,29 @@ export function ResultsScreen({
             </div>
           )}
 
-          {/* Improvement Message Card */}
+          {/* Improvement Hero Card - Key value proposition */}
           <div
-            className={`text-center mb-6 ${getAnimationClasses(showContent, "250")}`}
+            className={`mb-6 ${getAnimationClasses(showContent, "250")}`}
           >
-            <TierMessageCard
-              tier={performanceTier}
+            <ImprovementHeroCard
               potentialImprovement={potentialImprovement}
               studyHours={studyHours}
-              isHighMastery={isHighMastery}
+              variant="hero"
+              isLoading={routesLoading}
             />
           </div>
 
-          {/* Primary CTA (early - right after value proposition) */}
-          <div
-            className={`text-center mb-6 ${getAnimationClasses(showContent, "300")}`}
-          >
-            <CtaButton onClick={handleCtaClick} ctaLabel={CTA_LABEL} />
-            <p className="text-xs text-cool-gray mt-3 max-w-md mx-auto">
-              {EXPECTATION_LINE}
-            </p>
-          </div>
+          {/* Primary CTA (early - right after value proposition) - hidden if already signed up */}
+          {!hasSignedUp && (
+            <div
+              className={`text-center mb-6 ${getAnimationClasses(showContent, "300")}`}
+            >
+              <CtaButton onClick={handleCtaClick} ctaLabel={CTA_LABEL} />
+              <p className="text-xs text-cool-gray mt-3 max-w-md mx-auto">
+                {EXPECTATION_LINE}
+              </p>
+            </div>
+          )}
 
           {/* Generic Next Step (for tiers without calculated routes) */}
           {!showRoutes && (
@@ -369,56 +429,14 @@ export function ResultsScreen({
             </div>
           )}
 
-          {/* "Explorar mi ruta" toggle - contains all route details */}
+          {/* Routes Section - Direct display for signed-up users, toggle for preview */}
           {showRoutes && (
             <div
-              className={`text-center mb-6 ${getAnimationClasses(showContent, "350")}`}
+              className={`mb-6 ${getAnimationClasses(showContent, "350")}`}
             >
-              <button
-                onClick={handleRouteToggle}
-                className="text-primary text-sm font-medium flex items-center gap-1.5 mx-auto hover:text-primary-light transition-colors"
-                aria-expanded={showMoreDetails}
-              >
-                {showMoreDetails ? (
-                  <>
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 15l7-7 7 7"
-                      />
-                    </svg>
-                    Ocultar detalles
-                  </>
-                ) : (
-                  <>
-                    Explorar mi ruta personalizada
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </>
-                )}
-              </button>
-
-              {/* Expanded content - all route details inside toggle */}
-              {showMoreDetails && (
-                <div className="mt-6 space-y-6 animate-fadeIn text-left">
+              {/* For signed-up users: show routes directly (no toggle) */}
+              {hasSignedUp ? (
+                <div className="space-y-6 text-left">
                   {/* Recommended Route Card */}
                   <div>
                     <p className="text-sm text-cool-gray mb-3 text-center">
@@ -459,49 +477,197 @@ export function ResultsScreen({
                     />
                   )}
 
-                  {/* Other Routes */}
+                  {/* Other Routes - Collapsible for less visual clutter */}
                   {sortedRoutes.length > 1 && (
                     <div>
-                      <p className="text-sm text-cool-gray mb-3 text-center">
-                        Otras rutas disponibles
-                      </p>
-                      <div className="space-y-3">
-                        {sortedRoutes.slice(1, 4).map((route) => (
-                          <SimpleRouteCard
-                            key={route.axis}
-                            route={route}
-                            isRecommended={false}
+                      <button
+                        onClick={handleRouteToggle}
+                        className="w-full text-primary text-sm font-medium flex items-center justify-center gap-1.5 py-2 hover:text-primary-light transition-colors"
+                        aria-expanded={showMoreDetails}
+                      >
+                        {showMoreDetails ? (
+                          <>
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5 15l7-7 7 7"
+                              />
+                            </svg>
+                            Ocultar otras rutas
+                          </>
+                        ) : (
+                          <>
+                            Ver otras rutas disponibles ({sortedRoutes.length - 1})
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 9l-7 7-7-7"
+                              />
+                            </svg>
+                          </>
+                        )}
+                      </button>
+                      {showMoreDetails && (
+                        <div className="mt-3 space-y-3 animate-fadeIn">
+                          {sortedRoutes.slice(1, 4).map((route) => (
+                            <SimpleRouteCard
+                              key={route.axis}
+                              route={route}
+                              isRecommended={false}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* For preview mode (not signed up): keep toggle behavior */
+                <div className="text-center">
+                  <button
+                    onClick={handleRouteToggle}
+                    className="text-primary text-sm font-medium flex items-center gap-1.5 mx-auto hover:text-primary-light transition-colors"
+                    aria-expanded={showMoreDetails}
+                  >
+                    {showMoreDetails ? (
+                      <>
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 15l7-7 7 7"
                           />
-                        ))}
+                        </svg>
+                        Ocultar detalles
+                      </>
+                    ) : (
+                      <>
+                        Explorar mi ruta personalizada
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 9l-7 7-7-7"
+                          />
+                        </svg>
+                      </>
+                    )}
+                  </button>
+
+                  {/* Expanded content for preview mode */}
+                  {showMoreDetails && (
+                    <div className="mt-6 space-y-6 animate-fadeIn text-left">
+                      {/* Recommended Route Card */}
+                      <div>
+                        <p className="text-sm text-cool-gray mb-3 text-center">
+                          Tu ruta de mayor impacto:
+                        </p>
+                        {routesLoading ? (
+                          <div className="card p-6 flex justify-center">
+                            <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+                          </div>
+                        ) : sortedRoutes.length > 0 ? (
+                          <SimpleRouteCard
+                            route={sortedRoutes[0]}
+                            isRecommended={true}
+                          />
+                        ) : null}
+                      </div>
+
+                      {/* Low Hanging Fruit */}
+                      {routesData?.lowHangingFruit &&
+                        routesData.lowHangingFruit.oneAway > 0 && (
+                          <div className="flex items-center justify-center gap-2 text-sm text-cool-gray">
+                            {Icons.lightbulb("w-4 h-4 text-success")}
+                            <span>
+                              Tienes{" "}
+                              <strong className="text-success">
+                                {routesData.lowHangingFruit.oneAway}
+                              </strong>{" "}
+                              preguntas a 1 sola mini-clase de distancia.
+                            </span>
+                          </div>
+                        )}
+
+                      {/* Next Mini-Clases */}
+                      {showNextConcepts && nextConcepts.length > 0 && (
+                        <NextConceptsPreview
+                          tier={performanceTier}
+                          concepts={nextConcepts}
+                        />
+                      )}
+
+                      {/* Other Routes */}
+                      {sortedRoutes.length > 1 && (
+                        <div>
+                          <p className="text-sm text-cool-gray mb-3 text-center">
+                            Otras rutas disponibles
+                          </p>
+                          <div className="space-y-3">
+                            {sortedRoutes.slice(1, 4).map((route) => (
+                              <SimpleRouteCard
+                                key={route.axis}
+                                route={route}
+                                isRecommended={false}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Secondary CTA for preview mode */}
+                      <div className="text-center pt-4 border-t border-gray-100">
+                        <p className="text-sm text-cool-gray mb-3">
+                          ¿Listo para comenzar tu ruta?
+                        </p>
+                        <button
+                          onClick={handleCtaClick}
+                          className="inline-flex items-center gap-2 px-6 py-3 bg-primary/10 text-primary font-semibold rounded-xl hover:bg-primary/20 transition-colors"
+                        >
+                          Continuar
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M13 7l5 5m0 0l-5 5m5-5H6"
+                            />
+                          </svg>
+                        </button>
                       </div>
                     </div>
                   )}
-
-                  {/* Secondary CTA inside toggle for engaged readers */}
-                  <div className="text-center pt-4 border-t border-gray-100">
-                    <p className="text-sm text-cool-gray mb-3">
-                      ¿Listo para comenzar tu ruta?
-                    </p>
-                    <button
-                      onClick={handleCtaClick}
-                      className="inline-flex items-center gap-2 px-6 py-3 bg-primary/10 text-primary font-semibold rounded-xl hover:bg-primary/20 transition-colors"
-                    >
-                      Continuar
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M13 7l5 5m0 0l-5 5m5-5H6"
-                        />
-                      </svg>
-                    </button>
-                  </div>
                 </div>
               )}
             </div>
@@ -515,6 +681,36 @@ export function ResultsScreen({
                 scoreMax={scoreMax}
                 tier={performanceTier}
               />
+            </div>
+          )}
+
+          {/* Home Link - shown when user signed up (this is the endpoint) */}
+          {hasSignedUp && (
+            <div
+              className={`text-center mt-10 pb-8 ${getAnimationClasses(showContent, "500")}`}
+            >
+              <Link
+                href="/"
+                className="btn-cta inline-flex items-center gap-2 px-8 py-4 text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300"
+              >
+                Volver al Inicio
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                  />
+                </svg>
+              </Link>
+              <p className="text-sm text-cool-gray mt-4">
+                Esta experiencia fue solo el comienzo
+              </p>
             </div>
           )}
         </div>

@@ -9,13 +9,19 @@ import { parseQtiXml } from "@/lib/diagnostic/qtiParser";
  *
  * Fetch question content for review after diagnostic.
  * Returns QTI XML and correct answer (parsed from qtiXml) for each question.
- * Always returns alternate questions (never official ones).
+ *
+ * When alternateQuestionId is provided, fetches that exact question.
+ * Otherwise falls back to fetching any alternate by parent question ID.
  *
  * Note: correctAnswer is parsed from qtiXml (single source of truth)
  *
  * Request body:
  * {
- *   questions: Array<{ exam: string, questionNumber: string }>
+ *   questions: Array<{
+ *     exam: string,
+ *     questionNumber: string,
+ *     alternateQuestionId?: string  // The exact alternate shown during diagnostic
+ *   }>
  * }
  */
 export async function POST(request: NextRequest) {
@@ -30,52 +36,97 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Build parent question IDs to find alternates
-    // Format: exam-Q{num} (e.g., "prueba-invierno-2025-Q28")
-    const parentQuestionIds = questionRefs.map((q) => {
+    // Separate questions with exact IDs from those needing parent lookup
+    const exactIds: string[] = [];
+    const parentLookups: { parentId: string; exam: string; qNum: number }[] = [];
+
+    for (const q of questionRefs) {
       const exam = q.exam.toLowerCase();
       const qNum = parseInt(q.questionNumber.replace(/\D/g, ""), 10);
-      return `${exam}-Q${qNum}`;
-    });
+      const parentId = `${exam}-Q${qNum}`;
 
-    // Fetch alternate questions by parent_question_id
-    const matchedQuestions = await db
-      .select({
-        id: questions.id,
-        qtiXml: questions.qtiXml,
-        title: questions.title,
-        parentQuestionId: questions.parentQuestionId,
-      })
-      .from(questions)
-      .where(
-        and(
-          inArray(questions.parentQuestionId, parentQuestionIds),
-          eq(questions.source, "alternate")
-        )
-      );
+      if (q.alternateQuestionId) {
+        exactIds.push(q.alternateQuestionId);
+      } else {
+        parentLookups.push({ parentId, exam, qNum });
+      }
+    }
 
-    // Build response map keyed by parent question ID (exam-Q{num})
     const questionDataMap: Record<string, QuestionReviewData> = {};
 
-    for (const q of matchedQuestions) {
-      // Use parent question ID as the key (matches frontend expectations)
-      const key = q.parentQuestionId!;
+    // Fetch questions by exact alternate ID (most accurate)
+    if (exactIds.length > 0) {
+      const exactQuestions = await db
+        .select({
+          id: questions.id,
+          qtiXml: questions.qtiXml,
+          title: questions.title,
+          parentQuestionId: questions.parentQuestionId,
+        })
+        .from(questions)
+        .where(inArray(questions.id, exactIds));
 
-      // Parse qtiXml to extract correctAnswer (single source of truth)
-      const parsed = parseQtiXml(q.qtiXml);
+      for (const q of exactQuestions) {
+        // Key by parent question ID to match frontend expectations
+        const key = q.parentQuestionId!;
+        const parsed = parseQtiXml(q.qtiXml);
 
-      // Normalize correct answer (ChoiceA -> A)
-      let correctAnswer = parsed.correctAnswer;
-      if (correctAnswer?.startsWith("Choice")) {
-        correctAnswer = correctAnswer.replace("Choice", "");
+        let correctAnswer = parsed.correctAnswer;
+        if (correctAnswer?.startsWith("Choice")) {
+          correctAnswer = correctAnswer.replace("Choice", "");
+        }
+
+        questionDataMap[key] = {
+          id: q.id,
+          qtiXml: q.qtiXml,
+          correctAnswer,
+          title: q.title,
+        };
       }
+    }
 
-      questionDataMap[key] = {
-        id: q.id,
-        qtiXml: q.qtiXml,
-        correctAnswer,
-        title: q.title,
-      };
+    // Fallback: fetch alternates by parent ID for questions without exact ID
+    if (parentLookups.length > 0) {
+      const parentIds = parentLookups.map((p) => p.parentId);
+      // Only fetch for parent IDs not already resolved
+      const missingParentIds = parentIds.filter((id) => !questionDataMap[id]);
+
+      if (missingParentIds.length > 0) {
+        const fallbackQuestions = await db
+          .select({
+            id: questions.id,
+            qtiXml: questions.qtiXml,
+            title: questions.title,
+            parentQuestionId: questions.parentQuestionId,
+          })
+          .from(questions)
+          .where(
+            and(
+              inArray(questions.parentQuestionId, missingParentIds),
+              eq(questions.source, "alternate")
+            )
+          );
+
+        for (const q of fallbackQuestions) {
+          const key = q.parentQuestionId!;
+          // Only add if not already present (exact ID takes precedence)
+          if (!questionDataMap[key]) {
+            const parsed = parseQtiXml(q.qtiXml);
+
+            let correctAnswer = parsed.correctAnswer;
+            if (correctAnswer?.startsWith("Choice")) {
+              correctAnswer = correctAnswer.replace("Choice", "");
+            }
+
+            questionDataMap[key] = {
+              id: q.id,
+              qtiXml: q.qtiXml,
+              correctAnswer,
+              title: q.title,
+            };
+          }
+        }
+      }
     }
 
     return NextResponse.json({

@@ -61,7 +61,8 @@ export interface ResultsScreenProps {
   atomResults?: AtomResult[];
   /** All responses from diagnostic for question review */
   responses?: DiagnosticResponse[];
-  onSignup: () => void;
+  /** Handler for signup CTA (only used in ExampleResultsModal preview) */
+  onSignup?: () => void;
   /** Callback to set the consistent PAES score for use in SignupScreen */
   onScoreCalculated?: (score: number) => void;
   /** Callback to set the top route info for use in ThankYouScreen */
@@ -70,4 +71,10 @@ export interface ResultsScreenProps {
   precomputedRoutes?: LearningRoutesResponse;
   /** Pre-computed next concepts (skips building from responses - for example mode) */
   precomputedNextConcepts?: NextConcept[];
+  /**
+   * Whether the user has already signed up (came from signup flow).
+   * When true: shows success banner, hides signup CTA, adds "Volver al Inicio" link.
+   * This makes ResultsScreen the endpoint for signed-up users.
+   */
+  hasSignedUp?: boolean;
 }
