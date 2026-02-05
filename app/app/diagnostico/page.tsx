@@ -55,6 +55,10 @@ import {
   TimeUpModal,
   type TopRouteInfo,
 } from "./components";
+import {
+  type LearningRoutesResponse,
+  sortRoutesByImpact,
+} from "./hooks/useLearningRoutes";
 
 // ============================================================================
 // TYPES
@@ -123,6 +127,14 @@ export default function DiagnosticoPage() {
   const [cachedActualRoute, setCachedActualRoute] = useState<Route | null>(
     null
   );
+
+  // Learning routes state (fetched when showing partial results)
+  const [routesData, setRoutesData] = useState<LearningRoutesResponse | null>(
+    null
+  );
+  const [routesLoading, setRoutesLoading] = useState(false);
+  const [cachedRoutesData, setCachedRoutesData] =
+    useState<LearningRoutesResponse | null>(null);
 
   // Timer and tracking state
   const [attemptId, setAttemptId] = useState<string | null>(null);
@@ -622,6 +634,13 @@ export default function DiagnosticoPage() {
     );
     setConsistentScore(midScore);
 
+    // Compute atom mastery from ALL responses (for learning routes)
+    const allResponses = reconstructFullResponses();
+    const atomResults = computeAtomMastery(allResponses);
+
+    // Fetch learning routes for improvement data (used in PartialResultsScreen)
+    fetchLearningRoutes(atomResults, midScore);
+
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -629,6 +648,35 @@ export default function DiagnosticoPage() {
 
     // Go to partial results first (gated flow)
     setScreen("partial-results");
+  };
+
+  // Fetch learning routes for improvement predictions
+  const fetchLearningRoutes = async (
+    atomResults: { atomId: string; mastered: boolean }[],
+    diagnosticScore: number
+  ) => {
+    setRoutesLoading(true);
+    try {
+      const response = await fetch("/api/diagnostic/learning-routes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ atomResults, diagnosticScore }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      if (result.success && result.data) {
+        setRoutesData(result.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch learning routes:", error);
+      // Routes will remain null - UI will show generic message
+    } finally {
+      setRoutesLoading(false);
+    }
   };
 
   // Handle email signup
@@ -711,6 +759,7 @@ export default function DiagnosticoPage() {
         setCachedAtomResults(atomResults);
         setCachedScoredCorrect(counts.scoredCorrect);
         setCachedActualRoute(actualRoute);
+        setCachedRoutesData(routesData);
 
         // Clear all localStorage data after successful signup
         clearAllDiagnosticData();
@@ -836,11 +885,23 @@ export default function DiagnosticoPage() {
       actualRoute
     );
 
+    // Get improvement data from the top route (if routes have loaded)
+    let potentialImprovement = 0;
+    let studyHours = 0;
+    if (routesData?.routes && routesData.routes.length > 0) {
+      const sortedRoutes = sortRoutesByImpact(routesData.routes);
+      potentialImprovement = sortedRoutes[0].pointsGain;
+      studyHours = sortedRoutes[0].studyHours;
+    }
+
     return (
       <PartialResultsScreen
         paesMin={calculatedResults.paesMin}
         paesMax={calculatedResults.paesMax}
         totalCorrect={counts.scoredCorrect}
+        potentialImprovement={potentialImprovement}
+        studyHours={studyHours}
+        routesLoading={routesLoading}
         onContinue={() => setScreen("signup")}
         onSkip={() => {
           clearAllDiagnosticData();
@@ -862,6 +923,7 @@ export default function DiagnosticoPage() {
     let finalScoredCorrect: number;
     let finalRoute: Route;
     let responsesForReview: ResponseForReview[];
+    let precomputedRoutes: LearningRoutesResponse | null = null;
 
     if (hasSignedUp && cachedResults && cachedActualRoute) {
       // Use cached data (localStorage was cleared after signup)
@@ -870,6 +932,7 @@ export default function DiagnosticoPage() {
       finalScoredCorrect = cachedScoredCorrect;
       finalRoute = cachedActualRoute;
       responsesForReview = cachedResponsesForReview;
+      precomputedRoutes = cachedRoutesData;
     } else {
       // Read from localStorage (session restore or non-signup flow)
       if (!route) {
@@ -894,6 +957,7 @@ export default function DiagnosticoPage() {
       finalScoredCorrect = counts.scoredCorrect;
       finalRoute = actualRoute;
       responsesForReview = getResponsesForReview();
+      precomputedRoutes = routesData;
     }
 
     return (
@@ -906,6 +970,7 @@ export default function DiagnosticoPage() {
         onScoreCalculated={setConsistentScore}
         onTopRouteCalculated={setTopRouteInfo}
         hasSignedUp={hasSignedUp}
+        precomputedRoutes={precomputedRoutes ?? undefined}
       />
     );
   }

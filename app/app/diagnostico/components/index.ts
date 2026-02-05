@@ -33,3 +33,4 @@ export {
   TimeUpModal,
   OvertimeIndicator,
 } from "./shared";
+export { ImprovementHeroCard, formatStudyTime } from "./ImprovementHeroCard";

@@ -11,6 +11,7 @@
  * - Instant gratification: Score is shown immediately
  * - Curiosity gap: Tease what's hidden (personalized plan)
  * - Loss aversion: Subtle skip implies losing access
+ * - Concrete value prop: "+X puntos en ~Y horas" is highly motivating
  */
 
 import { useState, useEffect, useRef } from "react";
@@ -18,6 +19,7 @@ import Image from "next/image";
 import { Confetti } from "./Confetti";
 import { AnimatedCounter } from "./shared";
 import { TierHeadline, CtaButton } from "./TierContent";
+import { ImprovementHeroCard } from "./ImprovementHeroCard";
 import { type PerformanceTier, getPerformanceTier } from "@/lib/config/tiers";
 import {
   trackPartialResultsViewed,
@@ -38,6 +40,8 @@ interface PartialResultsScreenProps {
   potentialImprovement?: number;
   /** Study hours estimate (for teaser) */
   studyHours?: number;
+  /** Whether routes are still loading */
+  routesLoading?: boolean;
   /** Handler for "Ver mi plan" CTA */
   onContinue: () => void;
   /** Handler for "Salir sin guardar" skip link */
@@ -66,19 +70,6 @@ function getAnimationClasses(showContent: boolean, delay?: string): string {
   return `transition-all duration-700 ${delayClass} ${visibilityClass}`.trim();
 }
 
-/**
- * Formats study hours for teaser display.
- */
-function formatStudyTime(hours: number): string {
-  if (hours >= 1) {
-    const rounded = Math.round(hours * 2) / 2;
-    if (rounded === 1) return "~1 hora";
-    return `~${rounded} horas`;
-  }
-  const minutes = Math.round(hours * 60);
-  return `~${minutes} min`;
-}
-
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
@@ -89,6 +80,7 @@ export function PartialResultsScreen({
   totalCorrect,
   potentialImprovement = 0,
   studyHours = 0,
+  routesLoading = false,
   onContinue,
   onSkip,
 }: PartialResultsScreenProps) {
@@ -118,7 +110,7 @@ export function PartialResultsScreen({
     return () => clearTimeout(timer);
   }, []);
 
-  // Build teaser message based on available data
+  // Determine if we have improvement data
   const hasImprovementData = potentialImprovement > 0 && studyHours > 0;
 
   /**
@@ -185,16 +177,28 @@ export function PartialResultsScreen({
             <TierHeadline tier={performanceTier} totalCorrect={totalCorrect} />
           </div>
 
-          {/* Teaser Card - The Curiosity Gap */}
+          {/* Improvement Hero Card - Key value proposition */}
+          {(hasImprovementData || routesLoading) && (
+            <div className={`mb-6 ${getAnimationClasses(showContent, "250")}`}>
+              <ImprovementHeroCard
+                potentialImprovement={potentialImprovement}
+                studyHours={studyHours}
+                variant="compact"
+                isLoading={routesLoading}
+              />
+            </div>
+          )}
+
+          {/* Teaser Card - What's included */}
           <div
-            className={`card p-6 mb-6 bg-gradient-to-br from-amber-50 to-white border-amber-200 
+            className={`card p-6 mb-6 bg-gradient-to-br from-white to-off-white border-gray-200 
               ${getAnimationClasses(showContent, "300")}`}
           >
             <div className="text-center">
               {/* Lock icon to suggest gated content */}
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-4">
+              <div className="inline-flex items-center justify-center w-11 h-11 rounded-full bg-primary/10 mb-4">
                 <svg
-                  className="w-6 h-6 text-primary"
+                  className="w-5 h-5 text-primary"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -208,31 +212,12 @@ export function PartialResultsScreen({
                 </svg>
               </div>
 
-              <h3 className="text-lg font-semibold text-charcoal mb-2">
+              <h3 className="text-lg font-semibold text-charcoal mb-3">
                 Tu Plan Personalizado está Listo
               </h3>
 
-              {hasImprovementData ? (
-                <p className="text-cool-gray mb-3">
-                  Descubre cómo subir{" "}
-                  <span className="text-success font-semibold">
-                    +{potentialImprovement} puntos
-                  </span>{" "}
-                  en{" "}
-                  <span className="text-charcoal font-medium">
-                    {formatStudyTime(studyHours)}
-                  </span>{" "}
-                  de estudio enfocado
-                </p>
-              ) : (
-                <p className="text-cool-gray mb-3">
-                  Descubre tu ruta de estudio personalizada y las áreas donde
-                  puedes mejorar más rápido
-                </p>
-              )}
-
               {/* What's included - bullet list */}
-              <div className="text-left text-sm text-cool-gray space-y-2 mt-4 bg-white/60 rounded-lg p-4">
+              <div className="text-left text-sm text-cool-gray space-y-2.5">
                 <div className="flex items-start gap-2">
                   <svg
                     className="w-4 h-4 text-success mt-0.5 shrink-0"
