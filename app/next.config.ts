@@ -4,7 +4,7 @@ import { withSentryConfig } from "@sentry/nextjs";
 const nextConfig: NextConfig = {
   output: "standalone",
   // Prevent bundling issues with XML parsing library
-  serverExternalPackages: ["@xmldom/xmldom"],
+  serverExternalPackages: ["linkedom"],
 };
 
 export default withSentryConfig(nextConfig, {
