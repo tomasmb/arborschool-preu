@@ -317,9 +317,13 @@ export function getResponsesForReview(): ResponseForReview[] {
       );
     }
 
+    // Normalize "skip" back to null so review components detect skipped questions
+    const normalizedAnswer =
+      stored.selectedAnswer === "skip" ? null : stored.selectedAnswer;
+
     responses.push({
       question,
-      selectedAnswer: stored.selectedAnswer,
+      selectedAnswer: normalizedAnswer,
       isCorrect: stored.isCorrect,
       alternateQuestionId: stored.alternateQuestionId,
     });
@@ -365,9 +369,13 @@ export function getStoredResponsesForStage(stage: 1 | 2): ResponseForReview[] {
       );
     }
 
+    // Normalize "skip" back to null so review components detect skipped questions
+    const normalizedAnswer =
+      stored.selectedAnswer === "skip" ? null : stored.selectedAnswer;
+
     responses.push({
       question,
-      selectedAnswer: stored.selectedAnswer,
+      selectedAnswer: normalizedAnswer,
       isCorrect: stored.isCorrect,
     });
   }
@@ -444,9 +452,13 @@ export function reconstructFullResponses(
       );
     }
 
+    // Normalize "skip" back to null for consistent skip detection
+    const normalizedAnswer =
+      stored.selectedAnswer === "skip" ? null : stored.selectedAnswer;
+
     responses.push({
       question,
-      selectedAnswer: stored.selectedAnswer,
+      selectedAnswer: normalizedAnswer,
       isCorrect: stored.isCorrect,
       responseTime: stored.responseTimeSeconds,
       atoms: stored.atoms,
