@@ -7,6 +7,12 @@ export {
 } from "./nextConceptsBuilder";
 
 export {
+  parseQtiXmlForReview,
+  type ParsedOption,
+  type ParsedQtiQuestion,
+} from "./qtiClientParser";
+
+export {
   type AtomResult,
   type DiagnosticResponse,
   type TopRouteInfo,

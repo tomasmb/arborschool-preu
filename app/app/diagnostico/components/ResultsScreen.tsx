@@ -331,9 +331,7 @@ export function ResultsScreen({
 
           {/* Question Review Card - prominent for signed-up users (their reward) */}
           {hasSignedUp && responsesForReview.length > 0 && (
-            <div
-              className={`mb-6 ${getAnimationClasses(showContent, "100")}`}
-            >
+            <div className={`mb-6 ${getAnimationClasses(showContent, "100")}`}>
               <button
                 onClick={() => setShowReviewDrawer(true)}
                 className="w-full max-w-md mx-auto flex items-center gap-4 p-4 rounded-xl 
@@ -361,7 +359,8 @@ export function ResultsScreen({
                     Revisar mis respuestas
                   </div>
                   <div className="text-sm text-cool-gray">
-                    {responsesForReview.length} preguntas · Ver correctas e incorrectas
+                    {responsesForReview.length} preguntas · Ver correctas e
+                    incorrectas
                   </div>
                 </div>
                 <svg
@@ -399,9 +398,7 @@ export function ResultsScreen({
           )}
 
           {/* Improvement Hero Card - Key value proposition */}
-          <div
-            className={`mb-6 ${getAnimationClasses(showContent, "250")}`}
-          >
+          <div className={`mb-6 ${getAnimationClasses(showContent, "250")}`}>
             <ImprovementHeroCard
               potentialImprovement={potentialImprovement}
               studyHours={studyHours}
@@ -431,9 +428,7 @@ export function ResultsScreen({
 
           {/* Routes Section - Direct display for signed-up users, toggle for preview */}
           {showRoutes && (
-            <div
-              className={`mb-6 ${getAnimationClasses(showContent, "350")}`}
-            >
+            <div className={`mb-6 ${getAnimationClasses(showContent, "350")}`}>
               {/* For signed-up users: show routes directly (no toggle) */}
               {hasSignedUp ? (
                 <div className="space-y-6 text-left">
@@ -504,7 +499,8 @@ export function ResultsScreen({
                           </>
                         ) : (
                           <>
-                            Ver otras rutas disponibles ({sortedRoutes.length - 1})
+                            Ver otras rutas disponibles (
+                            {sortedRoutes.length - 1})
                             <svg
                               className="w-4 h-4"
                               fill="none"
