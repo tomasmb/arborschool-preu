@@ -38,7 +38,8 @@ export async function POST(request: NextRequest) {
 
     // Separate questions with exact IDs from those needing parent lookup
     const exactIds: string[] = [];
-    const parentLookups: { parentId: string; exam: string; qNum: number }[] = [];
+    const parentLookups: { parentId: string; exam: string; qNum: number }[] =
+      [];
 
     for (const q of questionRefs) {
       const exam = q.exam.toLowerCase();

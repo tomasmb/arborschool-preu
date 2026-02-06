@@ -9,6 +9,11 @@ import React, {
 } from "react";
 import { type MSTQuestion } from "@/lib/diagnostic/config";
 import { QuestionReviewContent } from "./QuestionReviewContent";
+import {
+  parseQtiXmlForReview,
+  type ParsedOption,
+  type ParsedQtiQuestion,
+} from "../utils/qtiClientParser";
 
 // ============================================================================
 // TYPES (exported for QuestionReviewContent)
@@ -27,11 +32,8 @@ export interface QuestionReviewData {
   correctAnswer: string | null;
 }
 
-export interface ParsedOption {
-  letter: string;
-  text: string;
-  identifier: string;
-}
+// Re-export ParsedOption for QuestionReviewContent
+export type { ParsedOption };
 
 interface QuestionReviewDrawerProps {
   isOpen: boolean;
@@ -43,123 +45,9 @@ interface ReviewDataMap {
   [key: string]: QuestionReviewData;
 }
 
-interface ParsedQuestionCache {
-  [key: string]: { html: string; options: ParsedOption[] };
-}
-
-// ============================================================================
-// QTI PARSING
-// ============================================================================
-
-function serializeNodeToHtml(node: Node): string {
-  if (node.nodeType === Node.TEXT_NODE) return node.textContent || "";
-  if (node.nodeType !== Node.ELEMENT_NODE) return "";
-
-  const el = node as Element;
-  const tagName = el.localName || el.tagName.toLowerCase();
-
-  // Preserve MathML
-  if (
-    tagName === "math" ||
-    el.namespaceURI === "http://www.w3.org/1998/Math/MathML"
-  ) {
-    return new XMLSerializer().serializeToString(el);
-  }
-
-  // Handle images
-  if (tagName === "img") {
-    const src = el.getAttribute("src") || "";
-    const alt = el.getAttribute("alt") || "Imagen";
-    return `<img src="${src}" alt="${alt}" class="max-w-full rounded-lg my-2" />`;
-  }
-
-  // Tables
-  if (tagName === "table") {
-    let content = "";
-    el.childNodes.forEach((child) => (content += serializeNodeToHtml(child)));
-    return `<table class="w-full border-collapse border border-gray-300 my-2 text-sm">${content}</table>`;
-  }
-
-  if (["thead", "tbody", "tfoot"].includes(tagName)) {
-    let content = "";
-    el.childNodes.forEach((child) => (content += serializeNodeToHtml(child)));
-    const bgClass = tagName === "thead" ? ' class="bg-gray-100"' : "";
-    return `<${tagName}${bgClass}>${content}</${tagName}>`;
-  }
-
-  if (tagName === "tr") {
-    let content = "";
-    el.childNodes.forEach((child) => (content += serializeNodeToHtml(child)));
-    return `<tr class="border-b border-gray-200">${content}</tr>`;
-  }
-
-  if (tagName === "th" || tagName === "td") {
-    const colspan = el.getAttribute("colspan");
-    const rowspan = el.getAttribute("rowspan");
-    let attrs = `class="border border-gray-300 px-2 py-1 ${tagName === "th" ? "font-semibold text-left" : ""}"`;
-    if (colspan) attrs += ` colspan="${colspan}"`;
-    if (rowspan) attrs += ` rowspan="${rowspan}"`;
-    let content = "";
-    el.childNodes.forEach((child) => (content += serializeNodeToHtml(child)));
-    return `<${tagName} ${attrs}>${content}</${tagName}>`;
-  }
-
-  if (tagName === "p") {
-    let content = "";
-    el.childNodes.forEach((child) => (content += serializeNodeToHtml(child)));
-    return `<p class="mb-3">${content}</p>`;
-  }
-
-  // Default: process children
-  let content = "";
-  el.childNodes.forEach((child) => (content += serializeNodeToHtml(child)));
-  return content;
-}
-
-function parseQtiXml(xmlString: string): {
-  html: string;
-  options: ParsedOption[];
-} {
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(xmlString, "text/xml");
-
-  const itemBody = xmlDoc.querySelector("itemBody, qti-item-body");
-  const prompt = xmlDoc.querySelector("prompt, qti-prompt");
-  const choices = xmlDoc.querySelectorAll("simpleChoice, qti-simple-choice");
-
-  let html = "";
-  if (itemBody) {
-    itemBody.childNodes.forEach((child) => {
-      if (child.nodeType === Node.ELEMENT_NODE) {
-        const el = child as Element;
-        const tagName = el.localName || el.tagName.toLowerCase();
-        if (
-          tagName === "qti-choice-interaction" ||
-          tagName === "choiceinteraction"
-        )
-          return;
-      }
-      const content = serializeNodeToHtml(child);
-      if (content.trim()) html += content;
-    });
-  }
-
-  if (prompt) {
-    html += `<p class="font-semibold mt-2">${serializeNodeToHtml(prompt)}</p>`;
-  }
-
-  const letters = ["A", "B", "C", "D"];
-  const options: ParsedOption[] = [];
-
-  choices.forEach((choice, index) => {
-    const identifier = choice.getAttribute("identifier") || letters[index];
-    const text =
-      serializeNodeToHtml(choice).trim() || `Opción ${letters[index]}`;
-    options.push({ letter: letters[index], text, identifier });
-  });
-
-  return { html, options };
-}
+type ParsedQuestionCache = {
+  [key: string]: ParsedQtiQuestion;
+};
 
 // ============================================================================
 // MAIN COMPONENT
@@ -188,7 +76,11 @@ export function QuestionReviewDrawer({
     ? `${currentResponse.question.exam.toLowerCase()}-${currentResponse.question.questionNumber}`
     : "";
   const currentReviewData = reviewData[currentKey] || null;
-  const currentParsed = parsedCache[currentKey] || { html: "", options: [] };
+  const currentParsed = parsedCache[currentKey] || {
+    html: "",
+    options: [],
+    generalFeedback: undefined,
+  };
 
   // Fetch review data when drawer opens
   const fetchReviewData = useCallback(async () => {
@@ -214,7 +106,14 @@ export function QuestionReviewDrawer({
 
         const cache: ParsedQuestionCache = {};
         for (const [key, qData] of Object.entries(data.data as ReviewDataMap)) {
-          if (qData.qtiXml) cache[key] = parseQtiXml(qData.qtiXml);
+          if (qData.qtiXml) {
+            const parsed = parseQtiXmlForReview(qData.qtiXml);
+            cache[key] = {
+              html: parsed.html,
+              options: parsed.options,
+              generalFeedback: parsed.generalFeedback,
+            };
+          }
         }
         setParsedCache(cache);
       }
@@ -333,6 +232,7 @@ export function QuestionReviewDrawer({
                 reviewData={currentReviewData}
                 parsedHtml={currentParsed.html}
                 parsedOptions={currentParsed.options}
+                generalFeedback={currentParsed.generalFeedback}
               />
             ) : null}
           </div>

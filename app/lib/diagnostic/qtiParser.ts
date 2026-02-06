@@ -164,8 +164,26 @@ export function parseQtiXml(xmlString: string): ParsedQuestion {
   return { html, options, correctAnswer, atoms: [] };
 }
 
+// Feedback element tag names to exclude from rendering during test
+const FEEDBACK_ELEMENTS = new Set([
+  "qti-feedback-inline",
+  "qti-feedback-block",
+  "qti-modal-feedback",
+  "feedbackinline",
+  "feedbackblock",
+  "modalfeedback",
+]);
+
 /**
- * Process the item body, excluding choice interaction elements
+ * Check if a tag name is a QTI feedback element that should be excluded
+ */
+function isFeedbackElement(tagName: string): boolean {
+  return FEEDBACK_ELEMENTS.has(tagName.toLowerCase());
+}
+
+/**
+ * Process the item body, excluding choice interaction and feedback elements.
+ * Feedback blocks should not be shown until after the user answers.
  */
 function processItemBody(itemBody: Element): string {
   let html = "";
@@ -173,12 +191,16 @@ function processItemBody(itemBody: Element): string {
   itemBody.childNodes.forEach((child) => {
     if (child.nodeType === ELEMENT_NODE) {
       const el = child as Element;
-      const tagName = el.localName || el.tagName.toLowerCase();
+      const tagName = (el.localName || el.tagName).toLowerCase();
       // Skip QTI interaction elements - these are handled separately
       if (
         tagName === "qti-choice-interaction" ||
         tagName === "choiceinteraction"
       ) {
+        return;
+      }
+      // Skip feedback elements - these should only be shown after answering
+      if (isFeedbackElement(tagName)) {
         return;
       }
     }
@@ -205,7 +227,8 @@ function processItemBody(itemBody: Element): string {
 }
 
 /**
- * Parse choice elements into structured options
+ * Parse choice elements into structured options.
+ * Excludes feedback elements from the choice text.
  */
 function parseChoices(choices: NodeListOf<Element>): ParsedQuestion["options"] {
   const letters = ["A", "B", "C", "D"];
@@ -213,8 +236,9 @@ function parseChoices(choices: NodeListOf<Element>): ParsedQuestion["options"] {
 
   choices.forEach((choice, index) => {
     const identifier = choice.getAttribute("identifier") || letters[index];
+    // Serialize choice content, excluding feedback elements
     const text =
-      serializeNodeToHtml(choice).trim() || `Opción ${letters[index]}`;
+      serializeChoiceContent(choice).trim() || `Opción ${letters[index]}`;
 
     options.push({
       letter: letters[index],
@@ -224,6 +248,29 @@ function parseChoices(choices: NodeListOf<Element>): ParsedQuestion["options"] {
   });
 
   return options;
+}
+
+/**
+ * Serialize choice content excluding inline feedback elements.
+ * QTI feedback elements (qti-feedback-inline, feedbackInline) should not be
+ * shown as part of the answer option during the test.
+ */
+function serializeChoiceContent(choice: Element): string {
+  let content = "";
+
+  choice.childNodes.forEach((child) => {
+    if (child.nodeType === ELEMENT_NODE) {
+      const el = child as Element;
+      const tagName = (el.localName || el.tagName).toLowerCase();
+      // Skip feedback elements - these should only be shown after answering
+      if (isFeedbackElement(tagName)) {
+        return;
+      }
+    }
+    content += serializeNodeToHtml(child);
+  });
+
+  return content;
 }
 
 /**

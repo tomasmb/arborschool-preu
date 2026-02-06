@@ -121,7 +121,9 @@ export function ImprovementHeroCard({
           {/* Main value proposition */}
           <div className="space-y-1">
             <div className="text-2xl sm:text-3xl font-bold">
-              <span className="text-success">+{potentialImprovement} puntos</span>
+              <span className="text-success">
+                +{potentialImprovement} puntos
+              </span>
               <span className="text-cool-gray mx-2">en</span>
               <span className="text-charcoal">{timeDisplay}</span>
             </div>
