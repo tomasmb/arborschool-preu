@@ -10,6 +10,22 @@ Perform a thorough code quality review of all staged/modified files, ensure they
 
 Before committing, verify ALL of the following. If any check fails, fix the issues first or report them to the user.
 
+### 0. Branch Check (CRITICAL)
+
+**Before any other checks**, verify the current branch:
+
+```bash
+git branch --show-current
+```
+
+**Rules:**
+- If on `main` branch: **STOP** and warn user:
+  > "You're on the main branch. This project uses a dev → main PR workflow. Switch to dev first?"
+  >
+  > Run: `git checkout dev` or `git checkout -b dev` if it doesn't exist.
+- Only proceed if user explicitly confirms they want to commit directly to main
+- The standard workflow is: commit to `dev`, then `/deploy` to create PR to main
+
 ### 1. SOLID Principles
 
 Review changed files for SOLID violations:

@@ -154,9 +154,37 @@ PR is ready for review. Run `/deploy merge` after approval to merge.
   Preview URL: <PREVIEW_URL>
 ✓ PR merged to main
 ✓ Production deploy complete
+✓ Switched back to dev branch
 
 Deployment successful!
 ```
+
+## Post-Deploy Cleanup (IMPORTANT)
+
+After deployment completes (whether merged or not), ensure the user stays on `dev` branch:
+
+### After Merge
+
+```bash
+# Switch to dev branch
+git checkout dev
+
+# Pull latest from main to keep dev up to date
+git pull origin main
+
+# Confirm branch
+git branch --show-current
+```
+
+### After Preview Only (no merge)
+
+Stay on `dev` - no action needed since we were already on dev.
+
+### Why This Matters
+
+- The workflow is: work on `dev` → PR to `main` → merge → continue on `dev`
+- After merge, the dev branch should pull in main to stay current
+- Never leave the user on main branch after deploy
 
 ## Error Handling
 
@@ -177,8 +205,11 @@ Deployment successful!
 - Force merge bypassing branch protection
 - Delete branches that aren't the PR source branch
 - Create PR if already on main
+- Leave user on main branch after deploy completes
 
 **Do:**
 - Always show the preview URL when available
 - Report clear status at each step
 - Provide actionable next steps on any failure
+- After merge, switch back to dev and pull from main
+- Confirm final branch state in output summary
