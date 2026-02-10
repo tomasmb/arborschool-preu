@@ -1,0 +1,1 @@
+ALTER TABLE "atoms" ADD COLUMN "enrichment" jsonb;
