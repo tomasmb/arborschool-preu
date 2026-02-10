@@ -10,11 +10,7 @@
  *   console.log(analysis.topAtomsByEfficiency); // Best individual atoms
  */
 
-import {
-  loadAllAtoms,
-  loadOfficialQuestionsWithAtoms,
-  getQuestionAtomStats,
-} from "./dataLoader";
+import { loadAllAtoms, loadOfficialQuestionsWithAtoms } from "./dataLoader";
 import {
   buildMasteryState,
   getMasteredAtomIds,
@@ -23,15 +19,10 @@ import {
   calculateMasteryByAxis,
 } from "./masteryAnalyzer";
 import { calculateAllMarginalValues } from "./unlockCalculator";
-import {
-  buildAllRoutes,
-  findQuickWins,
-  findHighImpactAtoms,
-} from "./routeOptimizer";
+import { buildAllRoutes, findHighImpactAtoms } from "./routeOptimizer";
 import type {
   StudentLearningAnalysis,
   LearningRoute,
-  AtomMarginalValue,
   QuestionUnlockStatus,
   ScoringConfig,
 } from "./types";
@@ -142,49 +133,6 @@ export async function analyzeLearningPotential(
 }
 
 // ============================================================================
-// CONVENIENCE FUNCTIONS
-// ============================================================================
-
-/**
- * Gets quick statistics about question-atom coverage.
- * Useful for debugging and understanding the data.
- */
-export async function getStats() {
-  return getQuestionAtomStats();
-}
-
-/**
- * Analyzes potential for a "fresh" student (no mastery assumed).
- * Useful for understanding the full learning landscape.
- */
-export async function analyzeFromScratch(
-  config: ScoringConfig = DEFAULT_SCORING_CONFIG
-): Promise<StudentLearningAnalysis> {
-  return analyzeLearningPotential([], config);
-}
-
-/**
- * Gets the best single axis to focus on based on question unlock potential.
- */
-export async function getBestAxisToFocus(
-  diagnosticResults: Array<{ atomId: string; mastered: boolean }>
-): Promise<LearningRoute | null> {
-  const analysis = await analyzeLearningPotential(diagnosticResults);
-  return analysis.routes[0] || null;
-}
-
-/**
- * Gets atoms that can be learned immediately (no prerequisites needed)
- * and will unlock at least one question.
- */
-export async function getQuickWinAtoms(
-  diagnosticResults: Array<{ atomId: string; mastered: boolean }>
-): Promise<AtomMarginalValue[]> {
-  const analysis = await analyzeLearningPotential(diagnosticResults);
-  return findQuickWins(analysis.topAtomsByEfficiency, 5);
-}
-
-// ============================================================================
 // ROUTE FORMATTING HELPERS
 // ============================================================================
 
@@ -238,48 +186,13 @@ export function formatRouteForDisplay(route: LearningRoute): {
 }
 
 import {
-  calculateScoreRange,
   capImprovementToMax,
   estimateCorrectFromScore,
-  getPaesScore,
   PAES_TOTAL_QUESTIONS,
   IMPROVEMENT_UNCERTAINTY,
   NUM_OFFICIAL_TESTS,
 } from "../scoringConstants";
 import { calculateImprovement as calcPaesImprovement } from "../paesScoreTable";
-
-/**
- * Calculates PAES score from the number of questions currently unlocked.
- * This provides a consistent score based on atom mastery analysis.
- *
- * Range is calculated using ±5 questions with PAES table lookup,
- * per methodology section 5.1. This allows high performers to reach 1000.
- *
- * @param unlockedQuestions - Total questions unlocked across all tests
- * @param numTests - Number of tests in the database (default from constants)
- * @returns PAES score and the estimated correct answers per test
- * @see docs/diagnostic-score-methodology.md
- */
-export function calculatePAESFromUnlocked(
-  unlockedQuestions: number,
-  numTests: number = NUM_OFFICIAL_TESTS
-): {
-  score: number;
-  min: number;
-  max: number;
-  correctPerTest: number;
-} {
-  // Questions are spread across tests, so divide by number of tests
-  const correctPerTest = Math.round(unlockedQuestions / numTests);
-
-  // Use the official PAES table
-  const score = getPaesScore(correctPerTest);
-
-  // Calculate range using ±5 questions with PAES table (methodology 5.1)
-  const range = calculateScoreRange(score);
-
-  return { score, min: range.min, max: range.max, correctPerTest };
-}
 
 /**
  * Calculates realistic PAES improvement projection based on questions unlocked.

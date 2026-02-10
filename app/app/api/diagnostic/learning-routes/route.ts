@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
       .slice(0, 5)
       .map((a) => ({
         atomId: a.atomId,
-        title: a.axis,
+        title: a.title,
         axis: a.axis,
         questionsUnlocked: Math.round(a.immediateUnlocks.length / numTests),
       }));
@@ -145,7 +145,10 @@ export async function POST(request: NextRequest) {
  */
 export async function GET() {
   try {
-    const analysis = await analyzeLearningPotential([]);
+    // Fresh student = minimum PAES score (0 correct answers)
+    const analysis = await analyzeLearningPotential([], {
+      currentPaesScore: 100,
+    });
     const numTests = DEFAULT_SCORING_CONFIG.numOfficialTests;
 
     const formattedRoutes = analysis.routes.slice(0, 4).map((route) => ({

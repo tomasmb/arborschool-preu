@@ -83,19 +83,6 @@ export const IMPROVEMENT_UNCERTAINTY = 0.15;
 export const NUM_OFFICIAL_TESTS = 4;
 
 // ============================================================================
-// ATOM & MASTERY CONSTANTS
-// ============================================================================
-
-/** Total atoms in the knowledge graph */
-export const TOTAL_ATOMS = 229;
-
-/** Atoms with prerequisite chains */
-export const ATOMS_WITH_PREREQS = 174;
-
-/** Maximum prerequisite depth */
-export const MAX_PREREQ_DEPTH = 5;
-
-// ============================================================================
 // SCORING CONFIG (for unlock calculator)
 // ============================================================================
 
@@ -192,15 +179,3 @@ export function calculateRawPaesScore(
   return Math.round(paesRaw);
 }
 
-/**
- * Calculate improvement with uncertainty range (±15%).
- */
-export function calculateImprovementWithUncertainty(baseImprovement: number): {
-  min: number;
-  max: number;
-} {
-  return {
-    min: Math.round(baseImprovement * (1 - IMPROVEMENT_UNCERTAINTY)),
-    max: Math.round(baseImprovement * (1 + IMPROVEMENT_UNCERTAINTY)),
-  };
-}

@@ -146,15 +146,6 @@ export function estimateCorrectFromScore(paesScore: number): number {
 }
 
 /**
- * Gets the marginal value of one additional correct answer at a given level.
- * Higher scores have higher marginal value (non-linear scaling).
- */
-export function getMarginalPointValue(currentCorrect: number): number {
-  const current = Math.max(0, Math.min(59, Math.round(currentCorrect)));
-  return PAES_SCORE_TABLE[current + 1] - PAES_SCORE_TABLE[current];
-}
-
-/**
  * Caps improvement to ensure score never exceeds PAES_MAX_SCORE (1000).
  * Use this whenever displaying or calculating improvement values.
  *
@@ -170,29 +161,3 @@ export function capImprovementToMax(
   return Math.max(0, Math.min(improvement, maxPossibleImprovement));
 }
 
-/**
- * Calculates average points per question at different score ranges.
- */
-export function getPointsPerQuestionByRange(): {
-  range: string;
-  avgPointsPerQuestion: number;
-}[] {
-  return [
-    {
-      range: "0-15 (Inicial)",
-      avgPointsPerQuestion: Math.round((403 - 100) / 15), // ~20 pts/q
-    },
-    {
-      range: "15-30 (Intermedio Bajo)",
-      avgPointsPerQuestion: Math.round((567 - 403) / 15), // ~11 pts/q
-    },
-    {
-      range: "30-45 (Intermedio Alto)",
-      avgPointsPerQuestion: Math.round((723 - 567) / 15), // ~10 pts/q
-    },
-    {
-      range: "45-60 (Alto)",
-      avgPointsPerQuestion: Math.round((1000 - 723) / 15), // ~18 pts/q
-    },
-  ];
-}
