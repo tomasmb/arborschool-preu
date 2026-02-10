@@ -159,25 +159,6 @@ export function getPerformanceTier(totalCorrect: number): PerformanceTier {
 }
 
 /**
- * Gets the tier configuration for a given number of correct answers.
- * @param totalCorrect - Number of correct answers (0-16)
- * @returns The full tier configuration
- */
-export function getTierConfig(totalCorrect: number): TierConfig {
-  const tier = getPerformanceTier(totalCorrect);
-  return TIER_CONFIG[tier];
-}
-
-/**
- * Checks if projections should be shown for the given tier.
- * @param tier - The performance tier
- * @returns Whether any type of projection should be shown
- */
-export function shouldShowProjections(tier: PerformanceTier): boolean {
-  return TIER_CONFIG[tier].projectionRule !== "none";
-}
-
-/**
  * Checks if this is a low-signal tier (below average or very low).
  * Low-signal tiers require different UX treatment.
  * @param tier - The performance tier
@@ -185,14 +166,4 @@ export function shouldShowProjections(tier: PerformanceTier): boolean {
  */
 export function isLowSignalTier(tier: PerformanceTier): boolean {
   return tier === "belowAverage" || tier === "veryLow";
-}
-
-/**
- * Gets the number of wrong answers for a tier.
- * Useful for determining route source.
- * @param totalCorrect - Number of correct answers (0-16)
- * @returns Number of wrong answers
- */
-export function getWrongAnswerCount(totalCorrect: number): number {
-  return 16 - totalCorrect;
 }

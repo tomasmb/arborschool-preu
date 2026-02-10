@@ -285,22 +285,6 @@ export function buildAllRoutes(
 // ============================================================================
 
 /**
- * Finds "quick win" atoms that immediately unlock questions with no prerequisites.
- * These are the lowest-hanging fruit.
- */
-export function findQuickWins(
-  marginalValues: AtomMarginalValue[],
-  limit: number = 5
-): AtomMarginalValue[] {
-  return marginalValues
-    .filter(
-      (v) => v.immediateUnlocks.length > 0 && v.prerequisitesNeeded.length === 0
-    )
-    .sort((a, b) => b.immediateUnlocks.length - a.immediateUnlocks.length)
-    .slice(0, limit);
-}
-
-/**
  * Finds atoms that would unlock the most questions with minimal effort.
  * Considers both immediate unlocks and atom cost.
  */

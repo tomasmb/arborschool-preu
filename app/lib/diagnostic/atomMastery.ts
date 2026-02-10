@@ -61,25 +61,6 @@ export async function fetchAllAtoms(): Promise<AtomWithPrereqs[]> {
 }
 
 /**
- * Fetches all atoms as a Map for O(1) lookups.
- */
-export async function fetchAllAtomsAsMap(): Promise<
-  Map<string, AtomWithPrereqs>
-> {
-  const allAtoms = await fetchAllAtoms();
-  const atomMap = new Map<string, AtomWithPrereqs>();
-
-  for (const atom of allAtoms) {
-    atomMap.set(atom.id, {
-      id: atom.id,
-      prerequisiteIds: atom.prerequisiteIds || [],
-    });
-  }
-
-  return atomMap;
-}
-
-/**
  * Computes full atom mastery for all atoms using transitivity.
  *
  * Algorithm:
@@ -279,16 +260,6 @@ export function computeMasteryAsMap(
   }
 
   return masteryMap;
-}
-
-/**
- * Async version that fetches atoms and computes mastery as Map.
- */
-export async function computeMasteryAsMapWithFetch(
-  directResults: DirectResult[]
-): Promise<Map<string, MasteryState>> {
-  const allAtoms = await fetchAllAtomsAsMap();
-  return computeMasteryAsMap(directResults, allAtoms);
 }
 
 // ============================================================================

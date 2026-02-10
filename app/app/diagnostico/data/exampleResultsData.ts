@@ -400,31 +400,31 @@ export const EXAMPLE_ROUTES_DATA: LearningRoutesResponse = {
   quickWins: [
     {
       atomId: "A-M1-ALG-05-12",
-      title: "algebra_y_funciones",
+      title: "Interpretación de Parámetros en Contexto",
       axis: "algebra_y_funciones",
       questionsUnlocked: 1,
     },
     {
       atomId: "A-M1-ALG-05-04",
-      title: "algebra_y_funciones",
+      title: "Evaluación de Funciones Lineales y Afines",
       axis: "algebra_y_funciones",
       questionsUnlocked: 0,
     },
     {
       atomId: "A-M1-ALG-05-10",
-      title: "algebra_y_funciones",
+      title: "Graficación mediante Pendiente e Intercepto",
       axis: "algebra_y_funciones",
       questionsUnlocked: 0,
     },
     {
       atomId: "A-M1-NUM-02-02",
-      title: "numeros",
+      title: "Conversión de porcentaje a fracción",
       axis: "numeros",
       questionsUnlocked: 0,
     },
     {
       atomId: "A-M1-PROB-02-04",
-      title: "probabilidad_y_estadistica",
+      title: "Cálculo de la mediana (cantidad impar de datos)",
       axis: "probabilidad_y_estadistica",
       questionsUnlocked: 0,
     },

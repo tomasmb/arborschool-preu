@@ -332,57 +332,6 @@ export function getResponsesForReview(): ResponseForReview[] {
   return responses;
 }
 
-/**
- * Get stored responses for a specific stage, reconstructed with MSTQuestion.
- * Used to restore r1Responses/stage2Responses after page refresh.
- * Requires stored route for stage 2 responses.
- */
-export function getStoredResponsesForStage(stage: 1 | 2): ResponseForReview[] {
-  const storedResponses = getStoredResponses();
-  const stageResponses = storedResponses.filter((r) => r.stage === stage);
-
-  // Sort by questionIndex to maintain order
-  stageResponses.sort((a, b) => a.questionIndex - b.questionIndex);
-
-  const responses: ResponseForReview[] = [];
-
-  for (const stored of stageResponses) {
-    let question: MSTQuestion | undefined;
-
-    if (stage === 1) {
-      question = MST_QUESTIONS.R1[stored.questionIndex];
-    } else if (stage === 2) {
-      // Require route for stage 2 - no fallbacks
-      const routeForQuestion = stored.route;
-      if (!routeForQuestion) {
-        throw new Error(
-          `Stage 2 response at index ${stored.questionIndex} has no route stored`
-        );
-      }
-      const stage2Questions = getStage2Questions(routeForQuestion);
-      question = stage2Questions[stored.questionIndex];
-    }
-
-    if (!question) {
-      throw new Error(
-        `Could not find question for stage ${stage}, index ${stored.questionIndex}`
-      );
-    }
-
-    // Normalize "skip" back to null so review components detect skipped questions
-    const normalizedAnswer =
-      stored.selectedAnswer === "skip" ? null : stored.selectedAnswer;
-
-    responses.push({
-      question,
-      selectedAnswer: normalizedAnswer,
-      isCorrect: stored.isCorrect,
-    });
-  }
-
-  return responses;
-}
-
 // ============================================================================
 // FULL RESPONSE RECONSTRUCTION
 // ============================================================================

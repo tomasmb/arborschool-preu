@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
       .slice(0, 5)
       .map((a) => ({
         atomId: a.atomId,
-        title: a.axis,
+        title: a.title,
         axis: a.axis,
         questionsUnlocked: Math.round(a.immediateUnlocks.length / numTests),
       }));
@@ -132,43 +132,6 @@ export async function POST(request: NextRequest) {
         error: "Failed to calculate learning routes",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
-    );
-  }
-}
-
-/**
- * GET /api/diagnostic/learning-routes
- *
- * Returns learning routes for a "fresh start" student.
- * Useful for showing the full learning landscape.
- */
-export async function GET() {
-  try {
-    const analysis = await analyzeLearningPotential([]);
-    const numTests = DEFAULT_SCORING_CONFIG.numOfficialTests;
-
-    const formattedRoutes = analysis.routes.slice(0, 4).map((route) => ({
-      ...formatRouteForDisplay(route),
-      axis: route.axis,
-      atoms: route.atoms.slice(0, 5).map((a) => ({
-        id: a.atomId,
-        title: a.title,
-        questionsUnlocked: Math.round(a.questionsUnlockedHere / numTests),
-      })),
-    }));
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        summary: analysis.summary,
-        routes: formattedRoutes,
-      },
-    });
-  } catch (error) {
-    console.error("Failed to get learning routes:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to get learning routes" },
       { status: 500 }
     );
   }

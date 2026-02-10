@@ -60,26 +60,6 @@ export function getUnmasteredPrerequisites(
   return [...new Set(unmasteredPrereqs)];
 }
 
-/**
- * Checks if an atom can be learned immediately (no unmastered prerequisites).
- */
-export function canLearnImmediately(
-  atomId: string,
-  allAtoms: Map<string, AtomWithPrereqs>,
-  masteredAtoms: Set<string>
-): boolean {
-  const atom = allAtoms.get(atomId);
-  if (!atom) return false;
-
-  for (const prereqId of atom.prerequisiteIds) {
-    if (!masteredAtoms.has(prereqId)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
 // ============================================================================
 // MARGINAL VALUE CALCULATION
 // ============================================================================
@@ -201,9 +181,9 @@ export function calculateAllMarginalValues(
 
 /**
  * Simulates mastering an atom and returns the new state.
- * Useful for planning multi-atom learning paths.
+ * Used internally by simulateQuestionUnlocks.
  */
-export function simulateMastery(
+function simulateMastery(
   atomIds: string[],
   currentMastered: Set<string>
 ): Set<string> {
@@ -254,34 +234,3 @@ export function simulateQuestionUnlocks(
   return { newUnlocks, totalUnlockedAfter };
 }
 
-/**
- * Gets all atoms that would be unlocked (can be learned) after mastering given atoms.
- * Considers prerequisite chains.
- */
-export function getNewlyLearnableAtoms(
-  atomsToMaster: string[],
-  allAtoms: Map<string, AtomWithPrereqs>,
-  currentMastered: Set<string>
-): string[] {
-  const simulatedMastery = simulateMastery(atomsToMaster, currentMastered);
-  const newlyLearnable: string[] = [];
-
-  for (const [atomId, atom] of allAtoms) {
-    // Skip already mastered
-    if (simulatedMastery.has(atomId)) continue;
-
-    // Check if all prerequisites are now mastered
-    const wasLearnable = atom.prerequisiteIds.every((id) =>
-      currentMastered.has(id)
-    );
-    const isNowLearnable = atom.prerequisiteIds.every((id) =>
-      simulatedMastery.has(id)
-    );
-
-    if (isNowLearnable && !wasLearnable) {
-      newlyLearnable.push(atomId);
-    }
-  }
-
-  return newlyLearnable;
-}
