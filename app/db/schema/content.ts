@@ -26,6 +26,28 @@ import {
  */
 
 // ------------------------------------------------------------------------------
+// JSONB TYPE DEFINITIONS
+// ------------------------------------------------------------------------------
+
+/** Labeled identifier used in subskills and error families */
+type LabeledItem = { id: string; label: string };
+
+/** AI-generated enrichment metadata for an atom */
+export type AtomEnrichment = {
+  /** Granular subskills the atom covers */
+  subskills: LabeledItem[];
+  /** Common error families students make on this atom */
+  errorFamilies: LabeledItem[];
+  /** Guardrails defining what is in/out of scope */
+  scopeGuardrails: {
+    mustInclude: string[];
+    mustExclude: string[];
+  };
+  /** Phrases or topics to avoid due to ambiguity */
+  ambiguityAvoid: string[];
+};
+
+// ------------------------------------------------------------------------------
 // SUBJECTS
 // ------------------------------------------------------------------------------
 
@@ -78,6 +100,7 @@ export const atoms = pgTable(
     masteryCriteria: jsonb("mastery_criteria").notNull(),
     conceptualExamples: jsonb("conceptual_examples"),
     scopeNotes: jsonb("scope_notes"),
+    enrichment: jsonb("enrichment").$type<AtomEnrichment>(),
     prerequisiteIds: varchar("prerequisite_ids", { length: 50 }).array(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   },
