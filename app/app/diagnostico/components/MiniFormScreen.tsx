@@ -42,7 +42,6 @@ const CURSO_OPTIONS = [
   { value: "3ro_medio" as const, label: "3ro Medio" },
   { value: "4to_medio" as const, label: "4to Medio" },
   { value: "egresado" as const, label: "Egresado/a" },
-  { value: "otro" as const, label: "Otro" },
 ];
 
 // ============================================================================
@@ -246,7 +245,7 @@ export function MiniFormScreen({ onSubmit }: MiniFormScreenProps) {
               />
             </div>
 
-            {/* Curso selector */}
+            {/* Curso selector: 3 main pills + secondary "otro" toggle */}
             <div
               className={`transition-all duration-700 delay-350
                 ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
@@ -254,9 +253,22 @@ export function MiniFormScreen({ onSubmit }: MiniFormScreenProps) {
               <PillSelector
                 label="Curso"
                 options={CURSO_OPTIONS}
-                value={curso}
-                onChange={setCurso}
+                value={curso === "otro" ? null : curso}
+                onChange={(v) => setCurso(v)}
               />
+              <button
+                type="button"
+                onClick={() => setCurso("otro")}
+                className={`mt-2 w-full text-xs text-center py-1.5 rounded-lg 
+                  transition-all duration-200
+                  ${
+                    curso === "otro"
+                      ? "text-primary font-semibold"
+                      : "text-cool-gray hover:text-charcoal"
+                  }`}
+              >
+                Estoy en otro curso
+              </button>
             </div>
 
             {/* Error message */}
