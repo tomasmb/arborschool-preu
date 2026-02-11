@@ -12,7 +12,6 @@ import {
   HeroSection,
   HowItWorksSection,
   MasterySection,
-  DailyPlanSection,
   ProgressSection,
   CtaSection,
   Footer,
@@ -45,9 +44,6 @@ function Navigation({
             </span>
           </div>
           <div className="flex items-center gap-4">
-            <span className="hidden sm:inline-flex text-sm font-medium text-success bg-success/10 px-3 py-1.5 rounded-full">
-              ¡Disponible!
-            </span>
             <LoadingButton
               onClick={onStartDiagnostic}
               isLoading={isNavigating}
@@ -103,7 +99,6 @@ export default function Home() {
 
       <HowItWorksSection />
       <MasterySection />
-      <DailyPlanSection />
       <ProgressSection />
 
       <CtaSection

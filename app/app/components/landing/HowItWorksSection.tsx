@@ -1,36 +1,33 @@
+/**
+ * How it works section - 3 step process overview
+ */
 export function HowItWorksSection() {
   return (
     <section className="py-24 bg-off-white relative">
       <div className="absolute inset-0 dot-pattern"></div>
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-20">
-          <h2 className="text-4xl sm:text-5xl font-serif font-bold text-charcoal mb-6">
-            Así funciona
-          </h2>
-          <p className="text-xl text-cool-gray max-w-2xl mx-auto">
-            Un método probado para maximizar tu puntaje en el menor tiempo
-            posible
-          </p>
-        </div>
+        <h2 className="text-4xl sm:text-5xl font-serif font-bold text-charcoal mb-16 text-center">
+          Así funciona
+        </h2>
 
         <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
           <StepCard
             number={1}
-            title="Diagnóstico"
-            description="En minutos descubrimos qué conceptos ya dominas y cuáles te faltan. Sin rodeos."
+            title="Diagnóstico Rápido"
+            description="16 preguntas, ~15 min. Mapeamos más de 200 conceptos."
             variant="primary"
           />
           <StepCard
             number={2}
-            title="Plan Inteligente"
-            description="Tu plan prioriza lo que más impacta tu puntaje, ordenado para que nunca te falten los conocimientos previos."
+            title="Tu Ruta Personalizada"
+            description="Ordenado por impacto en tu puntaje. Primero lo que más importa."
             variant="primary"
           />
           <StepCard
             number={3}
             title="Aprende y Domina"
-            description="Cada mini-clase tiene ejemplos resueltos y práctica adaptativa. Solo avanzas cuando demuestras que lo dominaste."
+            description="Ejemplo resuelto, práctica activa, dominio demostrado."
             variant="accent"
           />
         </div>
@@ -63,10 +60,12 @@ function StepCard({
         >
           <span className="text-2xl font-bold text-white">{number}</span>
         </div>
-        <h3 className="text-2xl font-serif font-bold text-charcoal mb-4">
+        <h3 className="text-2xl font-serif font-bold text-charcoal mb-3">
           {title}
         </h3>
-        <p className="text-cool-gray text-lg leading-relaxed">{description}</p>
+        <p className="text-cool-gray text-lg leading-relaxed">
+          {description}
+        </p>
       </div>
     </div>
   );

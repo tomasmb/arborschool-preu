@@ -1,49 +1,58 @@
+/**
+ * Mastery section - learning method + daily plan preview
+ * Combines the "how you learn" message with a tangible daily plan mockup
+ */
 import { BrowserFrame } from "./BrowserFrame";
 
 export function MasterySection() {
   return (
     <section className="py-24 bg-white relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-full sm:w-1/2 h-1/2 sm:h-full bg-gradient-to-l from-accent/10 to-transparent"></div>
+      <div className="absolute top-0 right-0 w-full sm:w-1/2 h-1/2 sm:h-full bg-gradient-to-l from-accent/5 to-transparent"></div>
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          {/* Left: method + features */}
           <div>
-            <h2 className="text-4xl sm:text-5xl font-serif font-bold text-charcoal mb-8">
-              Dominio, <span className="text-accent">no horas</span>
+            <h2 className="text-4xl sm:text-5xl font-serif font-bold text-charcoal mb-6">
+              Aprendes de verdad,{" "}
+              <span className="text-accent">no de memoria</span>
             </h2>
-            <p className="text-xl text-cool-gray mb-10 leading-relaxed">
-              Avanzas cuando demuestras que aprendiste. La práctica empieza
-              fácil y sube de nivel a medida que aciertas.
+            <p className="text-lg text-cool-gray mb-10">
+              Cada día sabes exactamente qué hacer. Sesiones cortas que
+              puedes hacer desde cualquier lugar.
             </p>
 
-            <div className="space-y-6">
-              <FeatureItem
+            <div className="space-y-5">
+              <FeatureRow
                 icon={<BoltIcon />}
-                title="Victorias rápidas"
-                description="Para conceptos que probablemente ya sabes, saltas directo a practicar y demostrar dominio—puntos rápidos."
+                text="Ejemplo resuelto paso a paso antes de practicar"
                 color="accent"
               />
-              <FeatureItem
+              <FeatureRow
                 icon={<ShieldIcon />}
-                title="Sin huecos"
-                description="Si te trabas, detectamos qué concepto previo te falta y te damos la mini-clase correspondiente."
+                text="Práctica activa desde el primer minuto"
                 color="primary"
               />
-              <FeatureItem
+              <FeatureRow
                 icon={<RefreshIcon />}
-                title="Repaso inteligente"
-                description="Te recordamos practicar justo antes de que se te olvide. Así el conocimiento se queda."
+                text="Repaso justo antes de que se te olvide"
                 color="success"
               />
             </div>
+
+            <p className="text-sm text-cool-gray mt-8">
+              Basado en técnicas respaldadas por décadas de investigación
+              en ciencias del aprendizaje.
+            </p>
           </div>
 
+          {/* Right: daily plan browser mockup */}
           <div>
             <p className="text-sm font-semibold text-primary/60 mb-4 text-center uppercase tracking-wide">
-              Así verás tu progreso
+              Así se verá tu plan diario
             </p>
             <BrowserFrame>
-              <DashboardPreview />
+              <DailyPlanPreview />
             </BrowserFrame>
           </div>
         </div>
@@ -52,102 +61,143 @@ export function MasterySection() {
   );
 }
 
-function FeatureItem({
+// -- Compact feature row (icon + single line of text) --
+
+function FeatureRow({
   icon,
-  title,
-  description,
+  text,
   color,
 }: {
   icon: React.ReactNode;
-  title: string;
-  description: string;
+  text: string;
   color: "accent" | "primary" | "success";
 }) {
   const bgClass = {
-    accent: "bg-accent/10 group-hover:bg-accent/20",
-    primary: "bg-primary/10 group-hover:bg-primary/20",
-    success: "bg-success/10 group-hover:bg-success/20",
+    accent: "bg-accent/10",
+    primary: "bg-primary/10",
+    success: "bg-success/10",
   }[color];
 
   return (
-    <div className="flex gap-4 items-start group">
+    <div className="flex items-center gap-4">
       <div
-        className={`w-10 h-10 rounded-xl ${bgClass} flex items-center justify-center shrink-0 transition-colors`}
+        className={`w-10 h-10 rounded-xl ${bgClass} flex items-center justify-center shrink-0`}
       >
         {icon}
       </div>
-      <div>
-        <h4 className="font-bold text-charcoal text-lg mb-1">{title}</h4>
-        <p className="text-cool-gray">{description}</p>
-      </div>
+      <p className="text-charcoal font-medium">{text}</p>
     </div>
   );
 }
 
-function DashboardPreview() {
+// -- Daily plan preview (moved from DailyPlanSection) --
+
+function DailyPlanPreview() {
   return (
     <div className="p-6 sm:p-8">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="font-serif font-bold text-charcoal">Tu Dashboard</h3>
-        <span className="text-xs font-medium text-accent bg-accent/10 px-2 py-1 rounded-full">
-          En vivo
-        </span>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h3 className="text-2xl font-serif font-bold text-charcoal">
+            Hoy
+          </h3>
+          <p className="text-cool-gray text-sm">Martes 13 de enero</p>
+        </div>
+        <div className="text-right">
+          <p className="text-3xl font-bold text-charcoal">
+            25
+            <span className="text-lg font-normal text-cool-gray ml-1">
+              min
+            </span>
+          </p>
+        </div>
       </div>
 
       <div className="space-y-3">
-        <ProgressRow label="Comprensión Lectora" value="87%" color="success" />
-        <ProgressRow
-          label="Matemática M1"
-          value="92%"
-          color="accent"
+        <TaskCard
+          icon={<TaskBoltIcon />}
+          title="Victoria rápida"
+          badge="+12 pts"
+          description="Ecuaciones cuadráticas – 5 ejercicios"
+          time="8 min"
+          variant="accent"
           highlighted
         />
-        <ProgressRow label="Ciencias" value="65%" color="cool-gray" />
-      </div>
-
-      <div className="mt-6 pt-6 border-t border-gray-100">
-        <div className="flex justify-between items-end">
-          <div>
-            <p className="text-sm text-cool-gray mb-1">Puntaje proyectado</p>
-            <p className="text-4xl font-bold text-charcoal">647</p>
-          </div>
-          <div className="text-right">
-            <p className="text-sm text-cool-gray mb-1">Tu meta</p>
-            <p className="text-2xl font-bold text-accent">753</p>
-          </div>
-        </div>
+        <TaskCard
+          icon={<BookIcon />}
+          title="Mini-clase"
+          description="Factorización – Ejemplos + práctica"
+          time="12 min"
+          variant="primary"
+        />
+        <TaskCard
+          icon={<TaskRefreshIcon />}
+          title="Repaso"
+          description="Comprensión de textos – No olvidar"
+          time="5 min"
+          variant="success"
+        />
       </div>
     </div>
   );
 }
 
-function ProgressRow({
-  label,
-  value,
-  color,
+function TaskCard({
+  icon,
+  title,
+  badge,
+  description,
+  time,
+  variant,
   highlighted,
 }: {
-  label: string;
-  value: string;
-  color: string;
+  icon: React.ReactNode;
+  title: string;
+  badge?: string;
+  description: string;
+  time: string;
+  variant: "accent" | "primary" | "success";
   highlighted?: boolean;
 }) {
-  const baseClasses = highlighted
+  const gradientClass = {
+    accent: "from-accent to-accent-light",
+    primary: "from-primary to-primary-light",
+    success: "from-success to-emerald-400",
+  }[variant];
+
+  const containerClass = highlighted
     ? "bg-accent/10 rounded-xl border-2 border-accent shadow-sm"
-    : "bg-off-white rounded-xl border border-gray-200 hover:border-success/50 transition-colors";
+    : "bg-off-white rounded-xl border border-gray-200";
 
   return (
-    <div className={`flex items-center justify-between p-4 ${baseClasses}`}>
-      <div className="flex items-center gap-3">
-        <div className={`w-3 h-3 rounded-full bg-${color}`}></div>
-        <span className="font-medium text-charcoal">{label}</span>
+    <div className={`flex items-center gap-4 p-4 ${containerClass}`}>
+      <div
+        className={`w-11 h-11 rounded-xl bg-gradient-to-br ${gradientClass} flex items-center justify-center shadow-md shrink-0`}
+      >
+        {icon}
       </div>
-      <span className={`text-lg font-bold text-${color}`}>{value}</span>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-0.5">
+          <p className="font-bold text-charcoal text-sm">{title}</p>
+          {badge && (
+            <span className="text-xs font-bold text-white bg-accent px-2 py-0.5 rounded-full">
+              {badge}
+            </span>
+          )}
+        </div>
+        <p className="text-charcoal/60 text-sm truncate">{description}</p>
+      </div>
+      <span className="text-xs font-semibold text-charcoal/50 shrink-0">
+        {time}
+      </span>
     </div>
   );
 }
 
-// Icons
+// ============================================================================
+// ICONS
+// ============================================================================
+
+// Feature row icons (small, colored)
 function BoltIcon() {
   return (
     <svg
@@ -188,6 +238,61 @@ function RefreshIcon() {
   return (
     <svg
       className="w-5 h-5 text-success"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+      />
+    </svg>
+  );
+}
+
+// Task card icons (small, white — on gradient backgrounds)
+function TaskBoltIcon() {
+  return (
+    <svg
+      className="w-5 h-5 text-white"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M13 10V3L4 14h7v7l9-11h-7z"
+      />
+    </svg>
+  );
+}
+
+function BookIcon() {
+  return (
+    <svg
+      className="w-5 h-5 text-white"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+      />
+    </svg>
+  );
+}
+
+function TaskRefreshIcon() {
+  return (
+    <svg
+      className="w-5 h-5 text-white"
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
