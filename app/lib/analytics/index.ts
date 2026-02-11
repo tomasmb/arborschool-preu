@@ -31,6 +31,9 @@ export {
   trackMiniFormCompleted,
   trackProfilingCompleted,
   trackProfilingSkipped,
+  trackConfirmSkipViewed,
+  trackConfirmSkipExit,
+  trackConfirmSkipBackToProfiling,
   // Utilities
   extractUTMParams,
   getDeviceType,

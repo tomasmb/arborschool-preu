@@ -1,17 +1,12 @@
 "use client";
 
 import {
-  isLocalAttempt,
   getStoredResponses,
-  getResponsesForReview,
   reconstructFullResponses,
   getActualRouteFromStorage,
   getResponseCounts,
 } from "@/lib/diagnostic/storage";
-import {
-  calculateDiagnosticResults,
-  computeAtomMastery,
-} from "@/lib/diagnostic/resultsCalculator";
+import { calculateDiagnosticResults } from "@/lib/diagnostic/resultsCalculator";
 import { sortRoutesByImpact } from "./hooks/useLearningRoutes";
 import { useDiagnosticFlow } from "./hooks/useDiagnosticFlow";
 import {
@@ -20,8 +15,9 @@ import {
   TransitionScreen,
   PartialResultsScreen,
   ProfilingScreen,
-  ResultsScreen,
   MaintenanceScreen,
+  ConfirmSkipScreen,
+  ThankYouScreen,
 } from "./components";
 import { QuestionScreenWrapper } from "./components/QuestionScreenWrapper";
 import { ResultsScreenWrapper } from "./components/ResultsScreenWrapper";
@@ -95,7 +91,7 @@ export default function DiagnosticoPage() {
         studyHours={studyHours}
         routesLoading={flow.routesLoading}
         onContinue={() => flow.setScreen("profiling")}
-        onSkip={flow.handleProfileSkip}
+        onSkip={flow.handleSkipToConfirm}
       />
     );
   }
@@ -109,9 +105,22 @@ export default function DiagnosticoPage() {
       <ProfilingScreen
         score={flow.consistentScore ?? undefined}
         onSubmit={flow.handleProfileSubmit}
-        onSkip={flow.handleProfileSkip}
+        onSkip={flow.handleSkipToConfirm}
       />
     );
+  }
+
+  if (flow.screen === "confirm-skip") {
+    return (
+      <ConfirmSkipScreen
+        onBackToProfiling={flow.handleBackToProfiling}
+        onConfirmExit={flow.handleConfirmExit}
+      />
+    );
+  }
+
+  if (flow.screen === "thank-you") {
+    return <ThankYouScreen score={flow.consistentScore} />;
   }
 
   if (flow.screen === "maintenance") {

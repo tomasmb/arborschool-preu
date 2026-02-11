@@ -35,7 +35,9 @@ import {
   trackDiagnosticCompleted,
   trackMiniFormCompleted,
   trackProfilingCompleted,
-  trackProfilingSkipped,
+  trackConfirmSkipViewed,
+  trackConfirmSkipExit,
+  trackConfirmSkipBackToProfiling,
 } from "@/lib/analytics";
 import { type MiniFormData } from "../components/MiniFormScreen";
 import { type ProfilingData } from "../components/ProfilingScreen";
@@ -58,21 +60,23 @@ export type Screen =
   | "transition"
   | "partial-results"
   | "profiling"
+  | "confirm-skip"
   | "results"
+  | "thank-you"
   | "maintenance";
 
 const TOTAL_TIME_SECONDS = 30 * 60; // 30 minutes
 
 /** Core diagnostic flow hook — state, effects, and handlers for all screens. */
 export function useDiagnosticFlow() {
-  // --- State: navigation & test progress ---
+  // --- Navigation & test progress ---
   const [screen, setScreen] = useState<Screen>("welcome");
   const [stage, setStage] = useState<1 | 2>(1);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isDontKnow, setIsDontKnow] = useState(false);
 
-  // --- State: responses & results ---
+  // --- Responses & results ---
   const [r1Responses, setR1Responses] = useState<DiagnosticResponse[]>([]);
   const [stage2Responses, setStage2Responses] = useState<DiagnosticResponse[]>(
     []
@@ -84,7 +88,7 @@ export function useDiagnosticFlow() {
   const [userId, setUserId] = useState<string | null>(null);
   const [profileSaved, setProfileSaved] = useState(false);
 
-  // --- State: cached data (after profile save clears localStorage) ---
+  // --- Cached data (after profile save clears localStorage) ---
   const [cachedResponsesForReview, setCachedResponsesForReview] = useState<
     ResponseForReview[]
   >([]);
@@ -99,7 +103,7 @@ export function useDiagnosticFlow() {
     null
   );
 
-  // --- State: learning routes ---
+  // --- Learning routes ---
   const [routesData, setRoutesData] = useState<LearningRoutesResponse | null>(
     null
   );
@@ -107,19 +111,16 @@ export function useDiagnosticFlow() {
   const [cachedRoutesData, setCachedRoutesData] =
     useState<LearningRoutesResponse | null>(null);
 
-  // --- State: timer & tracking ---
+  // --- Timer & tracking ---
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [timeRemaining, setTimeRemaining] = useState(TOTAL_TIME_SECONDS);
   const [timerStartedAt, setTimerStartedAt] = useState<number | null>(null);
   const [timeExpiredAt, setTimeExpiredAt] = useState<number | null>(null);
   const [showTimeUpModal, setShowTimeUpModal] = useState(false);
-
-  // --- Refs ---
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const questionStartTime = useRef<number>(Date.now());
   const routeRef = useRef(route);
 
-  // --- Effects ---
   useEffect(() => {
     routeRef.current = route;
   }, [route]);
@@ -152,7 +153,6 @@ export function useDiagnosticFlow() {
     requestAnimationFrame(() => window.scrollTo(0, 0));
   }, [screen, questionIndex, stage]);
 
-  // --- Timer ---
   const handleTimeUp = useCallback(() => {
     setTimeExpiredAt(Date.now());
     setTimeRemaining(0);
@@ -162,11 +162,9 @@ export function useDiagnosticFlow() {
     }
     setShowTimeUpModal(true);
   }, []);
-
   const handleContinueAfterTimeUp = useCallback(() => {
     setShowTimeUpModal(false);
   }, []);
-
   const handleViewResultsAfterTimeUp = useCallback(() => {
     setShowTimeUpModal(false);
     const currentRoute = routeRef.current;
@@ -203,33 +201,27 @@ export function useDiagnosticFlow() {
     };
   }, [screen, handleTimeUp, timeExpiredAt]);
 
-  // --- Question handlers ---
   const resetQuestionState = () => {
     setSelectedAnswer(null);
     setIsDontKnow(false);
     questionStartTime.current = Date.now();
   };
-
   const getCurrentQuestion = (): MSTQuestion => {
     if (stage === 1) return MST_QUESTIONS.R1[questionIndex];
     if (!route)
       throw new Error("getCurrentQuestion: route is not set for stage 2");
     return getStage2Questions(route)[questionIndex];
   };
-
   const handleSelectAnswer = useCallback((answer: string) => {
     setSelectedAnswer(answer);
     setIsDontKnow(false);
   }, []);
-
   const handleSelectDontKnow = useCallback(() => {
     setIsDontKnow(true);
     setSelectedAnswer(null);
   }, []);
-
   const handleFatalError = useCallback(() => setScreen("maintenance"), []);
 
-  // --- Flow handlers ---
   const fetchRoutes = async (
     atomResults: { atomId: string; mastered: boolean }[],
     diagnosticScore: number
@@ -260,7 +252,6 @@ export function useDiagnosticFlow() {
     }
     setScreen("partial-results");
   };
-
   const handleMiniFormSubmit = async (data: MiniFormData) => {
     const result = await registerUser(data.email, data.userType, data.curso);
     if (!result.success || !result.userId) {
@@ -270,7 +261,6 @@ export function useDiagnosticFlow() {
     setUserId(result.userId);
     await startTest(result.userId);
   };
-
   const startTest = async (registeredUserId?: string) => {
     trackDiagnosticStarted();
     clearAllDiagnosticData();
@@ -306,14 +296,12 @@ export function useDiagnosticFlow() {
     setScreen("question");
     questionStartTime.current = now;
   };
-
   const continueToStage2 = () => {
     setStage(2);
     setQuestionIndex(0);
     resetQuestionState();
     setScreen("question");
   };
-
   const calculateAndShowResults = async () => {
     const counts = getResponseCounts();
     if (!route) {
@@ -342,7 +330,6 @@ export function useDiagnosticFlow() {
     }
   };
 
-  /** Submit response and advance to next question/stage/results */
   const handleNext = useCallback(
     async (
       correctAnswer: string | null,
@@ -422,7 +409,6 @@ export function useDiagnosticFlow() {
     ]
   );
 
-  // --- Profile handlers ---
   const saveProfileAndShowResults = async (profilingData?: ProfilingData) => {
     if (!route) throw new Error("Cannot save profile: route is not set");
     const result = await buildAndSaveProfile({
@@ -453,9 +439,21 @@ export function useDiagnosticFlow() {
     await saveProfileAndShowResults(profilingData);
   };
 
-  const handleProfileSkip = async () => {
-    trackProfilingSkipped();
-    await saveProfileAndShowResults();
+  /** Navigate to confirm-skip screen (from partial-results or profiling) */
+  const handleSkipToConfirm = () => {
+    trackConfirmSkipViewed();
+    setScreen("confirm-skip");
+  };
+  /** User confirmed exit — clear data and show thank-you */
+  const handleConfirmExit = () => {
+    trackConfirmSkipExit();
+    clearAllDiagnosticData();
+    setScreen("thank-you");
+  };
+  /** User changed their mind on confirm-skip — go back to profiling */
+  const handleBackToProfiling = () => {
+    trackConfirmSkipBackToProfiling();
+    setScreen("profiling");
   };
 
   return {
@@ -495,6 +493,8 @@ export function useDiagnosticFlow() {
     handleViewResultsAfterTimeUp,
     continueToStage2,
     handleProfileSubmit,
-    handleProfileSkip,
+    handleSkipToConfirm,
+    handleConfirmExit,
+    handleBackToProfiling,
   };
 }

@@ -118,6 +118,15 @@ export interface ProfilingCompletedProperties extends BaseEventProperties {
 /** Profiling skipped event — no extra props beyond base event */
 export type ProfilingSkippedProperties = BaseEventProperties;
 
+/** Confirm skip screen viewed — user is considering exiting */
+export type ConfirmSkipViewedProperties = BaseEventProperties;
+
+/** Confirm skip exit — user confirmed they want to leave */
+export type ConfirmSkipExitProperties = BaseEventProperties;
+
+/** Confirm skip back to profiling — user changed their mind */
+export type ConfirmSkipBackToProfilingProperties = BaseEventProperties;
+
 // ============================================================================
 // EVENT NAMES (12 core funnel events)
 // ============================================================================
@@ -134,7 +143,10 @@ export type AnalyticsEventName =
   | "route_explored"
   | "mini_form_completed"
   | "profiling_completed"
-  | "profiling_skipped";
+  | "profiling_skipped"
+  | "confirm_skip_viewed"
+  | "confirm_skip_exit"
+  | "confirm_skip_back_to_profiling";
 
 // ============================================================================
 // EVENT MAP (for type-safe event tracking)
@@ -153,4 +165,7 @@ export interface AnalyticsEventMap {
   mini_form_completed: MiniFormCompletedProperties;
   profiling_completed: ProfilingCompletedProperties;
   profiling_skipped: ProfilingSkippedProperties;
+  confirm_skip_viewed: ConfirmSkipViewedProperties;
+  confirm_skip_exit: ConfirmSkipExitProperties;
+  confirm_skip_back_to_profiling: ConfirmSkipBackToProfilingProperties;
 }

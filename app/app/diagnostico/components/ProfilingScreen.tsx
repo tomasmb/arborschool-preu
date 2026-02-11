@@ -1,16 +1,14 @@
 "use client";
 
 /**
- * Profiling Screen
+ * Profiling Screen — "Cuéntanos sobre ti"
  *
- * Optional profiling step shown after partial results.
  * Collects: meta puntaje PAES, fecha PAES, en preu, tipo colegio.
- *
- * Replaces the old SignupScreen in the flow. Unlike the old flow,
- * the user's email is already captured — this is a "personalize your plan"
- * step with a de-emphasized skip link.
+ * This data is used to design better study strategies once the platform
+ * launches. In exchange, the student unlocks detailed results.
  *
  * All fields are optional. Submit sends whatever was filled.
+ * Skip link leads to confirm-skip screen (not to results).
  */
 
 import { useState, useEffect } from "react";
@@ -202,14 +200,15 @@ export function ProfilingScreen({
               transition-all duration-700 delay-100
               ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
-            Personaliza tu plan
+            Cuéntanos sobre ti
           </h2>
 
           <p
             className={`text-sm text-cool-gray mb-2 transition-all duration-700 delay-150
               ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
-            30 segundos — todo es opcional
+            Estos datos nos ayudan a diseñar la mejor estrategia de estudio para
+            ti.
           </p>
 
           {/* Score reminder badge */}
@@ -314,19 +313,19 @@ export function ProfilingScreen({
             </div>
           </form>
 
-          {/* De-emphasized skip link */}
+          {/* De-emphasized skip link — explicit consequence */}
           <button
             onClick={onSkip}
-            aria-label="Saltar y ver resultados"
+            aria-label="Salir sin ver detalles"
             className={`mt-6 text-xs text-gray-400 hover:text-gray-500 transition-colors
               ${isLoaded ? "opacity-100" : "opacity-0"}`}
             style={{ transitionDelay: "600ms" }}
           >
-            Saltar y ver resultados
+            Salir sin ver detalles
           </button>
         </div>
 
-        {/* Footer with explanation */}
+        {/* Footer with branding */}
         <div
           className={`flex items-center justify-center mt-6 transition-all duration-700 delay-700
             ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
@@ -339,9 +338,7 @@ export function ProfilingScreen({
               height={20}
               className="opacity-70"
             />
-            <span className="text-xs text-cool-gray">
-              Usamos estos datos para recomendarte mejor
-            </span>
+            <span className="text-xs text-cool-gray">Arbor PreU</span>
           </div>
         </div>
       </div>

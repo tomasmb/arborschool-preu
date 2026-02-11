@@ -162,7 +162,9 @@ type Screen =
   | "transition"
   | "partial-results"
   | "profiling"
+  | "confirm-skip"
   | "results"
+  | "thank-you"
   | "maintenance";
 
 /** Results summary for storage (full DiagnosticResults is too large) */

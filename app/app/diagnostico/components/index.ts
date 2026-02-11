@@ -13,6 +13,8 @@ export {
   type TopRouteInfo,
 } from "./ResultsScreen";
 export { MaintenanceScreen } from "./MaintenanceScreen";
+export { ConfirmSkipScreen } from "./ConfirmSkipScreen";
+export { ThankYouScreen } from "./ThankYouScreen";
 export { DiagnosticHeader } from "./DiagnosticHeader";
 export { Confetti } from "./Confetti";
 export { ExampleResultsModal } from "./ExampleResultsModal";

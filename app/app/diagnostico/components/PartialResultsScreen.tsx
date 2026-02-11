@@ -4,13 +4,13 @@
  * Partial Results Screen
  *
  * Shows the student's score immediately after completing the diagnostic,
- * then encourages them to personalize their plan via optional profiling.
- * This creates a curiosity gap that drives conversion.
+ * then explains the trade: answer 4 quick questions about yourself to
+ * unlock detailed results (question review + learning routes).
  *
  * Key UX principles:
  * - Instant gratification: Score is shown immediately
- * - Curiosity gap: Tease what's hidden (personalized plan)
- * - Loss aversion: Subtle skip implies losing access
+ * - Honest trade: Explain what they get (details) for what they give (info)
+ * - Clear consequence: Skip link explicitly says "sin ver detalles"
  * - Concrete value prop: "+X puntos en ~Y horas" is highly motivating
  */
 
@@ -42,9 +42,9 @@ interface PartialResultsScreenProps {
   studyHours?: number;
   /** Whether routes are still loading */
   routesLoading?: boolean;
-  /** Handler for "Ver mi plan" CTA */
+  /** Handler for "Continuar" CTA — goes to profiling */
   onContinue: () => void;
-  /** Handler for "Salir sin guardar" skip link */
+  /** Handler for "Salir sin ver detalles" — goes to confirm-skip */
   onSkip: () => void;
 }
 
@@ -52,11 +52,30 @@ interface PartialResultsScreenProps {
 // CONSTANTS
 // ============================================================================
 
-const CTA_LABEL = "Personalizar mi plan";
+const CTA_LABEL = "Continuar";
 
 // ============================================================================
 // HELPERS
 // ============================================================================
+
+/** Checkmark icon reused in teaser bullet list */
+function CheckIcon() {
+  return (
+    <svg
+      className="w-4 h-4 text-success mt-0.5 shrink-0"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M5 13l4 4L19 7"
+      />
+    </svg>
+  );
+}
 
 /**
  * Generates animation classes for staggered fade-in effect.
@@ -113,9 +132,7 @@ export function PartialResultsScreen({
   // Determine if we have improvement data
   const hasImprovementData = potentialImprovement > 0 && studyHours > 0;
 
-  /**
-   * Handles CTA click: tracks the event then continues to profiling.
-   */
+  /** Handles CTA click: tracks the event then continues to profiling. */
   const handleCtaClick = () => {
     trackPartialResultsCtaClicked(performanceTier, CTA_LABEL);
     onContinue();
@@ -189,13 +206,13 @@ export function PartialResultsScreen({
             </div>
           )}
 
-          {/* Teaser Card - What you'll get with profiling */}
+          {/* Teaser Card - Unlock detailed results */}
           <div
             className={`card p-6 mb-6 bg-gradient-to-br from-white to-off-white border-gray-200 
               ${getAnimationClasses(showContent, "300")}`}
           >
             <div className="text-center">
-              {/* Clipboard icon for profiling */}
+              {/* Lock/unlock icon */}
               <div className="inline-flex items-center justify-center w-11 h-11 rounded-full bg-primary/10 mb-4">
                 <svg
                   className="w-5 h-5 text-primary"
@@ -207,66 +224,36 @@ export function PartialResultsScreen({
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                    d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"
                   />
                 </svg>
               </div>
 
               <h3 className="text-lg font-semibold text-charcoal mb-3">
-                Personaliza tu plan de estudio
+                Desbloquea tus resultados detallados
               </h3>
 
-              {/* What's included - bullet list */}
-              <div className="text-left text-sm text-cool-gray space-y-2.5">
+              {/* What they unlock - bullet list */}
+              <div className="text-left text-sm text-cool-gray space-y-2.5 mb-4">
                 <div className="flex items-start gap-2">
-                  <svg
-                    className="w-4 h-4 text-success mt-0.5 shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  <span>Ruta de estudio ajustada a tu meta</span>
+                  <CheckIcon />
+                  <span>Revisa cada respuesta correcta e incorrecta</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <svg
-                    className="w-4 h-4 text-success mt-0.5 shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  <span>Revisión detallada de tus respuestas</span>
+                  <CheckIcon />
+                  <span>Recibe rutas de aprendizaje recomendadas</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <svg
-                    className="w-4 h-4 text-success mt-0.5 shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
+                  <CheckIcon />
                   <span>Recomendaciones basadas en tu situación</span>
                 </div>
               </div>
+
+              {/* Explanation of the trade */}
+              <p className="text-xs text-cool-gray">
+                Responde 4 preguntas rápidas sobre ti para que podamos diseñar
+                la mejor estrategia de estudio.
+              </p>
             </div>
           </div>
 
@@ -278,11 +265,11 @@ export function PartialResultsScreen({
 
             {/* Expectation line */}
             <p className="text-xs text-cool-gray mt-3 max-w-sm mx-auto">
-              Responde 4 preguntas rápidas para personalizar tus resultados.
+              4 preguntas · Menos de 30 segundos
             </p>
           </div>
 
-          {/* De-emphasized skip link */}
+          {/* De-emphasized skip link — explicit consequence */}
           <div
             className={`text-center mt-8 ${getAnimationClasses(showContent, "500")}`}
           >
@@ -290,7 +277,7 @@ export function PartialResultsScreen({
               onClick={onSkip}
               className="text-xs text-gray-400 hover:text-gray-500 transition-colors"
             >
-              Ver resultados sin personalizar
+              Salir sin ver detalles
             </button>
           </div>
         </div>

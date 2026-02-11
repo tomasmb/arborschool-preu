@@ -362,3 +362,27 @@ export function trackProfilingSkipped(): void {
   // Clean up diagnostic timer (flow is complete)
   clearDiagnosticStartTime();
 }
+
+/**
+ * Tracks when user sees the confirm-skip screen (considering exiting).
+ */
+export function trackConfirmSkipViewed(): void {
+  trackEvent("confirm_skip_viewed", {});
+}
+
+/**
+ * Tracks when user confirms exit on the confirm-skip screen.
+ */
+export function trackConfirmSkipExit(): void {
+  trackEvent("confirm_skip_exit", {});
+
+  // Clean up diagnostic timer (flow is complete)
+  clearDiagnosticStartTime();
+}
+
+/**
+ * Tracks when user goes back to profiling from confirm-skip screen.
+ */
+export function trackConfirmSkipBackToProfiling(): void {
+  trackEvent("confirm_skip_back_to_profiling", {});
+}
