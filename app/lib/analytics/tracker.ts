@@ -222,18 +222,6 @@ export function trackDiagnosticIntroViewed(): void {
 }
 
 /**
- * Tracks diagnostic start. Call when user clicks "Comenzar".
- */
-export function trackDiagnosticStarted(): void {
-  markDiagnosticStart();
-  const utmParams = getPersistedUTMParams();
-
-  trackEvent("diagnostic_started", {
-    ...utmParams,
-  });
-}
-
-/**
  * Tracks diagnostic completion. Call when user finishes Q16.
  */
 export function trackDiagnosticCompleted(
@@ -288,8 +276,7 @@ export function trackResultsViewed(
   paesScoreMax: number,
   performanceTier: AnalyticsEventMap["results_viewed"]["performance_tier"],
   totalCorrect: number,
-  route: AnalyticsEventMap["results_viewed"]["route"],
-  ctaLabel: string
+  route: AnalyticsEventMap["results_viewed"]["route"]
 ): void {
   trackEvent("results_viewed", {
     paes_score_min: paesScoreMin,
@@ -297,7 +284,6 @@ export function trackResultsViewed(
     performance_tier: performanceTier,
     total_correct: totalCorrect,
     route,
-    cta_label: ctaLabel,
   });
 }
 
@@ -316,7 +302,8 @@ export function trackRouteExplored(
 
 /**
  * Tracks mini-form completion (email + role + curso, before test).
- * Also identifies the user so all subsequent events are linked.
+ * Also identifies the user and marks the diagnostic start time,
+ * since form submission IS the test start (single user action).
  */
 export function trackMiniFormCompleted(
   email: string,
@@ -326,10 +313,16 @@ export function trackMiniFormCompleted(
   // Identify the user early (since we now have their email)
   identifyUser(email, { user_type: userType, curso });
 
+  // Mark diagnostic start time (for elapsed time calculation later)
+  markDiagnosticStart();
+
+  const utmParams = getPersistedUTMParams();
+
   trackEvent("mini_form_completed", {
     email,
     user_type: userType,
     curso,
+    ...utmParams,
   });
 }
 
@@ -346,16 +339,6 @@ export function trackProfilingCompleted(filledFields: {
     paes_date_filled: filledFields.paesDate,
     in_preu_filled: filledFields.inPreu,
   });
-
-  // Clean up diagnostic timer (flow is complete)
-  clearDiagnosticStartTime();
-}
-
-/**
- * Tracks when user skips the profiling step.
- */
-export function trackProfilingSkipped(): void {
-  trackEvent("profiling_skipped", {});
 
   // Clean up diagnostic timer (flow is complete)
   clearDiagnosticStartTime();
@@ -383,4 +366,34 @@ export function trackConfirmSkipExit(): void {
  */
 export function trackConfirmSkipBackToProfiling(): void {
   trackEvent("confirm_skip_back_to_profiling", {});
+}
+
+/**
+ * Tracks stage 1 completion — user finished the 8 routing questions.
+ * Key mid-funnel event for understanding test drop-off.
+ */
+export function trackStage1Completed(
+  correctCount: number,
+  assignedRoute: AnalyticsEventMap["stage_1_completed"]["assigned_route"]
+): void {
+  trackEvent("stage_1_completed", {
+    correct_count: correctCount,
+    assigned_route: assignedRoute,
+  });
+}
+
+/**
+ * Tracks when the 30-minute timer expires.
+ * Critical for understanding test difficulty and time allocation.
+ */
+export function trackTimeExpired(
+  stage: 1 | 2,
+  questionIndex: number,
+  questionsAnswered: number
+): void {
+  trackEvent("time_expired", {
+    stage,
+    question_index: questionIndex,
+    questions_answered: questionsAnswered,
+  });
 }

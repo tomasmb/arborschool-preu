@@ -52,13 +52,6 @@ export interface DiagnosticIntroViewedProperties extends BaseEventProperties {
   device_type: DeviceType;
 }
 
-/** Diagnostic started event */
-export interface DiagnosticStartedProperties extends BaseEventProperties {
-  utm_source?: string;
-  utm_medium?: string;
-  utm_campaign?: string;
-}
-
 /** Diagnostic completed event */
 export interface DiagnosticCompletedProperties extends BaseEventProperties {
   total_correct: number;
@@ -76,7 +69,6 @@ export interface ResultsViewedProperties extends BaseEventProperties {
   total_correct: number;
   /** MST route taken: A=Fundamental, B=Intermedio, C=Avanzado */
   route: "A" | "B" | "C";
-  cta_label: string;
 }
 
 /** Route details expanded event - user clicked "Explorar mi ruta personalizada" */
@@ -105,6 +97,9 @@ export interface MiniFormCompletedProperties extends BaseEventProperties {
   email: string;
   user_type: string;
   curso: string;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
 }
 
 /** Profiling completed event (optional fields after test) */
@@ -113,9 +108,6 @@ export interface ProfilingCompletedProperties extends BaseEventProperties {
   paes_date_filled: boolean;
   in_preu_filled: boolean;
 }
-
-/** Profiling skipped event — no extra props beyond base event */
-export type ProfilingSkippedProperties = BaseEventProperties;
 
 /** Confirm skip screen viewed — user is considering exiting */
 export type ConfirmSkipViewedProperties = BaseEventProperties;
@@ -126,23 +118,41 @@ export type ConfirmSkipExitProperties = BaseEventProperties;
 /** Confirm skip back to profiling — user changed their mind */
 export type ConfirmSkipBackToProfilingProperties = BaseEventProperties;
 
+/** Stage 1 completed — user finished the 8 routing questions */
+export interface Stage1CompletedProperties extends BaseEventProperties {
+  /** Number of correct answers in stage 1 (0-8) */
+  correct_count: number;
+  /** Route assigned based on stage 1 performance */
+  assigned_route: "A" | "B" | "C";
+}
+
+/** Time expired — the 30-minute timer ran out */
+export interface TimeExpiredProperties extends BaseEventProperties {
+  /** Current stage when time expired (1 or 2) */
+  stage: 1 | 2;
+  /** 0-based index of the question the user was on */
+  question_index: number;
+  /** Total questions answered before time expired */
+  questions_answered: number;
+}
+
 // ============================================================================
-// EVENT NAMES (12 core funnel events)
+// EVENT NAMES (14 core funnel events)
 // ============================================================================
 
 export type AnalyticsEventName =
   | "landing_page_viewed"
   | "landing_cta_clicked"
   | "diagnostic_intro_viewed"
-  | "diagnostic_started"
+  | "mini_form_completed"
   | "diagnostic_completed"
+  | "stage_1_completed"
+  | "time_expired"
   | "partial_results_viewed"
   | "partial_results_cta_clicked"
   | "results_viewed"
   | "route_explored"
-  | "mini_form_completed"
   | "profiling_completed"
-  | "profiling_skipped"
   | "confirm_skip_viewed"
   | "confirm_skip_exit"
   | "confirm_skip_back_to_profiling";
@@ -155,15 +165,15 @@ export interface AnalyticsEventMap {
   landing_page_viewed: LandingPageViewedProperties;
   landing_cta_clicked: LandingCtaClickedProperties;
   diagnostic_intro_viewed: DiagnosticIntroViewedProperties;
-  diagnostic_started: DiagnosticStartedProperties;
+  mini_form_completed: MiniFormCompletedProperties;
   diagnostic_completed: DiagnosticCompletedProperties;
+  stage_1_completed: Stage1CompletedProperties;
+  time_expired: TimeExpiredProperties;
   partial_results_viewed: PartialResultsViewedProperties;
   partial_results_cta_clicked: PartialResultsCtaClickedProperties;
   results_viewed: ResultsViewedProperties;
   route_explored: RouteExploredProperties;
-  mini_form_completed: MiniFormCompletedProperties;
   profiling_completed: ProfilingCompletedProperties;
-  profiling_skipped: ProfilingSkippedProperties;
   confirm_skip_viewed: ConfirmSkipViewedProperties;
   confirm_skip_exit: ConfirmSkipExitProperties;
   confirm_skip_back_to_profiling: ConfirmSkipBackToProfilingProperties;
