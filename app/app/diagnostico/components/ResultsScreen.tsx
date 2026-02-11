@@ -206,8 +206,7 @@ export function ResultsScreen({
         results.paesMax,
         performanceTier,
         totalCorrect,
-        route,
-        CTA_LABEL
+        route
       );
     }
   }, [results.paesMin, results.paesMax, performanceTier, totalCorrect, route]);

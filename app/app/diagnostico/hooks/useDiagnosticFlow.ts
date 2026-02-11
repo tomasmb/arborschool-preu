@@ -31,9 +31,10 @@ import { type QuestionAtom } from "@/lib/diagnostic/qtiParser";
 import { getPerformanceTier } from "@/lib/config/tiers";
 import {
   trackDiagnosticIntroViewed,
-  trackDiagnosticStarted,
   trackDiagnosticCompleted,
   trackMiniFormCompleted,
+  trackStage1Completed,
+  trackTimeExpired,
   trackProfilingCompleted,
   trackConfirmSkipViewed,
   trackConfirmSkipExit,
@@ -68,14 +69,12 @@ const TOTAL_TIME_SECONDS = 30 * 60; // 30 minutes
 
 /** Core diagnostic flow hook — state, effects, and handlers for all screens. */
 export function useDiagnosticFlow() {
-  // --- Navigation & test progress ---
   const [screen, setScreen] = useState<Screen>("mini-form");
   const [stage, setStage] = useState<1 | 2>(1);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isDontKnow, setIsDontKnow] = useState(false);
 
-  // --- Responses & results ---
   const [r1Responses, setR1Responses] = useState<DiagnosticResponse[]>([]);
   const [stage2Responses, setStage2Responses] = useState<DiagnosticResponse[]>(
     []
@@ -86,8 +85,6 @@ export function useDiagnosticFlow() {
   const [topRouteInfo, setTopRouteInfo] = useState<TopRouteInfo | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [profileSaved, setProfileSaved] = useState(false);
-
-  // --- Cached data (after profile save clears localStorage) ---
   const [cachedResponsesForReview, setCachedResponsesForReview] = useState<
     ResponseForReview[]
   >([]);
@@ -101,16 +98,12 @@ export function useDiagnosticFlow() {
   const [cachedActualRoute, setCachedActualRoute] = useState<Route | null>(
     null
   );
-
-  // --- Learning routes ---
   const [routesData, setRoutesData] = useState<LearningRoutesResponse | null>(
     null
   );
   const [routesLoading, setRoutesLoading] = useState(false);
   const [cachedRoutesData, setCachedRoutesData] =
     useState<LearningRoutesResponse | null>(null);
-
-  // --- Timer & tracking ---
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [timeRemaining, setTimeRemaining] = useState(TOTAL_TIME_SECONDS);
   const [timerStartedAt, setTimerStartedAt] = useState<number | null>(null);
@@ -124,7 +117,11 @@ export function useDiagnosticFlow() {
     routeRef.current = route;
   }, [route]);
   useEffect(() => {
-    trackDiagnosticIntroViewed();
+    if (screen === "mini-form") {
+      trackDiagnosticIntroViewed();
+    }
+    // Only fire on initial mount — not on every screen change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useSessionPersistence(
     {
@@ -153,6 +150,11 @@ export function useDiagnosticFlow() {
   }, [screen, questionIndex, stage]);
 
   const handleTimeUp = useCallback(() => {
+    // Calculate questions answered before time expired
+    const stage1Answered = stage === 1 ? questionIndex : QUESTIONS_PER_STAGE;
+    const stage2Answered = stage === 2 ? questionIndex : 0;
+    trackTimeExpired(stage, questionIndex, stage1Answered + stage2Answered);
+
     setTimeExpiredAt(Date.now());
     setTimeRemaining(0);
     if (timerRef.current) {
@@ -160,7 +162,7 @@ export function useDiagnosticFlow() {
       timerRef.current = null;
     }
     setShowTimeUpModal(true);
-  }, []);
+  }, [stage, questionIndex]);
   const handleContinueAfterTimeUp = useCallback(() => {
     setShowTimeUpModal(false);
   }, []);
@@ -261,7 +263,6 @@ export function useDiagnosticFlow() {
     await startTest(result.userId);
   };
   const startTest = async (registeredUserId?: string) => {
-    trackDiagnosticStarted();
     clearAllDiagnosticData();
     setStage(1);
     setQuestionIndex(0);
@@ -378,7 +379,10 @@ export function useDiagnosticFlow() {
         setR1Responses([...r1Responses, responseData]);
         if (questionIndex === QUESTIONS_PER_STAGE - 1) {
           const storedR1 = getStoredResponses().filter((r) => r.stage === 1);
-          setRoute(getRoute(storedR1.filter((r) => r.isCorrect).length));
+          const correctCount = storedR1.filter((r) => r.isCorrect).length;
+          const assignedRoute = getRoute(correctCount);
+          trackStage1Completed(correctCount, assignedRoute);
+          setRoute(assignedRoute);
           setScreen("transition");
         } else {
           setQuestionIndex(questionIndex + 1);
@@ -436,7 +440,6 @@ export function useDiagnosticFlow() {
     });
     await saveProfileAndShowResults(profilingData);
   };
-
   /** Navigate to confirm-skip screen (from partial-results or profiling) */
   const handleSkipToConfirm = () => {
     trackConfirmSkipViewed();
@@ -453,7 +456,6 @@ export function useDiagnosticFlow() {
     trackConfirmSkipBackToProfiling();
     setScreen("profiling");
   };
-
   return {
     screen,
     setScreen,
