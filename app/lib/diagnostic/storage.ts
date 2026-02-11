@@ -157,12 +157,12 @@ export function generateLocalAttemptId(): string {
 
 type Screen =
   | "welcome"
+  | "mini-form"
   | "question"
   | "transition"
   | "partial-results"
+  | "profiling"
   | "results"
-  | "signup"
-  | "thankyou"
   | "maintenance";
 
 /** Results summary for storage (full DiagnosticResults is too large) */

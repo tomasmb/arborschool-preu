@@ -39,16 +39,20 @@ import {
   trackDiagnosticIntroViewed,
   trackDiagnosticStarted,
   trackDiagnosticCompleted,
-  trackSignupCompleted,
+  trackMiniFormCompleted,
+  trackProfilingCompleted,
+  trackProfilingSkipped,
 } from "@/lib/analytics";
 import {
   WelcomeScreen,
+  MiniFormScreen,
+  type MiniFormData,
   QuestionScreen,
   TransitionScreen,
   PartialResultsScreen,
+  ProfilingScreen,
+  type ProfilingData,
   ResultsScreen,
-  SignupScreen,
-  ThankYouScreen,
   MaintenanceScreen,
   DiagnosticHeader,
   OfflineIndicator,
@@ -66,12 +70,12 @@ import {
 
 type Screen =
   | "welcome"
+  | "mini-form"
   | "question"
   | "transition"
   | "partial-results"
+  | "profiling"
   | "results"
-  | "signup"
-  | "thankyou"
   | "maintenance";
 
 // ============================================================================
@@ -103,17 +107,16 @@ export default function DiagnosticoPage() {
   // This is set by ResultsScreen when the learning routes API returns
   const [consistentScore, setConsistentScore] = useState<number | null>(null);
 
-  // Top route info from ResultsScreen (for ThankYouScreen snapshot)
+  // Top route info from ResultsScreen
   const [topRouteInfo, setTopRouteInfo] = useState<TopRouteInfo | null>(null);
 
-  // Signup state
-  const [email, setEmail] = useState("");
-  const [signupStatus, setSignupStatus] = useState<
-    "idle" | "loading" | "success" | "error"
-  >("idle");
-  const [signupError, setSignupError] = useState("");
+  // User ID (set after mini-form registration, before test starts)
+  const [userId, setUserId] = useState<string | null>(null);
 
-  // Cached data for results screen after signup (localStorage gets cleared)
+  // Profile save status (tracks whether profile API call succeeded)
+  const [profileSaved, setProfileSaved] = useState(false);
+
+  // Cached data for results screen after profile save (localStorage gets cleared)
   const [cachedResponsesForReview, setCachedResponsesForReview] = useState<
     ResponseForReview[]
   >([]);
@@ -199,7 +202,7 @@ export default function DiagnosticoPage() {
           }
         }
 
-        // Restore results if on results/signup screen
+        // Restore results if on results/profiling screen
         if (storedSession.results) {
           // We need full DiagnosticResults, but storage only has summary
           // The full axis performance will be recalculated from responses
@@ -214,8 +217,8 @@ export default function DiagnosticoPage() {
   useEffect(() => {
     // Don't save until initial restoration is complete
     if (!isRestored) return;
-    // Don't save welcome or thankyou screens (these are entry/exit points)
-    if (screen === "welcome" || screen === "thankyou") return;
+    // Don't save welcome or mini-form screens (these are entry points)
+    if (screen === "welcome" || screen === "mini-form") return;
 
     // Always calculate counts from localStorage (source of truth after refreshes)
     const storedResponses = getStoredResponses();
@@ -304,7 +307,7 @@ export default function DiagnosticoPage() {
     );
     setResults(calculatedResults);
 
-    // Set consistent score for signup screen (midpoint of range)
+    // Set consistent score for profiling screen (midpoint of range)
     const midScore = Math.round(
       (calculatedResults.paesMin + calculatedResults.paesMax) / 2
     );
@@ -344,8 +347,35 @@ export default function DiagnosticoPage() {
     };
   }, [screen, handleTimeUp, timeExpiredAt]);
 
-  // Start the test
-  const startTest = async () => {
+  // Handle mini-form submission: register user, then start the test
+  const handleMiniFormSubmit = async (data: MiniFormData) => {
+    // Call register API to create user
+    const registerRes = await fetch("/api/diagnostic/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: data.email,
+        userType: data.userType,
+        curso: data.curso,
+      }),
+    });
+    const registerData = await registerRes.json();
+
+    if (!registerData.success || !registerData.userId) {
+      throw new Error(registerData.error || "Error al registrar");
+    }
+
+    // Track mini-form completion (also identifies user in analytics)
+    trackMiniFormCompleted(data.email, data.userType, data.curso);
+
+    setUserId(registerData.userId);
+
+    // Now start the test with the registered userId
+    await startTest(registerData.userId);
+  };
+
+  // Start the test (called after mini-form registration)
+  const startTest = async (registeredUserId?: string) => {
     // Track diagnostic started event
     trackDiagnosticStarted();
 
@@ -364,6 +394,9 @@ export default function DiagnosticoPage() {
     setTimeRemaining(TOTAL_TIME_SECONDS);
     setTimeExpiredAt(null);
     setShowTimeUpModal(false);
+    setProfileSaved(false);
+
+    const currentUserId = registeredUserId ?? userId;
 
     try {
       // Timeout after 10s to prevent hanging on stale DB connections
@@ -372,6 +405,8 @@ export default function DiagnosticoPage() {
 
       const response = await fetch("/api/diagnostic/start", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: currentUserId }),
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
@@ -386,7 +421,7 @@ export default function DiagnosticoPage() {
       saveAttemptId(data.attemptId);
     } catch (error) {
       console.error("Failed to start test:", error);
-      // Create local fallback ID so test can proceed (handles timeout & errors)
+      // Create local fallback ID so test can proceed
       const localId = generateLocalAttemptId();
       setAttemptId(localId);
       saveAttemptId(localId);
@@ -628,7 +663,7 @@ export default function DiagnosticoPage() {
     );
     setResults(calculatedResults);
 
-    // Set consistent score for signup screen (midpoint of range)
+    // Set consistent score for profiling screen (midpoint of range)
     const midScore = Math.round(
       (calculatedResults.paesMin + calculatedResults.paesMax) / 2
     );
@@ -679,113 +714,113 @@ export default function DiagnosticoPage() {
     }
   };
 
-  // Handle email signup
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return;
-
-    setSignupStatus("loading");
-    setSignupError("");
-
-    try {
-      // Get all data from localStorage (source of truth)
-      const storedResponses = getStoredResponses();
-      if (!route) {
-        throw new Error("Cannot sign up: route is not set");
-      }
-      const actualRoute = getActualRouteFromStorage(route);
-
-      // Use ALL responses for atom mastery (diagnostic purposes)
-      const allResponses = reconstructFullResponses();
-      const atomResults = computeAtomMastery(allResponses);
-
-      // Use only SCORED responses for results calculation
-      const scoredResponses = reconstructFullResponses({
-        excludeOvertime: true,
-      });
-      const isLocal = isLocalAttempt(attemptId);
-      const calculatedResults = calculateDiagnosticResults(
-        scoredResponses,
-        actualRoute
-      );
-
-      // Calculate performance tier from scored responses only
-      const counts = getResponseCounts();
-      const performanceTier = getPerformanceTier(counts.scoredCorrect);
-
-      // Build signup payload with all available data
-      const signupPayload = {
-        email,
-        attemptId: isLocal ? null : attemptId,
-        atomResults,
-        // Always include diagnostic results for email sending
-        diagnosticData: {
-          responses: isLocal ? storedResponses : [],
-          results: {
-            paesMin: calculatedResults.paesMin,
-            paesMax: calculatedResults.paesMax,
-            level: calculatedResults.level,
-            route: actualRoute,
-            totalCorrect: counts.scoredCorrect,
-            performanceTier,
-            topRoute: topRouteInfo ?? undefined,
-          },
-        },
-      };
-
-      const response = await fetch("/api/diagnostic/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(signupPayload),
-      });
-      const data = await response.json();
-
-      if (data.success) {
-        // Track signup completed event with user identification
-        trackSignupCompleted(
-          email,
-          calculatedResults.paesMin,
-          calculatedResults.paesMax,
-          performanceTier,
-          counts.scoredCorrect,
-          actualRoute
-        );
-
-        // Cache ALL data BEFORE clearing localStorage
-        // ResultsScreen needs these since localStorage will be cleared
-        const responsesToCache = getResponsesForReview();
-        setCachedResponsesForReview(responsesToCache);
-        setCachedResults(calculatedResults);
-        setCachedAtomResults(atomResults);
-        setCachedScoredCorrect(counts.scoredCorrect);
-        setCachedActualRoute(actualRoute);
-        setCachedRoutesData(routesData);
-
-        // Clear all localStorage data after successful signup
-        clearAllDiagnosticData();
-        setSignupStatus("success");
-
-        // Go to full results screen (with hasSignedUp=true)
-        // This is the endpoint for signed-up users
-        setScreen("results");
-      } else {
-        throw new Error(data.error || "Error al guardar");
-      }
-    } catch (error) {
-      setSignupStatus("error");
-      setSignupError(
-        error instanceof Error ? error.message : "Error desconocido"
-      );
+  /**
+   * Saves profile data (with or without profiling fields) and transitions
+   * to the full results screen. Called from both profiling submit and skip.
+   */
+  const saveProfileAndShowResults = async (profilingData?: ProfilingData) => {
+    if (!route) {
+      throw new Error("Cannot save profile: route is not set");
     }
+
+    const storedResponses = getStoredResponses();
+    const actualRoute = getActualRouteFromStorage(route);
+
+    // Use ALL responses for atom mastery (diagnostic purposes)
+    const allResponses = reconstructFullResponses();
+    const atomResults = computeAtomMastery(allResponses);
+
+    // Use only SCORED responses for results calculation
+    const scoredResponses = reconstructFullResponses({
+      excludeOvertime: true,
+    });
+    const isLocal = isLocalAttempt(attemptId);
+    const calculatedResults = calculateDiagnosticResults(
+      scoredResponses,
+      actualRoute
+    );
+
+    const counts = getResponseCounts();
+    const performanceTier = getPerformanceTier(counts.scoredCorrect);
+
+    // Build profile payload
+    const profilePayload = {
+      userId,
+      attemptId: isLocal ? null : attemptId,
+      profilingData,
+      atomResults,
+      diagnosticData: {
+        responses: isLocal ? storedResponses : [],
+        results: {
+          paesMin: calculatedResults.paesMin,
+          paesMax: calculatedResults.paesMax,
+          level: calculatedResults.level,
+          route: actualRoute,
+          totalCorrect: counts.scoredCorrect,
+          performanceTier,
+          topRoute: topRouteInfo ?? undefined,
+        },
+      },
+    };
+
+    const response = await fetch("/api/diagnostic/profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(profilePayload),
+    });
+    const data = await response.json();
+
+    if (!data.success) {
+      throw new Error(data.error || "Error al guardar perfil");
+    }
+
+    // Cache ALL data BEFORE clearing localStorage
+    const responsesToCache = getResponsesForReview();
+    setCachedResponsesForReview(responsesToCache);
+    setCachedResults(calculatedResults);
+    setCachedAtomResults(atomResults);
+    setCachedScoredCorrect(counts.scoredCorrect);
+    setCachedActualRoute(actualRoute);
+    setCachedRoutesData(routesData);
+
+    // Clear localStorage after successful save
+    clearAllDiagnosticData();
+    setProfileSaved(true);
+
+    // Go to full results screen
+    setScreen("results");
+  };
+
+  // Handle profiling form submission
+  const handleProfileSubmit = async (profilingData: ProfilingData) => {
+    trackProfilingCompleted({
+      paesGoal: !!profilingData.paesGoal,
+      paesDate: !!profilingData.paesDate,
+      inPreu: profilingData.inPreu !== undefined,
+      schoolType: !!profilingData.schoolType,
+    });
+
+    await saveProfileAndShowResults(profilingData);
+  };
+
+  // Handle profiling skip
+  const handleProfileSkip = async () => {
+    trackProfilingSkipped();
+    await saveProfileAndShowResults();
   };
 
   // ============================================================================
   // RENDER
   // ============================================================================
 
-  // Welcome screen
+  // Welcome screen → goes to mini-form (not directly to test)
   if (screen === "welcome") {
-    return <WelcomeScreen onStart={startTest} />;
+    return <WelcomeScreen onStart={() => setScreen("mini-form")} />;
+  }
+
+  // Mini-form screen → register user then start test
+  if (screen === "mini-form") {
+    return <MiniFormScreen onSubmit={handleMiniFormSubmit} />;
   }
 
   // Question screen
@@ -902,21 +937,15 @@ export default function DiagnosticoPage() {
         potentialImprovement={potentialImprovement}
         studyHours={studyHours}
         routesLoading={routesLoading}
-        onContinue={() => setScreen("signup")}
-        onSkip={() => {
-          clearAllDiagnosticData();
-          setScreen("thankyou");
-        }}
+        onContinue={() => setScreen("profiling")}
+        onSkip={handleProfileSkip}
       />
     );
   }
 
-  // Full Results screen (shown after signup - this is the endpoint for signed-up users)
+  // Full Results screen (shown after profiling or skip)
   if (screen === "results") {
-    // Check if user has signed up (came through signup flow)
-    const hasSignedUp = signupStatus === "success";
-
-    // After signup, localStorage is cleared - use cached data
+    // After profile save, localStorage is cleared — use cached data
     // Otherwise (session restore, etc.) read from localStorage
     let finalResults: DiagnosticResults;
     let finalAtomResults: { atomId: string; mastered: boolean }[];
@@ -925,8 +954,8 @@ export default function DiagnosticoPage() {
     let responsesForReview: ResponseForReview[];
     let precomputedRoutes: LearningRoutesResponse | null = null;
 
-    if (hasSignedUp && cachedResults && cachedActualRoute) {
-      // Use cached data (localStorage was cleared after signup)
+    if (profileSaved && cachedResults && cachedActualRoute) {
+      // Use cached data (localStorage was cleared after profile save)
       finalResults = cachedResults;
       finalAtomResults = cachedAtomResults;
       finalScoredCorrect = cachedScoredCorrect;
@@ -934,7 +963,7 @@ export default function DiagnosticoPage() {
       responsesForReview = cachedResponsesForReview;
       precomputedRoutes = cachedRoutesData;
     } else {
-      // Read from localStorage (session restore or non-signup flow)
+      // Read from localStorage (session restore)
       if (!route) {
         console.error("Results screen rendered but route is not set");
         return <MaintenanceScreen />;
@@ -969,48 +998,24 @@ export default function DiagnosticoPage() {
         responses={responsesForReview}
         onScoreCalculated={setConsistentScore}
         onTopRouteCalculated={setTopRouteInfo}
-        hasSignedUp={hasSignedUp}
+        hasSignedUp={profileSaved}
         precomputedRoutes={precomputedRoutes ?? undefined}
       />
     );
   }
 
-  // Signup screen
-  if (screen === "signup") {
-    if (!route) {
-      console.error("Signup screen rendered but route is not set");
-      return <MaintenanceScreen />;
-    }
-
-    // Use consistent score from API - require it to be set
-    if (!consistentScore) {
-      console.error("Signup screen rendered but consistentScore is not set");
-      return <MaintenanceScreen />;
-    }
-    const displayScore = consistentScore;
-
+  // Profiling screen (optional profiling after partial results)
+  if (screen === "profiling") {
     return (
-      <SignupScreen
-        email={email}
-        onEmailChange={setEmail}
-        onSubmit={handleSignup}
-        status={signupStatus}
-        error={signupError}
-        onSkip={() => {
-          clearAllDiagnosticData();
-          setScreen("thankyou");
-        }}
-        score={displayScore}
+      <ProfilingScreen
+        score={consistentScore ?? undefined}
+        onSubmit={handleProfileSubmit}
+        onSkip={handleProfileSkip}
       />
     );
   }
 
-  // Thank you screen (only for users who skip signup)
-  if (screen === "thankyou") {
-    return <ThankYouScreen onReconsider={() => setScreen("signup")} />;
-  }
-
-  // Maintenance screen - shown when questions fail to load after retries
+  // Maintenance screen — shown when questions fail to load after retries
   if (screen === "maintenance") {
     return <MaintenanceScreen />;
   }

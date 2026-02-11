@@ -26,16 +26,6 @@ export interface UTMParams {
 export type DeviceType = "mobile" | "tablet" | "desktop";
 
 // ============================================================================
-// SIGNUP INTENT
-// ============================================================================
-
-/**
- * Distinguishes waitlist conversion from future product signup.
- * Update to 'create_account' when platform launches.
- */
-export type SignupIntent = "access_waitlist" | "create_account";
-
-// ============================================================================
 // EVENT PROPERTIES
 // ============================================================================
 
@@ -95,7 +85,7 @@ export interface RouteExploredProperties extends BaseEventProperties {
   route: "A" | "B" | "C";
 }
 
-/** Partial results viewed event - gated screen before signup */
+/** Partial results viewed event - gated screen before profiling */
 export interface PartialResultsViewedProperties extends BaseEventProperties {
   paes_score_min: number;
   paes_score_max: number;
@@ -103,31 +93,35 @@ export interface PartialResultsViewedProperties extends BaseEventProperties {
   total_correct: number;
 }
 
-/** Partial results CTA clicked - user clicks to continue to signup */
+/** Partial results CTA clicked - user clicks to continue to profiling */
 export interface PartialResultsCtaClickedProperties
   extends BaseEventProperties {
   performance_tier: PerformanceTier;
   cta_label: string;
 }
 
-/** Signup completed event */
-export interface SignupCompletedProperties extends BaseEventProperties {
+/** Mini-form completed event (email + role + curso, before test) */
+export interface MiniFormCompletedProperties extends BaseEventProperties {
   email: string;
-  paes_score_min: number;
-  paes_score_max: number;
-  performance_tier: PerformanceTier;
-  total_correct: number;
-  /** MST route taken: A=Fundamental, B=Intermedio, C=Avanzado */
-  route: "A" | "B" | "C";
-  time_elapsed_seconds: number;
-  signup_intent: SignupIntent;
-  utm_source?: string;
-  utm_medium?: string;
-  utm_campaign?: string;
+  user_type: string;
+  curso: string;
+}
+
+/** Profiling completed event (optional fields after test) */
+export interface ProfilingCompletedProperties extends BaseEventProperties {
+  paes_goal_filled: boolean;
+  paes_date_filled: boolean;
+  in_preu_filled: boolean;
+  school_type_filled: boolean;
+}
+
+/** Profiling skipped event */
+export interface ProfilingSkippedProperties extends BaseEventProperties {
+  /** No extra props — just the base event */
 }
 
 // ============================================================================
-// EVENT NAMES (8 core funnel events)
+// EVENT NAMES (12 core funnel events)
 // ============================================================================
 
 export type AnalyticsEventName =
@@ -140,7 +134,9 @@ export type AnalyticsEventName =
   | "partial_results_cta_clicked"
   | "results_viewed"
   | "route_explored"
-  | "signup_completed";
+  | "mini_form_completed"
+  | "profiling_completed"
+  | "profiling_skipped";
 
 // ============================================================================
 // EVENT MAP (for type-safe event tracking)
@@ -156,5 +152,7 @@ export interface AnalyticsEventMap {
   partial_results_cta_clicked: PartialResultsCtaClickedProperties;
   results_viewed: ResultsViewedProperties;
   route_explored: RouteExploredProperties;
-  signup_completed: SignupCompletedProperties;
+  mini_form_completed: MiniFormCompletedProperties;
+  profiling_completed: ProfilingCompletedProperties;
+  profiling_skipped: ProfilingSkippedProperties;
 }

@@ -4,7 +4,7 @@
  * Partial Results Screen
  *
  * Shows the student's score immediately after completing the diagnostic,
- * but gates the detailed learning routes behind email signup.
+ * then encourages them to personalize their plan via optional profiling.
  * This creates a curiosity gap that drives conversion.
  *
  * Key UX principles:
@@ -52,7 +52,7 @@ interface PartialResultsScreenProps {
 // CONSTANTS
 // ============================================================================
 
-const CTA_LABEL = "Ver mi plan personalizado";
+const CTA_LABEL = "Personalizar mi plan";
 
 // ============================================================================
 // HELPERS
@@ -114,7 +114,7 @@ export function PartialResultsScreen({
   const hasImprovementData = potentialImprovement > 0 && studyHours > 0;
 
   /**
-   * Handles CTA click: tracks the event then continues to signup.
+   * Handles CTA click: tracks the event then continues to profiling.
    */
   const handleCtaClick = () => {
     trackPartialResultsCtaClicked(performanceTier, CTA_LABEL);
@@ -189,13 +189,13 @@ export function PartialResultsScreen({
             </div>
           )}
 
-          {/* Teaser Card - What's included */}
+          {/* Teaser Card - What you'll get with profiling */}
           <div
             className={`card p-6 mb-6 bg-gradient-to-br from-white to-off-white border-gray-200 
               ${getAnimationClasses(showContent, "300")}`}
           >
             <div className="text-center">
-              {/* Lock icon to suggest gated content */}
+              {/* Clipboard icon for profiling */}
               <div className="inline-flex items-center justify-center w-11 h-11 rounded-full bg-primary/10 mb-4">
                 <svg
                   className="w-5 h-5 text-primary"
@@ -207,13 +207,13 @@ export function PartialResultsScreen({
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
                   />
                 </svg>
               </div>
 
               <h3 className="text-lg font-semibold text-charcoal mb-3">
-                Tu Plan Personalizado está Listo
+                Personaliza tu plan de estudio
               </h3>
 
               {/* What's included - bullet list */}
@@ -232,7 +232,7 @@ export function PartialResultsScreen({
                       d="M5 13l4 4L19 7"
                     />
                   </svg>
-                  <span>Ruta de estudio personalizada según tus errores</span>
+                  <span>Ruta de estudio ajustada a tu meta</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <svg
@@ -264,7 +264,7 @@ export function PartialResultsScreen({
                       d="M5 13l4 4L19 7"
                     />
                   </svg>
-                  <span>Acceso prioritario cuando lancemos</span>
+                  <span>Recomendaciones basadas en tu situación</span>
                 </div>
               </div>
             </div>
@@ -278,12 +278,11 @@ export function PartialResultsScreen({
 
             {/* Expectation line */}
             <p className="text-xs text-cool-gray mt-3 max-w-sm mx-auto">
-              Solo necesitas tu email. Te avisamos cuando la plataforma esté
-              lista.
+              Responde 4 preguntas rápidas para personalizar tus resultados.
             </p>
           </div>
 
-          {/* Subtle Skip Link - Loss Aversion framing */}
+          {/* De-emphasized skip link */}
           <div
             className={`text-center mt-8 ${getAnimationClasses(showContent, "500")}`}
           >
@@ -291,7 +290,7 @@ export function PartialResultsScreen({
               onClick={onSkip}
               className="text-xs text-gray-400 hover:text-gray-500 transition-colors"
             >
-              Salir sin guardar
+              Ver resultados sin personalizar
             </button>
           </div>
         </div>

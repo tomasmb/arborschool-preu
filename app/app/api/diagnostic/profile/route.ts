@@ -10,6 +10,10 @@ import { eq } from "drizzle-orm";
 import { computeFullMasteryWithTransitivity } from "@/lib/diagnostic/atomMastery";
 import { sendConfirmationEmail, isEmailConfigured } from "@/lib/email";
 
+// ============================================================================
+// TYPES
+// ============================================================================
+
 interface StoredResponse {
   questionId: string;
   selectedAnswer: string;
@@ -26,6 +30,13 @@ interface TopRouteData {
   pointsGain: number;
 }
 
+interface ProfilingData {
+  paesGoal?: string;
+  paesDate?: string;
+  inPreu?: boolean;
+  schoolType?: string;
+}
+
 interface DiagnosticData {
   responses: StoredResponse[];
   results: {
@@ -39,53 +50,60 @@ interface DiagnosticData {
   } | null;
 }
 
+// ============================================================================
+// ROUTE HANDLER
+// ============================================================================
+
 /**
- * POST /api/diagnostic/signup
- * Creates a user with email and links/creates their test attempt
- * Handles both server-tracked and local-only attempts
+ * POST /api/diagnostic/profile
+ *
+ * Saves diagnostic results and optional profiling data for an existing user.
+ * Called after the test, from both profiling submit and profiling skip.
+ *
+ * The user was already created by /api/diagnostic/register before the test,
+ * so this endpoint only updates the user with profiling + results data.
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, attemptId, atomResults, diagnosticData } = body as {
-      email: string;
-      attemptId: string | null;
-      atomResults?: Array<{ atomId: string; mastered: boolean }>;
-      diagnosticData?: DiagnosticData;
-    };
+    const { userId, attemptId, profilingData, atomResults, diagnosticData } =
+      body as {
+        userId: string;
+        attemptId: string | null;
+        profilingData?: ProfilingData;
+        atomResults?: Array<{ atomId: string; mastered: boolean }>;
+        diagnosticData?: DiagnosticData;
+      };
 
-    // Email is always required
-    if (!email) {
+    // userId is required (user was created in register step)
+    if (!userId) {
       return NextResponse.json(
-        { success: false, error: "Missing email" },
+        { success: false, error: "Missing userId" },
         { status: 400 }
       );
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { success: false, error: "Invalid email format" },
-        { status: 400 }
-      );
-    }
-
-    // Check if user already exists
-    const existingUsers = await db
-      .select()
+    // Verify user exists
+    const existingUser = await db
+      .select({ id: users.id, email: users.email })
       .from(users)
-      .where(eq(users.email, email.toLowerCase()))
+      .where(eq(users.id, userId))
       .limit(1);
 
-    let userId: string;
+    if (existingUser.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "User not found" },
+        { status: 404 }
+      );
+    }
 
-    // Prepare results snapshot for storage
+    const userEmail = existingUser[0].email;
+
+    // Build update payload: results snapshot + optional profiling fields
     const resultsSnapshot = diagnosticData?.results;
-    const userDataWithResults = {
-      email: email.toLowerCase(),
-      role: "student" as const,
-      // Store results snapshot for email notifications
+    const updatePayload: Record<string, unknown> = {
+      updatedAt: new Date(),
+      // Results snapshot for email notifications
       paesScoreMin: resultsSnapshot?.paesMin ?? null,
       paesScoreMax: resultsSnapshot?.paesMax ?? null,
       performanceTier: resultsSnapshot?.performanceTier ?? null,
@@ -95,33 +113,26 @@ export async function POST(request: NextRequest) {
       topRoutePointsGain: resultsSnapshot?.topRoute?.pointsGain ?? null,
     };
 
-    if (existingUsers.length > 0) {
-      userId = existingUsers[0].id;
-      // Update existing user with latest results snapshot
-      await db
-        .update(users)
-        .set({
-          paesScoreMin: userDataWithResults.paesScoreMin,
-          paesScoreMax: userDataWithResults.paesScoreMax,
-          performanceTier: userDataWithResults.performanceTier,
-          topRouteName: userDataWithResults.topRouteName,
-          topRouteQuestionsUnlocked:
-            userDataWithResults.topRouteQuestionsUnlocked,
-          topRoutePointsGain: userDataWithResults.topRoutePointsGain,
-          updatedAt: new Date(),
-        })
-        .where(eq(users.id, userId));
-    } else {
-      const [newUser] = await db
-        .insert(users)
-        .values(userDataWithResults)
-        .returning({ id: users.id });
-      userId = newUser.id;
+    // Add profiling fields if provided
+    if (profilingData) {
+      if (profilingData.paesGoal)
+        updatePayload.paesGoal = profilingData.paesGoal;
+      if (profilingData.paesDate)
+        updatePayload.paesDate = profilingData.paesDate;
+      if (profilingData.inPreu !== undefined) {
+        updatePayload.inPreu = profilingData.inPreu;
+      }
+      if (profilingData.schoolType) {
+        updatePayload.schoolType = profilingData.schoolType;
+      }
     }
+
+    // Update user with all collected data
+    await db.update(users).set(updatePayload).where(eq(users.id, userId));
 
     let finalAttemptId = attemptId;
 
-    // If we have a valid server attempt, link it to the user
+    // Link server attempt to user if not already linked
     if (attemptId && !attemptId.startsWith("local-")) {
       await db
         .update(testAttempts)
@@ -133,9 +144,8 @@ export async function POST(request: NextRequest) {
         .set({ userId })
         .where(eq(studentResponses.testAttemptId, attemptId));
     }
-    // If we have diagnostic data from a local attempt, create the records now
+    // Create records from local attempt data
     else if (diagnosticData && diagnosticData.responses.length > 0) {
-      // Compute correct answers from responses - don't use fallback
       const correctAnswers = diagnosticData.responses.filter(
         (r) => r.isCorrect
       ).length;
@@ -170,7 +180,7 @@ export async function POST(request: NextRequest) {
       const validResponses = diagnosticData.responses.filter((r) => {
         if (!r.questionId) {
           console.error(
-            `Response at stage ${r.stage}, index ${r.questionIndex} has no questionId`
+            `Response at stage ${r.stage}, index ${r.questionIndex} missing questionId`
           );
           return false;
         }
@@ -198,14 +208,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Compute full atom mastery with transitivity and save all atoms
+    // Compute full atom mastery with transitivity and save
     if (atomResults && Array.isArray(atomResults) && atomResults.length > 0) {
       try {
-        // Compute full mastery for ALL atoms using transitivity
         const fullMastery =
           await computeFullMasteryWithTransitivity(atomResults);
 
-        // Save all atom mastery records (batch insert for efficiency)
         const masteryRecords = fullMastery.map((result) => ({
           userId,
           atomId: result.atomId,
@@ -221,7 +229,7 @@ export async function POST(request: NextRequest) {
             result.source === "direct" && result.mastered ? 1 : 0,
         }));
 
-        // Insert in batches to avoid overwhelming the database
+        // Insert in batches
         const BATCH_SIZE = 50;
         for (let i = 0; i < masteryRecords.length; i += BATCH_SIZE) {
           const batch = masteryRecords.slice(i, i + BATCH_SIZE);
@@ -234,19 +242,14 @@ export async function POST(request: NextRequest) {
         );
       } catch (error) {
         console.error("Failed to compute/save full atom mastery:", error);
-        // Don't fail the signup if atom mastery fails
       }
     }
 
-    // Send confirmation email (non-blocking, don't fail signup if email fails)
+    // Send confirmation email (non-blocking)
     if (resultsSnapshot && isEmailConfigured()) {
       try {
         const emailResult = await sendConfirmationEmail(
-          {
-            email: email.toLowerCase(),
-            userId,
-            firstName: undefined, // We don't collect first name at signup
-          },
+          { email: userEmail, userId, firstName: undefined },
           {
             paesMin: resultsSnapshot.paesMin,
             paesMax: resultsSnapshot.paesMax,
@@ -256,13 +259,12 @@ export async function POST(request: NextRequest) {
         );
 
         if (emailResult.success) {
-          console.log(`[Signup] Confirmation email sent to ${email}`);
+          console.log(`[Profile] Confirmation email sent to ${userEmail}`);
         } else {
-          console.warn(`[Signup] Failed to send email: ${emailResult.error}`);
+          console.warn(`[Profile] Failed to send email: ${emailResult.error}`);
         }
       } catch (emailError) {
-        // Log but don't fail the signup
-        console.error("[Signup] Email exception:", emailError);
+        console.error("[Profile] Email exception:", emailError);
       }
     }
 
@@ -270,13 +272,13 @@ export async function POST(request: NextRequest) {
       success: true,
       userId,
       attemptId: finalAttemptId,
-      message: "Account created and diagnostic saved",
+      message: "Profile saved and diagnostic data linked",
       emailSent: isEmailConfigured() && !!resultsSnapshot,
     });
   } catch (error) {
-    console.error("Failed to signup:", error);
+    console.error("Failed to save profile:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to create account" },
+      { success: false, error: "Failed to save profile" },
       { status: 500 }
     );
   }

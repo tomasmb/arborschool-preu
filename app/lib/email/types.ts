@@ -4,7 +4,7 @@
 
 /**
  * Results snapshot for email templates.
- * Mirrors the data shown on ThankYouScreen.
+ * Mirrors the data shown on the results screen.
  */
 export interface ResultsSnapshot {
   /** Minimum PAES score in range */

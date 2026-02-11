@@ -160,4 +160,3 @@ export function capImprovementToMax(
   const maxPossibleImprovement = PAES_MAX_SCORE - currentScore;
   return Math.max(0, Math.min(improvement, maxPossibleImprovement));
 }
-

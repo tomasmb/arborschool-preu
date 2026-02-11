@@ -178,4 +178,3 @@ export function calculateRawPaesScore(
 
   return Math.round(paesRaw);
 }
-

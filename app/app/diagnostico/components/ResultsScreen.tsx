@@ -134,7 +134,7 @@ export function ResultsScreen({
   const routesData = precomputedRoutes ?? liveRoutes.data;
   const routesLoading = precomputedRoutes ? false : liveRoutes.isLoading;
 
-  // Notify parent of the diagnostic score for SignupScreen
+  // Notify parent of the diagnostic score for ProfilingScreen
   useEffect(() => {
     if (onScoreCalculated) {
       onScoreCalculated(midScore);
@@ -147,7 +147,7 @@ export function ResultsScreen({
     return sortRoutesByImpact(routesData.routes);
   }, [routesData?.routes]);
 
-  // Notify parent of the top route for ThankYouScreen
+  // Notify parent of the top route for profile data
   useEffect(() => {
     if (onTopRouteCalculated && !routesLoading) {
       if (sortedRoutes.length > 0) {

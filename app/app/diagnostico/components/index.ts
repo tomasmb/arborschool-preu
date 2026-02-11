@@ -2,16 +2,16 @@
  * Diagnostic test screen components
  */
 export { WelcomeScreen } from "./WelcomeScreen";
+export { MiniFormScreen, type MiniFormData } from "./MiniFormScreen";
 export { QuestionScreen } from "./QuestionScreen";
 export { TransitionScreen } from "./TransitionScreen";
 export { PartialResultsScreen } from "./PartialResultsScreen";
+export { ProfilingScreen, type ProfilingData } from "./ProfilingScreen";
 export {
   ResultsScreen,
   type AtomResult,
   type TopRouteInfo,
 } from "./ResultsScreen";
-export { SignupScreen } from "./SignupScreen";
-export { ThankYouScreen } from "./ThankYouScreen";
 export { MaintenanceScreen } from "./MaintenanceScreen";
 export { DiagnosticHeader } from "./DiagnosticHeader";
 export { Confetti } from "./Confetti";
