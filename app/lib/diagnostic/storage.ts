@@ -156,7 +156,6 @@ export function generateLocalAttemptId(): string {
 // ============================================================================
 
 type Screen =
-  | "welcome"
   | "mini-form"
   | "question"
   | "transition"
