@@ -1,6 +1,6 @@
 {
-  "id": "95fdcb82-037c-4469-87bd-370ad3ff811b",
-  "prevId": "9ab87a49-037f-4c50-a9fd-233f1de5620f",
+  "id": "3f996a5d-ca18-467b-a983-b568020e52de",
+  "prevId": "95fdcb82-037c-4469-87bd-370ad3ff811b",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1363,6 +1363,42 @@
         "top_route_points_gain": {
           "name": "top_route_points_gain",
           "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_type": {
+          "name": "user_type",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "curso": {
+          "name": "curso",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "paes_goal": {
+          "name": "paes_goal",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "paes_date": {
+          "name": "paes_date",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "in_preu": {
+          "name": "in_preu",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "school_type": {
+          "name": "school_type",
+          "type": "varchar(30)",
           "primaryKey": false,
           "notNull": false
         },

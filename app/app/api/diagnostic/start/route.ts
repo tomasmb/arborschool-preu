@@ -1,16 +1,28 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { testAttempts } from "@/db/schema";
 
 /**
  * POST /api/diagnostic/start
- * Creates a new diagnostic test attempt (can be anonymous)
+ * Creates a new diagnostic test attempt.
+ * Accepts optional userId to link the attempt from the start
+ * (when user registered via mini-form before the test).
  */
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
+    // Parse optional userId from request body
+    let userId: string | undefined;
+    try {
+      const body = await request.json();
+      userId = body.userId ?? undefined;
+    } catch {
+      // No body or invalid JSON — proceed without userId
+    }
+
     const [attempt] = await db
       .insert(testAttempts)
       .values({
+        userId: userId ?? null,
         startedAt: new Date(),
         totalQuestions: 16,
       })

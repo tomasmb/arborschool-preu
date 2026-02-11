@@ -10,7 +10,6 @@ export type {
   AnalyticsEventName,
   AnalyticsEventMap,
   DeviceType,
-  SignupIntent,
   UTMParams,
 } from "./types";
 
@@ -29,7 +28,12 @@ export {
   trackPartialResultsCtaClicked,
   trackResultsViewed,
   trackRouteExplored,
-  trackSignupCompleted,
+  trackMiniFormCompleted,
+  trackProfilingCompleted,
+  trackProfilingSkipped,
+  trackConfirmSkipViewed,
+  trackConfirmSkipExit,
+  trackConfirmSkipBackToProfiling,
   // Utilities
   extractUTMParams,
   getDeviceType,

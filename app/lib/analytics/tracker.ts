@@ -250,7 +250,7 @@ export function trackDiagnosticCompleted(
 }
 
 /**
- * Tracks partial results screen view (gated screen before signup).
+ * Tracks partial results screen view (gated screen before profiling).
  * Call when partial results screen mounts.
  */
 export function trackPartialResultsViewed(
@@ -268,7 +268,7 @@ export function trackPartialResultsViewed(
 }
 
 /**
- * Tracks CTA click on partial results screen. Call when user clicks to continue to signup.
+ * Tracks CTA click on partial results screen. Call when user clicks to continue to profiling.
  */
 export function trackPartialResultsCtaClicked(
   performanceTier: AnalyticsEventMap["partial_results_cta_clicked"]["performance_tier"],
@@ -315,42 +315,72 @@ export function trackRouteExplored(
 }
 
 /**
- * Tracks successful signup. Call after email is submitted successfully.
- * Also identifies the user to link all their events to their email.
+ * Tracks mini-form completion (email + role + curso, before test).
+ * Also identifies the user so all subsequent events are linked.
  */
-export function trackSignupCompleted(
+export function trackMiniFormCompleted(
   email: string,
-  paesScoreMin: number,
-  paesScoreMax: number,
-  performanceTier: AnalyticsEventMap["signup_completed"]["performance_tier"],
-  totalCorrect: number,
-  route: AnalyticsEventMap["signup_completed"]["route"]
+  userType: string,
+  curso: string
 ): void {
-  const utmParams = getPersistedUTMParams();
-  const timeElapsed = getDiagnosticElapsedSeconds();
+  // Identify the user early (since we now have their email)
+  identifyUser(email, { user_type: userType, curso });
 
-  // First, identify the user so all their events are linked to their email
-  identifyUser(email, {
-    paes_score_min: paesScoreMin,
-    paes_score_max: paesScoreMax,
-    performance_tier: performanceTier,
-    total_correct: totalCorrect,
-    route,
-  });
-
-  // Then track the signup event
-  trackEvent("signup_completed", {
+  trackEvent("mini_form_completed", {
     email,
-    paes_score_min: paesScoreMin,
-    paes_score_max: paesScoreMax,
-    performance_tier: performanceTier,
-    total_correct: totalCorrect,
-    route,
-    time_elapsed_seconds: timeElapsed,
-    signup_intent: "access_waitlist",
-    ...utmParams,
+    user_type: userType,
+    curso,
+  });
+}
+
+/**
+ * Tracks profiling form completion (optional fields after test).
+ */
+export function trackProfilingCompleted(filledFields: {
+  paesGoal: boolean;
+  paesDate: boolean;
+  inPreu: boolean;
+}): void {
+  trackEvent("profiling_completed", {
+    paes_goal_filled: filledFields.paesGoal,
+    paes_date_filled: filledFields.paesDate,
+    in_preu_filled: filledFields.inPreu,
   });
 
-  // Clean up after successful signup
+  // Clean up diagnostic timer (flow is complete)
   clearDiagnosticStartTime();
+}
+
+/**
+ * Tracks when user skips the profiling step.
+ */
+export function trackProfilingSkipped(): void {
+  trackEvent("profiling_skipped", {});
+
+  // Clean up diagnostic timer (flow is complete)
+  clearDiagnosticStartTime();
+}
+
+/**
+ * Tracks when user sees the confirm-skip screen (considering exiting).
+ */
+export function trackConfirmSkipViewed(): void {
+  trackEvent("confirm_skip_viewed", {});
+}
+
+/**
+ * Tracks when user confirms exit on the confirm-skip screen.
+ */
+export function trackConfirmSkipExit(): void {
+  trackEvent("confirm_skip_exit", {});
+
+  // Clean up diagnostic timer (flow is complete)
+  clearDiagnosticStartTime();
+}
+
+/**
+ * Tracks when user goes back to profiling from confirm-skip screen.
+ */
+export function trackConfirmSkipBackToProfiling(): void {
+  trackEvent("confirm_skip_back_to_profiling", {});
 }

@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { AXIS_NAMES, SKILL_NAMES } from "@/lib/diagnostic/config";
 import type {
   ResponseForReview,

@@ -1,1 +1,1 @@
-export { LoadingButton, Spinner } from "./LoadingButton";
+export { LoadingButton } from "./LoadingButton";

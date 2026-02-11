@@ -48,6 +48,16 @@ export const users = pgTable("users", {
   topRouteQuestionsUnlocked: integer("top_route_questions_unlocked"),
   topRoutePointsGain: integer("top_route_points_gain"),
 
+  // Mini-form fields (collected before test)
+  userType: varchar("user_type", { length: 20 }),
+  curso: varchar("curso", { length: 20 }),
+
+  // Profiling fields (collected after results, optional)
+  paesGoal: varchar("paes_goal", { length: 20 }),
+  paesDate: varchar("paes_date", { length: 20 }),
+  inPreu: boolean("in_preu"),
+  schoolType: varchar("school_type", { length: 30 }),
+
   // Platform launch notification tracking
   notifiedPlatformLaunch: boolean("notified_platform_launch")
     .notNull()

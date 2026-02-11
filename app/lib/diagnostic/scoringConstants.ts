@@ -37,13 +37,13 @@ export {
 // ============================================================================
 
 /** Weight for low difficulty questions (difficulty <= 0.35) */
-export const WEIGHT_LOW = 1.0;
+const WEIGHT_LOW = 1.0;
 
 /** Weight for medium/high difficulty questions (difficulty > 0.35) */
-export const WEIGHT_MEDIUM = 1.8;
+const WEIGHT_MEDIUM = 1.8;
 
 /** Difficulty threshold for weight selection */
-export const DIFFICULTY_THRESHOLD = 0.35;
+const DIFFICULTY_THRESHOLD = 0.35;
 
 /**
  * Route factors for MST routing (A/B/C).
@@ -61,13 +61,13 @@ export type Route = keyof typeof FACTOR_ROUTE;
  * Coverage factor to account for ~10% of atoms not inferrable from diagnostic.
  * Diagnostic covers 55-64% of atoms with transitivity (per methodology)
  */
-export const FACTOR_COVERAGE = 0.9;
+const FACTOR_COVERAGE = 0.9;
 
 /**
  * Range calculation: ±5 questions (per methodology section 5.1)
  * This allows high performers to reach 1000 at the top of their range
  */
-export const RANGE_QUESTIONS = 5;
+const RANGE_QUESTIONS = 5;
 
 // ============================================================================
 // IMPROVEMENT CALCULATION CONSTANTS
@@ -110,14 +110,14 @@ export const MINUTES_PER_ATOM = 20;
  * Low difficulty (≤ 0.35) = WEIGHT_LOW
  * Medium/High difficulty (> 0.35) = WEIGHT_MEDIUM
  */
-export function getQuestionWeight(difficulty: number): number {
+function getQuestionWeight(difficulty: number): number {
   return difficulty <= DIFFICULTY_THRESHOLD ? WEIGHT_LOW : WEIGHT_MEDIUM;
 }
 
 /**
  * Calculate the route factor for score extrapolation.
  */
-export function getRouteFactor(route: Route): number {
+function getRouteFactor(route: Route): number {
   return FACTOR_ROUTE[route];
 }
 
@@ -178,4 +178,3 @@ export function calculateRawPaesScore(
 
   return Math.round(paesRaw);
 }
-

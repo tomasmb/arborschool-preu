@@ -7,7 +7,6 @@
 
 import { db } from "@/db";
 import { atoms, questions, questionAtoms } from "@/db/schema";
-import { eq } from "drizzle-orm";
 import type { AtomWithPrereqs, QuestionWithAtoms } from "./types";
 
 // ============================================================================
@@ -118,4 +117,3 @@ export async function loadOfficialQuestionsWithAtoms(): Promise<
 
   return officialQuestions;
 }
-

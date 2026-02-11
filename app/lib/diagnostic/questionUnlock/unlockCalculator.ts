@@ -27,7 +27,7 @@ import { getNonMasteredAtomIds, getMasteredAtomIds } from "./masteryAnalyzer";
  * Calculates the prerequisite chain cost for an atom.
  * Returns all prerequisites (recursive) that are not yet mastered.
  */
-export function getUnmasteredPrerequisites(
+function getUnmasteredPrerequisites(
   atomId: string,
   allAtoms: Map<string, AtomWithPrereqs>,
   masteredAtoms: Set<string>,
@@ -68,7 +68,7 @@ export function getUnmasteredPrerequisites(
  * Calculates the marginal value of mastering a single atom.
  * This is the core algorithm that determines atom priority.
  */
-export function calculateAtomMarginalValue(
+function calculateAtomMarginalValue(
   atomId: string,
   allAtoms: Map<string, AtomWithPrereqs>,
   questions: Map<string, QuestionWithAtoms>,
@@ -233,4 +233,3 @@ export function simulateQuestionUnlocks(
 
   return { newUnlocks, totalUnlockedAfter };
 }
-

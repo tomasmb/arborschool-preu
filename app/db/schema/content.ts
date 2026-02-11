@@ -45,6 +45,8 @@ export type AtomEnrichment = {
   };
   /** Phrases or topics to avoid due to ambiguity */
   ambiguityAvoid: string[];
+  /** Image types required for this atom (e.g. "realistic_image", "line_graph") */
+  requiredImageTypes: string[];
 };
 
 // ------------------------------------------------------------------------------

@@ -6,6 +6,5 @@
  */
 
 export { sendConfirmationEmail } from "./confirmationEmail";
-export { sendPlatformLaunchEmail } from "./platformLaunchEmail";
 export { emailService, isEmailConfigured } from "./service";
 export type { EmailResult, ResultsSnapshot } from "./types";

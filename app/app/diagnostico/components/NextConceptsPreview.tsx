@@ -9,7 +9,7 @@
  * @see temp-docs/results-next-concepts-spec.md
  */
 
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   type PerformanceTier,
   type NextConcept,

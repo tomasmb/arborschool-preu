@@ -63,9 +63,9 @@ export interface ResultsScreenProps {
   responses?: DiagnosticResponse[];
   /** Handler for signup CTA (only used in ExampleResultsModal preview) */
   onSignup?: () => void;
-  /** Callback to set the consistent PAES score for use in SignupScreen */
+  /** Callback to set the consistent PAES score for use in ProfilingScreen */
   onScoreCalculated?: (score: number) => void;
-  /** Callback to set the top route info for use in ThankYouScreen */
+  /** Callback to set the top route info for use in profile data */
   onTopRouteCalculated?: (topRoute: TopRouteInfo | null) => void;
   /** Pre-computed routes data (skips API call when provided - for example mode) */
   precomputedRoutes?: LearningRoutesResponse;

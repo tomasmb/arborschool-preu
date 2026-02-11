@@ -29,6 +29,13 @@
       "when": 1770746784687,
       "tag": "0003_wooden_nicolaos",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1770821264135,
+      "tag": "0004_add_profiling_fields",
+      "breakpoints": true
     }
   ]
 }
