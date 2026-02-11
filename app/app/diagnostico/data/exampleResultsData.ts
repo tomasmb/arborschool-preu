@@ -111,7 +111,7 @@ export const EXAMPLE_NEXT_CONCEPTS: NextConcept[] = [
 
 export const EXAMPLE_ROUTES_DATA: LearningRoutesResponse = {
   summary: {
-    totalAtoms: 229,
+    totalAtoms: 205,
     masteredAtoms: 138,
     totalQuestions: 202,
     unlockedQuestions: 141,
