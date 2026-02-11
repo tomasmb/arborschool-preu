@@ -1,5 +1,11 @@
 import Image from "next/image";
-import Link from "next/link";
+
+/** Legal page links — open in new tab so user never leaves the current page */
+const LEGAL_LINKS = [
+  { href: "/privacidad", label: "Política de Privacidad" },
+  { href: "/terminos", label: "Términos de Servicio" },
+  { href: "/cookies", label: "Política de Cookies" },
+] as const;
 
 /** Site-wide footer with branding, contact, and legal links */
 export function Footer() {
@@ -47,30 +53,18 @@ export function Footer() {
               Legal
             </h4>
             <ul className="space-y-2">
-              <li>
-                <Link
-                  href="/privacidad"
-                  className="text-white/60 hover:text-white transition-colors"
-                >
-                  Política de Privacidad
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/terminos"
-                  className="text-white/60 hover:text-white transition-colors"
-                >
-                  Términos de Servicio
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/cookies"
-                  className="text-white/60 hover:text-white transition-colors"
-                >
-                  Política de Cookies
-                </Link>
-              </li>
+              {LEGAL_LINKS.map(({ href, label }) => (
+                <li key={href}>
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-white/60 hover:text-white transition-colors"
+                  >
+                    {label}
+                  </a>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
