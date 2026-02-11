@@ -77,7 +77,7 @@ export function useSessionPersistence(
     if (storedSession && storedAttemptId) {
       setters.setAttemptId(storedAttemptId);
 
-      if (storedSession.screen !== "welcome") {
+      if (storedSession.screen !== "mini-form") {
         setters.setScreen(storedSession.screen);
         setters.setStage(storedSession.stage);
         setters.setQuestionIndex(storedSession.questionIndex);
@@ -117,7 +117,7 @@ export function useSessionPersistence(
   // Save session state when it changes
   useEffect(() => {
     if (!isRestored) return;
-    if (state.screen === "welcome" || state.screen === "mini-form") return;
+    if (state.screen === "mini-form") return;
 
     const storedResponses = getStoredResponses();
     const storedR1Correct = storedResponses

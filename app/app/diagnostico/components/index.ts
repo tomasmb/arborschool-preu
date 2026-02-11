@@ -1,7 +1,6 @@
 /**
  * Diagnostic test screen components
  */
-export { WelcomeScreen } from "./WelcomeScreen";
 export { MiniFormScreen, type MiniFormData } from "./MiniFormScreen";
 export { QuestionScreen } from "./QuestionScreen";
 export { TransitionScreen } from "./TransitionScreen";

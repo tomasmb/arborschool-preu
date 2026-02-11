@@ -54,7 +54,6 @@ import {
 } from "../utils/diagnosticApi";
 
 export type Screen =
-  | "welcome"
   | "mini-form"
   | "question"
   | "transition"
@@ -70,7 +69,7 @@ const TOTAL_TIME_SECONDS = 30 * 60; // 30 minutes
 /** Core diagnostic flow hook — state, effects, and handlers for all screens. */
 export function useDiagnosticFlow() {
   // --- Navigation & test progress ---
-  const [screen, setScreen] = useState<Screen>("welcome");
+  const [screen, setScreen] = useState<Screen>("mini-form");
   const [stage, setStage] = useState<1 | 2>(1);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -434,7 +433,6 @@ export function useDiagnosticFlow() {
       paesGoal: !!profilingData.paesGoal,
       paesDate: !!profilingData.paesDate,
       inPreu: profilingData.inPreu !== undefined,
-      schoolType: !!profilingData.schoolType,
     });
     await saveProfileAndShowResults(profilingData);
   };

@@ -10,7 +10,6 @@ import { calculateDiagnosticResults } from "@/lib/diagnostic/resultsCalculator";
 import { sortRoutesByImpact } from "./hooks/useLearningRoutes";
 import { useDiagnosticFlow } from "./hooks/useDiagnosticFlow";
 import {
-  WelcomeScreen,
   MiniFormScreen,
   TransitionScreen,
   PartialResultsScreen,
@@ -33,10 +32,6 @@ export default function DiagnosticoPage() {
   // SCREEN ROUTING
   // --------------------------------------------------------------------------
 
-  if (flow.screen === "welcome") {
-    return <WelcomeScreen onStart={() => flow.setScreen("mini-form")} />;
-  }
-
   if (flow.screen === "mini-form") {
     return <MiniFormScreen onSubmit={flow.handleMiniFormSubmit} />;
   }
@@ -52,7 +47,6 @@ export default function DiagnosticoPage() {
       <div className="min-h-screen bg-gradient-to-b from-cream to-off-white">
         <TransitionScreen
           r1Correct={r1Correct}
-          route={flow.route}
           onContinue={flow.continueToStage2}
         />
       </div>

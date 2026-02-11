@@ -6,7 +6,7 @@
  * Shown when a student tries to exit without completing the profiling form.
  * Clearly explains what they'll miss (question review, learning routes)
  * and gives them two honest options:
- * - "Completar las 4 preguntas" → goes to profiling
+ * - "Completar las 3 preguntas" → goes to profiling
  * - "Confirmar salida" → exits to thank-you screen
  */
 
@@ -18,7 +18,7 @@ import Image from "next/image";
 // ============================================================================
 
 interface ConfirmSkipScreenProps {
-  /** Handler for "Completar las 4 preguntas" — back to profiling */
+  /** Handler for "Completar las 3 preguntas" — back to profiling */
   onBackToProfiling: () => void;
   /** Handler for "Confirmar salida" — exit to thank-you */
   onConfirmExit: () => void;
@@ -137,7 +137,7 @@ export function ConfirmSkipScreen({
               className="btn-cta w-full py-4 text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] 
                 transition-all duration-300 flex items-center justify-center gap-2"
             >
-              Completar las 4 preguntas
+              Completar las 3 preguntas
               <svg
                 className="w-5 h-5"
                 fill="none"
@@ -155,7 +155,7 @@ export function ConfirmSkipScreen({
             </button>
 
             <p className="text-xs text-cool-gray mt-3">
-              Menos de 30 segundos · Todo es opcional
+              Menos de 30 segundos
             </p>
           </div>
 
