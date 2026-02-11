@@ -9,3 +9,4 @@ export { MasterySection } from "./MasterySection";
 export { ProgressSection } from "./ProgressSection";
 export { CtaSection } from "./CtaSection";
 export { Footer } from "./Footer";
+export { LegalPageLayout } from "./LegalPageLayout";
