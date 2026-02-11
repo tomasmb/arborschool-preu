@@ -1,3 +1,6 @@
+/**
+ * Hero section - headline + CTA, no filler
+ */
 import { LoadingButton } from "@/app/components/ui";
 
 interface HeroSectionProps {
@@ -12,7 +15,7 @@ export function HeroSection({
   isNavigating,
 }: HeroSectionProps) {
   return (
-    <section className="relative pt-28 pb-20 sm:pt-36 sm:pb-28 overflow-hidden">
+    <section className="relative pt-24 pb-10 sm:pt-36 sm:pb-28 overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 bg-gradient-to-b from-white via-white to-off-white"></div>
       <div className="absolute top-20 left-1/4 w-48 h-48 sm:w-72 sm:h-72 lg:w-96 lg:h-96 bg-accent/10 rounded-full blur-3xl"></div>
@@ -20,23 +23,20 @@ export function HeroSection({
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-4xl mx-auto">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-serif font-bold tracking-tight text-charcoal mb-12">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-serif font-bold tracking-tight text-charcoal mb-8 sm:mb-10">
             Cada prueba PAES tiene más de 200 conceptos.
             <span className="block text-accent mt-2">
               ¿Para qué estudiar los que ya sabes?
             </span>
           </h1>
 
-          {/* Visual value funnel */}
-          <ValueFunnel />
-
           <LoadingButton
             onClick={onStartDiagnostic}
             isLoading={isNavigating}
             loadingText="Cargando..."
-            className="btn-cta text-lg px-10 py-5 shadow-lg"
+            className="btn-cta text-base sm:text-lg px-8 sm:px-10 py-4 sm:py-5 shadow-lg"
           >
-            Descubrir mi Puntaje
+            Descubrir lo que me falta
             <svg
               className="w-5 h-5 ml-2"
               fill="none"
@@ -86,116 +86,5 @@ export function HeroSection({
         </div>
       </div>
     </section>
-  );
-}
-
-// -- Visual value funnel: shows the filtering at a glance --
-
-function ValueFunnel() {
-  return (
-    <div className="max-w-2xl mx-auto mb-10">
-      {/* Desktop: horizontal flow */}
-      <div className="hidden sm:flex items-center justify-center gap-3">
-        <FunnelStep
-          number="200+"
-          label="conceptos PAES"
-          variant="muted"
-        />
-        <FunnelArrow />
-        <FunnelStep
-          number="15 min"
-          label="diagnóstico"
-          variant="primary"
-        />
-        <FunnelArrow />
-        <FunnelStep
-          number="~47"
-          label="te faltan a ti"
-          variant="accent"
-        />
-      </div>
-
-      {/* Mobile: vertical flow */}
-      <div className="flex sm:hidden flex-col items-center gap-2">
-        <FunnelStep
-          number="200+"
-          label="conceptos PAES"
-          variant="muted"
-        />
-        <FunnelArrowDown />
-        <FunnelStep
-          number="15 min"
-          label="diagnóstico"
-          variant="primary"
-        />
-        <FunnelArrowDown />
-        <FunnelStep
-          number="~47"
-          label="te faltan a ti"
-          variant="accent"
-        />
-      </div>
-    </div>
-  );
-}
-
-function FunnelStep({
-  number,
-  label,
-  variant,
-}: {
-  number: string;
-  label: string;
-  variant: "muted" | "primary" | "accent";
-}) {
-  const styles = {
-    muted: "bg-charcoal/5 border-charcoal/10 text-charcoal",
-    primary: "bg-primary/10 border-primary/20 text-primary",
-    accent: "bg-accent/10 border-accent/20 text-accent",
-  }[variant];
-
-  return (
-    <div
-      className={`flex-1 sm:flex-initial px-5 py-3 rounded-xl border ${styles} text-center min-w-[140px]`}
-    >
-      <span className="text-xl font-bold block">{number}</span>
-      <span className="text-xs font-medium opacity-70">{label}</span>
-    </div>
-  );
-}
-
-function FunnelArrow() {
-  return (
-    <svg
-      className="w-5 h-5 text-cool-gray shrink-0"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M9 5l7 7-7 7"
-      />
-    </svg>
-  );
-}
-
-function FunnelArrowDown() {
-  return (
-    <svg
-      className="w-5 h-5 text-cool-gray"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M19 9l-7 7-7-7"
-      />
-    </svg>
   );
 }

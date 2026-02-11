@@ -47,9 +47,10 @@ function Navigation({
             <LoadingButton
               onClick={onStartDiagnostic}
               isLoading={isNavigating}
-              className="btn-cta text-sm px-4 py-2"
+              className="btn-cta text-sm px-3 sm:px-4 py-2"
             >
-              Hacer Diagnóstico
+              <span className="sm:hidden">Comenzar</span>
+              <span className="hidden sm:inline">Descubrir lo que me falta</span>
             </LoadingButton>
           </div>
         </div>
