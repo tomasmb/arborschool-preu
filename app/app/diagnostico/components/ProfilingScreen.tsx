@@ -3,12 +3,12 @@
 /**
  * Profiling Screen — "Cuéntanos sobre ti"
  *
- * Collects: meta puntaje PAES, fecha PAES, en preu, tipo colegio.
+ * Collects: meta puntaje PAES, fecha PAES, en preu.
  * This data is used to design better study strategies once the platform
  * launches. In exchange, the student unlocks detailed results.
  *
- * All fields are optional. Submit sends whatever was filled.
- * Skip link leads to confirm-skip screen (not to results).
+ * All 3 fields are required to unlock results. Button is disabled
+ * until all are answered. Skip link leads to confirm-skip screen.
  */
 
 import { useState, useEffect } from "react";
@@ -23,7 +23,6 @@ export interface ProfilingData {
   paesGoal?: string;
   paesDate?: string;
   inPreu?: boolean;
-  schoolType?: string;
 }
 
 interface ProfilingScreenProps {
@@ -40,26 +39,46 @@ interface ProfilingScreenProps {
 // ============================================================================
 
 const PAES_GOAL_OPTIONS = [
-  { value: "500-600", label: "500-600" },
-  { value: "600-700", label: "600-700" },
-  { value: "700+", label: "700+" },
+  { value: "<600", label: "< 600" },
+  { value: "600-800", label: "600-800" },
+  { value: "800+", label: "800+" },
 ];
 
-const PAES_DATE_OPTIONS = [
-  { value: "este_ano", label: "Este año" },
-  { value: "proximo", label: "Próximo año" },
-  { value: "no_se", label: "No sé" },
-];
+/**
+ * Computes the next 4 upcoming PAES exam windows based on today's date.
+ * PAES calendar: Invierno (June), Regular (December).
+ * Stored values are structured: "invierno_2026", "regular_2026", etc.
+ */
+function getPaesDateOptions(): { value: string; label: string }[] {
+  const now = new Date();
+  const month = now.getMonth() + 1; // 1-indexed
+  const year = now.getFullYear();
+
+  // Build a chronological list of the next 4 PAES windows
+  const allWindows: { value: string; label: string; month: number; year: number }[] = [];
+  for (let y = year; y <= year + 2; y++) {
+    allWindows.push(
+      { value: `invierno_${y}`, label: `Junio ${y}`, month: 6, year: y },
+      { value: `regular_${y}`, label: `Diciembre ${y}`, month: 12, year: y },
+    );
+  }
+
+  // Filter to only future windows and take the next 4
+  const upcoming = allWindows
+    .filter((w) => w.year > year || (w.year === year && w.month > month))
+    .slice(0, 4);
+
+  return [
+    ...upcoming,
+    { value: "later", label: "Más adelante" },
+  ];
+}
+
+const PAES_DATE_OPTIONS = getPaesDateOptions();
 
 const IN_PREU_OPTIONS = [
   { value: "true", label: "Sí" },
   { value: "false", label: "No" },
-];
-
-const SCHOOL_TYPE_OPTIONS = [
-  { value: "municipal", label: "Municipal" },
-  { value: "subvencionado", label: "Subvencionado" },
-  { value: "privado", label: "Privado" },
 ];
 
 // ============================================================================
@@ -68,13 +87,11 @@ const SCHOOL_TYPE_OPTIONS = [
 
 function PillSelector({
   label,
-  sublabel,
   options,
   value,
   onChange,
 }: {
   label: string;
-  sublabel?: string;
   options: { value: string; label: string }[];
   value: string | null;
   onChange: (v: string) => void;
@@ -83,11 +100,6 @@ function PillSelector({
     <div>
       <label className="block text-sm font-medium text-charcoal mb-1">
         {label}
-        {sublabel && (
-          <span className="text-xs text-cool-gray font-normal ml-1">
-            {sublabel}
-          </span>
-        )}
       </label>
       <div className="flex gap-2 flex-wrap">
         {options.map((opt) => (
@@ -112,6 +124,71 @@ function PillSelector({
 }
 
 // ============================================================================
+// STYLED SELECT COMPONENT
+// ============================================================================
+
+function StyledSelect({
+  label,
+  placeholder,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  placeholder: string;
+  options: { value: string; label: string }[];
+  value: string | null;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-charcoal mb-1">
+        {label}
+      </label>
+      <div className="relative">
+        <select
+          value={value ?? ""}
+          onChange={(e) => onChange(e.target.value)}
+          className={`w-full appearance-none px-4 py-2.5 pr-10 rounded-xl text-sm
+            font-medium border-2 transition-all duration-200 bg-white
+            focus:outline-none focus:ring-2 focus:ring-primary/20
+            ${
+              value
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-gray-200 text-cool-gray"
+            }`}
+        >
+          <option value="" disabled>
+            {placeholder}
+          </option>
+          {options.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+        {/* Chevron icon */}
+        <svg
+          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2
+            w-4 h-4 text-cool-gray"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
@@ -123,26 +200,27 @@ export function ProfilingScreen({
   const [isLoaded, setIsLoaded] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // All fields are optional — start as null
+  // All fields required — start as null (not yet answered)
   const [paesGoal, setPaesGoal] = useState<string | null>(null);
   const [paesDate, setPaesDate] = useState<string | null>(null);
   const [inPreu, setInPreu] = useState<string | null>(null);
-  const [schoolType, setSchoolType] = useState<string | null>(null);
 
   useEffect(() => {
     setIsLoaded(true);
   }, []);
 
+  const isFormComplete = paesGoal !== null && paesDate !== null && inPreu !== null;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isFormComplete) return;
     setIsSubmitting(true);
 
     try {
       await onSubmit({
-        paesGoal: paesGoal ?? undefined,
-        paesDate: paesDate ?? undefined,
-        inPreu: inPreu !== null ? inPreu === "true" : undefined,
-        schoolType: schoolType ?? undefined,
+        paesGoal: paesGoal,
+        paesDate: paesDate,
+        inPreu: inPreu === "true",
       });
     } catch {
       setIsSubmitting(false);
@@ -233,7 +311,6 @@ export function ProfilingScreen({
             >
               <PillSelector
                 label="Meta puntaje PAES"
-                sublabel="(opcional)"
                 options={PAES_GOAL_OPTIONS}
                 value={paesGoal}
                 onChange={setPaesGoal}
@@ -245,9 +322,9 @@ export function ProfilingScreen({
               className={`transition-all duration-700 delay-300
                 ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
             >
-              <PillSelector
+              <StyledSelect
                 label="¿Cuándo das la PAES?"
-                sublabel="(opcional)"
+                placeholder="Selecciona tu fecha"
                 options={PAES_DATE_OPTIONS}
                 value={paesDate}
                 onChange={setPaesDate}
@@ -261,38 +338,24 @@ export function ProfilingScreen({
             >
               <PillSelector
                 label="¿Estás en un preu?"
-                sublabel="(opcional)"
                 options={IN_PREU_OPTIONS}
                 value={inPreu}
                 onChange={setInPreu}
               />
             </div>
 
-            {/* Tipo de colegio */}
-            <div
-              className={`transition-all duration-700 delay-400
-                ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-            >
-              <PillSelector
-                label="Tipo de colegio"
-                sublabel="(opcional)"
-                options={SCHOOL_TYPE_OPTIONS}
-                value={schoolType}
-                onChange={setSchoolType}
-              />
-            </div>
-
             {/* Submit CTA */}
             <div
-              className={`pt-2 transition-all duration-700 delay-500
+              className={`pt-2 transition-all duration-700 delay-400
                 ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
             >
               <LoadingButton
                 type="submit"
+                disabled={!isFormComplete}
                 isLoading={isSubmitting}
                 loadingText="Guardando..."
                 className="btn-cta w-full py-4 text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] 
-                  transition-all duration-300"
+                  transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
                 Ver mis resultados detallados
                 <svg

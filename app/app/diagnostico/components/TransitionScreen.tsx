@@ -1,13 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ROUTE_NAMES, type Route } from "@/lib/diagnostic/config";
 import { Confetti } from "./Confetti";
 import { LoadingButton } from "@/app/components/ui";
 
 interface TransitionScreenProps {
   r1Correct: number;
-  route: Route;
   onContinue: () => void | Promise<void>;
 }
 
@@ -55,7 +53,6 @@ function StatCard({
 
 export function TransitionScreen({
   r1Correct,
-  route,
   onContinue,
 }: TransitionScreenProps) {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -137,12 +134,12 @@ export function TransitionScreen({
             siguientes preguntas.
           </p>
 
-          {/* Stats with staggered animation */}
+          {/* Stats with staggered animation — neutral framing (no tier label) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
             <StatCard value={`${r1Correct}/8`} label="Correctas" delay={500} />
             <StatCard
-              value={ROUTE_NAMES[route]}
-              label="Tu nivel"
+              value="Personalizado"
+              label="Etapa 2"
               isPrimary
               delay={650}
             />

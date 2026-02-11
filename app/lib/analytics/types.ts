@@ -112,7 +112,6 @@ export interface ProfilingCompletedProperties extends BaseEventProperties {
   paes_goal_filled: boolean;
   paes_date_filled: boolean;
   in_preu_filled: boolean;
-  school_type_filled: boolean;
 }
 
 /** Profiling skipped event — no extra props beyond base event */

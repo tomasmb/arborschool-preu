@@ -7,7 +7,6 @@
  * For preview mode (not signed up): routes are behind a toggle.
  */
 
-import React from "react";
 import { Icons } from "./diagnosticIcons";
 import { SimpleRouteCard } from "./ResultsComponents";
 import { NextConceptsPreview } from "./NextConceptsPreview";

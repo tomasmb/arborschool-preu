@@ -4,7 +4,7 @@
  * Partial Results Screen
  *
  * Shows the student's score immediately after completing the diagnostic,
- * then explains the trade: answer 4 quick questions about yourself to
+ * then explains the trade: answer 3 quick questions about yourself to
  * unlock detailed results (question review + learning routes).
  *
  * Key UX principles:
@@ -49,10 +49,23 @@ interface PartialResultsScreenProps {
 }
 
 // ============================================================================
-// CONSTANTS
+// HELPERS — CTA LABEL
 // ============================================================================
 
-const CTA_LABEL = "Continuar";
+/**
+ * Returns benefit-specific CTA copy based on available data.
+ * Research-backed: benefit-specific CTAs consistently outperform generic ones.
+ */
+function getCtaLabel(
+  potentialImprovement: number,
+  routesLoading: boolean
+): string {
+  if (routesLoading) return "Desbloquear resultados detallados";
+  if (potentialImprovement > 0) {
+    return `Ver cómo subir +${potentialImprovement} puntos`;
+  }
+  return "Ver mis resultados detallados";
+}
 
 // ============================================================================
 // HELPERS
@@ -132,9 +145,12 @@ export function PartialResultsScreen({
   // Determine if we have improvement data
   const hasImprovementData = potentialImprovement > 0 && studyHours > 0;
 
+  // Dynamic CTA label based on available improvement data
+  const ctaLabel = getCtaLabel(potentialImprovement, routesLoading);
+
   /** Handles CTA click: tracks the event then continues to profiling. */
   const handleCtaClick = () => {
-    trackPartialResultsCtaClicked(performanceTier, CTA_LABEL);
+    trackPartialResultsCtaClicked(performanceTier, ctaLabel);
     onContinue();
   };
 
@@ -249,24 +265,21 @@ export function PartialResultsScreen({
                 </div>
               </div>
 
-              {/* Explanation of the trade */}
-              <p className="text-xs text-cool-gray">
-                Responde 4 preguntas rápidas sobre ti para que podamos diseñar
-                la mejor estrategia de estudio.
-              </p>
             </div>
           </div>
+
+          {/* Trade explanation — promoted for visibility */}
+          <p
+            className={`text-sm text-cool-gray text-center mb-4 ${getAnimationClasses(showContent, "350")}`}
+          >
+            Solo 3 clics para desbloquear todo · Menos de 30 segundos
+          </p>
 
           {/* Primary CTA */}
           <div
             className={`text-center ${getAnimationClasses(showContent, "400")}`}
           >
-            <CtaButton onClick={handleCtaClick} ctaLabel={CTA_LABEL} />
-
-            {/* Expectation line */}
-            <p className="text-xs text-cool-gray mt-3 max-w-sm mx-auto">
-              4 preguntas · Menos de 30 segundos
-            </p>
+            <CtaButton onClick={handleCtaClick} ctaLabel={ctaLabel} />
           </div>
 
           {/* De-emphasized skip link — explicit consequence */}

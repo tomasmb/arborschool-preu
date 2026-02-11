@@ -34,7 +34,6 @@ interface ProfilingData {
   paesGoal?: string;
   paesDate?: string;
   inPreu?: boolean;
-  schoolType?: string;
 }
 
 interface DiagnosticData {
@@ -121,9 +120,6 @@ export async function POST(request: NextRequest) {
         updatePayload.paesDate = profilingData.paesDate;
       if (profilingData.inPreu !== undefined) {
         updatePayload.inPreu = profilingData.inPreu;
-      }
-      if (profilingData.schoolType) {
-        updatePayload.schoolType = profilingData.schoolType;
       }
     }
 

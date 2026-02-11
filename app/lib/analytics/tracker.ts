@@ -340,13 +340,11 @@ export function trackProfilingCompleted(filledFields: {
   paesGoal: boolean;
   paesDate: boolean;
   inPreu: boolean;
-  schoolType: boolean;
 }): void {
   trackEvent("profiling_completed", {
     paes_goal_filled: filledFields.paesGoal,
     paes_date_filled: filledFields.paesDate,
     in_preu_filled: filledFields.inPreu,
-    school_type_filled: filledFields.schoolType,
   });
 
   // Clean up diagnostic timer (flow is complete)

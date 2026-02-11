@@ -1,13 +1,14 @@
 "use client";
 
 /**
- * Mini-Form Screen
+ * Mini-Form Screen (with integrated welcome content)
  *
  * Collects email, role (alumno/apoderado), and curso (3ro/4to/egresado)
  * BEFORE the test begins. This captures leads early so drop-offs
  * mid-test are still contactable.
  *
- * Design matches existing card style (white card, gradient bg, staggered animations).
+ * Includes essential welcome info (credibility badge, test details, tips)
+ * to reduce funnel friction — this is the first screen students see.
  */
 
 import { useState, useEffect } from "react";
@@ -138,41 +139,42 @@ export function MiniFormScreen({ onSubmit }: MiniFormScreenProps) {
       {/* Dot pattern */}
       <div className="fixed inset-0 dot-pattern opacity-30" />
 
+      {/* Back link — fixed top-left */}
+      <Link
+        href="/"
+        className={`fixed top-4 left-4 z-20 inline-flex items-center gap-1.5
+          text-sm text-charcoal font-medium bg-white/80 backdrop-blur-sm
+          px-3 py-1.5 rounded-full shadow-sm border border-gray-100
+          hover:bg-white hover:shadow transition-all duration-500
+          ${isLoaded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"}`}
+      >
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M15 19l-7-7 7-7"
+          />
+        </svg>
+        Volver al inicio
+      </Link>
+
       <div className="relative z-10 max-w-md w-full">
-        {/* Header with back link and logo */}
+        {/* Logo above card */}
         <div
-          className={`mb-6 transition-all duration-700
+          className={`text-center mb-6 transition-all duration-700
             ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"}`}
         >
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-sm text-charcoal font-medium 
-              bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border border-gray-100
-              hover:bg-white hover:shadow transition-all mb-4"
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-            Volver al inicio
-          </Link>
-
-          <div className="text-center">
-            <div className="inline-flex items-center gap-3 px-6 py-3 bg-white/80 backdrop-blur-sm rounded-full shadow-sm border border-gray-100">
-              <Image src="/logo-arbor.svg" alt="Arbor" width={36} height={36} />
-              <span className="text-xl font-serif font-bold text-primary">
-                Arbor PreU
-              </span>
-            </div>
+          <div className="inline-flex items-center gap-3 px-6 py-3 bg-white/80 backdrop-blur-sm rounded-full shadow-sm border border-gray-100">
+            <Image src="/logo-arbor.svg" alt="Arbor" width={36} height={36} />
+            <span className="text-xl font-serif font-bold text-primary">
+              Arbor PreU
+            </span>
           </div>
         </div>
 
@@ -181,19 +183,42 @@ export function MiniFormScreen({ onSubmit }: MiniFormScreenProps) {
           className={`card p-8 sm:p-10 backdrop-blur-sm bg-white/90 transition-all duration-700 delay-100
             ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
         >
+          {/* Title & credibility badge */}
           <div className="text-center mb-6">
+            {/* Credibility badge */}
+            <div
+              className={`inline-flex items-center gap-2 text-sm text-cool-gray bg-primary/5 px-3 py-1.5 rounded-full mb-4
+                transition-all duration-700 delay-150
+                ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+            >
+              <svg
+                className="w-4 h-4 text-primary"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              Basado en preguntas PAES oficiales
+            </div>
+
             <h1
               className={`text-2xl sm:text-3xl font-serif font-bold text-charcoal mb-2 
                 transition-all duration-700 delay-150
                 ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
             >
-              Antes de comenzar
+              Prueba Diagnóstica PAES M1
             </h1>
             <p
               className={`text-cool-gray transition-all duration-700 delay-200
                 ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
             >
-              Para personalizar tu diagnóstico y enviarte tu reporte
+              16 preguntas · ~15 min · Puntaje inmediato
             </p>
           </div>
 
@@ -297,9 +322,47 @@ export function MiniFormScreen({ onSubmit }: MiniFormScreenProps) {
               </div>
             )}
 
+            {/* Collapsible tips for accurate results */}
+            <details
+              className={`bg-accent/5 border border-accent/20 rounded-xl p-4 text-left
+                transition-all duration-700 delay-400
+                ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+            >
+              <summary className="font-medium text-charcoal cursor-pointer flex items-center gap-2 text-sm">
+                <svg
+                  className="w-4 h-4 text-accent"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                Tips para un diagnóstico preciso
+              </summary>
+              <ul className="mt-3 space-y-2 pl-6 text-sm text-cool-gray">
+                <li className="flex items-start gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent mt-1.5 shrink-0" />
+                  Responde con honestidad — no hay nota, solo descubrimiento
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent mt-1.5 shrink-0" />
+                  Si no sabes la respuesta, usa el botón &quot;No lo sé&quot;
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent mt-1.5 shrink-0" />
+                  No puedes volver atrás — confía en tu primera intuición
+                </li>
+              </ul>
+            </details>
+
             {/* Submit button */}
             <div
-              className={`transition-all duration-700 delay-400
+              className={`transition-all duration-700 delay-500
                 ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
             >
               <LoadingButton
@@ -332,7 +395,7 @@ export function MiniFormScreen({ onSubmit }: MiniFormScreenProps) {
           {/* Trust microcopy */}
           <p
             className={`text-xs text-cool-gray text-center mt-4 max-w-sm mx-auto 
-              transition-all duration-700 delay-500
+              transition-all duration-700 delay-600
               ${isLoaded ? "opacity-100" : "opacity-0"}`}
           >
             Te enviaremos tu reporte detallado y plan de estudio. No spam.
