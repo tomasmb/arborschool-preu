@@ -79,6 +79,3 @@ export function LoadingButton({
     </button>
   );
 }
-
-// Re-export Spinner for standalone use if needed
-export { Spinner };

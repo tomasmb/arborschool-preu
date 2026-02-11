@@ -72,7 +72,7 @@ export function getNonMasteredAtomIds(
 /**
  * Analyzes unlock status for a single question given current mastery.
  */
-export function analyzeQuestionUnlock(
+function analyzeQuestionUnlock(
   question: QuestionWithAtoms,
   masteredAtoms: Set<string>
 ): QuestionUnlockStatus {
@@ -139,7 +139,7 @@ export function analyzeAllQuestions(
 }
 
 /** Mastery breakdown by axis */
-export interface AxisMasteryBreakdown {
+interface AxisMasteryBreakdown {
   axis: string;
   totalAtoms: number;
   masteredAtoms: number;

@@ -16,7 +16,7 @@ import React, { useEffect, useState, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Confetti } from "./Confetti";
-import { Icons, AnimatedCounter } from "./shared";
+import { AnimatedCounter } from "./shared";
 import {
   useLearningRoutes,
   sortRoutesByImpact,
@@ -25,8 +25,7 @@ import {
   QuestionReviewDrawer,
   type ResponseForReview,
 } from "./QuestionReviewDrawer";
-import { SimpleRouteCard } from "./ResultsComponents";
-import { NextConceptsPreview } from "./NextConceptsPreview";
+import { RoutesSection } from "./RoutesSection";
 import {
   getPerformanceTier,
   isLowSignalTier,
@@ -173,17 +172,6 @@ export function ResultsScreen({
     }
     return { potentialImprovement: 0, studyHours: 0 };
   }, [sortedRoutes]);
-
-  // Check if student has very high mastery
-  const isHighMastery = useMemo(() => {
-    if (!routesData?.summary) return false;
-    const { masteredAtoms, totalAtoms, unlockedQuestions, totalQuestions } =
-      routesData.summary;
-    return (
-      masteredAtoms / totalAtoms > 0.8 ||
-      unlockedQuestions / totalQuestions > 0.9
-    );
-  }, [routesData?.summary]);
 
   // Build next concepts from wrong answers and recommended route
   // Use precomputed data if provided (example mode)
@@ -426,246 +414,21 @@ export function ResultsScreen({
             </div>
           )}
 
-          {/* Routes Section - Direct display for signed-up users, toggle for preview */}
+          {/* Routes Section */}
           {showRoutes && (
             <div className={`mb-6 ${getAnimationClasses(showContent, "350")}`}>
-              {/* For signed-up users: show routes directly (no toggle) */}
-              {hasSignedUp ? (
-                <div className="space-y-6 text-left">
-                  {/* Recommended Route Card */}
-                  <div>
-                    <p className="text-sm text-cool-gray mb-3 text-center">
-                      Tu ruta de mayor impacto:
-                    </p>
-                    {routesLoading ? (
-                      <div className="card p-6 flex justify-center">
-                        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
-                      </div>
-                    ) : sortedRoutes.length > 0 ? (
-                      <SimpleRouteCard
-                        route={sortedRoutes[0]}
-                        isRecommended={true}
-                      />
-                    ) : null}
-                  </div>
-
-                  {/* Low Hanging Fruit */}
-                  {routesData?.lowHangingFruit &&
-                    routesData.lowHangingFruit.oneAway > 0 && (
-                      <div className="flex items-center justify-center gap-2 text-sm text-cool-gray">
-                        {Icons.lightbulb("w-4 h-4 text-success")}
-                        <span>
-                          Tienes{" "}
-                          <strong className="text-success">
-                            {routesData.lowHangingFruit.oneAway}
-                          </strong>{" "}
-                          preguntas a 1 sola mini-clase de distancia.
-                        </span>
-                      </div>
-                    )}
-
-                  {/* Next Mini-Clases (from recommended route) */}
-                  {showNextConcepts && nextConcepts.length > 0 && (
-                    <NextConceptsPreview
-                      tier={performanceTier}
-                      concepts={nextConcepts}
-                    />
-                  )}
-
-                  {/* Other Routes - Collapsible for less visual clutter */}
-                  {sortedRoutes.length > 1 && (
-                    <div>
-                      <button
-                        onClick={handleRouteToggle}
-                        className="w-full text-primary text-sm font-medium flex items-center justify-center gap-1.5 py-2 hover:text-primary-light transition-colors"
-                        aria-expanded={showMoreDetails}
-                      >
-                        {showMoreDetails ? (
-                          <>
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M5 15l7-7 7 7"
-                              />
-                            </svg>
-                            Ocultar otras rutas
-                          </>
-                        ) : (
-                          <>
-                            Ver otras rutas disponibles (
-                            {sortedRoutes.length - 1})
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 9l-7 7-7-7"
-                              />
-                            </svg>
-                          </>
-                        )}
-                      </button>
-                      {showMoreDetails && (
-                        <div className="mt-3 space-y-3 animate-fadeIn">
-                          {sortedRoutes.slice(1, 4).map((route) => (
-                            <SimpleRouteCard
-                              key={route.axis}
-                              route={route}
-                              isRecommended={false}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                /* For preview mode (not signed up): keep toggle behavior */
-                <div className="text-center">
-                  <button
-                    onClick={handleRouteToggle}
-                    className="text-primary text-sm font-medium flex items-center gap-1.5 mx-auto hover:text-primary-light transition-colors"
-                    aria-expanded={showMoreDetails}
-                  >
-                    {showMoreDetails ? (
-                      <>
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 15l7-7 7 7"
-                          />
-                        </svg>
-                        Ocultar detalles
-                      </>
-                    ) : (
-                      <>
-                        Explorar mi ruta personalizada
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 9l-7 7-7-7"
-                          />
-                        </svg>
-                      </>
-                    )}
-                  </button>
-
-                  {/* Expanded content for preview mode */}
-                  {showMoreDetails && (
-                    <div className="mt-6 space-y-6 animate-fadeIn text-left">
-                      {/* Recommended Route Card */}
-                      <div>
-                        <p className="text-sm text-cool-gray mb-3 text-center">
-                          Tu ruta de mayor impacto:
-                        </p>
-                        {routesLoading ? (
-                          <div className="card p-6 flex justify-center">
-                            <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
-                          </div>
-                        ) : sortedRoutes.length > 0 ? (
-                          <SimpleRouteCard
-                            route={sortedRoutes[0]}
-                            isRecommended={true}
-                          />
-                        ) : null}
-                      </div>
-
-                      {/* Low Hanging Fruit */}
-                      {routesData?.lowHangingFruit &&
-                        routesData.lowHangingFruit.oneAway > 0 && (
-                          <div className="flex items-center justify-center gap-2 text-sm text-cool-gray">
-                            {Icons.lightbulb("w-4 h-4 text-success")}
-                            <span>
-                              Tienes{" "}
-                              <strong className="text-success">
-                                {routesData.lowHangingFruit.oneAway}
-                              </strong>{" "}
-                              preguntas a 1 sola mini-clase de distancia.
-                            </span>
-                          </div>
-                        )}
-
-                      {/* Next Mini-Clases */}
-                      {showNextConcepts && nextConcepts.length > 0 && (
-                        <NextConceptsPreview
-                          tier={performanceTier}
-                          concepts={nextConcepts}
-                        />
-                      )}
-
-                      {/* Other Routes */}
-                      {sortedRoutes.length > 1 && (
-                        <div>
-                          <p className="text-sm text-cool-gray mb-3 text-center">
-                            Otras rutas disponibles
-                          </p>
-                          <div className="space-y-3">
-                            {sortedRoutes.slice(1, 4).map((route) => (
-                              <SimpleRouteCard
-                                key={route.axis}
-                                route={route}
-                                isRecommended={false}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Secondary CTA for preview mode */}
-                      <div className="text-center pt-4 border-t border-gray-100">
-                        <p className="text-sm text-cool-gray mb-3">
-                          ¿Listo para comenzar tu ruta?
-                        </p>
-                        <button
-                          onClick={handleCtaClick}
-                          className="inline-flex items-center gap-2 px-6 py-3 bg-primary/10 text-primary font-semibold rounded-xl hover:bg-primary/20 transition-colors"
-                        >
-                          Continuar
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M13 7l5 5m0 0l-5 5m5-5H6"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+              <RoutesSection
+                hasSignedUp={hasSignedUp}
+                routesLoading={routesLoading}
+                sortedRoutes={sortedRoutes}
+                lowHangingFruit={routesData?.lowHangingFruit}
+                showMoreDetails={showMoreDetails}
+                onToggle={handleRouteToggle}
+                showNextConcepts={showNextConcepts}
+                nextConcepts={nextConcepts}
+                performanceTier={performanceTier}
+                onCtaClick={handleCtaClick}
+              />
             </div>
           )}
 

@@ -51,7 +51,7 @@ const AXIS_SHORT_CODES: Record<string, string> = {
  * Performs topological sort on atoms respecting prerequisites.
  * Returns atoms in learning order (prerequisites first).
  */
-export function topologicalSortAtoms(
+function topologicalSortAtoms(
   atomIds: string[],
   allAtoms: Map<string, AtomWithPrereqs>,
   masteredAtoms: Set<string>
@@ -106,7 +106,7 @@ export function topologicalSortAtoms(
  * Builds a learning route for a specific axis.
  * Selects high-value atoms and orders them optimally.
  */
-export function buildAxisRoute(
+function buildAxisRoute(
   axis: string,
   marginalValues: AtomMarginalValue[],
   allAtoms: Map<string, AtomWithPrereqs>,

@@ -115,10 +115,8 @@ export interface ProfilingCompletedProperties extends BaseEventProperties {
   school_type_filled: boolean;
 }
 
-/** Profiling skipped event */
-export interface ProfilingSkippedProperties extends BaseEventProperties {
-  /** No extra props — just the base event */
-}
+/** Profiling skipped event — no extra props beyond base event */
+export type ProfilingSkippedProperties = BaseEventProperties;
 
 // ============================================================================
 // EVENT NAMES (12 core funnel events)
