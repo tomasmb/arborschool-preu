@@ -499,6 +499,18 @@ input:focus-visible {
 }
 
 /* ============================================================================
+   MATHML SUPPORT
+   Tailwind's preflight resets (border-width: 0, etc.) break native MathML
+   rendering. Revert all math elements to browser defaults so fractions,
+   operators, and variables display correctly.
+   ============================================================================ */
+
+math,
+math * {
+  all: revert;
+}
+
+/* ============================================================================
    PROSE OVERRIDES (For question content)
    ============================================================================ */
 
