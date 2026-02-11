@@ -22,7 +22,7 @@ import { LoadingButton } from "@/app/components/ui";
 export interface MiniFormData {
   email: string;
   userType: "alumno" | "apoderado";
-  curso: "3ro_medio" | "4to_medio" | "egresado";
+  curso: "3ro_medio" | "4to_medio" | "egresado" | "otro";
 }
 
 interface MiniFormScreenProps {
@@ -42,6 +42,7 @@ const CURSO_OPTIONS = [
   { value: "3ro_medio" as const, label: "3ro Medio" },
   { value: "4to_medio" as const, label: "4to Medio" },
   { value: "egresado" as const, label: "Egresado/a" },
+  { value: "otro" as const, label: "Otro" },
 ];
 
 // ============================================================================
@@ -96,11 +97,9 @@ export function MiniFormScreen({ onSubmit }: MiniFormScreenProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // Form state
+  // Form state — "Alumno/a" is default-checked since most users are students
   const [email, setEmail] = useState("");
-  const [userType, setUserType] = useState<MiniFormData["userType"] | null>(
-    null
-  );
+  const [userType, setUserType] = useState<MiniFormData["userType"]>("alumno");
   const [curso, setCurso] = useState<MiniFormData["curso"] | null>(null);
 
   useEffect(() => {
