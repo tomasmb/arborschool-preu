@@ -264,7 +264,6 @@ export function PartialResultsScreen({
                   <span>Recomendaciones basadas en tu situación</span>
                 </div>
               </div>
-
             </div>
           </div>
 

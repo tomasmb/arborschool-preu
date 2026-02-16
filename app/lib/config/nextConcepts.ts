@@ -3,8 +3,6 @@
  *
  * Defines types and utilities for the "Next Concepts" micro-preview feature.
  * Shows personalized concepts derived ONLY from wrong answers (direct evidence).
- *
- * @see temp-docs/results-next-concepts-spec.md
  */
 
 import { type PerformanceTier } from "./tiers";

@@ -5,8 +5,6 @@
  *
  * Displays a tier-gated micro-preview of concepts to learn next.
  * Derived ONLY from wrong answers (direct evidence).
- *
- * @see temp-docs/results-next-concepts-spec.md
  */
 
 import { useState } from "react";

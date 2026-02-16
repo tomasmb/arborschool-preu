@@ -13,7 +13,10 @@ export function CtaSection({
   isNavigating,
 }: CtaSectionProps) {
   return (
-    <section id="cta" className="py-16 sm:py-24 bg-white relative overflow-hidden">
+    <section
+      id="cta"
+      className="py-16 sm:py-24 bg-white relative overflow-hidden"
+    >
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[400px] h-[200px] sm:w-[600px] sm:h-[300px] lg:w-[800px] lg:h-[400px] bg-accent/10 rounded-full blur-3xl"></div>
 
       <div className="relative max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -21,8 +24,7 @@ export function CtaSection({
           Descubre tu nivel real
         </h2>
         <p className="text-xl text-cool-gray mb-10">
-          En 15 minutos sabrás tu puntaje, qué dominas, y qué estudiar
-          primero.
+          En 15 minutos sabrás tu puntaje, qué dominas, y qué estudiar primero.
         </p>
 
         <LoadingButton

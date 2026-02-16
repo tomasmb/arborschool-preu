@@ -29,7 +29,7 @@ psql -d preu -c "GRANT ALL ON SCHEMA public TO preu_app;"
 
 ```bash
 # Copy environment template
-cp env.example .env.local
+cp .env.local.example .env.local
 ```
 
 ### 3. Install Dependencies

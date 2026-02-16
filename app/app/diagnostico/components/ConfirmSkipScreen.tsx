@@ -154,9 +154,7 @@ export function ConfirmSkipScreen({
               </svg>
             </button>
 
-            <p className="text-xs text-cool-gray mt-3">
-              Menos de 30 segundos
-            </p>
+            <p className="text-xs text-cool-gray mt-3">Menos de 30 segundos</p>
           </div>
 
           {/* Secondary — confirm exit (honest label) */}

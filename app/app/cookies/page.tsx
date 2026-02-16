@@ -38,9 +38,7 @@ export default function CookiesPage() {
 
         {/* Esenciales */}
         <div className="mb-6">
-          <h3 className="text-lg font-semibold mb-2">
-            a) Cookies esenciales
-          </h3>
+          <h3 className="text-lg font-semibold mb-2">a) Cookies esenciales</h3>
           <p className="mb-2">
             Son necesarias para el funcionamiento básico de la plataforma. Sin
             ellas, el sitio no puede funcionar correctamente.
@@ -186,8 +184,7 @@ export default function CookiesPage() {
       <section>
         <h2 className="text-xl font-serif font-bold mb-3">5. Contacto</h2>
         <p>
-          Si tienes preguntas sobre nuestra Política de Cookies, contáctanos
-          en{" "}
+          Si tienes preguntas sobre nuestra Política de Cookies, contáctanos en{" "}
           <a
             href="mailto:contacto@arbor.school"
             className="text-primary underline hover:text-primary-light"

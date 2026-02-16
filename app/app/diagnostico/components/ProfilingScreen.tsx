@@ -55,11 +55,16 @@ function getPaesDateOptions(): { value: string; label: string }[] {
   const year = now.getFullYear();
 
   // Build a chronological list of the next 4 PAES windows
-  const allWindows: { value: string; label: string; month: number; year: number }[] = [];
+  const allWindows: {
+    value: string;
+    label: string;
+    month: number;
+    year: number;
+  }[] = [];
   for (let y = year; y <= year + 2; y++) {
     allWindows.push(
       { value: `invierno_${y}`, label: `Junio ${y}`, month: 6, year: y },
-      { value: `regular_${y}`, label: `Diciembre ${y}`, month: 12, year: y },
+      { value: `regular_${y}`, label: `Diciembre ${y}`, month: 12, year: y }
     );
   }
 
@@ -68,10 +73,7 @@ function getPaesDateOptions(): { value: string; label: string }[] {
     .filter((w) => w.year > year || (w.year === year && w.month > month))
     .slice(0, 4);
 
-  return [
-    ...upcoming,
-    { value: "later", label: "Más adelante" },
-  ];
+  return [...upcoming, { value: "later", label: "Más adelante" }];
 }
 
 const PAES_DATE_OPTIONS = getPaesDateOptions();
@@ -209,7 +211,8 @@ export function ProfilingScreen({
     setIsLoaded(true);
   }, []);
 
-  const isFormComplete = paesGoal !== null && paesDate !== null && inPreu !== null;
+  const isFormComplete =
+    paesGoal !== null && paesDate !== null && inPreu !== null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

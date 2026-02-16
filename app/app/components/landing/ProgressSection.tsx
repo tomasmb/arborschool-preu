@@ -15,8 +15,8 @@ export function ProgressSection() {
               <span className="text-accent">no meses en un preu</span>
             </h2>
             <p className="text-lg sm:text-xl text-white/70 leading-relaxed">
-              Sabes exactamente dónde estás, cuánto te falta, y qué
-              estudiar para mover tu puntaje lo más rápido posible.
+              Sabes exactamente dónde estás, cuánto te falta, y qué estudiar
+              para mover tu puntaje lo más rápido posible.
             </p>
           </div>
 
@@ -68,8 +68,8 @@ function ProgressCard() {
       <div className="pt-5 sm:pt-6 border-t border-white/10">
         <p className="text-white text-base sm:text-lg">
           Alcanzas tu meta en{" "}
-          <span className="font-bold text-accent">~5.8 horas</span> de
-          estudio enfocado
+          <span className="font-bold text-accent">~5.8 horas</span> de estudio
+          enfocado
         </p>
       </div>
     </div>

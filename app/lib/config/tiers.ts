@@ -3,8 +3,6 @@
  *
  * This module defines all tier-specific behavior for the diagnostic results.
  * All tier-related decisions should reference TIER_CONFIG, not hardcoded values.
- *
- * @see temp-docs/conversion-optimization-implementation.md#performance-tier-system
  */
 
 // ============================================================================

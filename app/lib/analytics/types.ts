@@ -3,8 +3,6 @@
  *
  * Type definitions for all analytics events. This provides type safety
  * and serves as documentation for the event schema.
- *
- * @see temp-docs/conversion-optimization-implementation.md#analytics-specification
  */
 
 import type { PerformanceTier } from "@/lib/config/tiers";

@@ -18,8 +18,8 @@ export function MasterySection() {
               <span className="text-accent">no de memoria</span>
             </h2>
             <p className="text-base sm:text-lg text-cool-gray mb-8">
-              Cada día sabes exactamente qué hacer. Sesiones cortas que
-              puedes hacer desde cualquier lugar.
+              Cada día sabes exactamente qué hacer. Sesiones cortas que puedes
+              hacer desde cualquier lugar.
             </p>
 
             <div className="space-y-4 sm:space-y-5 inline-flex flex-col items-start">
@@ -80,9 +80,7 @@ function FeatureRow({
       >
         {icon}
       </div>
-      <p className="text-charcoal font-medium text-sm sm:text-base">
-        {text}
-      </p>
+      <p className="text-charcoal font-medium text-sm sm:text-base">{text}</p>
     </div>
   );
 }
@@ -168,7 +166,9 @@ function TaskCard({
     : "bg-off-white rounded-xl border border-gray-200";
 
   return (
-    <div className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 ${containerClass}`}>
+    <div
+      className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 ${containerClass}`}
+    >
       <div
         className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br ${gradientClass} flex items-center justify-center shadow-md shrink-0`}
       >

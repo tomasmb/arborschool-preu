@@ -5,8 +5,6 @@
  *
  * Initializes PostHog analytics and connects it to our tracker interface.
  * Uses useRef guard to prevent double initialization in React Strict Mode.
- *
- * @see temp-docs/conversion-optimization-implementation.md#installation
  */
 
 import { useEffect, useRef } from "react";

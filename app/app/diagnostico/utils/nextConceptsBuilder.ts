@@ -3,8 +3,6 @@
  *
  * Builds NextConcept[] from diagnostic responses and recommended route.
  * Follows the defensibility rules: only direct evidence from wrong answers.
- *
- * @see temp-docs/results-next-concepts-spec.md
  */
 
 import { buildQuestionId, type MSTQuestion } from "@/lib/diagnostic/config";

@@ -3,8 +3,7 @@ import { LegalPageLayout } from "../components/landing";
 
 export const metadata: Metadata = {
   title: "Términos de Servicio | Arbor PreU",
-  description:
-    "Términos y condiciones de uso de la plataforma Arbor PreU.",
+  description: "Términos y condiciones de uso de la plataforma Arbor PreU.",
 };
 
 /** Terms of service page — /terminos */
@@ -103,8 +102,8 @@ export default function TerminosPage() {
         <p>
           Nos esforzamos por mantener el Servicio disponible de forma continua,
           pero no garantizamos su disponibilidad ininterrumpida. Podemos
-          suspender o modificar el Servicio temporal o permanentemente, con o sin
-          previo aviso, por razones de mantenimiento, seguridad o mejoras.
+          suspender o modificar el Servicio temporal o permanentemente, con o
+          sin previo aviso, por razones de mantenimiento, seguridad o mejoras.
         </p>
       </section>
 
@@ -117,8 +116,8 @@ export default function TerminosPage() {
           En la máxima medida permitida por la ley, Arbor Learning SpA no será
           responsable de daños directos, indirectos, incidentales o
           consecuenciales derivados del uso o la imposibilidad de uso del
-          Servicio. El Servicio se proporciona &quot;tal cual&quot; y &quot;según
-          disponibilidad&quot;.
+          Servicio. El Servicio se proporciona &quot;tal cual&quot; y
+          &quot;según disponibilidad&quot;.
         </p>
       </section>
 

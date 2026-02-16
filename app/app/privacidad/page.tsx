@@ -48,8 +48,8 @@ export default function PrivacidadPage() {
           </li>
           <li>
             <strong>Datos de uso y analítica:</strong> información sobre cómo
-            navegas e interactúas con la plataforma, recopilada mediante
-            PostHog (consulta nuestra{" "}
+            navegas e interactúas con la plataforma, recopilada mediante PostHog
+            (consulta nuestra{" "}
             <a
               href="/cookies"
               className="text-primary underline hover:text-primary-light"

@@ -5,8 +5,6 @@
  *
  * Provides tier-specific messaging and UI elements based on the performance tier.
  * Follows the conversion optimization spec for appropriate messaging per tier.
- *
- * @see temp-docs/conversion-optimization-implementation.md#performance-tier-system
  */
 
 import React from "react";
