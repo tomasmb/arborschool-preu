@@ -57,7 +57,7 @@ Run the linter on all modified files:
 Run the TypeScript compiler to catch type errors:
 
 ```bash
-cd app && npm run typecheck
+cd web && npm run typecheck
 ```
 
 - All TypeScript errors must be fixed before committing
@@ -68,7 +68,7 @@ cd app && npm run typecheck
 Run Prettier to verify code formatting:
 
 ```bash
-cd app && npm run format:check
+cd web && npm run format:check
 ```
 
 - If formatting issues exist, run `npm run format` to fix them
