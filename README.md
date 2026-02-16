@@ -8,7 +8,7 @@ Plataforma de preparación para la PAES con aprendizaje personalizado basado en 
 
 ```
 .
-├── app/              # Next.js 15 application
+├── web/              # Next.js 15 application
 ├── design-system/    # Brand assets and design tokens
 └── docs/             # Technical documentation
 ```
@@ -16,7 +16,7 @@ Plataforma de preparación para la PAES con aprendizaje personalizado basado en 
 ## Desarrollo local
 
 ```bash
-cd app
+cd web
 npm install
 npm run dev
 ```
@@ -34,4 +34,4 @@ La aplicación estará disponible en http://localhost:3000
 
 Push to `main` triggers automatic deployment via Vercel.
 
-See [app/README.md](./app/README.md) for detailed setup instructions.
+See [web/README.md](./web/README.md) for detailed setup instructions.
