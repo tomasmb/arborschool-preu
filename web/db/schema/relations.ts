@@ -3,7 +3,7 @@ import {
   subjects,
   standards,
   atoms,
-  questionSets,
+  generatedQuestions,
   lessons,
   questions,
   questionAtoms,
@@ -39,21 +39,19 @@ export const atomsRelations = relations(atoms, ({ one, many }) => ({
     fields: [atoms.subjectId],
     references: [subjects.id],
   }),
-  questionSet: many(questionSets),
+  generatedQuestions: many(generatedQuestions),
   lesson: many(lessons),
   questionAtoms: many(questionAtoms),
   atomMastery: many(atomMastery),
 }));
 
-export const questionSetsRelations = relations(
-  questionSets,
-  ({ one, many }) => ({
+export const generatedQuestionsRelations = relations(
+  generatedQuestions,
+  ({ one }) => ({
     atom: one(atoms, {
-      fields: [questionSets.atomId],
+      fields: [generatedQuestions.atomId],
       references: [atoms.id],
     }),
-    questions: many(questions),
-    lessons: many(lessons),
   })
 );
 
@@ -61,10 +59,6 @@ export const lessonsRelations = relations(lessons, ({ one }) => ({
   atom: one(atoms, {
     fields: [lessons.atomId],
     references: [atoms.id],
-  }),
-  questionSet: one(questionSets, {
-    fields: [lessons.questionSetId],
-    references: [questionSets.id],
   }),
 }));
 
@@ -75,10 +69,6 @@ export const questionsRelations = relations(questions, ({ one, many }) => ({
     relationName: "question_variants",
   }),
   variants: many(questions, { relationName: "question_variants" }),
-  questionSet: one(questionSets, {
-    fields: [questions.questionSetId],
-    references: [questionSets.id],
-  }),
   questionAtoms: many(questionAtoms),
   testQuestions: many(testQuestions),
   studentResponses: many(studentResponses),

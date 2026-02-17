@@ -22,11 +22,10 @@ export const skillTypeEnum = pgEnum("skill_type", [
   "argumentar",
 ]);
 
-// Question origin classification
+// Question origin classification (official PAES tests and variations only)
 export const questionSourceEnum = pgEnum("question_source", [
   "official", // From official PAES tests
   "alternate", // Variations of official questions
-  "question_set", // Generated for PP100 practice
 ]);
 
 // Question difficulty levels
@@ -62,13 +61,6 @@ export const masterySourceEnum = pgEnum("mastery_source", [
   "diagnostic",
   "practice_test",
   "pp100",
-]);
-
-// Question set generation workflow status
-export const questionSetStatusEnum = pgEnum("question_set_status", [
-  "pending",
-  "generated",
-  "reviewed",
 ]);
 
 // User roles in the system
