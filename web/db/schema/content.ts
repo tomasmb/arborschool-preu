@@ -17,7 +17,6 @@ import {
   difficultyLevelEnum,
   atomRelevanceEnum,
   testTypeEnum,
-  questionSetStatusEnum,
 } from "./enums";
 
 /**
@@ -29,24 +28,40 @@ import {
 // JSONB TYPE DEFINITIONS
 // ------------------------------------------------------------------------------
 
-/** Labeled identifier used in subskills and error families */
-type LabeledItem = { id: string; label: string };
+/** Error family describing a common student mistake */
+type ErrorFamily = {
+  name: string;
+  description: string;
+  howToAddress: string;
+};
 
-/** AI-generated enrichment metadata for an atom */
+/** AI-generated enrichment metadata for an atom (written by content pipeline) */
 export type AtomEnrichment = {
-  /** Granular subskills the atom covers */
-  subskills: LabeledItem[];
-  /** Common error families students make on this atom */
-  errorFamilies: LabeledItem[];
-  /** Guardrails defining what is in/out of scope */
+  /** Guardrails defining what is in/out of scope for this atom */
   scopeGuardrails: {
-    mustInclude: string[];
-    mustExclude: string[];
+    inScope: string[];
+    outOfScope: string[];
+    prerequisites: string[];
+    commonTraps: string[];
+  };
+  /** Criteria describing what makes a question easy/medium/hard */
+  difficultyRubric: {
+    easy: string[];
+    medium: string[];
+    hard: string[];
   };
   /** Phrases or topics to avoid due to ambiguity */
   ambiguityAvoid: string[];
-  /** Image types required for this atom (e.g. "realistic_image", "line_graph") */
+  /** Common error families students make on this atom */
+  errorFamilies: ErrorFamily[];
+  /** Ways the atom can be represented (e.g. "algebraic", "tabular") */
+  representationVariants: string[];
+  /** Number profiles for question generation */
+  numbersProfiles: string[];
+  /** Image types required for this atom (e.g. "coordinate_plane") */
   requiredImageTypes: string[];
+  /** Future directions for extending this atom's coverage */
+  futureTargets: string[];
 };
 
 // ------------------------------------------------------------------------------
@@ -113,23 +128,47 @@ export const atoms = pgTable(
 );
 
 // ------------------------------------------------------------------------------
-// QUESTION SETS - Groups of questions for PP100 practice
+// GENERATED QUESTIONS - Pipeline-produced practice questions per atom
 // ------------------------------------------------------------------------------
 
-export const questionSets = pgTable("question_sets", {
-  id: varchar("id", { length: 100 }).primaryKey(),
-  atomId: varchar("atom_id", { length: 50 })
-    .references(() => atoms.id)
-    .unique()
-    .notNull(),
-  status: questionSetStatusEnum("status").notNull().default("pending"),
-  lowCount: integer("low_count").default(0),
-  mediumCount: integer("medium_count").default(0),
-  highCount: integer("high_count").default(0),
-  generatedAt: timestamp("generated_at", { withTimezone: true }),
-  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-});
+/** Validation report shape: each gate is "pass", "fail", or "pending" */
+export type ValidatorsReport = {
+  xsd: "pass" | "fail" | "pending";
+  paes: "pass" | "fail" | "pending";
+  solve_check: "pass" | "fail" | "pending";
+  scope: "pass" | "fail" | "pending";
+  exemplar_copy_check: "pass" | "fail" | "pending";
+  feedback: "pass" | "fail" | "pending";
+  dedupe: "pass" | "fail" | "pending";
+  final_llm_check: "pass" | "fail" | "pending";
+};
+
+export const generatedQuestions = pgTable(
+  "generated_questions",
+  {
+    id: text("id").primaryKey(),
+    atomId: text("atom_id")
+      .notNull()
+      .references(() => atoms.id),
+    qtiXml: text("qti_xml").notNull(),
+    difficultyLevel: difficultyLevelEnum("difficulty_level").notNull(),
+    componentTag: text("component_tag").notNull(),
+    operationSkeletonAst: text("operation_skeleton_ast").notNull(),
+    surfaceContext: text("surface_context").notNull().default("pure_math"),
+    numbersProfile: text("numbers_profile").notNull().default("small_integers"),
+    fingerprint: text("fingerprint").notNull(),
+    validators: jsonb("validators").$type<ValidatorsReport>().notNull(),
+    targetExemplarId: text("target_exemplar_id"),
+    distanceLevel: text("distance_level"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [index("idx_generated_questions_atom").on(table.atomId)]
+);
 
 // ------------------------------------------------------------------------------
 // LESSONS - Educational content for each atom
@@ -141,9 +180,6 @@ export const lessons = pgTable("lessons", {
     .references(() => atoms.id)
     .unique()
     .notNull(),
-  questionSetId: varchar("question_set_id", { length: 100 }).references(
-    () => questionSets.id
-  ),
   title: varchar("title", { length: 255 }).notNull(),
   workedExampleHtml: text("worked_example_html").notNull(),
   explanationHtml: text("explanation_html"),
@@ -161,9 +197,6 @@ export const questions = pgTable(
     id: varchar("id", { length: 100 }).primaryKey(),
     source: questionSourceEnum("source").notNull(),
     parentQuestionId: varchar("parent_question_id", { length: 100 }),
-    questionSetId: varchar("question_set_id", { length: 100 }).references(
-      () => questionSets.id
-    ),
     // qtiXml is the single source of truth for question content and correct answer
     qtiXml: text("qti_xml").notNull(),
     title: varchar("title", { length: 255 }),
@@ -176,7 +209,6 @@ export const questions = pgTable(
   (table) => [
     index("idx_questions_source").on(table.source),
     index("idx_questions_difficulty").on(table.difficultyLevel),
-    index("idx_questions_question_set").on(table.questionSetId),
   ]
 );
 
