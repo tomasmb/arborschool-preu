@@ -224,8 +224,12 @@ function CareerSelector({ selected, onSelect }: CareerSelectorProps) {
 // SCORE CARD
 // ============================================================================
 
+// Approximate average PAES M1 2025 score (for context)
+const PAES_AVERAGE_2025 = 520;
+
 function CareerScoreCard({ career }: { career: CareerOption }) {
   const score = Math.round(career.puntaje_corte);
+  const aboveAverage = score - PAES_AVERAGE_2025;
 
   return (
     <div className="mt-4 p-4 bg-primary/5 border border-primary/20 rounded-xl animate-fade-in-up">
@@ -235,13 +239,18 @@ function CareerScoreCard({ career }: { career: CareerOption }) {
           <p className="text-sm font-semibold text-charcoal">
             {career.nombre} — {career.universidad}
           </p>
-          <p className="text-2xl font-bold text-primary mt-1">
-            {score} pts{" "}
-            <span className="text-sm font-normal text-cool-gray">de corte</span>
+          <p className="text-3xl font-bold text-primary mt-1">
+            {score}{" "}
+            <span className="text-base font-normal text-cool-gray">puntos</span>
           </p>
           <p className="text-xs text-cool-gray mt-1">
-            Puntaje ponderado · Admisión 2025 · Escala 100-1000
+            Puntaje de corte 2025 · Escala 100-1000
           </p>
+          {aboveAverage > 0 && (
+            <p className="text-xs text-accent font-medium mt-1.5">
+              +{aboveAverage} pts sobre el promedio nacional
+            </p>
+          )}
         </div>
       </div>
     </div>
@@ -258,9 +267,9 @@ function MetaMessage({ career }: { career: CareerOption }) {
   return (
     <div className="mt-4 p-4 bg-accent/5 border border-accent/20 rounded-xl">
       <p className="text-sm text-charcoal leading-relaxed">
-        <span className="font-semibold">Tu meta: {score} puntos.</span> El PAES
-        es en {PAES_DATE_LABEL}. Empecemos con el diagnóstico para saber
-        exactamente dónde estás.
+        <span className="font-semibold">Meta: {score} puntos.</span> El
+        diagnóstico te dirá exactamente cuánto te falta — y qué estudiar primero
+        para llegar ahí.
       </p>
     </div>
   );
@@ -371,7 +380,7 @@ export function GoalAnchorScreen({ onContinue }: GoalAnchorScreenProps) {
               transition-all duration-700 delay-200
               ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
-            Esto personaliza tu diagnóstico y tu ruta de estudio.
+            Personaliza tu diagnóstico y descubre exactamente cuánto te falta.
           </p>
 
           {/* Career selector */}
@@ -399,8 +408,8 @@ export function GoalAnchorScreen({ onContinue }: GoalAnchorScreenProps) {
                 transition-all duration-300"
             >
               {selected
-                ? `Empezar con mi meta de ${Math.round(selected.puntaje_corte)} pts`
-                : "Continuar al diagnóstico"}
+                ? "Hacer el diagnóstico — descubrir cuánto me falta"
+                : "Hacer el diagnóstico"}
               <svg
                 className="w-5 h-5 ml-2"
                 fill="none"
@@ -424,7 +433,7 @@ export function GoalAnchorScreen({ onContinue }: GoalAnchorScreenProps) {
                 className="w-full mt-3 text-sm text-charcoal/50 hover:text-charcoal 
                   transition-colors duration-200 py-2 underline underline-offset-2"
               >
-                Continuar sin seleccionar carrera
+                No sé aún — hacer igual el diagnóstico
               </button>
             )}
           </div>

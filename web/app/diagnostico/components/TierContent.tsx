@@ -42,10 +42,10 @@ interface GenericNextStepProps {
 const TIER_HEADLINES: Record<PerformanceTier, string> = {
   perfect: "¡Resultado excepcional!",
   nearPerfect: "¡Excelente resultado!",
-  high: "Buen punto de partida",
-  average: "Ya tienes una base para construir",
-  belowAverage: "Hemos identificado tu punto de partida",
-  veryLow: "Gracias por completar el diagnóstico",
+  high: "Estás más cerca de lo que crees",
+  average: "Tienes una buena base — aquí está tu plan",
+  belowAverage: "Sabemos exactamente por dónde empezar",
+  veryLow: "El diagnóstico es solo el comienzo",
 };
 
 /**
@@ -227,12 +227,12 @@ const GENERIC_NEXT_STEPS: Record<
   belowAverage: {
     title: "Fundamentos de Números",
     description:
-      "Cuando la plataforma esté lista, continuaremos por estas mini-clases que desbloquean muchas otras.",
+      "Aquí es donde más se gana. Los fundamentos desbloquean docenas de preguntas PAES — y los vamos a dominar juntos, uno a la vez.",
   },
   veryLow: {
-    title: "Fundamentos",
+    title: "Fundamentos Esenciales",
     description:
-      "Cuando la plataforma esté lista, continuaremos por las mini-clases base que desbloquean todo lo demás. Un paso a la vez.",
+      "Todo el mundo empieza en algún lugar. Tu ruta empieza desde los bloques base — los más importantes — y cada uno que dominas suma puntos reales al PAES.",
   },
 };
 
@@ -432,11 +432,11 @@ export function BottomCtaSection({
         <div className="absolute bottom-0 left-0 w-32 h-32 bg-accent/20 rounded-full blur-2xl" />
         <div className="relative">
           <h3 className="text-2xl sm:text-3xl font-serif font-bold text-white mb-3">
-            ¿Listo para mejorar tu puntaje?
+            Tu ruta ya está calculada
           </h3>
           <p className="text-white/80 mb-6 max-w-md mx-auto">
-            Te avisamos cuando la plataforma esté lista para continuar con tu
-            ruta personalizada.
+            Guarda tu diagnóstico y te avisamos en cuanto puedas empezar —
+            exactamente desde donde estás hoy.
           </p>
           <button
             onClick={onCtaClick}

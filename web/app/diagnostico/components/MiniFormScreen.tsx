@@ -212,7 +212,7 @@ export function MiniFormScreen({ onSubmit }: MiniFormScreenProps) {
                 transition-all duration-700 delay-150
                 ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
             >
-              Prueba Diagnóstica PAES M1
+              Descubre dónde estás en la PAES
             </h1>
             <p
               className={`text-cool-gray transition-all duration-700 delay-200
@@ -347,11 +347,12 @@ export function MiniFormScreen({ onSubmit }: MiniFormScreenProps) {
               <ul className="mt-3 space-y-2 pl-6 text-sm text-cool-gray">
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-accent mt-1.5 shrink-0" />
-                  Responde con honestidad — no hay nota, solo descubrimiento
+                  Responde con honestidad — esto no es una prueba, es un mapa
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-accent mt-1.5 shrink-0" />
-                  Si no sabes la respuesta, usa el botón &quot;No lo sé&quot;
+                  Si no sabes la respuesta, haz clic en &quot;No lo sé&quot; —
+                  es igual de útil
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-accent mt-1.5 shrink-0" />
@@ -369,11 +370,11 @@ export function MiniFormScreen({ onSubmit }: MiniFormScreenProps) {
                 type="submit"
                 disabled={!isFormValid}
                 isLoading={isSubmitting}
-                loadingText="Registrando..."
+                loadingText="Preparando..."
                 className="btn-cta w-full py-4 text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] 
                   transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
-                Comenzar Diagnóstico
+                Ver mi nivel ahora
                 <svg
                   className="w-5 h-5 ml-2"
                   fill="none"
@@ -398,7 +399,7 @@ export function MiniFormScreen({ onSubmit }: MiniFormScreenProps) {
               transition-all duration-700 delay-600
               ${isLoaded ? "opacity-100" : "opacity-0"}`}
           >
-            Te enviaremos tu reporte detallado y plan de estudio. No spam.
+            Guardamos tu diagnóstico y plan de estudio. Sin spam — prometido.
             Puedes borrar tu cuenta cuando quieras.
           </p>
         </div>

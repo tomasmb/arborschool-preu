@@ -71,8 +71,8 @@ function ProjectionBar({ diagnosticScore, targetScore }: ProjectionBarProps) {
   return (
     <div className="space-y-2">
       <div className="flex justify-between text-xs text-cool-gray">
-        <span>100</span>
-        <span>1000</span>
+        <span>100 pts (mín.)</span>
+        <span>1000 pts (máx.)</span>
       </div>
 
       {/* Scale bar */}
@@ -240,12 +240,12 @@ export function PlanPreviewScreen({
           <div className="text-center">
             <div className="inline-flex items-center gap-2 text-sm font-medium text-success bg-success/10 px-4 py-2 rounded-full mb-4">
               <span className="w-2 h-2 bg-success rounded-full" />
-              Tu ruta está lista
+              Tu ruta personalizada está lista
             </div>
             <h1 className="text-2xl sm:text-3xl font-serif font-bold text-charcoal">
               {hasGoal && careerGoal
                 ? `Tu camino a ${careerGoal.nombre}`
-                : "Tu plan personalizado"}
+                : "Tu plan de estudio personalizado"}
             </h1>
             {hasGoal && careerGoal && (
               <p className="text-sm text-cool-gray mt-1">
@@ -268,21 +268,14 @@ export function PlanPreviewScreen({
               {/* Projection summary */}
               <div className="mt-4 p-3 bg-accent/5 border border-accent/20 rounded-lg">
                 <p className="text-sm text-charcoal">
-                  Estudiando{" "}
-                  <span className="font-bold">
-                    {ATOMS_PER_WEEK_DEFAULT} átomos/semana
-                  </span>
-                  , llegas a tu meta en{" "}
+                  Estudiando <span className="font-bold">15-20 min al día</span>
+                  , puedes llegar a tu meta en{" "}
                   <span className="font-bold text-accent">
                     ~{weeksToGoal} semanas
                   </span>
                 </p>
                 <p className="text-xs text-cool-gray mt-1">
-                  ~15 min por átomo · 5 pts estimados por átomo dominado
-                </p>
-                <p className="text-xs text-light-gray mt-1">
-                  Proyección V1 simplificada — basada en el modelo Arbor.
-                  {/* TODO(v2): use real atom-wave projection per arbor-ux-design-v1.md §3.2 */}
+                  Estimado según tu nivel diagnóstico y el modelo Arbor.
                 </p>
               </div>
             </div>
@@ -307,7 +300,7 @@ export function PlanPreviewScreen({
           {previewAtoms.length > 0 && (
             <div className="card p-6">
               <h2 className="text-sm font-semibold text-charcoal mb-3">
-                Los primeros átomos para estudiar
+                Por dónde empieza tu ruta
               </h2>
               <div className="space-y-2">
                 {previewAtoms.map((atom, i) => (
@@ -320,7 +313,7 @@ export function PlanPreviewScreen({
                 ))}
               </div>
               <p className="text-xs text-cool-gray mt-3 text-center">
-                Cada átomo desbloquea preguntas reales del PAES
+                Cada tema que dominas desbloquea preguntas reales del PAES 📈
               </p>
             </div>
           )}
@@ -329,9 +322,9 @@ export function PlanPreviewScreen({
           {previewAtoms.length === 0 && (
             <div className="card p-6 text-center">
               <p className="text-sm text-cool-gray">
-                Tu ruta de estudio está siendo calculada.
+                Tu ruta está siendo calculada según tu diagnóstico.
                 <br />
-                Estará disponible al iniciar sesión.
+                La verás completa en los resultados.
               </p>
             </div>
           )}
