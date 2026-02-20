@@ -15,6 +15,8 @@ export interface CareerOption {
   nombre: string;
   universidad: string;
   puntaje_corte: number;
+  /** Optional search aliases (lowercase). Allows finding entries by alternate terms. */
+  aliases?: string[];
 }
 
 export interface CareerGoal extends CareerOption {
@@ -40,7 +42,7 @@ export const CAREERS: CareerOption[] = [
   },
   {
     id: "int-management-uai",
-    nombre: "International Management",
+    nombre: "Gestión Internacional",
     universidad: "UAI",
     puntaje_corte: 892.5,
   },
@@ -52,9 +54,10 @@ export const CAREERS: CareerOption[] = [
   },
   {
     id: "ingenieria-plan-comun-uch",
-    nombre: "Ingeniería Plan Común",
+    nombre: "Ingeniería Civil / Plan Común",
     universidad: "UCh",
     puntaje_corte: 833.85,
+    aliases: ["ingenieria civil", "plan comun uch"],
   },
   {
     id: "ingenieria-comercial-uch",
@@ -159,13 +162,14 @@ export function getCareerGoal(): CareerGoal | null {
 // SEARCH HELPERS
 // ============================================================================
 
-/** Filter careers by search query (matches nombre or universidad, case-insensitive). */
+/** Filter careers by search query (matches nombre, universidad, or aliases — case-insensitive). */
 export function filterCareers(query: string): CareerOption[] {
   if (!query.trim()) return CAREERS_SORTED;
   const q = query.toLowerCase().trim();
   return CAREERS_SORTED.filter(
     (c) =>
       c.nombre.toLowerCase().includes(q) ||
-      c.universidad.toLowerCase().includes(q)
+      c.universidad.toLowerCase().includes(q) ||
+      c.aliases?.some((alias) => alias.includes(q))
   );
 }

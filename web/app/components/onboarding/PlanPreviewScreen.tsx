@@ -25,6 +25,8 @@ import { type LearningRoutesResponse } from "@/app/diagnostico/hooks/useLearning
 interface PlanPreviewScreenProps {
   diagnosticScore: number;
   routesData: LearningRoutesResponse | null;
+  /** Diagnostic attempt ID — used to link back to the results page. */
+  sessionId?: string | null;
 }
 
 // ============================================================================
@@ -176,6 +178,7 @@ function AtomPreviewItem({
 export function PlanPreviewScreen({
   diagnosticScore,
   routesData,
+  sessionId,
 }: PlanPreviewScreenProps) {
   const careerGoal = useMemo(() => {
     // Only read localStorage on client
@@ -336,11 +339,11 @@ export function PlanPreviewScreen({
           {/* CTA */}
           <div className="pb-8">
             <Link
-              href="/"
+              href={sessionId ? `/resultados/${sessionId}` : "/diagnostico"}
               className="btn-cta w-full flex justify-center py-4 text-lg shadow-lg 
                 hover:shadow-xl hover:scale-[1.02] transition-all duration-300"
             >
-              Empezar a estudiar
+              Ver mi diagnóstico
               <svg
                 className="w-5 h-5 ml-2"
                 fill="none"
@@ -357,8 +360,8 @@ export function PlanPreviewScreen({
               </svg>
             </Link>
             <p className="text-xs text-cool-gray text-center mt-3">
-              La plataforma de práctica estará disponible pronto. Te avisamos
-              cuando lancemos.
+              Aquí están tus resultados detallados y los primeros átomos
+              recomendados para empezar.
             </p>
           </div>
         </div>

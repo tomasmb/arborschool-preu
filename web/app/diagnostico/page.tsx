@@ -101,7 +101,13 @@ export default function DiagnosticoPage() {
   if (flow.screen === "plan-preview") {
     const score = flow.consistentScore ?? 0;
     const routes = flow.cachedRoutesData ?? flow.routesData;
-    return <PlanPreviewScreen diagnosticScore={score} routesData={routes} />;
+    return (
+      <PlanPreviewScreen
+        diagnosticScore={score}
+        routesData={routes}
+        sessionId={flow.attemptId}
+      />
+    );
   }
 
   // --------------------------------------------------------------------------
