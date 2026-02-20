@@ -8,7 +8,11 @@ import {
 } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { computeFullMasteryWithTransitivity } from "@/lib/diagnostic/atomMastery";
-import { sendConfirmationEmail, isEmailConfigured } from "@/lib/email";
+import {
+  sendConfirmationEmail,
+  scheduleFollowupEmail,
+  isEmailConfigured,
+} from "@/lib/email";
 
 // ============================================================================
 // TYPES
@@ -261,6 +265,74 @@ export async function POST(request: NextRequest) {
         }
       } catch (emailError) {
         console.error("[Profile] Email exception:", emailError);
+      }
+    }
+
+    // Schedule 24h follow-up email (non-blocking, fire-and-forget)
+    // Deduplication: skip if we already scheduled one in the last 23h
+    if (resultsSnapshot && isEmailConfigured()) {
+      try {
+        const userRecord = await db
+          .select({
+            followupEmailScheduledAt: users.followupEmailScheduledAt,
+          })
+          .from(users)
+          .where(eq(users.id, userId))
+          .limit(1);
+
+        const lastScheduled = userRecord[0]?.followupEmailScheduledAt;
+        const twentyThreeHoursMs = 23 * 60 * 60 * 1000;
+        const recentlyScheduled =
+          lastScheduled &&
+          Date.now() - new Date(lastScheduled).getTime() < twentyThreeHoursMs;
+
+        if (!recentlyScheduled) {
+          // Schedule for 24h from now
+          const scheduledAt = new Date(
+            Date.now() + 24 * 60 * 60 * 1000
+          ).toISOString();
+
+          const followupResult = await scheduleFollowupEmail({
+            recipient: { email: userEmail, userId },
+            results: {
+              paesMin: resultsSnapshot.paesMin,
+              paesMax: resultsSnapshot.paesMax,
+              performanceTier: resultsSnapshot.performanceTier ?? "average",
+              topRoute: resultsSnapshot.topRoute,
+            },
+            context: {
+              paesGoal: profilingData?.paesGoal,
+              paesDate: profilingData?.paesDate,
+            },
+            scheduledAt,
+          });
+
+          if (followupResult.success) {
+            // Record that we scheduled it (deduplication)
+            await db
+              .update(users)
+              .set({ followupEmailScheduledAt: new Date() })
+              .where(eq(users.id, userId));
+
+            console.log(
+              `[Profile] Follow-up email scheduled for ${userEmail} at ${scheduledAt}`
+            );
+          } else {
+            console.warn(
+              `[Profile] Failed to schedule follow-up: ${followupResult.error}`
+            );
+          }
+        } else {
+          console.log(
+            `[Profile] Skipping follow-up for ${userEmail} — already scheduled recently`
+          );
+        }
+      } catch (followupError) {
+        // Never block the user flow — log and continue
+        console.error(
+          "[Profile] Follow-up scheduling exception:",
+          followupError
+        );
       }
     }
 

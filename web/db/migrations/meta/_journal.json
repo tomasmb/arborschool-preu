@@ -43,6 +43,13 @@
       "when": 1739836800000,
       "tag": "0005_generated_questions",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1740081600000,
+      "tag": "0006_add_followup_email_field",
+      "breakpoints": true
     }
   ]
 }
