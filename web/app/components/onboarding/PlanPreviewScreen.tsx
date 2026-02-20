@@ -64,9 +64,17 @@ interface ProjectionBarProps {
   targetScore: number;
 }
 
+/** Clamps a percentage to prevent labels from overflowing on small screens. */
+function clampPct(pct: number): number {
+  return Math.min(Math.max(pct, 5), 95);
+}
+
 function ProjectionBar({ diagnosticScore, targetScore }: ProjectionBarProps) {
   const currentPct = calcProgressPercent(diagnosticScore);
   const targetPct = calcProgressPercent(targetScore);
+  // Clamped values for label positioning — prevents overflow on mobile
+  const currentLabelPct = clampPct(currentPct);
+  const targetLabelPct = clampPct(targetPct);
 
   return (
     <div className="space-y-2">
@@ -89,22 +97,22 @@ function ProjectionBar({ diagnosticScore, targetScore }: ProjectionBarProps) {
           style={{ left: `${targetPct}%` }}
         />
 
-        {/* Current score label */}
+        {/* Current score label — clamped position */}
         <div
           className="absolute -top-6 text-xs font-bold text-primary whitespace-nowrap"
           style={{
-            left: `${currentPct}%`,
+            left: `${currentLabelPct}%`,
             transform: "translateX(-50%)",
           }}
         >
           Hoy: {diagnosticScore}
         </div>
 
-        {/* Target label */}
+        {/* Target label — clamped position */}
         <div
           className="absolute -bottom-6 text-xs font-bold text-accent whitespace-nowrap"
           style={{
-            left: `${targetPct}%`,
+            left: `${targetLabelPct}%`,
             transform: "translateX(-50%)",
           }}
         >
