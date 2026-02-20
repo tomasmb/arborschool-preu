@@ -123,6 +123,11 @@ export function DiagnosticHeader({
       {/* Stage indicator */}
       <div className="bg-gradient-to-r from-off-white to-white py-1.5 sm:py-2 text-center text-xs sm:text-sm text-cool-gray border-t border-gray-50">
         <span className="font-medium">Etapa {stage} de 2</span>
+        {stage === 1 && (
+          <span className="hidden sm:inline ml-2 text-cool-gray">
+            — No tiene nota, es para calibrar tu nivel
+          </span>
+        )}
         {stage === 2 && route && (
           <span className="hidden sm:inline ml-2 text-accent font-medium">
             — Preguntas adaptadas a tu nivel
