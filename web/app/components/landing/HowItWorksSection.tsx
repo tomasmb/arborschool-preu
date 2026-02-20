@@ -14,20 +14,20 @@ export function HowItWorksSection() {
         <div className="grid md:grid-cols-3 gap-6 sm:gap-8 lg:gap-12">
           <StepCard
             number={1}
-            title="Diagnóstico Rápido"
-            description="16 preguntas, ~15 min. Mapeamos más de 200 conceptos."
+            title="Descubre dónde estás"
+            description="16 preguntas adaptativas (~15 min) que mapean exactamente qué sabes y qué no de la PAES M1."
             variant="primary"
           />
           <StepCard
             number={2}
-            title="Tu Ruta Personalizada"
-            description="Ordenado por impacto en tu puntaje. Primero lo que más importa."
+            title="Tu ruta, por impacto"
+            description="Solo estudias lo que te falta. Ordenado por cuántos puntos ganas al dominar cada tema."
             variant="primary"
           />
           <StepCard
             number={3}
-            title="Aprende y Domina"
-            description="Ejemplo resuelto, práctica activa, dominio demostrado."
+            title="Domina, no memorices"
+            description="Mini-clases + práctica real con preguntas PAES. Cada tema dominado suma puntos concretos."
             variant="accent"
           />
         </div>
