@@ -56,15 +56,16 @@ export function HeroSection({
             16 preguntas · ~15 min · Puntaje inmediato
           </p>
 
-          {/* Example Results Preview Link */}
+          {/* Example Results Preview — more prominent */}
           <button
             onClick={onShowExample}
-            className="mt-4 text-sm text-primary hover:text-primary-light transition-colors 
-              inline-flex items-center gap-1 underline underline-offset-4"
+            className="mt-5 inline-flex items-center gap-2 px-5 py-2.5
+              rounded-full border border-primary/30 bg-white/80 backdrop-blur-sm
+              text-sm font-medium text-primary hover:bg-white hover:border-primary/50
+              hover:shadow-md transition-all duration-200 group"
           >
-            Ver ejemplo de resultados
             <svg
-              className="w-4 h-4"
+              className="w-4 h-4 group-hover:scale-110 transition-transform"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -82,6 +83,7 @@ export function HeroSection({
                 d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-.274.955-.67 1.856-1.166 2.686M15.536 15.536A5.003 5.003 0 0112 17c-4.478 0-8.268-2.943-9.542-7a9.969 9.969 0 011.166-2.686"
               />
             </svg>
+            Ver cómo se ven los resultados →
           </button>
         </div>
       </div>
