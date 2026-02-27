@@ -50,6 +50,13 @@
       "when": 1740081600000,
       "tag": "0006_add_followup_email_field",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1740621600000,
+      "tag": "0007_consolidate_lesson_html",
+      "breakpoints": true
     }
   ]
 }

@@ -111,8 +111,7 @@ CREATE TABLE lessons (
     atom_id VARCHAR(50) REFERENCES atoms(id) UNIQUE NOT NULL,
     question_set_id VARCHAR(100) REFERENCES question_sets(id),
     title VARCHAR(255) NOT NULL,
-    worked_example_html TEXT NOT NULL,
-    explanation_html TEXT,
+    lesson_html TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );

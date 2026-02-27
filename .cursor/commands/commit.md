@@ -192,6 +192,7 @@ After completing the commit, report:
 - Commit sensitive data (secrets, credentials, API keys)
 - Skip quality checks for "quick" commits
 - Make assumptions about file contents - always verify
+- Commit hand-written migration files or snapshot JSON — all DB migrations must come from `drizzle-kit generate`
 
 **Do:**
 - Ask user to confirm if unsure about including certain files

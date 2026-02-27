@@ -181,8 +181,7 @@ export const lessons = pgTable("lessons", {
     .unique()
     .notNull(),
   title: varchar("title", { length: 255 }).notNull(),
-  workedExampleHtml: text("worked_example_html").notNull(),
-  explanationHtml: text("explanation_html"),
+  lessonHtml: text("lesson_html").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
