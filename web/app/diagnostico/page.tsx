@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   getStoredResponses,
   reconstructFullResponses,
@@ -20,6 +21,59 @@ import {
 } from "./components";
 import { QuestionScreenWrapper } from "./components/QuestionScreenWrapper";
 import { ResultsScreenWrapper } from "./components/ResultsScreenWrapper";
+import {
+  GoalAnchorScreen,
+  PlanPreviewScreen,
+} from "@/app/components/onboarding";
+
+// ============================================================================
+// FEATURE FLAG
+// Tomás: set NEXT_PUBLIC_NEW_ONBOARDING=true in .env.local to activate.
+// Default is false — existing flow is 100% unchanged when flag is off.
+// ============================================================================
+
+const NEW_ONBOARDING = process.env.NEXT_PUBLIC_NEW_ONBOARDING === "true";
+
+// ============================================================================
+// PLAN PREVIEW FLOATING CTA
+// Rendered as an overlay above the results screen when new onboarding is on.
+// ============================================================================
+
+interface PlanPreviewCtaProps {
+  onShowPlan: () => void;
+}
+
+function PlanPreviewCta({ onShowPlan }: PlanPreviewCtaProps) {
+  return (
+    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-white/95 backdrop-blur-sm border-t border-gray-100 shadow-xl">
+      <div className="max-w-xl mx-auto flex items-center justify-between gap-4">
+        <p className="text-sm text-charcoal font-medium">
+          Tu ruta de estudio está lista
+        </p>
+        <button
+          onClick={onShowPlan}
+          className="btn-cta px-6 py-3 text-sm shadow-md hover:shadow-lg transition-all duration-200 shrink-0"
+        >
+          Ver mi plan
+          <svg
+            className="w-4 h-4 ml-1.5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13 7l5 5m0 0l-5 5m5-5H6"
+            />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
 
 // ============================================================================
 // MAIN PAGE COMPONENT
@@ -28,8 +82,36 @@ import { ResultsScreenWrapper } from "./components/ResultsScreenWrapper";
 export default function DiagnosticoPage() {
   const flow = useDiagnosticFlow();
 
+  // Goal anchor gate — only relevant when feature flag is ON
+  // Initialized to true so goal-anchor is shown first
+  const [goalAnchorDone, setGoalAnchorDone] = useState(false);
+
   // --------------------------------------------------------------------------
-  // SCREEN ROUTING
+  // NEW ONBOARDING — Phase 1: Goal Anchor (before mini-form)
+  // --------------------------------------------------------------------------
+
+  if (NEW_ONBOARDING && !goalAnchorDone) {
+    return <GoalAnchorScreen onContinue={() => setGoalAnchorDone(true)} />;
+  }
+
+  // --------------------------------------------------------------------------
+  // NEW ONBOARDING — Phase 2: Plan Preview (after results)
+  // --------------------------------------------------------------------------
+
+  if (flow.screen === "plan-preview") {
+    const score = flow.consistentScore ?? 0;
+    const routes = flow.cachedRoutesData ?? flow.routesData;
+    return (
+      <PlanPreviewScreen
+        diagnosticScore={score}
+        routesData={routes}
+        sessionId={flow.attemptId}
+      />
+    );
+  }
+
+  // --------------------------------------------------------------------------
+  // EXISTING FLOW (unchanged when NEW_ONBOARDING=false)
   // --------------------------------------------------------------------------
 
   if (flow.screen === "mini-form") {
@@ -91,7 +173,15 @@ export default function DiagnosticoPage() {
   }
 
   if (flow.screen === "results") {
-    return <ResultsScreenWrapper flow={flow} />;
+    return (
+      <>
+        <ResultsScreenWrapper flow={flow} />
+        {/* Phase 2 CTA overlay — only shown when signed up + new onboarding on */}
+        {NEW_ONBOARDING && flow.profileSaved && (
+          <PlanPreviewCta onShowPlan={flow.handleShowPlanPreview} />
+        )}
+      </>
+    );
   }
 
   if (flow.screen === "profiling") {

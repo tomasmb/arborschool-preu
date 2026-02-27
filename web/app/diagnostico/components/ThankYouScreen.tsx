@@ -83,7 +83,7 @@ export function ThankYouScreen({ score }: ThankYouScreenProps) {
               transition-all duration-700 delay-100
               ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
-            ¡Gracias por completar el diagnóstico!
+            ¡Completaste el diagnóstico!
           </h2>
 
           {/* Score display */}
@@ -94,7 +94,9 @@ export function ThankYouScreen({ score }: ThankYouScreenProps) {
                 transition-all duration-700 delay-200
                 ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
             >
-              <span className="text-sm text-cool-gray">Tu puntaje:</span>
+              <span className="text-sm text-cool-gray">
+                Tu puntaje estimado:
+              </span>
               <span className="text-lg font-bold text-primary">{score}</span>
               <span className="text-sm text-cool-gray">pts</span>
             </div>
@@ -105,7 +107,8 @@ export function ThankYouScreen({ score }: ThankYouScreenProps) {
             className={`text-sm text-cool-gray mt-2 mb-8 transition-all duration-700 delay-300
               ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
-            Tu esfuerzo cuenta. Esperamos verte pronto.
+            Cuando quieras ver tu ruta detallada, vuelve y completa el
+            diagnóstico — te espera aquí.
           </p>
 
           {/* CTA — back to home (honest label) */}

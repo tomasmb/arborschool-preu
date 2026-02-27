@@ -124,22 +124,26 @@ export function TransitionScreen({
             className={`text-2xl sm:text-3xl font-serif font-bold text-charcoal mb-3 transition-all duration-700 delay-200
               ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
-            ¡Primera Etapa Completada!
+            ¡Mitad del diagnóstico!
           </h2>
           <p
             className={`text-cool-gray mb-8 transition-all duration-700 delay-300
               ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
-            Hemos calibrado tu nivel de habilidad para personalizar las
-            siguientes preguntas.
+            Ajustamos las siguientes 8 preguntas a tu nivel — así el diagnóstico
+            es más preciso.
           </p>
 
           {/* Stats with staggered animation — neutral framing (no tier label) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-            <StatCard value={`${r1Correct}/8`} label="Correctas" delay={500} />
             <StatCard
-              value="Personalizado"
-              label="Etapa 2"
+              value={`${r1Correct}/8`}
+              label="Correctas hasta aquí"
+              delay={500}
+            />
+            <StatCard
+              value="Adaptada"
+              label="Etapa 2 — solo para ti"
               isPrimary
               delay={650}
             />
@@ -149,9 +153,8 @@ export function TransitionScreen({
             className={`text-sm text-cool-gray mb-8 transition-all duration-700 delay-700
               ${isLoaded ? "opacity-100" : "opacity-0"}`}
           >
-            Ahora verás{" "}
-            <strong className="text-charcoal">8 preguntas adaptadas</strong> a
-            tu desempeño para obtener un diagnóstico más preciso.
+            Quedan <strong className="text-charcoal">8 preguntas más</strong> —
+            ya casi tienes tu puntaje estimado.
           </p>
 
           <LoadingButton
@@ -161,7 +164,7 @@ export function TransitionScreen({
             className={`btn-cta w-full py-4 text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-500 delay-800
               ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
-            Continuar
+            Seguir con las últimas 8
             <svg
               className="w-5 h-5 ml-2 transition-transform group-hover:translate-x-1"
               fill="none"

@@ -164,7 +164,9 @@ type Screen =
   | "confirm-skip"
   | "results"
   | "thank-you"
-  | "maintenance";
+  | "maintenance"
+  /** New onboarding Phase 2 — plan preview after results */
+  | "plan-preview";
 
 /** Results summary for storage (full DiagnosticResults is too large) */
 export interface StoredResults {

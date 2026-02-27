@@ -1,0 +1,36 @@
+---
+description: CRITICAL rules for database schema changes, migrations, and drizzle usage
+globs: web/db/**
+alwaysApply: false
+---
+
+# Database & Drizzle — Mandatory Rules
+
+## NEVER do any of the following
+
+- **NEVER run raw SQL** (psql, pg, etc.) to modify the database schema or data
+- **NEVER use `DROP TABLE`**, `ALTER TABLE`, `CREATE TABLE`, or any DDL directly
+- **NEVER bypass drizzle** for any database operation
+- **NEVER use `db:push`** — it does not create migration files and breaks deploys
+
+## How we manage the database
+
+1. **Schema changes** go in `web/db/schema/*.ts` (drizzle schema files)
+2. **Migrations** are generated via `npx drizzle-kit generate` (interactive — user runs it)
+3. **Migrations are applied** via `node scripts/migrate.js` (runs on Vercel deploy)
+4. **Local DB sync** uses `npx drizzle-kit migrate` or `node scripts/migrate.js`
+
+## Workflow for schema changes
+
+1. Edit the schema file (e.g. `web/db/schema/content.ts`)
+2. Ask the user to run `npx drizzle-kit generate --name <migration_name>` in their terminal
+3. Review the generated `.sql` file in `web/db/migrations/`
+4. Ask the user to run `npx drizzle-kit migrate` to apply locally
+5. Update `docs/data-model-specification.md` if needed
+
+## Why this matters
+
+- `scripts/migrate.js` runs on every Vercel deploy (`vercel-build` script)
+- Production and preview deploys depend on migration files existing
+- Raw SQL changes are invisible to the migration system and WILL break deploys
+- `drizzle-kit generate` is interactive (rename disambiguation) — the user must run it

@@ -281,15 +281,14 @@ export function ProfilingScreen({
               transition-all duration-700 delay-100
               ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
-            Cuéntanos sobre ti
+            Una cosa más para personalizar tu plan
           </h2>
 
           <p
             className={`text-sm text-cool-gray mb-2 transition-all duration-700 delay-150
               ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
-            Estos datos nos ayudan a diseñar la mejor estrategia de estudio para
-            ti.
+            3 preguntas rápidas — y desbloqueamos tu diagnóstico completo.
           </p>
 
           {/* Score reminder badge */}
@@ -313,7 +312,7 @@ export function ProfilingScreen({
                 ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
             >
               <PillSelector
-                label="Meta puntaje PAES"
+                label="¿Qué puntaje quieres sacar?"
                 options={PAES_GOAL_OPTIONS}
                 value={paesGoal}
                 onChange={setPaesGoal}
@@ -326,7 +325,7 @@ export function ProfilingScreen({
                 ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
             >
               <StyledSelect
-                label="¿Cuándo das la PAES?"
+                label="¿Cuándo planeas dar la PAES?"
                 placeholder="Selecciona tu fecha"
                 options={PAES_DATE_OPTIONS}
                 value={paesDate}
@@ -340,7 +339,7 @@ export function ProfilingScreen({
                 ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
             >
               <PillSelector
-                label="¿Estás en un preu?"
+                label="¿Ya vas a un preuniversitario?"
                 options={IN_PREU_OPTIONS}
                 value={inPreu}
                 onChange={setInPreu}
@@ -379,15 +378,15 @@ export function ProfilingScreen({
             </div>
           </form>
 
-          {/* De-emphasized skip link — explicit consequence */}
+          {/* Skip link — slightly more visible */}
           <button
             onClick={onSkip}
-            aria-label="Salir sin ver detalles"
-            className={`mt-6 text-xs text-gray-400 hover:text-gray-500 transition-colors
+            aria-label="Salir y ver solo mi puntaje"
+            className={`mt-6 text-xs text-cool-gray hover:text-charcoal transition-colors underline underline-offset-2
               ${isLoaded ? "opacity-100" : "opacity-0"}`}
             style={{ transitionDelay: "600ms" }}
           >
-            Salir sin ver detalles
+            Salir y ver solo mi puntaje
           </button>
         </div>
 

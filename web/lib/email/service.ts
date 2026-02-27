@@ -55,12 +55,18 @@ export const emailService = {
   /**
    * Send an email using Resend.
    * Returns success: false if email is not configured (graceful degradation).
+   *
+   * @param options.scheduledAt - ISO 8601 datetime for scheduled delivery.
+   *   Requires Resend Pro plan. Falls back to immediate send if scheduling
+   *   is not supported by the current plan.
    */
   async send(options: {
     to: string;
     subject: string;
     html: string;
     text?: string;
+    /** ISO 8601 datetime for scheduled delivery (Resend Pro required). */
+    scheduledAt?: string;
   }): Promise<{ success: boolean; messageId?: string; error?: string }> {
     const resend = getResendClient();
 
@@ -69,22 +75,48 @@ export const emailService = {
       return { success: false, error: "Email service not configured" };
     }
 
+    const basePayload = {
+      from: EMAIL_CONFIG.from,
+      replyTo: EMAIL_CONFIG.replyTo,
+      to: options.to,
+      subject: options.subject,
+      html: options.html,
+      text: options.text,
+    };
+
     try {
-      const result = await resend.emails.send({
-        from: EMAIL_CONFIG.from,
-        replyTo: EMAIL_CONFIG.replyTo,
-        to: options.to,
-        subject: options.subject,
-        html: options.html,
-        text: options.text,
-      });
+      // Try with scheduledAt if provided
+      const sendPayload = options.scheduledAt
+        ? { ...basePayload, scheduledAt: options.scheduledAt }
+        : basePayload;
+
+      let result = await resend.emails.send(sendPayload);
+
+      // If scheduling failed due to plan limitation, retry without scheduledAt
+      const isSchedulingError =
+        result.error &&
+        options.scheduledAt &&
+        (result.error.message?.toLowerCase().includes("scheduled") ||
+          result.error.message?.toLowerCase().includes("plan") ||
+          (result.error.name as string) === "restricted_feature");
+      if (isSchedulingError) {
+        console.warn(
+          "[Email] Scheduled send not supported on current plan — sending immediately"
+        );
+        result = await resend.emails.send(basePayload);
+      }
 
       if (result.error) {
         console.error("[Email] Send failed:", result.error);
         return { success: false, error: result.error.message };
       }
 
-      console.log(`[Email] Sent to ${options.to}, id: ${result.data?.id}`);
+      const scheduledNote = options.scheduledAt
+        ? ` (scheduled: ${options.scheduledAt})`
+        : "";
+      console.log(
+        `[Email] Sent to ${options.to}, id: ${result.data?.id}${scheduledNote}`
+      );
       return { success: true, messageId: result.data?.id };
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";

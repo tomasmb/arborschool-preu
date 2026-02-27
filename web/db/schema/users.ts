@@ -65,6 +65,11 @@ export const users = pgTable("users", {
   notifiedPlatformLaunchAt: timestamp("notified_platform_launch_at", {
     withTimezone: true,
   }),
+
+  // 24h follow-up email tracking (deduplication)
+  followupEmailScheduledAt: timestamp("followup_email_scheduled_at", {
+    withTimezone: true,
+  }),
 });
 
 // ------------------------------------------------------------------------------

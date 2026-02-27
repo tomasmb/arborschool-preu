@@ -1,0 +1,26 @@
+---
+description: Global project rules that always apply
+alwaysApply: true
+---
+
+# Project-Wide Rules
+
+## Database (CRITICAL)
+
+**ALL database changes go through drizzle. No exceptions.**
+
+- NEVER run raw SQL (psql, pg, CREATE/ALTER/DROP TABLE) against the database
+- NEVER use `db:push` — it doesn't create migration files and breaks deploys
+- Schema changes → edit `web/db/schema/*.ts` → user runs `drizzle-kit generate` → user runs `drizzle-kit migrate`
+- Production deploys run `node scripts/migrate.js` which reads `.sql` files from `web/db/migrations/`
+- `drizzle-kit generate` is interactive — always ask the user to run it in their terminal
+
+See `.cursor/rules/database-drizzle.mdc` for full details.
+
+## Code Standards
+
+- Files under 500 lines, lines under 150 chars
+- Reuse functions, clean up unused ones
+- No fallbacks unless explicitly asked
+- Respect existing code structure, directories, files, and naming conventions
+- Don't add test code unless asked

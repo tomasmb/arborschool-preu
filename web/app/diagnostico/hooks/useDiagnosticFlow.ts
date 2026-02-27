@@ -63,7 +63,9 @@ export type Screen =
   | "confirm-skip"
   | "results"
   | "thank-you"
-  | "maintenance";
+  | "maintenance"
+  /** New onboarding: shown after results when NEXT_PUBLIC_NEW_ONBOARDING=true */
+  | "plan-preview";
 
 const TOTAL_TIME_SECONDS = 30 * 60; // 30 minutes
 
@@ -440,6 +442,14 @@ export function useDiagnosticFlow() {
     });
     await saveProfileAndShowResults(profilingData);
   };
+  /**
+   * Navigate to the plan-preview screen (new onboarding Phase 2).
+   * Called from the results screen when NEXT_PUBLIC_NEW_ONBOARDING=true.
+   */
+  const handleShowPlanPreview = useCallback(() => {
+    setScreen("plan-preview");
+  }, []);
+
   /** Navigate to confirm-skip screen (from partial-results or profiling) */
   const handleSkipToConfirm = () => {
     trackConfirmSkipViewed();
@@ -496,5 +506,6 @@ export function useDiagnosticFlow() {
     handleSkipToConfirm,
     handleConfirmExit,
     handleBackToProfiling,
+    handleShowPlanPreview,
   };
 }
