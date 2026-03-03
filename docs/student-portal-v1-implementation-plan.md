@@ -107,6 +107,12 @@ Non-negotiable end-state goals:
   - Reuse existing app tokens, typography, spacing, and component patterns.
   - No parallel design language for portal pages.
   - New UI components should be composed from existing primitives before introducing new ones.
+- Phase exit validation (mandatory before marking a phase complete):
+  - Run end-to-end checks for all affected critical flows, including legacy non-regression paths.
+  - Verify responsive behavior on mobile and desktop breakpoints for every changed UI surface.
+  - Verify visual/design quality against the existing design system (spacing, typography, states, hierarchy).
+  - Validate key UX states beyond happy path (loading, empty, error, disabled).
+  - Do not mark phase complete until functional + UX + responsive checks pass.
 
 ---
 
@@ -420,3 +426,7 @@ Use this at the start/end of each phase chat to keep continuity:
 - Fill that phase entry in \"Phase Completion Log\" with concrete paths/APIs/tests.
 - Mark phase status (`NOT STARTED` -> `IN PROGRESS` -> `COMPLETE`).
 - Add any blockers/open items to \"Open Follow-ups\" for next chat.
+- Confirm and record phase validation evidence:
+  - E2E checks executed and outcomes
+  - Responsive checks (mobile + desktop) executed and outcomes
+  - Design/UX quality checks executed and outcomes
