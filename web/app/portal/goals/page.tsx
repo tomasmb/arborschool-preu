@@ -17,9 +17,11 @@ import {
   StudentGoalsPayload,
 } from "./types";
 import { normalizeTestCode, toDraft } from "./utils";
+import { readLegacyGoalBackfill } from "./legacyBackfill";
 
 export default function PortalGoalsPage() {
   const simulatorInteractionTracked = useRef(false);
+  const legacyBackfillAttempted = useRef(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [simLoading, setSimLoading] = useState(false);
@@ -120,29 +122,69 @@ export default function PortalGoalsPage() {
       setError(null);
 
       try {
-        const response = await fetch("/api/student/goals", {
-          method: "GET",
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          throw new Error("No se pudo cargar objetivos");
-        }
-
-        const payload = (await response.json()) as {
+        const loadGoals = async (): Promise<{
           success: boolean;
+          error?: string;
           data?: StudentGoalsPayload;
+        }> => {
+          const response = await fetch("/api/student/goals", {
+            method: "GET",
+            credentials: "include",
+          });
+          const payload = (await response.json()) as {
+            success: boolean;
+            error?: string;
+            data?: StudentGoalsPayload;
+          };
+
+          if (!response.ok || !payload.success) {
+            throw new Error(payload.error ?? "No se pudo cargar objetivos");
+          }
+
+          return payload;
         };
 
-        if (!payload.success || !payload.data) {
+        const payload = await loadGoals();
+        if (!payload.data) {
           throw new Error("Respuesta inválida de objetivos");
+        }
+
+        let nextPayload = payload;
+        const shouldTryBackfill =
+          !legacyBackfillAttempted.current && payload.data.goals.length === 0;
+
+        if (shouldTryBackfill) {
+          legacyBackfillAttempted.current = true;
+          const backfill = readLegacyGoalBackfill(payload.data.options);
+
+          if (backfill) {
+            const saveResponse = await fetch("/api/student/goals", {
+              method: "POST",
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ goals: backfill.goals }),
+            });
+
+            const savePayload = (await saveResponse.json()) as {
+              success: boolean;
+              data?: StudentGoalsPayload;
+            };
+
+            if (saveResponse.ok && savePayload.success && savePayload.data) {
+              nextPayload = savePayload;
+            }
+          }
         }
 
         if (!isMounted) {
           return;
         }
 
-        applyPayload(payload.data);
+        if (!nextPayload.data) {
+          throw new Error("Respuesta inválida de objetivos");
+        }
+
+        applyPayload(nextPayload.data);
       } catch (loadError) {
         if (isMounted) {
           setError(

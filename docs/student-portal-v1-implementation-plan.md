@@ -273,7 +273,7 @@ Status: `IN PROGRESS`
 
 ### Tasks
 - [x] Add feature flag: `student_portal_v1`.
-- [ ] Add legacy backfill path for recoverable goal state (when available).
+- [x] Add legacy backfill path for recoverable goal state (when available).
 - [x] Add analytics/observability events:
   - [x] goal save/update
   - [x] simulator interaction
@@ -283,9 +283,9 @@ Status: `IN PROGRESS`
   - [ ] internal users
   - [ ] broader user base
 - [ ] Remove transitional legacy surfaces and adapters:
-  - [ ] retire `/resultados/[sessionId]` path if replaced by authenticated portal
+  - [x] retire `/resultados/[sessionId]` path if replaced by authenticated portal
   - [ ] delete superseded diagnostic-to-portal bridge code
-  - [ ] remove obsolete onboarding `localStorage` goal code
+  - [x] remove obsolete onboarding `localStorage` goal code
 - [ ] Final dead-code cleanup pass repo-wide for student portal/domain paths.
 
 ### Acceptance Checks
@@ -339,12 +339,10 @@ Status: `IN PROGRESS`
 
 ## Open Follow-ups
 - [ ] Define admissions seed update process and ownership cadence.
-- [ ] Confirm migration plan for historical localStorage goals (if recoverable).
 - [ ] Add `AUTH_SECRET`, `AUTH_GOOGLE_ID`, and `AUTH_GOOGLE_SECRET` in environment configuration for local/dev/prod.
 - [ ] Standardize local migration execution path with deploy runner to avoid drift (`scripts/migrate.js` vs `drizzle-kit migrate` behavior).
 - [ ] Calibrate minutes-per-point coefficients with pilot outcome data by performance tier.
 - [ ] Execute Phase 6 rollout sequence (`internal` -> `broader`) once observability dashboards are configured.
-- [ ] Complete explicit transitional cleanup decision for `/resultados/[sessionId]` retirement timing.
 
 ---
 
@@ -508,6 +506,14 @@ Status: `IN PROGRESS`
     - simulator interaction
     - dashboard viewed
     - next action clicked
+  - Added recoverable legacy goal backfill in `/portal/goals` by scanning
+    existing browser localStorage payloads and persisting the first valid
+    match to `student_goals`.
+  - Retired legacy saved-results surface by deleting:
+    - `web/app/resultados/[sessionId]/page.tsx`
+    - `web/app/api/resultados/[sessionId]/route.ts`
+  - Updated onboarding plan-preview CTA to enter the authenticated portal
+    (`/portal`) instead of the legacy results-link path.
 - APIs added/changed:
   - Student routes now return `404` when `STUDENT_PORTAL_V1=false` via middleware gate.
 - DB changes:
@@ -517,7 +523,7 @@ Status: `IN PROGRESS`
   - `npm run lint` (pass).
 - Risks/known gaps:
   - Gradual rollout steps (`internal` -> `broader`) are pending environment-level execution.
-  - Transitional retirement decisions (`/resultados/[sessionId]` and bridge cleanup) remain pending explicit product sign-off.
+  - Transitional diagnostic-to-portal bridge cleanup is still pending explicit product sign-off.
 - Sign-off:
   - In progress (rollout + cleanup pending).
 
