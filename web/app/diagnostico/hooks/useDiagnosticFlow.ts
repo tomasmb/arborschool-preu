@@ -455,9 +455,21 @@ export function useDiagnosticFlow() {
     trackConfirmSkipViewed();
     setScreen("confirm-skip");
   };
-  /** User confirmed exit — clear data and show thank-you */
-  const handleConfirmExit = () => {
+  /** User confirmed exit — persist snapshot, clear data, and show thank-you */
+  const handleConfirmExit = async () => {
     trackConfirmSkipExit();
+    if (!profileSaved && route) {
+      try {
+        await buildAndSaveProfile({
+          userId,
+          attemptId,
+          route,
+          topRouteInfo,
+        });
+      } catch (error) {
+        console.error("Failed to save profile on confirm exit:", error);
+      }
+    }
     clearAllDiagnosticData();
     setScreen("thank-you");
   };

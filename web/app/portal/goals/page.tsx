@@ -391,7 +391,7 @@ export default function PortalGoalsPage() {
         return {
           offeringId: goal.offeringId,
           priority: goal.priority,
-          isPrimary: true,
+          isPrimary: goal.priority === 1,
           bufferPoints: draft?.bufferPoints ?? 30,
           bufferSource: "student" as const,
           scores: scoreRows,
