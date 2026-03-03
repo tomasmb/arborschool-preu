@@ -197,25 +197,25 @@ Status: `COMPLETE`
 ---
 
 ## Phase 3 - Goal Simulator Service
-Status: `NOT STARTED`
+Status: `COMPLETE`
 
 ### Tasks
-- [ ] Implement pure simulator service functions:
-  - [ ] weighted score
-  - [ ] buffered target
-  - [ ] admissibility delta
-  - [ ] sensitivity (`M1 +10`)
-- [ ] Expose simulator through `GET /api/student/simulator`.
-- [ ] Build `/portal/goals` UI with:
-  - [ ] transparent formula breakdown
-  - [ ] separate last cutoff vs buffered target
-  - [ ] direct per-test input controls
+- [x] Implement pure simulator service functions:
+  - [x] weighted score
+  - [x] buffered target
+  - [x] admissibility delta
+  - [x] sensitivity (`M1 +10`)
+- [x] Expose simulator through `GET /api/student/simulator`.
+- [x] Build `/portal/goals` UI with:
+  - [x] transparent formula breakdown
+  - [x] separate last cutoff vs buffered target
+  - [x] direct per-test input controls
 
 ### Acceptance Checks
-- [ ] Simulator API response includes formula components + dataset metadata.
-- [ ] Sensitivity output behaves consistently with score updates.
-- [ ] UI reflects changes immediately when inputs change.
-- [ ] No duplicate formula implementation outside simulator service.
+- [x] Simulator API response includes formula components + dataset metadata.
+- [x] Sensitivity output behaves consistently with score updates.
+- [x] UI reflects changes immediately when inputs change.
+- [x] No duplicate formula implementation outside simulator service.
 
 ---
 
@@ -398,14 +398,36 @@ Status: `NOT STARTED`
   - Completed with data-preserving DB recovery and acceptance checks above.
 
 ### Phase 3
-- Date:
-- Owner:
+- Date: 2026-03-03
+- Owner: Codex (GPT-5)
 - What shipped:
+  - Added pure simulator domain service at `web/lib/student/simulator.ts` with reusable functions for weighted score, buffered target, admissibility delta, and `M1 +10` sensitivity.
+  - Added live simulator UI in `web/app/portal/goals/page.tsx` with per-test score inputs, buffer control, formula breakdown table, and immediate recalculation on input changes.
+  - Extended goal save flow to persist per-test scores and student-selected buffer values through existing `POST /api/student/goals`.
 - APIs added/changed:
+  - Added `GET /api/student/simulator?goalId=<id>&m1=<score>&...` (supports per-test query overrides plus optional `bufferPoints` override).
 - DB changes:
+  - None.
 - Tests run:
+  - `npm run typecheck` (pass).
+  - `npm run lint` (pass).
+  - API E2E (authenticated and unauthenticated):
+    - `GET /api/student/simulator` unauthenticated -> `401 {"success":false,"error":"Unauthorized"}`.
+    - `GET /portal/goals` unauthenticated -> `307` redirect to `/auth/signin?callbackUrl=%2Fportal%2Fgoals`.
+    - `GET /api/student/simulator?goalId=<goal>` authenticated -> formula payload with components + metadata.
+    - `GET /api/student/simulator?goalId=<goal>&<required tests>=700` -> `formula.isComplete=true`, weighted score computed, sensitivity delta consistent.
+    - `GET /api/student/simulator?goalId=<goal>&M1=` -> missing `M1` reflected immediately (`weightedScore=null`, `missingTests` includes `M1`).
+    - Validation checks: invalid score (`M1=99`) -> `400`; invalid buffer (`bufferPoints=-1`) -> `400`; missing `goalId` -> `400`; unknown `goalId` -> `404`.
+  - Browser E2E (Playwright):
+    - Authenticated `/portal/goals` renders goal selector, per-test inputs, and formula breakdown.
+    - Editing test inputs recalculates weighted score and deltas immediately.
+    - Clearing `M1` input immediately switches to missing-state UI.
+    - Goal save + reload persists edited score inputs and buffer values from DB.
+    - Responsive verification at mobile viewport (`390x844`) + desktop baseline (default viewport).
 - Risks/known gaps:
+  - Sensitivity card intentionally fixed to `M1 +10` in v1 scope.
 - Sign-off:
+  - Completed.
 
 ### Phase 4
 - Date:
