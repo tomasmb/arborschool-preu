@@ -3,7 +3,9 @@
 ## How To Use This File
 - Work in order: Phase 1 -> Phase 6.
 - In each new chat, complete exactly one phase.
-- Execute each phase in a dedicated branch (do not implement phases directly on `main`).
+- Use a single canonical working branch for this initiative:
+  - `codex/student-portal-v1`
+  - Do not implement directly on `main`.
 - Before closing a chat, update:
   - Phase checklist items
   - "Phase Completion Log" entry for that phase
@@ -43,8 +45,9 @@ Non-negotiable end-state goals:
 
 ## Global Constraints
 - Branching policy:
-  - Use feature branches prefixed with `codex/` for phase work.
-  - Recommended naming: `codex/student-portal-phase-<n>-<short-topic>`.
+  - Consolidated working branch for this project: `codex/student-portal-v1`.
+  - Keep historical phase branches as archive references only (do not delete without explicit cleanup decision).
+  - Continue committing all new portal-v1 phase work to `codex/student-portal-v1`.
   - Merge into integration branch only after phase checklist + completion log are updated.
 - DB changes must be done in `web/db/schema/*.ts` through Drizzle workflow.
 - Never hand-write SQL migration files.
@@ -329,6 +332,7 @@ Status: `NOT STARTED`
 - Dashboard confidence formula for v1: blend mastery coverage (65%) and diagnostic band width stability (35%), producing low/medium/high tiers.
 - Dashboard effort units for v1: use minutes-based effort ratios (not hours-per-point display).
 - Forecast rule for v1: effort scenario projection must not contradict diagnostic prediction band ceilings.
+- Branch consolidation decision (2026-03-03): use `codex/student-portal-v1` as the single canonical implementation branch for all remaining phases.
 
 ---
 
@@ -493,7 +497,7 @@ Use this at the start/end of each phase chat to keep continuity:
 
 ### At Chat Start
 - Confirm target phase number.
-- Confirm current branch is a dedicated phase branch (not `main`).
+- Confirm current branch is `codex/student-portal-v1` (not `main`).
 - Read this file + linked high-level spec.
 - Verify previous phase status and unresolved follow-ups.
 
