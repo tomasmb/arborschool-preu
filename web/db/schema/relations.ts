@@ -11,6 +11,17 @@ import {
   testQuestions,
 } from "./content";
 import { users, atomMastery, testAttempts, studentResponses } from "./users";
+import {
+  admissionsDatasets,
+  universities,
+  careers,
+  careerOfferings,
+  offeringWeights,
+  offeringCutoffs,
+  studentGoals,
+  studentGoalScores,
+  studentGoalBuffers,
+} from "./studentPortal";
 
 /**
  * Drizzle ORM relations for type-safe queries with joins.
@@ -155,6 +166,102 @@ export const studentResponsesRelations = relations(
     testAttempt: one(testAttempts, {
       fields: [studentResponses.testAttemptId],
       references: [testAttempts.id],
+    }),
+  })
+);
+
+// ------------------------------------------------------------------------------
+// STUDENT PORTAL RELATIONS
+// ------------------------------------------------------------------------------
+
+export const admissionsDatasetsRelations = relations(
+  admissionsDatasets,
+  ({ many }) => ({
+    careerOfferings: many(careerOfferings),
+  })
+);
+
+export const universitiesRelations = relations(universities, ({ many }) => ({
+  careerOfferings: many(careerOfferings),
+}));
+
+export const careersRelations = relations(careers, ({ many }) => ({
+  careerOfferings: many(careerOfferings),
+}));
+
+export const careerOfferingsRelations = relations(
+  careerOfferings,
+  ({ one, many }) => ({
+    dataset: one(admissionsDatasets, {
+      fields: [careerOfferings.datasetId],
+      references: [admissionsDatasets.id],
+    }),
+    university: one(universities, {
+      fields: [careerOfferings.universityId],
+      references: [universities.id],
+    }),
+    career: one(careers, {
+      fields: [careerOfferings.careerId],
+      references: [careers.id],
+    }),
+    weights: many(offeringWeights),
+    cutoffs: many(offeringCutoffs),
+    studentGoals: many(studentGoals),
+  })
+);
+
+export const offeringWeightsRelations = relations(
+  offeringWeights,
+  ({ one }) => ({
+    offering: one(careerOfferings, {
+      fields: [offeringWeights.offeringId],
+      references: [careerOfferings.id],
+    }),
+  })
+);
+
+export const offeringCutoffsRelations = relations(
+  offeringCutoffs,
+  ({ one }) => ({
+    offering: one(careerOfferings, {
+      fields: [offeringCutoffs.offeringId],
+      references: [careerOfferings.id],
+    }),
+  })
+);
+
+export const studentGoalsRelations = relations(
+  studentGoals,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [studentGoals.userId],
+      references: [users.id],
+    }),
+    offering: one(careerOfferings, {
+      fields: [studentGoals.offeringId],
+      references: [careerOfferings.id],
+    }),
+    scores: many(studentGoalScores),
+    buffer: many(studentGoalBuffers),
+  })
+);
+
+export const studentGoalScoresRelations = relations(
+  studentGoalScores,
+  ({ one }) => ({
+    goal: one(studentGoals, {
+      fields: [studentGoalScores.goalId],
+      references: [studentGoals.id],
+    }),
+  })
+);
+
+export const studentGoalBuffersRelations = relations(
+  studentGoalBuffers,
+  ({ one }) => ({
+    goal: one(studentGoals, {
+      fields: [studentGoalBuffers.goalId],
+      references: [studentGoals.id],
     }),
   })
 );

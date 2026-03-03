@@ -12,7 +12,7 @@
  *           per diagnostic-score-methodology.md Section 6 and arbor-ux-design-v1.md Section 3.
  */
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { getCareerGoal } from "./careers";
@@ -188,20 +188,33 @@ export function PlanPreviewScreen({
   routesData,
   sessionId,
 }: PlanPreviewScreenProps) {
-  const careerGoal = useMemo(() => {
-    // Only read localStorage on client
-    if (typeof window === "undefined") return null;
-    return getCareerGoal();
+  const [careerGoal, setCareerGoal] = useState<Awaited<
+    ReturnType<typeof getCareerGoal>
+  > | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    getCareerGoal().then((goal) => {
+      if (isMounted) {
+        setCareerGoal(goal);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  const { gap, weeksToGoal, targetScore, hasGoal } = useMemo(() => {
+  const { weeksToGoal, targetScore, hasGoal } = useMemo(() => {
     if (!careerGoal) {
-      return { gap: 0, weeksToGoal: 0, targetScore: 0, hasGoal: false };
+      return { weeksToGoal: 0, targetScore: 0, hasGoal: false };
     }
     const target = careerGoal.puntaje_corte;
+    if (target === null) {
+      return { weeksToGoal: 0, targetScore: 0, hasGoal: false };
+    }
     const g = Math.max(0, target - diagnosticScore);
     return {
-      gap: g,
       weeksToGoal: calcWeeksToGoal(g),
       targetScore: target,
       hasGoal: true,

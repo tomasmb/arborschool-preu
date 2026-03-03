@@ -14,6 +14,8 @@
     "prepare": "husky",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:migrate:deploy-runner": "node scripts/migrate.js",
+    "db:check-migrations": "node scripts/checkMigrationPrefixes.js",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"
   },

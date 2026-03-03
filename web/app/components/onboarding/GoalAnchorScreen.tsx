@@ -9,15 +9,14 @@
  *
  * Time target: ~30 seconds to complete this screen.
  *
- * Data stored: arbor_career_goal in localStorage
- * (TODO v2: persist to user_career_goals DB table after user registers)
+ * Goal data is persisted through authenticated student goal APIs.
  */
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
-  CAREERS_SORTED,
+  fetchCareerOptions,
   filterCareers,
   saveCareerGoal,
   type CareerOption,
@@ -105,17 +104,19 @@ function TargetIcon() {
 // ============================================================================
 
 interface CareerSelectorProps {
+  careers: CareerOption[];
   selected: CareerOption | null;
   onSelect: (career: CareerOption) => void;
 }
 
-function CareerSelector({ selected, onSelect }: CareerSelectorProps) {
+function CareerSelector({ careers, selected, onSelect }: CareerSelectorProps) {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listboxId = "goal-anchor-career-options";
 
-  const filtered = filterCareers(query);
+  const filtered = filterCareers(careers, query);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -167,6 +168,7 @@ function CareerSelector({ selected, onSelect }: CareerSelectorProps) {
           }
           className="flex-1 bg-transparent text-sm text-charcoal placeholder:text-cool-gray focus:outline-none"
           aria-label="Buscar carrera"
+          aria-controls={listboxId}
           aria-expanded={isOpen}
           aria-haspopup="listbox"
           role="combobox"
@@ -177,6 +179,7 @@ function CareerSelector({ selected, onSelect }: CareerSelectorProps) {
       {/* Dropdown list */}
       {isOpen && (
         <ul
+          id={listboxId}
           role="listbox"
           aria-label="Opciones de carrera"
           className="absolute z-30 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg 
@@ -189,14 +192,14 @@ function CareerSelector({ selected, onSelect }: CareerSelectorProps) {
           )}
           {filtered.map((career) => (
             <li
-              key={career.id}
+              key={career.offeringId}
               role="option"
-              aria-selected={selected?.id === career.id}
+              aria-selected={selected?.offeringId === career.offeringId}
               onClick={() => handleSelect(career)}
               className={`flex items-center justify-between px-4 py-3 cursor-pointer text-sm
                 transition-colors duration-150
                 ${
-                  selected?.id === career.id
+                  selected?.offeringId === career.offeringId
                     ? "bg-primary/10 text-primary font-medium"
                     : "text-charcoal hover:bg-off-white"
                 }`}
@@ -208,9 +211,11 @@ function CareerSelector({ selected, onSelect }: CareerSelectorProps) {
                 </span>
               </span>
               <span className="text-xs font-mono text-cool-gray ml-2 shrink-0">
-                {career.puntaje_corte.toLocaleString("es-CL", {
-                  maximumFractionDigits: 0,
-                })}
+                {career.puntaje_corte === null
+                  ? "N/D"
+                  : career.puntaje_corte.toLocaleString("es-CL", {
+                      maximumFractionDigits: 0,
+                    })}
               </span>
             </li>
           ))}
@@ -228,8 +233,8 @@ function CareerSelector({ selected, onSelect }: CareerSelectorProps) {
 const PAES_AVERAGE_2025 = 520;
 
 function CareerScoreCard({ career }: { career: CareerOption }) {
-  const score = Math.round(career.puntaje_corte);
-  const aboveAverage = score - PAES_AVERAGE_2025;
+  const score = career.puntaje_corte ? Math.round(career.puntaje_corte) : null;
+  const aboveAverage = score === null ? 0 : score - PAES_AVERAGE_2025;
 
   return (
     <div className="mt-4 p-4 bg-primary/5 border border-primary/20 rounded-xl animate-fade-in-up">
@@ -240,13 +245,13 @@ function CareerScoreCard({ career }: { career: CareerOption }) {
             {career.nombre} — {career.universidad}
           </p>
           <p className="text-3xl font-bold text-primary mt-1">
-            {score}{" "}
+            {score ?? "N/D"}{" "}
             <span className="text-base font-normal text-cool-gray">puntos</span>
           </p>
           <p className="text-xs text-cool-gray mt-1">
             Puntaje de corte 2025 · Escala 100-1000
           </p>
-          {aboveAverage > 0 && (
+          {score !== null && aboveAverage > 0 && (
             <p className="text-xs text-accent font-medium mt-1.5">
               +{aboveAverage} pts sobre el promedio nacional
             </p>
@@ -262,14 +267,16 @@ function CareerScoreCard({ career }: { career: CareerOption }) {
 // ============================================================================
 
 function MetaMessage({ career }: { career: CareerOption }) {
-  const score = Math.round(career.puntaje_corte);
+  const score = career.puntaje_corte ? Math.round(career.puntaje_corte) : null;
 
   return (
     <div className="mt-4 p-4 bg-accent/5 border border-accent/20 rounded-xl">
       <p className="text-sm text-charcoal leading-relaxed">
-        <span className="font-semibold">Meta: {score} puntos.</span> El
-        diagnóstico te dirá exactamente cuánto te falta — y qué estudiar primero
-        para llegar ahí.
+        <span className="font-semibold">
+          Meta: {score ?? "puntaje de corte no disponible"}.
+        </span>{" "}
+        El diagnóstico te dirá exactamente cuánto te falta y qué estudiar
+        primero para llegar ahí.
       </p>
     </div>
   );
@@ -281,19 +288,42 @@ function MetaMessage({ career }: { career: CareerOption }) {
 
 export function GoalAnchorScreen({ onContinue }: GoalAnchorScreenProps) {
   const [isLoaded, setIsLoaded] = useState(false);
+  const [options, setOptions] = useState<CareerOption[]>([]);
   const [selected, setSelected] = useState<CareerOption | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     setIsLoaded(true);
+
+    let isMounted = true;
+    fetchCareerOptions().then((careers) => {
+      if (isMounted) {
+        setOptions(careers);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   function handleCareerSelect(career: CareerOption) {
     setSelected(career);
   }
 
-  function handleContinue() {
+  async function handleContinue() {
+    setSaveError(null);
     if (selected) {
-      saveCareerGoal(selected);
+      try {
+        await saveCareerGoal(selected);
+      } catch (error) {
+        setSaveError(
+          error instanceof Error
+            ? error.message
+            : "No se pudo guardar tu meta. Intenta de nuevo."
+        );
+        return;
+      }
     }
     onContinue();
   }
@@ -388,7 +418,11 @@ export function GoalAnchorScreen({ onContinue }: GoalAnchorScreenProps) {
             className={`transition-all duration-700 delay-250
               ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
-            <CareerSelector selected={selected} onSelect={handleCareerSelect} />
+            <CareerSelector
+              careers={options}
+              selected={selected}
+              onSelect={handleCareerSelect}
+            />
           </div>
 
           {/* Score card — appears after selection */}
@@ -437,6 +471,17 @@ export function GoalAnchorScreen({ onContinue }: GoalAnchorScreenProps) {
               </button>
             )}
           </div>
+
+          {saveError && (
+            <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {saveError}
+            </p>
+          )}
+
+          {/* Context hint */}
+          <p className="mt-4 text-xs text-cool-gray text-center">
+            Fecha referencial PAES: {PAES_DATE_LABEL}
+          </p>
         </div>
       </div>
     </div>

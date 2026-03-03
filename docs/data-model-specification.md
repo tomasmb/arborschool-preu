@@ -223,6 +223,94 @@ CREATE TABLE student_responses (
 );
 ```
 
+### Student Portal Tables (Goal + Admissions v1)
+
+```sql
+CREATE TABLE admissions_datasets (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    version VARCHAR(40) UNIQUE NOT NULL,
+    source VARCHAR(120) NOT NULL,
+    published_at TIMESTAMPTZ NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE universities (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code VARCHAR(30) UNIQUE NOT NULL,
+    name VARCHAR(180) NOT NULL,
+    short_name VARCHAR(80),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE careers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code VARCHAR(60) UNIQUE NOT NULL,
+    name VARCHAR(180) NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE career_offerings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    dataset_id UUID REFERENCES admissions_datasets(id) ON DELETE CASCADE NOT NULL,
+    university_id UUID REFERENCES universities(id) NOT NULL,
+    career_id UUID REFERENCES careers(id) NOT NULL,
+    external_code VARCHAR(60),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(dataset_id, university_id, career_id)
+);
+
+CREATE TABLE offering_weights (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    offering_id UUID REFERENCES career_offerings(id) ON DELETE CASCADE NOT NULL,
+    test_code VARCHAR(20) NOT NULL,
+    weight_percent DECIMAL(5,2) NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(offering_id, test_code)
+);
+
+CREATE TABLE offering_cutoffs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    offering_id UUID REFERENCES career_offerings(id) ON DELETE CASCADE NOT NULL,
+    admission_year INTEGER NOT NULL,
+    cutoff_score DECIMAL(7,2) NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(offering_id, admission_year)
+);
+
+CREATE TABLE student_goals (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    offering_id UUID REFERENCES career_offerings(id) NOT NULL,
+    priority INTEGER NOT NULL,
+    is_primary BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id, priority)
+);
+
+CREATE TABLE student_goal_scores (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    goal_id UUID REFERENCES student_goals(id) ON DELETE CASCADE NOT NULL,
+    test_code VARCHAR(20) NOT NULL,
+    score DECIMAL(7,2) NOT NULL,
+    source VARCHAR(20) NOT NULL DEFAULT 'student',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(goal_id, test_code)
+);
+
+CREATE TABLE student_goal_buffers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    goal_id UUID REFERENCES student_goals(id) ON DELETE CASCADE NOT NULL,
+    buffer_points INTEGER NOT NULL DEFAULT 30,
+    source VARCHAR(20) NOT NULL DEFAULT 'system',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(goal_id)
+);
+```
+
 ### Indexes
 
 ```sql

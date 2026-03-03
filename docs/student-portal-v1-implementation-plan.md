@@ -177,22 +177,22 @@ Status: `IN PROGRESS`
 ---
 
 ## Phase 2 - Admissions Dataset + Goal Persistence
-Status: `NOT STARTED`
+Status: `COMPLETE`
 
 ### Tasks
-- [ ] Move careers/universities/cutoffs/weights from static file to DB tables.
-- [ ] Add initial seed/import script for admissions dataset.
-- [ ] Replace onboarding goal read/write from `localStorage` with authenticated API persistence.
-- [ ] Enforce max `3` primary targets in backend validation.
-- [ ] Include data transparency fields in API responses:
-  - [ ] dataset version/date
-  - [ ] student-entered vs system-estimated flags
+- [x] Move careers/universities/cutoffs/weights from static file to DB tables.
+- [x] Add initial seed/import script for admissions dataset.
+- [x] Replace onboarding goal read/write from `localStorage` with authenticated API persistence.
+- [x] Enforce max `3` primary targets in backend validation.
+- [x] Include data transparency fields in API responses:
+  - [x] dataset version/date
+  - [x] student-entered vs system-estimated flags
 
 ### Acceptance Checks
-- [ ] Goal upsert/retrieval works for 1, 2, and 3 primary goals.
-- [ ] Hardcoded career list is no longer source of truth.
-- [ ] Goal state persists across sessions through DB.
-- [ ] Replaced localStorage goal code paths are removed or marked for immediate deletion in next phase.
+- [x] Goal upsert/retrieval works for 1, 2, and 3 primary goals.
+- [x] Hardcoded career list is no longer source of truth.
+- [x] Goal state persists across sessions through DB.
+- [x] Replaced localStorage goal code paths are removed or marked for immediate deletion in next phase.
 
 ---
 
@@ -322,6 +322,7 @@ Status: `NOT STARTED`
 - Mandatory engineering standards: SOLID + DRY + zero dead code.
 - Portal UI must match current design system.
 - Auth session strategy for v1: JWT sessions with DB user identity resolution on sign-in.
+- Local DB stabilization policy: apply migrations with `node scripts/migrate.js` (same runner as deploy) to minimize runner drift.
 
 ---
 
@@ -330,6 +331,7 @@ Status: `NOT STARTED`
 - [ ] Define admissions seed update process and ownership cadence.
 - [ ] Confirm migration plan for historical localStorage goals (if recoverable).
 - [ ] Add `AUTH_SECRET`, `AUTH_GOOGLE_ID`, and `AUTH_GOOGLE_SECRET` in environment configuration for local/dev/prod.
+- [ ] Standardize local migration execution path with deploy runner to avoid drift (`scripts/migrate.js` vs `drizzle-kit migrate` behavior).
 
 ---
 
@@ -358,14 +360,42 @@ Status: `NOT STARTED`
   - Pending acceptance checks.
 
 ### Phase 2
-- Date:
-- Owner:
+- Date: 2026-03-03
+- Owner: Codex (GPT-5)
 - What shipped:
+  - Added admissions + student goal schema (`admissions_datasets`, `universities`, `careers`, `career_offerings`, `offering_weights`, `offering_cutoffs`, `student_goals`, `student_goal_scores`, `student_goal_buffers`).
+  - Added goal persistence service with validation (max 3 primaries, deduped offerings, score bounds).
+  - Replaced onboarding goal localStorage read/write with authenticated `/api/student/goals` calls.
+  - Implemented `/portal/goals` page with DB-backed goal selection and save flow.
+  - Added admissions seed script at `web/scripts/seedAdmissionsDataset.ts`.
 - APIs added/changed:
+  - Added `GET /api/student/goals`.
+  - Added `POST /api/student/goals`.
 - DB changes:
+  - Generated migration: `web/db/migrations/0008_student_portal_phase2_admissions_goals.sql`.
+  - Applied clean migration chain with `node scripts/migrate.js` on `preu` (data-preserving DB normalization performed).
+  - Seeded admissions dataset with `npx tsx scripts/seedAdmissionsDataset.ts`.
+  - Preserved existing local data by cloning legacy DB into clean migrated DB using `scripts/cloneLegacyDataToCleanDb.ts`.
 - Tests run:
+  - `npm run typecheck` (pass).
+  - Goal persistence functional checks:
+    - save 1 goal -> pass
+    - save 2 goals -> pass
+    - save 3 goals -> pass
+    - save 4 goals -> rejected (expected)
+  - HTTP E2E checks (local dev server):
+    - `GET /portal` -> `307` redirect to `/auth/signin?callbackUrl=%2Fportal`
+    - `GET /portal/goals` -> `307` redirect to `/auth/signin?callbackUrl=%2Fportal%2Fgoals`
+    - `GET /api/student/goals` unauthenticated -> `401 {"success":false,"error":"Unauthorized"}`
+    - `GET /diagnostico` -> `200` (non-regression path reachable)
+  - Browser E2E checks (headless Chrome):
+    - Visiting `/portal` renders sign-in page with `Continuar con Google`.
+    - Visiting `/portal/goals` renders sign-in page with `Iniciar sesión`.
+    - Visiting `/diagnostico` renders Goal Anchor heading `¿A qué carrera quieres entrar?`.
 - Risks/known gaps:
+  - This repo currently has historical duplicate migration prefixes (`0003_*`, `0004_*`), which can cause behavior differences between migration runners.
 - Sign-off:
+  - Completed with data-preserving DB recovery and acceptance checks above.
 
 ### Phase 3
 - Date:
