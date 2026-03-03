@@ -68,14 +68,31 @@ Show:
 - M1 predicted score today (with confidence band)
 - M1 target score chosen by user
 - Gap in points
-- Estimated study hours required
-- Forecast curve to exam date by weekly effort
+- Estimated study minutes required
+- Effort scenario curve to exam date by weekly study load
 
 Allow:
 - Adjust weekly study hours and see projected M1 curve
 - Adjust M1 target and recalculate effort requirement
 
 Do not present "true global prediction" unless diagnostics for all required tests are available.
+
+### Model Governance (Locked for v1)
+To avoid contradictory projections in early evidence states:
+- Score prediction authority:
+  - Use the diagnostic score model as the only source of truth for `prediction min/max`.
+  - Confidence band must come from diagnostic uncertainty handling, not atom-only extrapolation.
+- Atom model role:
+  - Use atom mastery and route optimizer for `next best action` ranking and ROI estimation.
+  - Use atom-derived effort as study-planning signal, not as authoritative score forecast.
+- Forecast UX rules:
+  - Display effort in minutes-based units (`minutes per point` or `minutes per +10 points`).
+  - Label slider output as effort scenario, not core prediction.
+  - Cap scenario projection to the diagnostic prediction ceiling until new evidence
+    (new diagnostic/retest) is collected.
+- Evidence constraint:
+  - Short diagnostics (v1: 16 questions) provide useful direction but not full graph certainty.
+  - Product should prefer conservative score claims and strong actionability over overconfident precision.
 
 ## Main Dashboard Architecture
 Top section:
@@ -202,6 +219,8 @@ Trust requirements:
   This aligns with controllable per-test goals plus rigorous evidence gates.
 - High-stakes practice test evidence suggests repeated practice helps up to a point.
   Excessive frequency can reduce efficiency, supporting gated retest thresholds.
+- Short adaptive/IRT-style assessments have higher measurement uncertainty in low-information zones.
+  This supports using explicit prediction bands and conservative claims for early snapshots.
 
 ## Research Alignment Appendix (External Benchmarks)
 
@@ -322,3 +341,7 @@ Sources:
 - AI-enabled repeated practice tests in high-stakes setting
   (Duolingo English Test observational study, 2025 preprint):
   https://arxiv.org/abs/2508.17108
+- Conditional/consistent standard error behavior in short adaptive testing:
+  https://pmc.ncbi.nlm.nih.gov/articles/PMC7221492/
+- CAT score comparability and conditional measurement uncertainty:
+  https://pmc.ncbi.nlm.nih.gov/articles/PMC10664745/

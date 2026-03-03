@@ -120,6 +120,9 @@ Non-negotiable end-state goals:
 - Learning-first priority: reflected in portal KPIs and next-best-action ranking.
 - Soft gate with structured unlock: keep planning/goal surface accessible, lock true personalization until diagnostic evidence exists.
 - M1-only scope: dashboard/simulator predictions are M1-first in v1.
+- Prediction governance split:
+  - diagnostic model owns score prediction bands
+  - atom model owns learning ROI ranking and effort planning
 - Goal-setting and prediction surfaces separated:
   - Goal/admissions simulator in `/portal/goals`
   - M1 improvement dashboard in `/portal`
@@ -220,27 +223,27 @@ Status: `COMPLETE`
 ---
 
 ## Phase 4 - M1 Dashboard Core
-Status: `NOT STARTED`
+Status: `IN PROGRESS`
 
 ### Tasks
-- [ ] Build `GET /api/student/dashboard/m1` combining:
-  - [ ] latest diagnostic snapshot
-  - [ ] student M1 target
-  - [ ] mastery/route signal
-- [ ] Compute and return:
-  - [ ] M1 predicted score band
-  - [ ] confidence indicator
-  - [ ] target, gap, estimated hours
-- [ ] Build `/portal` top modules:
-  - [ ] M1 today vs target
-  - [ ] confidence + gap
-  - [ ] effort-adjustable forecast card
+- [x] Build `GET /api/student/dashboard/m1` combining:
+  - [x] latest diagnostic snapshot
+  - [x] student M1 target
+  - [x] mastery/route signal
+- [x] Compute and return:
+  - [x] M1 predicted score band
+  - [x] confidence indicator
+  - [x] target, gap, estimated hours
+- [x] Build `/portal` top modules:
+  - [x] M1 today vs target
+  - [x] confidence + gap
+  - [x] effort-adjustable forecast card
 
 ### Acceptance Checks
-- [ ] Dashboard returns meaningful state for users with full data.
-- [ ] Dashboard returns clear actionable empty state for missing target/data.
-- [ ] Latency remains acceptable for normal usage.
-- [ ] UI implementation follows existing design system patterns (no parallel UI language).
+- [x] Dashboard returns meaningful state for users with full data.
+- [x] Dashboard returns clear actionable empty state for missing target/data.
+- [x] Latency remains acceptable for normal usage.
+- [x] UI implementation follows existing design system patterns (no parallel UI language).
 
 ---
 
@@ -299,14 +302,14 @@ Status: `NOT STARTED`
 - [ ] Next-best-action ranking deterministic with fixed mastery graph.
 
 ### API Integration
-- [ ] Auth-required endpoints reject unauthenticated requests.
+- [x] Auth-required endpoints reject unauthenticated requests.
 - [ ] Goal upsert/retrieval round-trip (1/2/3 primary targets).
 - [ ] Simulator includes formula + metadata.
 - [ ] Dashboard handles both complete and missing-target states.
 
 ### UI/E2E
 - [ ] Google sign-in -> portal -> create goals -> simulator updates.
-- [ ] Existing diagnostic user lands on populated portal.
+- [x] Existing diagnostic user lands on populated portal.
 - [ ] No-diagnostic user redirected to diagnostic.
 - [ ] Goal edits update dashboard target/gap correctly.
 
@@ -323,15 +326,19 @@ Status: `NOT STARTED`
 - Portal UI must match current design system.
 - Auth session strategy for v1: JWT sessions with DB user identity resolution on sign-in.
 - Local DB stabilization policy: apply migrations with `node scripts/migrate.js` (same runner as deploy) to minimize runner drift.
+- Dashboard confidence formula for v1: blend mastery coverage (65%) and diagnostic band width stability (35%), producing low/medium/high tiers.
+- Dashboard effort units for v1: use minutes-based effort ratios (not hours-per-point display).
+- Forecast rule for v1: effort scenario projection must not contradict diagnostic prediction band ceilings.
 
 ---
 
 ## Open Follow-ups
-- [ ] Define exact confidence-band computation formula for dashboard API contract.
 - [ ] Define admissions seed update process and ownership cadence.
 - [ ] Confirm migration plan for historical localStorage goals (if recoverable).
 - [ ] Add `AUTH_SECRET`, `AUTH_GOOGLE_ID`, and `AUTH_GOOGLE_SECRET` in environment configuration for local/dev/prod.
 - [ ] Standardize local migration execution path with deploy runner to avoid drift (`scripts/migrate.js` vs `drizzle-kit migrate` behavior).
+- [ ] Calibrate minutes-per-point coefficients with pilot outcome data by performance tier.
+- [ ] Implement minutes-based effort copy/fields in dashboard API + UI and cap effort scenario projection to diagnostic prediction ceiling.
 
 ---
 
@@ -430,14 +437,34 @@ Status: `NOT STARTED`
   - Completed.
 
 ### Phase 4
-- Date:
-- Owner:
+- Date: 2026-03-03
+- Owner: Codex (GPT-5)
 - What shipped:
+  - Added M1 dashboard domain service at `web/lib/student/dashboardM1.ts` that combines diagnostic snapshot (`users`), goal target (`student_goals` + `student_goal_scores`), and mastery/route signal (`atom_mastery` + question unlock analysis).
+  - Added actionable empty states for missing diagnostic, missing M1 target, and missing mastery signal.
+  - Replaced `/portal` Phase 1 placeholder with production dashboard modules (M1 today vs target, confidence + gap, effort-adjustable forecast card).
 - APIs added/changed:
+  - Added `GET /api/student/dashboard/m1`.
 - DB changes:
+  - None.
 - Tests run:
+  - API and route protection checks:
+    - `GET /api/student/dashboard/m1` unauthenticated -> `401`.
+    - `GET /portal` unauthenticated -> `307` redirect to `/auth/signin`.
+  - Browser E2E checks (Playwright):
+    - Authenticated user without diagnostic snapshot -> `/portal` shows actionable empty state.
+    - Completed full diagnostic + profiling flow for same authenticated user.
+    - Post-diagnostic `/portal` transitions to populated `ready` dashboard state.
+    - `/portal/goals` simulator interaction remains functional (live recalculation + persistence after save/reload).
+    - Regression fix validated: estimated effort no longer collapses to `0 h` when route efficiency ratio is <0.1 hours/point.
+  - Responsive checks:
+    - Verified `/portal` and `/portal/goals` at desktop and mobile viewport (`390x844`).
 - Risks/known gaps:
+  - Confidence heuristic is defined for v1 and should be calibrated with pilot usage data.
+  - Effort scenario can still exceed diagnostic prediction ceiling in current UI; needs model-governance cap implementation per locked spec.
+  - Dashboard effort presentation still uses hours-oriented copy in current UI; spec is now minutes-oriented and should be aligned in code.
 - Sign-off:
+  - Pending acceptance checks.
 
 ### Phase 5
 - Date:

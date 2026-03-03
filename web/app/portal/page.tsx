@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
 import { getAuthenticatedUserById } from "@/lib/auth/users";
+import { M1DashboardClient } from "./M1DashboardClient";
 
 export default async function PortalPage() {
   const session = await auth();
@@ -44,24 +44,7 @@ export default async function PortalPage() {
           </form>
         </header>
 
-        <section className="rounded-2xl border border-gray-200 bg-white p-6">
-          <h2 className="text-xl font-serif font-semibold text-primary mb-2">
-            Hub M1 (Fase 1)
-          </h2>
-          <p className="text-gray-700 mb-4">
-            La base de autenticación ya está habilitada. En la próxima fase,
-            aquí mostraremos objetivos y simulación de admisión.
-          </p>
-          <Link
-            href="/portal/goals"
-            className={[
-              "inline-flex items-center rounded-lg bg-primary text-white px-4 py-2",
-              "text-sm font-semibold hover:bg-primary/90 transition-colors",
-            ].join(" ")}
-          >
-            Ir a objetivos
-          </Link>
-        </section>
+        <M1DashboardClient />
       </div>
     </main>
   );
