@@ -14,9 +14,10 @@ import {
   calculatePAESImprovement,
   type StudentLearningAnalysis,
 } from "@/lib/diagnostic/questionUnlock";
+import { buildNextActionInsights } from "@/lib/student/nextAction";
 
 const DEFAULT_FORECAST_WEEKS = 8;
-const DEFAULT_WEEKLY_HOURS = 6;
+const DEFAULT_WEEKLY_MINUTES = 360;
 
 type DashboardStatus =
   | "ready"
@@ -61,16 +62,17 @@ export type M1DashboardData = {
     masteryPercentage: number;
   };
   effort: {
-    estimatedHoursToTarget: number | null;
+    estimatedMinutesToTarget: number | null;
     topRoute: {
       axis: string;
       pointsGain: number;
-      studyHours: number;
+      studyMinutes: number;
     } | null;
     model: {
       forecastWeeks: number;
-      recommendedWeeklyHours: number;
-      hoursPerPoint: number | null;
+      recommendedWeeklyMinutes: number;
+      minutesPerPoint: number | null;
+      minutesPerTenPoints: number | null;
     };
   };
   emptyState: {
@@ -85,10 +87,6 @@ function round1(value: number): number {
   return Math.round(value * 10) / 10;
 }
 
-function round3(value: number): number {
-  return Math.round(value * 1000) / 1000;
-}
-
 function clampScore(value: number): number {
   return Math.max(100, Math.min(1000, Math.round(value)));
 }
@@ -96,8 +94,9 @@ function clampScore(value: number): number {
 function defaultEffortModel() {
   return {
     forecastWeeks: DEFAULT_FORECAST_WEEKS,
-    recommendedWeeklyHours: DEFAULT_WEEKLY_HOURS,
-    hoursPerPoint: null,
+    recommendedWeeklyMinutes: DEFAULT_WEEKLY_MINUTES,
+    minutesPerPoint: null,
+    minutesPerTenPoints: null,
   };
 }
 
@@ -245,7 +244,7 @@ function buildMissingDashboard(params: {
       masteryPercentage: 0,
     },
     effort: {
-      estimatedHoursToTarget: null,
+      estimatedMinutesToTarget: null,
       topRoute: null,
       model: defaultEffortModel(),
     },
@@ -258,7 +257,8 @@ function computeEffortMetrics(params: {
   targetScore: number;
   analysis: StudentLearningAnalysis;
 }) {
-  const topRoutes = params.analysis.routes.slice(0, 3);
+  const insights = buildNextActionInsights(params.analysis);
+  const topRoutes = insights.topRoutes.slice(0, 3);
   const totalPotentialUnlocks = topRoutes.reduce(
     (sum, route) => sum + route.totalQuestionsUnlocked,
     0
@@ -267,31 +267,34 @@ function computeEffortMetrics(params: {
     params.currentScore,
     totalPotentialUnlocks
   );
-  const topRoute = topRoutes[0] ?? null;
+  const topRoute = insights.nextAction;
 
   const gapPointsRaw = params.targetScore - params.currentScore;
   const gapPoints = gapPointsRaw > 0 ? Math.round(gapPointsRaw) : 0;
 
-  const topRouteHours = topRoute
-    ? round1(topRoute.estimatedMinutes / 60)
-    : null;
-  const topRoutePoints = topRoute ? topRoute.estimatedPointsGain : null;
+  const topRouteMinutes = topRoute ? Math.round(topRoute.studyMinutes) : null;
+  const topRoutePoints = topRoute ? topRoute.pointsGain : null;
 
-  const hoursPerPointRaw =
-    topRouteHours !== null && topRoutePoints !== null && topRoutePoints > 0
-      ? topRouteHours / topRoutePoints
+  const minutesPerPointRaw =
+    topRouteMinutes !== null && topRoutePoints !== null && topRoutePoints > 0
+      ? topRouteMinutes / topRoutePoints
       : null;
 
-  const hoursPerPoint =
-    hoursPerPointRaw !== null && hoursPerPointRaw > 0
-      ? round3(hoursPerPointRaw)
+  const minutesPerPoint =
+    minutesPerPointRaw !== null && minutesPerPointRaw > 0
+      ? round1(minutesPerPointRaw)
       : null;
 
-  const estimatedHoursToTarget =
+  const minutesPerTenPoints =
+    minutesPerPointRaw !== null && minutesPerPointRaw > 0
+      ? round1(minutesPerPointRaw * 10)
+      : null;
+
+  const estimatedMinutesToTarget =
     gapPoints === 0
       ? 0
-      : hoursPerPointRaw !== null
-        ? round1(gapPoints * hoursPerPointRaw)
+      : minutesPerPointRaw !== null
+        ? Math.round(gapPoints * minutesPerPointRaw)
         : null;
 
   return {
@@ -300,8 +303,9 @@ function computeEffortMetrics(params: {
       max: clampScore(params.currentScore + improvement.maxPoints),
     },
     gapPoints,
-    estimatedHoursToTarget,
-    hoursPerPoint,
+    estimatedMinutesToTarget,
+    minutesPerPoint,
+    minutesPerTenPoints,
     topRoute,
   };
 }
@@ -352,18 +356,19 @@ function buildReadyDashboard(params: {
       masteryPercentage: Math.round(masteryRatio * 100),
     },
     effort: {
-      estimatedHoursToTarget: effortMetrics.estimatedHoursToTarget,
+      estimatedMinutesToTarget: effortMetrics.estimatedMinutesToTarget,
       topRoute: effortMetrics.topRoute
         ? {
-            axis: effortMetrics.topRoute.axisDisplayName,
-            pointsGain: effortMetrics.topRoute.estimatedPointsGain,
-            studyHours: round1(effortMetrics.topRoute.estimatedMinutes / 60),
+            axis: effortMetrics.topRoute.axis,
+            pointsGain: effortMetrics.topRoute.pointsGain,
+            studyMinutes: effortMetrics.topRoute.studyMinutes,
           }
         : null,
       model: {
         forecastWeeks: DEFAULT_FORECAST_WEEKS,
-        recommendedWeeklyHours: DEFAULT_WEEKLY_HOURS,
-        hoursPerPoint: effortMetrics.hoursPerPoint,
+        recommendedWeeklyMinutes: DEFAULT_WEEKLY_MINUTES,
+        minutesPerPoint: effortMetrics.minutesPerPoint,
+        minutesPerTenPoints: effortMetrics.minutesPerTenPoints,
       },
     },
     emptyState: null,

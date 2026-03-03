@@ -226,7 +226,7 @@ Status: `COMPLETE`
 ---
 
 ## Phase 4 - M1 Dashboard Core
-Status: `IN PROGRESS`
+Status: `COMPLETE`
 
 ### Tasks
 - [x] Build `GET /api/student/dashboard/m1` combining:
@@ -236,7 +236,7 @@ Status: `IN PROGRESS`
 - [x] Compute and return:
   - [x] M1 predicted score band
   - [x] confidence indicator
-  - [x] target, gap, estimated hours
+  - [x] target, gap, estimated minutes
 - [x] Build `/portal` top modules:
   - [x] M1 today vs target
   - [x] confidence + gap
@@ -251,34 +251,34 @@ Status: `IN PROGRESS`
 ---
 
 ## Phase 5 - Next Best Action + Learning Queue Entry
-Status: `NOT STARTED`
+Status: `COMPLETE`
 
 ### Tasks
-- [ ] Reuse route optimizer logic to compute top ROI action.
-- [ ] Add `GET /api/student/next-action`.
-- [ ] Add dashboard sections:
-  - [ ] next best action (score delta + time cost)
-  - [ ] learning queue preview (top atoms)
-- [ ] Mark SR orchestration as "coming next" (no full SR engine yet)
+- [x] Reuse route optimizer logic to compute top ROI action.
+- [x] Add `GET /api/student/next-action`.
+- [x] Add dashboard sections:
+  - [x] next best action (score delta + time cost)
+  - [x] learning queue preview (top atoms)
+- [x] Mark SR orchestration as "coming next" (no full SR engine yet)
 
 ### Acceptance Checks
-- [ ] Next action is deterministic for same input state.
-- [ ] Dashboard renders action + queue without regressions.
-- [ ] No duplicated ranking logic across API and UI.
+- [x] Next action is deterministic for same input state.
+- [x] Dashboard renders action + queue without regressions.
+- [x] No duplicated ranking logic across API and UI.
 
 ---
 
 ## Phase 6 - Hardening + Release
-Status: `NOT STARTED`
+Status: `IN PROGRESS`
 
 ### Tasks
-- [ ] Add feature flag: `student_portal_v1`.
+- [x] Add feature flag: `student_portal_v1`.
 - [ ] Add legacy backfill path for recoverable goal state (when available).
-- [ ] Add analytics/observability events:
-  - [ ] goal save/update
-  - [ ] simulator interaction
-  - [ ] dashboard viewed
-  - [ ] next action clicked
+- [x] Add analytics/observability events:
+  - [x] goal save/update
+  - [x] simulator interaction
+  - [x] dashboard viewed
+  - [x] next action clicked
 - [ ] Do gradual rollout:
   - [ ] internal users
   - [ ] broader user base
@@ -302,13 +302,13 @@ Status: `NOT STARTED`
 - [ ] Weighted score calculation across mixed PAES inputs.
 - [ ] Buffer math (`+20/+30/+50`) and admissibility outputs.
 - [ ] Sensitivity monotonic behavior (`M1 +10`).
-- [ ] Next-best-action ranking deterministic with fixed mastery graph.
+- [x] Next-best-action ranking deterministic with fixed mastery graph.
 
 ### API Integration
 - [x] Auth-required endpoints reject unauthenticated requests.
 - [ ] Goal upsert/retrieval round-trip (1/2/3 primary targets).
 - [ ] Simulator includes formula + metadata.
-- [ ] Dashboard handles both complete and missing-target states.
+- [x] Dashboard handles both complete and missing-target states.
 
 ### UI/E2E
 - [ ] Google sign-in -> portal -> create goals -> simulator updates.
@@ -333,6 +333,7 @@ Status: `NOT STARTED`
 - Dashboard effort units for v1: use minutes-based effort ratios (not hours-per-point display).
 - Forecast rule for v1: effort scenario projection must not contradict diagnostic prediction band ceilings.
 - Branch consolidation decision (2026-03-03): use `codex/student-portal-v1` as the single canonical implementation branch for all remaining phases.
+- Feature flag decision (2026-03-03): `STUDENT_PORTAL_V1=false` disables `/portal*` and `/api/student/*` at middleware level.
 
 ---
 
@@ -342,7 +343,8 @@ Status: `NOT STARTED`
 - [ ] Add `AUTH_SECRET`, `AUTH_GOOGLE_ID`, and `AUTH_GOOGLE_SECRET` in environment configuration for local/dev/prod.
 - [ ] Standardize local migration execution path with deploy runner to avoid drift (`scripts/migrate.js` vs `drizzle-kit migrate` behavior).
 - [ ] Calibrate minutes-per-point coefficients with pilot outcome data by performance tier.
-- [ ] Implement minutes-based effort copy/fields in dashboard API + UI and cap effort scenario projection to diagnostic prediction ceiling.
+- [ ] Execute Phase 6 rollout sequence (`internal` -> `broader`) once observability dashboards are configured.
+- [ ] Complete explicit transitional cleanup decision for `/resultados/[sessionId]` retirement timing.
 
 ---
 
@@ -445,50 +447,79 @@ Status: `NOT STARTED`
 - Owner: Codex (GPT-5)
 - What shipped:
   - Added M1 dashboard domain service at `web/lib/student/dashboardM1.ts` that combines diagnostic snapshot (`users`), goal target (`student_goals` + `student_goal_scores`), and mastery/route signal (`atom_mastery` + question unlock analysis).
+  - Aligned dashboard effort model to minutes-based fields (`minutesPerPoint`, `minutesPerTenPoints`, `estimatedMinutesToTarget`) and minutes-first UI copy.
+  - Enforced effort scenario ceiling cap in `/portal` so projected scenario does not exceed diagnostic prediction max.
+  - Centralized route ranking determinism via shared `web/lib/student/nextAction.ts` helper to avoid divergent ordering logic.
   - Added actionable empty states for missing diagnostic, missing M1 target, and missing mastery signal.
-  - Replaced `/portal` Phase 1 placeholder with production dashboard modules (M1 today vs target, confidence + gap, effort-adjustable forecast card).
+  - Replaced `/portal` placeholder with production modules (M1 today vs target, confidence + gap, effort scenario card).
 - APIs added/changed:
-  - Added `GET /api/student/dashboard/m1`.
+  - Updated `GET /api/student/dashboard/m1` effort payload to minutes-based fields.
 - DB changes:
   - None.
 - Tests run:
+  - `npm run typecheck` (pass).
+  - `npm run lint` (pass).
   - API and route protection checks:
     - `GET /api/student/dashboard/m1` unauthenticated -> `401`.
     - `GET /portal` unauthenticated -> `307` redirect to `/auth/signin`.
-  - Browser E2E checks (Playwright):
-    - Authenticated user without diagnostic snapshot -> `/portal` shows actionable empty state.
-    - Completed full diagnostic + profiling flow for same authenticated user.
-    - Post-diagnostic `/portal` transitions to populated `ready` dashboard state.
-    - `/portal/goals` simulator interaction remains functional (live recalculation + persistence after save/reload).
-    - Regression fix validated: estimated effort no longer collapses to `0 h` when route efficiency ratio is <0.1 hours/point.
-  - Responsive checks:
-    - Verified `/portal` and `/portal/goals` at desktop and mobile viewport (`390x844`).
+  - Authenticated E2E checks (local signed Auth.js session for seeded user `e2e.student+portal@arbor.local`):
+    - `/portal` renders ready state with minutes-based effort fields (`estimatedMinutesToTarget`, `minutesPerPoint`, `minutesPerTenPoints`).
+    - Effort scenario projection remains capped to diagnostic ceiling (`Escenario M1` equals `Techo diagnóstico` for tested profile).
+    - Slider updates scenario state and keeps forecast labeled as effort scenario.
+    - Verified at desktop and mobile viewport (`390x844`).
 - Risks/known gaps:
   - Confidence heuristic is defined for v1 and should be calibrated with pilot usage data.
-  - Effort scenario can still exceed diagnostic prediction ceiling in current UI; needs model-governance cap implementation per locked spec.
-  - Dashboard effort presentation still uses hours-oriented copy in current UI; spec is now minutes-oriented and should be aligned in code.
 - Sign-off:
-  - Pending acceptance checks.
+  - Completed.
 
 ### Phase 5
-- Date:
-- Owner:
+- Date: 2026-03-03
+- Owner: Codex (GPT-5)
 - What shipped:
+  - Added shared next-action domain service in `web/lib/student/nextAction.ts` with deterministic tie-break ordering for routes and atoms.
+  - Added dashboard sections for next best action and learning queue preview in `web/app/portal/M1DashboardClient.tsx`.
+  - Marked SR orchestration as upcoming in dashboard copy (no orchestration engine in this phase).
 - APIs added/changed:
+  - Added `GET /api/student/next-action`.
 - DB changes:
+  - None.
 - Tests run:
+  - `npm run typecheck` (pass).
+  - `npm run lint` (pass).
+  - API protection check:
+    - `GET /api/student/next-action` unauthenticated -> `401`.
+  - Authenticated E2E checks (same seeded user/session):
+    - `GET /api/student/next-action` returns deterministic `nextAction` + `queuePreview` payload.
+    - `/portal` renders \"Siguiente mejor acción\" and queue preview sections with stable ordering.
+    - `/portal/goals` edits (`M1`, `buffer`) immediately recalculate simulator and persist after save + reload.
+    - Dashboard reflects updated goal target after goal save (regression check for dashboard-goals coupling).
 - Risks/known gaps:
+  - Queue preview currently exposes top efficiency atoms only (full SR block orchestration remains out of scope).
 - Sign-off:
+  - Completed.
 
 ### Phase 6
-- Date:
-- Owner:
+- Date: 2026-03-03
+- Owner: Codex (GPT-5)
 - What shipped:
+  - Added `student_portal_v1` feature flag enforcement in middleware and post-login routing.
+  - Added typed analytics events and instrumentation for:
+    - goal save/update
+    - simulator interaction
+    - dashboard viewed
+    - next action clicked
 - APIs added/changed:
+  - Student routes now return `404` when `STUDENT_PORTAL_V1=false` via middleware gate.
 - DB changes:
+  - None.
 - Tests run:
+  - `npm run typecheck` (pass).
+  - `npm run lint` (pass).
 - Risks/known gaps:
+  - Gradual rollout steps (`internal` -> `broader`) are pending environment-level execution.
+  - Transitional retirement decisions (`/resultados/[sessionId]` and bridge cleanup) remain pending explicit product sign-off.
 - Sign-off:
+  - In progress (rollout + cleanup pending).
 
 ---
 

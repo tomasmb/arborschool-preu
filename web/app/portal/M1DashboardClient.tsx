@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { trackStudentDashboardViewed } from "@/lib/analytics";
+import { NextActionSection, type NextActionPayload } from "./NextActionSection";
 
 type DashboardPayload = {
   status: "ready" | "missing_diagnostic" | "missing_target" | "missing_mastery";
@@ -28,16 +30,17 @@ type DashboardPayload = {
     masteryPercentage: number;
   };
   effort: {
-    estimatedHoursToTarget: number | null;
+    estimatedMinutesToTarget: number | null;
     topRoute: {
       axis: string;
       pointsGain: number;
-      studyHours: number;
+      studyMinutes: number;
     } | null;
     model: {
       forecastWeeks: number;
-      recommendedWeeklyHours: number;
-      hoursPerPoint: number | null;
+      recommendedWeeklyMinutes: number;
+      minutesPerPoint: number | null;
+      minutesPerTenPoints: number | null;
     };
   };
   emptyState: {
@@ -56,16 +59,26 @@ function formatScore(value: number | null): string {
   return value.toLocaleString("es-CL");
 }
 
-function formatHours(value: number | null): string {
+function formatMinutes(value: number | null): string {
   if (value === null) {
     return "-";
   }
 
   if (value === 0) {
-    return "0 h";
+    return "0 min";
   }
 
-  return `${value.toLocaleString("es-CL", { maximumFractionDigits: 1 })} h`;
+  if (value < 60) {
+    return `${value.toLocaleString("es-CL")} min`;
+  }
+
+  const hours = Math.floor(value / 60);
+  const minutes = value % 60;
+  if (minutes === 0) {
+    return `${hours.toLocaleString("es-CL")} h`;
+  }
+
+  return `${hours.toLocaleString("es-CL")} h ${minutes.toLocaleString("es-CL")} min`;
 }
 
 function confidenceLabel(level: DashboardPayload["confidence"]["level"]) {
@@ -84,7 +97,12 @@ export function M1DashboardClient() {
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<DashboardPayload | null>(null);
 
-  const [weeklyHours, setWeeklyHours] = useState(6);
+  const [nextActionLoading, setNextActionLoading] = useState(true);
+  const [nextActionError, setNextActionError] = useState<string | null>(null);
+  const [nextActionData, setNextActionData] =
+    useState<NextActionPayload | null>(null);
+
+  const [weeklyMinutes, setWeeklyMinutes] = useState(360);
 
   useEffect(() => {
     let isMounted = true;
@@ -114,7 +132,8 @@ export function M1DashboardClient() {
         }
 
         setData(payload.data);
-        setWeeklyHours(payload.data.effort.model.recommendedWeeklyHours);
+        setWeeklyMinutes(payload.data.effort.model.recommendedWeeklyMinutes);
+        trackStudentDashboardViewed(payload.data.status);
       } catch (loadError) {
         if (isMounted) {
           setError(
@@ -137,22 +156,80 @@ export function M1DashboardClient() {
     };
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadNextAction() {
+      setNextActionLoading(true);
+      setNextActionError(null);
+
+      try {
+        const response = await fetch("/api/student/next-action", {
+          method: "GET",
+          credentials: "include",
+        });
+
+        const payload = (await response.json()) as {
+          success: boolean;
+          error?: string;
+          data?: NextActionPayload;
+        };
+
+        if (!response.ok || !payload.success || !payload.data) {
+          throw new Error(
+            payload.error ?? "No se pudo cargar siguiente acción"
+          );
+        }
+
+        if (!isMounted) {
+          return;
+        }
+
+        setNextActionData(payload.data);
+      } catch (loadError) {
+        if (isMounted) {
+          setNextActionError(
+            loadError instanceof Error
+              ? loadError.message
+              : "No se pudo cargar siguiente acción"
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setNextActionLoading(false);
+        }
+      }
+    }
+
+    loadNextAction();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const projectedScore = useMemo(() => {
     if (!data || data.current.score === null) {
       return null;
     }
 
-    const hoursPerPoint = data.effort.model.hoursPerPoint;
-    if (hoursPerPoint === null || hoursPerPoint <= 0) {
+    const minutesPerPoint = data.effort.model.minutesPerPoint;
+    if (minutesPerPoint === null || minutesPerPoint <= 0) {
       return null;
     }
 
-    const totalHours = weeklyHours * data.effort.model.forecastWeeks;
-    const projectedDelta = totalHours / hoursPerPoint;
-    const projected = Math.round(data.current.score + projectedDelta);
+    const totalMinutes = weeklyMinutes * data.effort.model.forecastWeeks;
+    const projectedDelta = totalMinutes / minutesPerPoint;
+    const projectedRaw = Math.round(data.current.score + projectedDelta);
 
-    return Math.max(100, Math.min(1000, projected));
-  }, [data, weeklyHours]);
+    const scoreCappedToBounds = Math.max(100, Math.min(1000, projectedRaw));
+
+    if (data.prediction.max !== null) {
+      return Math.min(scoreCappedToBounds, data.prediction.max);
+    }
+
+    return scoreCappedToBounds;
+  }, [data, weeklyMinutes]);
 
   if (loading) {
     return (
@@ -229,9 +306,9 @@ export function M1DashboardClient() {
           </article>
 
           <article className="rounded-lg border border-gray-200 p-3">
-            <p className="text-xs text-gray-500">Horas estimadas</p>
+            <p className="text-xs text-gray-500">Minutos estimados</p>
             <p className="text-2xl font-semibold text-primary">
-              {formatHours(data.effort.estimatedHoursToTarget)}
+              {formatMinutes(data.effort.estimatedMinutesToTarget)}
             </p>
             <p className="text-xs text-gray-500 mt-1">Para cerrar la brecha</p>
           </article>
@@ -263,7 +340,7 @@ export function M1DashboardClient() {
               {formatScore(data.prediction.max)}
             </p>
             <p className="text-xs text-gray-500 mt-1">
-              Segun señal de dominio actual
+              Segun diagnostico actual
             </p>
           </article>
 
@@ -274,7 +351,7 @@ export function M1DashboardClient() {
             </p>
             <p className="text-xs text-gray-500 mt-1">
               +{data.effort.topRoute?.pointsGain ?? 0} pts en{" "}
-              {formatHours(data.effort.topRoute?.studyHours ?? null)}
+              {formatMinutes(data.effort.topRoute?.studyMinutes ?? null)}
             </p>
           </article>
         </div>
@@ -282,25 +359,25 @@ export function M1DashboardClient() {
 
       <section className="rounded-2xl border border-gray-200 bg-white p-6 space-y-4">
         <h2 className="text-xl font-serif font-semibold text-primary">
-          Forecast por esfuerzo semanal
+          Escenario de esfuerzo semanal
         </h2>
 
         <div className="space-y-3">
           <label className="block text-sm text-gray-700">
-            Horas por semana:{" "}
-            <span className="font-semibold">{weeklyHours} h</span>
+            Minutos por semana:{" "}
+            <span className="font-semibold">{weeklyMinutes} min</span>
           </label>
           <input
             type="range"
-            min={2}
-            max={20}
-            step={1}
-            value={weeklyHours}
-            onChange={(event) => setWeeklyHours(Number(event.target.value))}
+            min={120}
+            max={1200}
+            step={30}
+            value={weeklyMinutes}
+            onChange={(event) => setWeeklyMinutes(Number(event.target.value))}
             className="w-full"
           />
 
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <article className="rounded-lg border border-gray-200 p-3">
               <p className="text-xs text-gray-500">Horizonte</p>
               <p className="text-lg font-semibold text-primary">
@@ -309,21 +386,41 @@ export function M1DashboardClient() {
             </article>
 
             <article className="rounded-lg border border-gray-200 p-3">
-              <p className="text-xs text-gray-500">Score proyectado</p>
+              <p className="text-xs text-gray-500">Escenario M1</p>
               <p className="text-lg font-semibold text-primary">
                 {formatScore(projectedScore)}
               </p>
             </article>
 
             <article className="rounded-lg border border-gray-200 p-3">
-              <p className="text-xs text-gray-500">Referencia</p>
+              <p className="text-xs text-gray-500">Techo diagnóstico</p>
               <p className="text-lg font-semibold text-primary">
-                {formatScore(data.prediction.max)} max sugerido
+                {formatScore(data.prediction.max)}
+              </p>
+            </article>
+
+            <article className="rounded-lg border border-gray-200 p-3">
+              <p className="text-xs text-gray-500">Ritmo estimado</p>
+              <p className="text-sm font-semibold text-primary">
+                {data.effort.model.minutesPerPoint !== null
+                  ? `${data.effort.model.minutesPerPoint.toLocaleString("es-CL")} min/pto`
+                  : "-"}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {data.effort.model.minutesPerTenPoints !== null
+                  ? `${data.effort.model.minutesPerTenPoints.toLocaleString("es-CL")} min/+10`
+                  : "Sin señal suficiente"}
               </p>
             </article>
           </div>
         </div>
       </section>
+
+      <NextActionSection
+        loading={nextActionLoading}
+        error={nextActionError}
+        data={nextActionData}
+      />
 
       <section className="rounded-2xl border border-gray-200 bg-white p-6">
         <div className="flex flex-wrap items-center gap-3">

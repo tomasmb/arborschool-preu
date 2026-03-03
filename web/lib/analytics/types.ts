@@ -134,6 +134,30 @@ export interface TimeExpiredProperties extends BaseEventProperties {
   questions_answered: number;
 }
 
+/** Student goals saved/updated from portal goals module */
+export interface StudentGoalsSavedProperties extends BaseEventProperties {
+  mode: "create" | "update";
+  goal_count: number;
+  primary_goal_count: number;
+}
+
+/** Student interacted with simulator controls in goals module */
+export interface SimulatorInteractionProperties extends BaseEventProperties {
+  interaction_type: "score_input" | "buffer_change";
+}
+
+/** Student viewed the M1 dashboard payload */
+export interface StudentDashboardViewedProperties extends BaseEventProperties {
+  status: "ready" | "missing_diagnostic" | "missing_target" | "missing_mastery";
+}
+
+/** Student clicked next-best-action CTA */
+export interface StudentNextActionClickedProperties
+  extends BaseEventProperties {
+  cta_target: string;
+  has_next_action: boolean;
+}
+
 // ============================================================================
 // EVENT NAMES (14 core funnel events)
 // ============================================================================
@@ -153,7 +177,11 @@ export type AnalyticsEventName =
   | "profiling_completed"
   | "confirm_skip_viewed"
   | "confirm_skip_exit"
-  | "confirm_skip_back_to_profiling";
+  | "confirm_skip_back_to_profiling"
+  | "student_goals_saved"
+  | "student_simulator_interaction"
+  | "student_dashboard_viewed"
+  | "student_next_action_clicked";
 
 // ============================================================================
 // EVENT MAP (for type-safe event tracking)
@@ -175,4 +203,8 @@ export interface AnalyticsEventMap {
   confirm_skip_viewed: ConfirmSkipViewedProperties;
   confirm_skip_exit: ConfirmSkipExitProperties;
   confirm_skip_back_to_profiling: ConfirmSkipBackToProfilingProperties;
+  student_goals_saved: StudentGoalsSavedProperties;
+  student_simulator_interaction: SimulatorInteractionProperties;
+  student_dashboard_viewed: StudentDashboardViewedProperties;
+  student_next_action_clicked: StudentNextActionClickedProperties;
 }

@@ -90,6 +90,7 @@ To avoid contradictory projections in early evidence states:
   - Label slider output as effort scenario, not core prediction.
   - Cap scenario projection to the diagnostic prediction ceiling until new evidence
     (new diagnostic/retest) is collected.
+  - v1 cap formula: `scenario_score = min(effort_scenario_projection, diagnostic_prediction_max)`.
 - Evidence constraint:
   - Short diagnostics (v1: 16 questions) provide useful direction but not full graph certainty.
   - Product should prefer conservative score claims and strong actionability over overconfident precision.

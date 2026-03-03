@@ -1,7 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  trackStudentGoalsSaved,
+  trackStudentSimulatorInteraction,
+} from "@/lib/analytics";
 import { GoalsEditorSection } from "./GoalsEditorSection";
 import { SimulatorSection } from "./SimulatorSection";
 import {
@@ -15,6 +19,7 @@ import {
 import { normalizeTestCode, toDraft } from "./utils";
 
 export default function PortalGoalsPage() {
+  const simulatorInteractionTracked = useRef(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [simLoading, setSimLoading] = useState(false);
@@ -271,6 +276,11 @@ export default function PortalGoalsPage() {
   }
 
   function updateDraftScore(goalId: string, testCode: string, value: string) {
+    if (!simulatorInteractionTracked.current) {
+      trackStudentSimulatorInteraction("score_input");
+      simulatorInteractionTracked.current = true;
+    }
+
     const normalized = normalizeTestCode(testCode);
     updateGoalDraft(goalId, (goalDraft) => {
       return {
@@ -284,6 +294,11 @@ export default function PortalGoalsPage() {
   }
 
   function updateDraftBuffer(goalId: string, value: string) {
+    if (!simulatorInteractionTracked.current) {
+      trackStudentSimulatorInteraction("buffer_change");
+      simulatorInteractionTracked.current = true;
+    }
+
     const parsed = Number(value);
     if (!Number.isFinite(parsed) || parsed < 0) {
       return;
@@ -391,6 +406,11 @@ export default function PortalGoalsPage() {
         throw new Error(payload.error ?? "No se pudo guardar objetivos");
       }
 
+      trackStudentGoalsSaved(
+        savedGoals.length === 0 ? "create" : "update",
+        payloadGoals.length,
+        payloadGoals.filter((goal) => goal.isPrimary).length
+      );
       applyPayload(payload.data);
     } catch (saveError) {
       setError(

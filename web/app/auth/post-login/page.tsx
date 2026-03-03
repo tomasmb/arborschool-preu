@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { getAuthenticatedUserById } from "@/lib/auth/users";
 
 export default async function PostLoginPage() {
+  const isStudentPortalEnabled = process.env.STUDENT_PORTAL_V1 !== "false";
   const session = await auth();
   const userId = session?.user?.id;
 
@@ -15,7 +16,7 @@ export default async function PostLoginPage() {
     redirect("/auth/signin");
   }
 
-  if (user.hasDiagnosticSnapshot) {
+  if (isStudentPortalEnabled && user.hasDiagnosticSnapshot) {
     redirect("/portal");
   }
 

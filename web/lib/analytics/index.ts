@@ -34,6 +34,10 @@ export {
   trackConfirmSkipViewed,
   trackConfirmSkipExit,
   trackConfirmSkipBackToProfiling,
+  trackStudentGoalsSaved,
+  trackStudentSimulatorInteraction,
+  trackStudentDashboardViewed,
+  trackStudentNextActionClicked,
   // Utilities
   extractUTMParams,
   getDeviceType,

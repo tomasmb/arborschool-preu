@@ -397,3 +397,53 @@ export function trackTimeExpired(
     questions_answered: questionsAnswered,
   });
 }
+
+/**
+ * Tracks goal save/update in student portal.
+ */
+export function trackStudentGoalsSaved(
+  mode: "create" | "update",
+  goalCount: number,
+  primaryGoalCount: number
+): void {
+  trackEvent("student_goals_saved", {
+    mode,
+    goal_count: goalCount,
+    primary_goal_count: primaryGoalCount,
+  });
+}
+
+/**
+ * Tracks first simulator interaction in student portal goals.
+ */
+export function trackStudentSimulatorInteraction(
+  interactionType: "score_input" | "buffer_change"
+): void {
+  trackEvent("student_simulator_interaction", {
+    interaction_type: interactionType,
+  });
+}
+
+/**
+ * Tracks student dashboard view with the payload status.
+ */
+export function trackStudentDashboardViewed(
+  status: AnalyticsEventMap["student_dashboard_viewed"]["status"]
+): void {
+  trackEvent("student_dashboard_viewed", {
+    status,
+  });
+}
+
+/**
+ * Tracks next-action CTA clicks in student dashboard.
+ */
+export function trackStudentNextActionClicked(
+  ctaTarget: string,
+  hasNextAction: boolean
+): void {
+  trackEvent("student_next_action_clicked", {
+    cta_target: ctaTarget,
+    has_next_action: hasNextAction,
+  });
+}
