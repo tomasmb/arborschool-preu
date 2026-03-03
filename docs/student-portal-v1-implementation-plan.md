@@ -3,6 +3,7 @@
 ## How To Use This File
 - Work in order: Phase 1 -> Phase 6.
 - In each new chat, complete exactly one phase.
+- Execute each phase in a dedicated branch (do not implement phases directly on `main`).
 - Before closing a chat, update:
   - Phase checklist items
   - "Phase Completion Log" entry for that phase
@@ -41,6 +42,10 @@ Non-negotiable end-state goals:
 ---
 
 ## Global Constraints
+- Branching policy:
+  - Use feature branches prefixed with `codex/` for phase work.
+  - Recommended naming: `codex/student-portal-phase-<n>-<short-topic>`.
+  - Merge into integration branch only after phase checklist + completion log are updated.
 - DB changes must be done in `web/db/schema/*.ts` through Drizzle workflow.
 - Never hand-write SQL migration files.
 - After schema edits, run (manually by user):
@@ -389,6 +394,7 @@ Use this at the start/end of each phase chat to keep continuity:
 
 ### At Chat Start
 - Confirm target phase number.
+- Confirm current branch is a dedicated phase branch (not `main`).
 - Read this file + linked high-level spec.
 - Verify previous phase status and unresolved follow-ups.
 
