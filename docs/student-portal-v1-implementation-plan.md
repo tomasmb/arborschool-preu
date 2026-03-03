@@ -151,16 +151,16 @@ Add (via Drizzle schema):
 ---
 
 ## Phase 1 - Auth Foundation (Google OAuth)
-Status: `NOT STARTED`
+Status: `IN PROGRESS`
 
 ### Tasks
-- [ ] Introduce Auth.js-based Google provider integration.
-- [ ] Map authenticated identity to existing `users` table (email canonical).
-- [ ] Add route guards for `/portal*` and all new `/api/student/*` routes.
-- [ ] Keep `/diagnostico` and `/resultados/[sessionId]` working during transition.
-- [ ] Add post-login routing:
-  - [ ] If user has diagnostic snapshot -> `/portal`
-  - [ ] Else -> `/diagnostico`
+- [x] Introduce Auth.js-based Google provider integration.
+- [x] Map authenticated identity to existing `users` table (email canonical).
+- [x] Add route guards for `/portal*` and all new `/api/student/*` routes.
+- [x] Keep `/diagnostico` and `/resultados/[sessionId]` working during transition.
+- [x] Add post-login routing:
+  - [x] If user has diagnostic snapshot -> `/portal`
+  - [x] Else -> `/diagnostico`
 
 ### Acceptance Checks
 - [ ] Unauthenticated user cannot access `/portal` or `/api/student/*`.
@@ -315,6 +315,7 @@ Status: `NOT STARTED`
 - End state must be clean codebase: no diagnostic legacy compatibility layer.
 - Mandatory engineering standards: SOLID + DRY + zero dead code.
 - Portal UI must match current design system.
+- Auth session strategy for v1: JWT sessions with DB user identity resolution on sign-in.
 
 ---
 
@@ -322,20 +323,33 @@ Status: `NOT STARTED`
 - [ ] Define exact confidence-band computation formula for dashboard API contract.
 - [ ] Define admissions seed update process and ownership cadence.
 - [ ] Confirm migration plan for historical localStorage goals (if recoverable).
+- [ ] Add `AUTH_SECRET`, `AUTH_GOOGLE_ID`, and `AUTH_GOOGLE_SECRET` in environment configuration for local/dev/prod.
 
 ---
 
 ## Phase Completion Log
 
 ### Phase 1
-- Date:
-- Owner:
+- Date: 2026-03-03
+- Owner: Codex (GPT-5)
 - What shipped:
+  - Auth.js bootstrap with Google provider.
+  - Canonical email identity mapping to existing `users` table.
+  - Protected portal scaffold routes (`/portal`, `/portal/goals`).
+  - Post-login redirect logic (`/auth/post-login`) based on diagnostic snapshot presence.
 - APIs added/changed:
+  - Added `GET /api/student/me`.
+  - Added Auth.js route handler at `/api/auth/[...nextauth]`.
+  - Added middleware guard for `/api/student/*`.
 - DB changes:
+  - None.
 - Tests run:
+  - Pending.
 - Risks/known gaps:
+  - Depends on correct Google OAuth and Auth.js env vars in each environment.
+  - Acceptance checks not fully validated via E2E/manual flow yet.
 - Sign-off:
+  - Pending acceptance checks.
 
 ### Phase 2
 - Date:

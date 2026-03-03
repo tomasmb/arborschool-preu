@@ -22,6 +22,7 @@
     "drizzle-orm": "^0.38.3",
     "linkedom": "^0.18.12",
     "next": "15.5.10",
+    "next-auth": "^5.0.0-beta.25",
     "postgres": "^3.4.5",
     "posthog-js": "^1.335.2",
     "react": "19.1.0",
