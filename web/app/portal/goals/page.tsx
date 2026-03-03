@@ -17,11 +17,9 @@ import {
   StudentGoalsPayload,
 } from "./types";
 import { normalizeTestCode, toDraft } from "./utils";
-import { readLegacyGoalBackfill } from "./legacyBackfill";
 
 export default function PortalGoalsPage() {
   const simulatorInteractionTracked = useRef(false);
-  const legacyBackfillAttempted = useRef(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [simLoading, setSimLoading] = useState(false);
@@ -149,42 +147,11 @@ export default function PortalGoalsPage() {
           throw new Error("Respuesta inválida de objetivos");
         }
 
-        let nextPayload = payload;
-        const shouldTryBackfill =
-          !legacyBackfillAttempted.current && payload.data.goals.length === 0;
-
-        if (shouldTryBackfill) {
-          legacyBackfillAttempted.current = true;
-          const backfill = readLegacyGoalBackfill(payload.data.options);
-
-          if (backfill) {
-            const saveResponse = await fetch("/api/student/goals", {
-              method: "POST",
-              credentials: "include",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ goals: backfill.goals }),
-            });
-
-            const savePayload = (await saveResponse.json()) as {
-              success: boolean;
-              data?: StudentGoalsPayload;
-            };
-
-            if (saveResponse.ok && savePayload.success && savePayload.data) {
-              nextPayload = savePayload;
-            }
-          }
-        }
-
         if (!isMounted) {
           return;
         }
 
-        if (!nextPayload.data) {
-          throw new Error("Respuesta inválida de objetivos");
-        }
-
-        applyPayload(nextPayload.data);
+        applyPayload(payload.data);
       } catch (loadError) {
         if (isMounted) {
           setError(

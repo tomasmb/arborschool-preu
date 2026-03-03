@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getAuthenticatedUserById } from "@/lib/auth/users";
+import { resolvePostLoginRedirect } from "@/lib/auth/postLoginRedirect";
 
 export default async function PostLoginPage() {
   const isStudentPortalEnabled = process.env.STUDENT_PORTAL_V1 !== "false";
@@ -16,9 +17,10 @@ export default async function PostLoginPage() {
     redirect("/auth/signin");
   }
 
-  if (isStudentPortalEnabled && user.hasDiagnosticSnapshot) {
-    redirect("/portal");
-  }
-
-  redirect("/diagnostico");
+  redirect(
+    resolvePostLoginRedirect({
+      isStudentPortalEnabled,
+      hasDiagnosticSnapshot: user.hasDiagnosticSnapshot,
+    })
+  );
 }

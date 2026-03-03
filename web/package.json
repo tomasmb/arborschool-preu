@@ -17,7 +17,8 @@
     "db:migrate:deploy-runner": "node scripts/migrate.js",
     "db:check-migrations": "node scripts/checkMigrationPrefixes.js",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "verify:student-portal-v1": "npx --yes tsx scripts/verifyStudentPortalV1.ts"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.38.0",
