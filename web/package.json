@@ -22,7 +22,8 @@
     "verify:lifecycle-reminder-dispatch": "npx --yes tsx scripts/verifyLifecycleReminderDispatch.ts",
     "verify:analytics-funnel-report": "npx --yes tsx scripts/verifyAnalyticsFunnelReport.ts",
     "verify:analytics-milestone-context": "npx --yes tsx scripts/verifyAnalyticsMilestoneContext.ts",
-    "verify:journey-routing-reliability": "npx --yes tsx scripts/verifyJourneyRoutingReliability.ts"
+    "verify:journey-routing-reliability": "npx --yes tsx scripts/verifyJourneyRoutingReliability.ts",
+    "verify:portal-journey-contract": "npx --yes tsx scripts/verifyPortalJourneyContract.ts"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.38.0",

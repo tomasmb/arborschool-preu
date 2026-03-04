@@ -163,9 +163,25 @@ type Screen =
   | "confirm-skip"
   | "results"
   | "thank-you"
-  | "maintenance"
-  /** New onboarding Phase 2 — plan preview after results */
-  | "plan-preview";
+  | "maintenance";
+
+function normalizeStoredScreen(value: unknown): Screen {
+  if (value === "question") return value;
+  if (value === "transition") return value;
+  if (value === "partial-results") return value;
+  if (value === "profiling") return value;
+  if (value === "confirm-skip") return value;
+  if (value === "results") return value;
+  if (value === "thank-you") return value;
+  if (value === "maintenance") return value;
+
+  // Backward compatibility for legacy session snapshots.
+  if (value === "plan-preview") {
+    return "results";
+  }
+
+  return "question";
+}
 
 /** Results summary for storage (full DiagnosticResults is too large) */
 export interface StoredResults {
@@ -229,6 +245,11 @@ export function getStoredSessionState(): SessionState | null {
     console.error("Failed to parse session state:", error);
     throw new Error("Corrupted session data in localStorage");
   }
+
+  session = {
+    ...session,
+    screen: normalizeStoredScreen((session as { screen?: unknown }).screen),
+  };
 
   // Session expires after 1 hour of inactivity
   const ONE_HOUR = 60 * 60 * 1000;

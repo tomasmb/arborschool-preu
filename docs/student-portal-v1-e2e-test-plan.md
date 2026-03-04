@@ -75,6 +75,8 @@ Implemented and ready for validation:
     `intent=start_first_sprint`) for stale-link handling
 14. `/portal/study` is now journey-aware and redirects stale first-sprint email
     links for `active_learning` users to `/portal` with context banner copy
+15. Diagnostic flow now uses one canonical onboarding path
+    (no `NEXT_PUBLIC_NEW_ONBOARDING` split)
 
 Still pending and must be tested after implementation:
 
@@ -93,6 +95,8 @@ Codex-runnable now:
 6. Milestone context runtime verification (`verify:analytics-milestone-context`)
 7. Journey routing reliability verification
    (`verify:journey-routing-reliability`)
+8. Portal journey contract matrix verification
+   (`verify:portal-journey-contract`)
 
 Human-required (OAuth or environment controls):
 
@@ -349,6 +353,21 @@ Expected:
 2. `/portal/study` state routing matches canonical journey task rules
 3. Stale first-sprint email links route to `/portal` with context banner
 
+### A10. Portal Journey Contract Matrix
+
+Run:
+
+```bash
+cd web
+npm run verify:portal-journey-contract
+```
+
+Expected:
+
+1. Landing primary CTA resolver matches canonical matrix by auth + journey state
+2. `/diagnostico` entry resolver enforces planning prerequisite and stale-state redirects
+3. Post-login resolver routes all journey states to canonical destinations
+
 ## Section B - Human Full E2E (Staging Preferred)
 
 ### B1. New Student Journey
@@ -434,6 +453,7 @@ Blockers:
 - A7 analytics funnel report contract: pass/fail
 - A8 analytics milestone context contract: pass/fail
 - A9 callback + stale-link reliability contract: pass/fail
+- A10 portal journey contract matrix: pass/fail
 - B1 new student journey: pass/fail
 - B2 returning journeys: pass/fail
 - B3 direct URL matrix: pass/fail

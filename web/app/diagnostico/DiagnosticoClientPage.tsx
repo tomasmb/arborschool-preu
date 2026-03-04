@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   getStoredResponses,
@@ -9,8 +8,10 @@ import {
   getResponseCounts,
 } from "@/lib/diagnostic/storage";
 import { calculateDiagnosticResults } from "@/lib/diagnostic/resultsCalculator";
-import { sortRoutesByImpact } from "./hooks/useLearningRoutes";
-import type { LearningRouteData } from "./hooks/useLearningRoutes";
+import {
+  sortRoutesByImpact,
+  type LearningRouteData,
+} from "./hooks/useLearningRoutes";
 import { useDiagnosticFlow } from "./hooks/useDiagnosticFlow";
 import {
   TransitionScreen,
@@ -23,12 +24,6 @@ import {
 } from "./components";
 import { QuestionScreenWrapper } from "./components/QuestionScreenWrapper";
 import { ResultsScreenWrapper } from "./components/ResultsScreenWrapper";
-import {
-  GoalAnchorScreen,
-  PlanPreviewScreen,
-} from "@/app/components/onboarding";
-
-const NEW_ONBOARDING = process.env.NEXT_PUBLIC_NEW_ONBOARDING === "true";
 
 type ConfidenceLevel = "low" | "medium" | "high";
 
@@ -39,46 +34,10 @@ type StudentResultsSource = {
   routes: LearningRouteData[];
 };
 
-interface PlanPreviewCtaProps {
-  onShowPlan: () => void;
-}
-
 function SpinnerScreen() {
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
-    </div>
-  );
-}
-
-function PlanPreviewCta({ onShowPlan }: PlanPreviewCtaProps) {
-  return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-white/95 backdrop-blur-sm border-t border-gray-100 shadow-xl">
-      <div className="max-w-xl mx-auto flex items-center justify-between gap-4">
-        <p className="text-sm text-charcoal font-medium">
-          Tu ruta de estudio está lista
-        </p>
-        <button
-          onClick={onShowPlan}
-          className="btn-cta px-6 py-3 text-sm shadow-md hover:shadow-lg transition-all duration-200 shrink-0"
-        >
-          Ver mi plan
-          <svg
-            className="w-4 h-4 ml-1.5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M13 7l5 5m0 0l-5 5m5-5H6"
-            />
-          </svg>
-        </button>
-      </div>
     </div>
   );
 }
@@ -292,14 +251,7 @@ function renderResults(
     );
   }
 
-  return (
-    <>
-      <ResultsScreenWrapper flow={flow} />
-      {NEW_ONBOARDING && flow.profileSaved && !flow.isStudentPortalUser && (
-        <PlanPreviewCta onShowPlan={flow.handleShowPlanPreview} />
-      )}
-    </>
-  );
+  return <ResultsScreenWrapper flow={flow} />;
 }
 
 function renderTransitionScreen(flow: ReturnType<typeof useDiagnosticFlow>) {
@@ -331,13 +283,6 @@ function renderFlowScreen(params: {
   goToGoals: () => void;
 }) {
   switch (params.flow.screen) {
-    case "plan-preview":
-      return (
-        <PlanPreviewScreen
-          diagnosticScore={params.flow.consistentScore ?? 0}
-          routesData={params.flow.cachedRoutesData ?? params.flow.routesData}
-        />
-      );
     case "question":
       return <QuestionScreenWrapper flow={params.flow} />;
     case "transition":
@@ -386,7 +331,6 @@ function renderFlowScreen(params: {
 export default function DiagnosticoClientPage() {
   const flow = useDiagnosticFlow();
   const router = useRouter();
-  const [goalAnchorDone, setGoalAnchorDone] = useState(false);
 
   const studentResultsSource = getStudentResultsSource(flow);
   const confidence = confidenceFromSource(studentResultsSource);
@@ -395,9 +339,6 @@ export default function DiagnosticoClientPage() {
 
   if (flow.isInitializingStudentSession) {
     return <SpinnerScreen />;
-  }
-  if (NEW_ONBOARDING && !goalAnchorDone) {
-    return <GoalAnchorScreen onContinue={() => setGoalAnchorDone(true)} />;
   }
 
   return renderFlowScreen({

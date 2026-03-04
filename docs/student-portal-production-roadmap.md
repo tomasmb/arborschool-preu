@@ -104,8 +104,12 @@ Scope completed in current code pass:
   context for protected-route auth redirects.
 - `/portal/study` now resolves by journey state and routes stale first-sprint
   email links to `/portal` with context banner copy.
+- Removed `NEXT_PUBLIC_NEW_ONBOARDING` runtime split and onboarding-only
+  branch screens from active diagnostic flow to keep one production journey.
 - Added runtime routing reliability verification script:
   `npm run verify:journey-routing-reliability`
+- Added runtime portal journey contract verification script:
+  `npm run verify:portal-journey-contract`
 
 Open items after this pass:
 
@@ -150,10 +154,12 @@ Open items after this pass:
 
 ### P1 Gaps (High-Impact UX Quality)
 
-1. Dual onboarding architecture remains (`NEXT_PUBLIC_NEW_ONBOARDING` split).
+1. Dual onboarding architecture (`NEXT_PUBLIC_NEW_ONBOARDING` split).
+   `Status: Resolved`
 
-- Current: `web/app/diagnostico/page.tsx`,
-  `web/app/components/onboarding/*`
+- Current: onboarding-flag branch removed from
+  `web/app/diagnostico/DiagnosticoClientPage.tsx`; obsolete onboarding
+  components removed from `web/app/components/onboarding/*`.
 - Target: single onboarding path; no branch-specific user experience drift.
 
 2. Analytics schema is transition-funnel oriented.
@@ -171,8 +177,11 @@ Open items after this pass:
     `scripts/verifyAnalyticsMilestoneContext.ts`
 
 3. Legacy wording and semantics remain in comments/types/docs.
+   `Status: In progress`
 
-- Current: diagnostic utils and component docs still refer to signup/waitlist.
+- Current: diagnostic utils and component docs still contain some transition-era
+  terminology; onboarding-flag references in runtime flow and env template were
+  removed in this pass.
 - Target: terminology normalized to portal journey vocabulary.
 
 ### P2 Gaps (Operational Hardening)
@@ -180,7 +189,9 @@ Open items after this pass:
 1. Lifecycle dispatch and stale-link routing are implemented; full staging
    validation still required.
 2. Callback preservation + stale-link reliability now have codex-runnable
-   verification coverage; staging OAuth and inbox flows still required.
+   verification coverage (`verify:journey-routing-reliability`,
+   `verify:portal-journey-contract`); staging OAuth and inbox flows still
+   required.
 3. Accessibility and performance gates are specified but not enforced in CI.
 
 ## Target Architecture (Production Journey Contract)

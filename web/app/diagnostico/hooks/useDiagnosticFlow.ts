@@ -2,8 +2,8 @@
 
 import { useCallback, type MutableRefObject } from "react";
 import { useSessionPersistence } from "../hooks/useSessionPersistence";
-import { getCurrentQuestion } from "./useDiagnosticFlow.actions";
 import {
+  getCurrentQuestion,
   useDiagnosticProfileExitActions,
   useDiagnosticQuestionActions,
   useDiagnosticResultsActions,
@@ -158,15 +158,10 @@ function useUiHandlers(core: CoreState) {
     core.setScreen("maintenance");
   }, [core]);
 
-  const handleShowPlanPreview = useCallback(() => {
-    core.setScreen("plan-preview");
-  }, [core]);
-
   return {
     handleSelectAnswer,
     handleSelectDontKnow,
     handleFatalError,
-    handleShowPlanPreview,
   };
 }
 
@@ -174,7 +169,6 @@ function buildFlowResult(params: {
   core: CoreState;
   cache: CacheState;
   timer: TimerState;
-  startActions: ReturnType<typeof useLifecycleControllers>["startActions"];
   execution: ReturnType<typeof useExecutionControllers>;
   uiHandlers: ReturnType<typeof useUiHandlers>;
 }) {
@@ -229,7 +223,6 @@ function buildFlowResult(params: {
     handleConfirmExit: params.execution.profileExitActions.handleConfirmExit,
     handleBackToProfiling:
       params.execution.profileExitActions.handleBackToProfiling,
-    handleShowPlanPreview: params.uiHandlers.handleShowPlanPreview,
   };
 }
 
@@ -274,7 +267,7 @@ export function useDiagnosticFlow() {
     stage: core.stage,
   });
 
-  const lifecycle = useLifecycleControllers(core, timer);
+  useLifecycleControllers(core, timer);
   const execution = useExecutionControllers(core, cache, timer, routeRef);
   const uiHandlers = useUiHandlers(core);
 
@@ -282,7 +275,6 @@ export function useDiagnosticFlow() {
     core,
     cache,
     timer,
-    startActions: lifecycle.startActions,
     execution,
     uiHandlers,
   });

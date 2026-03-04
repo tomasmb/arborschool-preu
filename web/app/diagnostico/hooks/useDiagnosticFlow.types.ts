@@ -6,5 +6,4 @@ export type Screen =
   | "confirm-skip"
   | "results"
   | "thank-you"
-  | "maintenance"
-  | "plan-preview";
+  | "maintenance";

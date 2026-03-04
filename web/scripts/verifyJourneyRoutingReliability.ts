@@ -16,21 +16,43 @@ function assert(condition: unknown, message: string): asserts condition {
   }
 }
 
-function assertCallbackPreservesQuery() {
-  const callbackPath = appendSearchParamsToPath("/diagnostico", {
-    source: "email",
-    intent: EMAIL_LINK_INTENT_START_FIRST_SPRINT,
-  });
-
-  const signInUrl = buildSignInUrlWithCallback(callbackPath);
+function assertProtectedRouteCallback(params: {
+  callbackPath: string;
+  expectedCallbackUrl: string;
+}) {
+  const signInUrl = buildSignInUrlWithCallback(params.callbackPath);
   const parsed = new URL(signInUrl, "https://preu.arbor.school");
   const callbackUrl = parsed.searchParams.get("callbackUrl");
 
   assert(parsed.pathname === "/auth/signin", "Unexpected auth sign-in route");
   assert(
-    callbackUrl === "/diagnostico?source=email&intent=start_first_sprint",
-    "Callback URL should preserve full deep-link query"
+    callbackUrl === params.expectedCallbackUrl,
+    `Callback URL mismatch for ${params.callbackPath}`
   );
+}
+
+function assertCallbackPreservesQuery() {
+  assertProtectedRouteCallback({
+    callbackPath: appendSearchParamsToPath("/diagnostico", {
+      source: "email",
+      intent: EMAIL_LINK_INTENT_START_FIRST_SPRINT,
+    }),
+    expectedCallbackUrl: "/diagnostico?source=email&intent=start_first_sprint",
+  });
+  assertProtectedRouteCallback({
+    callbackPath: appendSearchParamsToPath("/portal/goals", {
+      mode: "planning",
+      source: "landing",
+    }),
+    expectedCallbackUrl: "/portal/goals?mode=planning&source=landing",
+  });
+  assertProtectedRouteCallback({
+    callbackPath: appendSearchParamsToPath("/portal/study", {
+      source: "email",
+      intent: EMAIL_LINK_INTENT_START_FIRST_SPRINT,
+    }),
+    expectedCallbackUrl: "/portal/study?source=email&intent=start_first_sprint",
+  });
 
   const loopGuard = buildSignInUrlWithCallback(
     "/auth/signin?callbackUrl=/portal"
