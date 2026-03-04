@@ -22,6 +22,7 @@ import {
   saveAttemptId,
 } from "@/lib/diagnostic/storage";
 import {
+  markDiagnosticStart,
   trackConfirmSkipBackToProfiling,
   trackConfirmSkipExit,
   trackConfirmSkipViewed,
@@ -117,6 +118,7 @@ export function useDiagnosticStartActions(params: {
     }
 
     const now = Date.now();
+    markDiagnosticStart();
     params.setTimerStartedAt(now);
     window.scrollTo(0, 0);
     params.setScreen("question");

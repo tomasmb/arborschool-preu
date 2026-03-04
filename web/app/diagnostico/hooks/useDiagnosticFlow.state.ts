@@ -9,7 +9,7 @@ import { type LearningRoutesResponse } from "./useLearningRoutes";
 import { type Screen } from "./useDiagnosticFlow.types";
 
 export function useDiagnosticFlowCoreState() {
-  const [screen, setScreen] = useState<Screen>("mini-form");
+  const [screen, setScreen] = useState<Screen>("question");
   const [isStudentPortalUser, setIsStudentPortalUser] = useState(false);
   const [isInitializingStudentSession, setIsInitializingStudentSession] =
     useState(true);

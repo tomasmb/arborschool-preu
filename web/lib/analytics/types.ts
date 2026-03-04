@@ -90,16 +90,6 @@ export interface PartialResultsCtaClickedProperties
   cta_label: string;
 }
 
-/** Mini-form completed event (email + role + curso, before test) */
-export interface MiniFormCompletedProperties extends BaseEventProperties {
-  email: string;
-  user_type: string;
-  curso: string;
-  utm_source?: string;
-  utm_medium?: string;
-  utm_campaign?: string;
-}
-
 /** Profiling completed event (optional fields after test) */
 export interface ProfilingCompletedProperties extends BaseEventProperties {
   paes_goal_filled: boolean;
@@ -166,7 +156,6 @@ export type AnalyticsEventName =
   | "landing_page_viewed"
   | "landing_cta_clicked"
   | "diagnostic_intro_viewed"
-  | "mini_form_completed"
   | "diagnostic_completed"
   | "stage_1_completed"
   | "time_expired"
@@ -191,7 +180,6 @@ export interface AnalyticsEventMap {
   landing_page_viewed: LandingPageViewedProperties;
   landing_cta_clicked: LandingCtaClickedProperties;
   diagnostic_intro_viewed: DiagnosticIntroViewedProperties;
-  mini_form_completed: MiniFormCompletedProperties;
   diagnostic_completed: DiagnosticCompletedProperties;
   stage_1_completed: Stage1CompletedProperties;
   time_expired: TimeExpiredProperties;

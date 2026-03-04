@@ -338,8 +338,6 @@ function renderFlowScreen(params: {
           routesData={params.flow.cachedRoutesData ?? params.flow.routesData}
         />
       );
-    case "mini-form":
-      return <SpinnerScreen />;
     case "question":
       return <QuestionScreenWrapper flow={params.flow} />;
     case "transition":

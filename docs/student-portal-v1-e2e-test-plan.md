@@ -47,12 +47,12 @@ Implemented and ready for validation:
 4. Diagnostic APIs require authenticated student identity
 5. Waitlist wording removed from results + confirmation/follow-up emails
 6. Runtime `STUDENT_PORTAL_V1` branching removed from active app flow
+7. Remaining mini-form artifacts removed from diagnostic UI/state and analytics schema
 
 Still pending and must be tested after implementation:
 1. Journey-state lifecycle suppression/frequency caps
 2. Canonical analytics milestone schema (`landing_cta -> ... -> weekly_active`)
 3. CI-enforced accessibility/performance gates
-4. Removal of all remaining mini-form legacy artifacts
 
 ## Ownership Matrix
 Codex-runnable now:
@@ -60,6 +60,7 @@ Codex-runnable now:
 2. Scripted portal verification (`verify:student-portal-v1`)
 3. Unauthenticated route/API guard smoke checks with `curl`
 4. Link/copy checks for no waitlist messaging in key product/email files
+5. Legacy artifact grep checks (`MiniFormScreen` / `mini-form` / `mini_form_completed`)
 
 Human-required (OAuth or environment controls):
 1. Full Google OAuth browser journeys
@@ -127,6 +128,7 @@ Also validate:
 1. Event properties include entry-point context
 2. No duplicate milestone emissions per single user action
 3. Drop-off reporting can be segmented by journey state
+4. No legacy `mini_form_completed` event emissions
 
 ### F. Reliability and Recovery
 1. Every error/empty state has a recovery CTA
@@ -190,6 +192,14 @@ Expected:
 2. `/api/student/goals` -> `401`
 3. `/diagnostico` -> redirect to `/auth/signin?callbackUrl=/diagnostico`
 
+### A4. Legacy Artifact Guard
+Run:
+```bash
+rg -n "MiniFormScreen|mini-form|mini_form_completed|trackMiniFormCompleted" web/app/diagnostico web/lib/analytics web/lib/diagnostic
+```
+Expected:
+1. No matches
+
 ## Section B - Human Full E2E (Staging Preferred)
 
 ### B1. New Student Journey
@@ -246,6 +256,7 @@ Blockers:
 - A1 static checks: pass/fail
 - A2 scripted verification: pass/fail
 - A3 guard smoke: pass/fail
+- A4 legacy artifact guard: pass/fail
 - B1 new student journey: pass/fail
 - B2 returning journeys: pass/fail
 - B3 direct URL matrix: pass/fail

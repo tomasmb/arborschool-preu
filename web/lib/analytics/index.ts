@@ -21,8 +21,8 @@ export {
   // Convenience functions (funnel events)
   trackLandingPageViewed,
   trackLandingCtaClicked,
+  markDiagnosticStart,
   trackDiagnosticIntroViewed,
-  trackMiniFormCompleted,
   trackDiagnosticCompleted,
   trackStage1Completed,
   trackTimeExpired,

@@ -11,7 +11,11 @@ export function useDiagnosticIntroTracking(params: {
   isStudentPortalUser: boolean;
 }) {
   useEffect(() => {
-    if (params.studentSessionChecked && params.screen === "question") {
+    if (
+      params.studentSessionChecked &&
+      params.isStudentPortalUser &&
+      params.screen === "question"
+    ) {
       trackDiagnosticIntroViewed();
     }
   }, [params.screen, params.studentSessionChecked, params.isStudentPortalUser]);

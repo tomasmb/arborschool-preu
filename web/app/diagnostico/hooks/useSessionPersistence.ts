@@ -17,7 +17,7 @@ import {
 } from "@/lib/diagnostic/storage";
 import { type DiagnosticResults } from "@/lib/diagnostic/resultsCalculator";
 import { type Route } from "@/lib/diagnostic/config";
-import { type Screen } from "./useDiagnosticFlow";
+import { type Screen } from "./useDiagnosticFlow.types";
 
 // ============================================================================
 // TYPES
@@ -77,36 +77,32 @@ export function useSessionPersistence(
     if (storedSession && storedAttemptId) {
       setters.setAttemptId(storedAttemptId);
 
-      if (storedSession.screen !== "mini-form") {
-        setters.setScreen(storedSession.screen);
-        setters.setStage(storedSession.stage);
-        setters.setQuestionIndex(storedSession.questionIndex);
-        setters.setRoute(storedSession.route);
-        setters.setTimerStartedAt(storedSession.timerStartedAt);
+      setters.setScreen(storedSession.screen);
+      setters.setStage(storedSession.stage);
+      setters.setQuestionIndex(storedSession.questionIndex);
+      setters.setRoute(storedSession.route);
+      setters.setTimerStartedAt(storedSession.timerStartedAt);
 
-        if (storedSession.timeExpiredAt) {
-          setters.setTimeExpiredAt(storedSession.timeExpiredAt);
+      if (storedSession.timeExpiredAt) {
+        setters.setTimeExpiredAt(storedSession.timeExpiredAt);
+        setters.setTimeRemaining(0);
+      } else if (
+        storedSession.screen === "question" ||
+        storedSession.screen === "transition"
+      ) {
+        const remaining = calculateRemainingTime(storedSession.timerStartedAt);
+        if (remaining <= 0) {
+          const expiredAt =
+            storedSession.timerStartedAt + TOTAL_TIME_SECONDS * 1000;
+          setters.setTimeExpiredAt(expiredAt);
           setters.setTimeRemaining(0);
-        } else if (
-          storedSession.screen === "question" ||
-          storedSession.screen === "transition"
-        ) {
-          const remaining = calculateRemainingTime(
-            storedSession.timerStartedAt
-          );
-          if (remaining <= 0) {
-            const expiredAt =
-              storedSession.timerStartedAt + TOTAL_TIME_SECONDS * 1000;
-            setters.setTimeExpiredAt(expiredAt);
-            setters.setTimeRemaining(0);
-          } else {
-            setters.setTimeRemaining(remaining);
-          }
+        } else {
+          setters.setTimeRemaining(remaining);
         }
+      }
 
-        if (storedSession.results) {
-          setters.setResults(storedSession.results as DiagnosticResults);
-        }
+      if (storedSession.results) {
+        setters.setResults(storedSession.results as DiagnosticResults);
       }
     }
     setIsRestored(true);
@@ -117,7 +113,6 @@ export function useSessionPersistence(
   // Save session state when it changes
   useEffect(() => {
     if (!isRestored) return;
-    if (state.screen === "mini-form") return;
 
     const storedResponses = getStoredResponses();
     const storedR1Correct = storedResponses
@@ -128,7 +123,6 @@ export function useSessionPersistence(
     ).length;
 
     if (!state.timerStartedAt) {
-      console.error("Attempting to save session but timerStartedAt is not set");
       return;
     }
 

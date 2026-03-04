@@ -146,8 +146,8 @@ export function initializeTracker(
 
 /**
  * Identifies a user in the analytics system.
- * Links all previous anonymous events to this user.
- * Call this when a user signs up or logs in.
+ * Links pre-auth events to this user.
+ * Call this when a user logs in.
  */
 export function identifyUser(
   email: string,
@@ -297,32 +297,6 @@ export function trackRouteExplored(
   trackEvent("route_explored", {
     performance_tier: performanceTier,
     route,
-  });
-}
-
-/**
- * Tracks mini-form completion (email + role + curso, before test).
- * Also identifies the user and marks the diagnostic start time,
- * since form submission IS the test start (single user action).
- */
-export function trackMiniFormCompleted(
-  email: string,
-  userType: string,
-  curso: string
-): void {
-  // Identify the user early (since we now have their email)
-  identifyUser(email, { user_type: userType, curso });
-
-  // Mark diagnostic start time (for elapsed time calculation later)
-  markDiagnosticStart();
-
-  const utmParams = getPersistedUTMParams();
-
-  trackEvent("mini_form_completed", {
-    email,
-    user_type: userType,
-    curso,
-    ...utmParams,
   });
 }
 

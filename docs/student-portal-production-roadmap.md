@@ -47,12 +47,14 @@ Scope completed in current code pass:
 - Post-login redirect now uses journey-state routing contract only.
 - Transition portal-disable branch was removed from middleware/post-login path.
 
-2. `Workstream B` partially completed.
+2. `Workstream B` mostly completed.
 - `/diagnostico` now enforces auth + planning prerequisite server-side.
 - Diagnostic API start/response/complete/profile routes now require authenticated
   student identity.
 - Anonymous register route was retired (`410` deprecated).
 - Mini-form dependency was removed from active diagnostic start flow.
+- Legacy mini-form artifacts were removed (`MiniFormScreen`, `mini-form`
+  screen state, and related analytics event surface).
 
 3. `Workstream C` partially completed.
 - Confirmation and follow-up emails were rewritten to drive immediate portal
@@ -64,13 +66,11 @@ Scope completed in current code pass:
 - Updated verification script assertions to current post-login routing behavior.
 
 Open items after this pass:
-1. Remove remaining legacy mini-form artifacts (`MiniFormScreen` component,
-  `mini-form` state references, and related analytics events/comments).
-2. Implement lifecycle suppression + frequency guardrails by journey state
+1. Implement lifecycle suppression + frequency guardrails by journey state
   (Workstream C hard requirements).
-3. Refactor analytics schema to canonical state-transition milestones
+2. Refactor analytics schema to canonical state-transition milestones
   (Workstream D).
-4. Complete reliability, accessibility, and performance release gates
+3. Complete reliability, accessibility, and performance release gates
   (Workstreams E/F).
 
 ## Current Gap Analysis (Spec vs Implementation)
@@ -80,10 +80,10 @@ Open items after this pass:
 - Current: `web/app/page.tsx`
 - Target: session-aware routing aligned to journey state.
 
-2. Anonymous mini-form lead flow is still active. `Status: Mostly resolved`
-- Current: `web/app/diagnostico/components/MiniFormScreen.tsx`,
-  `web/app/api/diagnostic/register/route.ts`,
-  `web/app/diagnostico/hooks/useDiagnosticFlow.actions.ts`
+2. Anonymous mini-form lead flow in production journey. `Status: Resolved`
+- Current: `web/app/api/diagnostic/register/route.ts` now returns `410`; the
+  diagnostic flow and analytics schema no longer include mini-form production
+  branches.
 - Target: account-first diagnostic only (no pre-auth email capture funnel).
 
 3. Waitlist messaging still appears in core results UX. `Status: Resolved`
@@ -173,7 +173,7 @@ Primary files:
 - `web/app/diagnostico/page.tsx`
 - `web/app/diagnostico/hooks/useDiagnosticFlow.bootstrap.ts`
 - `web/app/diagnostico/hooks/useDiagnosticFlow.actions.ts`
-- `web/app/diagnostico/components/MiniFormScreen.tsx` (retire or remove)
+- `web/app/diagnostico/components/MiniFormScreen.tsx` (removed)
 - `web/app/api/diagnostic/register/route.ts` (retire or remove)
 - `web/app/diagnostico/components/ResultsScreen.tsx`
 - `web/app/diagnostico/components/TierContent.tsx`

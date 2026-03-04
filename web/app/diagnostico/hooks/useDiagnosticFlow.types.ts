@@ -1,5 +1,4 @@
 export type Screen =
-  | "mini-form"
   | "question"
   | "transition"
   | "partial-results"
