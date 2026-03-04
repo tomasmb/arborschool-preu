@@ -39,8 +39,10 @@ function PortalGoalsPageContent() {
           options={portalGoals.options}
           selectedOfferingId={portalGoals.planningOfferingId}
           planningProfile={portalGoals.planningProfile}
+          loadError={portalGoals.loadError}
           error={portalGoals.error}
           infoMessage={portalGoals.infoMessage}
+          onRetryLoadGoals={portalGoals.retryLoadGoals}
           onSelectOffering={portalGoals.setPlanningOfferingId}
           onPlanningProfileChange={portalGoals.updatePlanningProfile}
           onStartDiagnostic={() => portalGoals.handlePlanningSave(true)}
@@ -54,7 +56,9 @@ function PortalGoalsPageContent() {
             saving={portalGoals.saving}
             goals={portalGoals.goals}
             options={portalGoals.availableOptions}
+            loadError={portalGoals.loadError}
             error={portalGoals.error}
+            onRetryLoadGoals={portalGoals.retryLoadGoals}
             onSetGoalOffering={portalGoals.setGoalOffering}
             onAddGoalSlot={portalGoals.addGoalSlot}
             onRemoveGoalSlot={portalGoals.removeGoalSlot}
@@ -71,6 +75,7 @@ function PortalGoalsPageContent() {
             selectedOption={portalGoals.selectedOption}
             selectedDraft={portalGoals.selectedDraft}
             simulation={portalGoals.simulation}
+            onRetrySimulation={portalGoals.retrySimulation}
             onSelectGoal={portalGoals.setSelectedGoalId}
             onUpdateDraftScore={portalGoals.updateDraftScore}
             onUpdateDraftBuffer={portalGoals.updateDraftBuffer}

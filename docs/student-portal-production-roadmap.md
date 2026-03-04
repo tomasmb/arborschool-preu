@@ -110,6 +110,10 @@ Scope completed in current code pass:
   `npm run verify:journey-routing-reliability`
 - Added runtime portal journey contract verification script:
   `npm run verify:portal-journey-contract`
+- Portal goals and planning error states now share an inline recovery panel with
+  explicit retry and fallback portal actions (no dead-end error copy blocks).
+- Added runtime recovery CTA contract verification script:
+  `npm run verify:recovery-cta-contract`
 
 Open items after this pass:
 

@@ -3,6 +3,7 @@ export { ConfidenceBadge } from "./ConfidenceBadge";
 export { EmptyStatePanel } from "./EmptyStatePanel";
 export { ErrorStatePanel } from "./ErrorStatePanel";
 export { HeroMetricCard } from "./HeroMetricCard";
+export { InlineRecoveryPanel } from "./InlineRecoveryPanel";
 export { MissionCard } from "./MissionCard";
 export { PageShell } from "./PageShell";
 export { ProgressRail } from "./ProgressRail";

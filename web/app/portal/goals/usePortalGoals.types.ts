@@ -23,6 +23,8 @@ export type PortalGoalsState = {
   setSaving: (value: boolean) => void;
   simLoading: boolean;
   setSimLoading: (value: boolean) => void;
+  loadError: string | null;
+  setLoadError: (value: string | null) => void;
   error: string | null;
   setError: (value: string | null) => void;
   simulatorError: string | null;

@@ -77,6 +77,9 @@ Implemented and ready for validation:
     links for `active_learning` users to `/portal` with context banner copy
 15. Diagnostic flow now uses one canonical onboarding path
     (no `NEXT_PUBLIC_NEW_ONBOARDING` split)
+16. Goals/planning and next-action error states now use shared recovery panels
+    with explicit retry actions; goals and simulator retries are wired through
+    dedicated hook callbacks
 
 Still pending and must be tested after implementation:
 
@@ -97,6 +100,8 @@ Codex-runnable now:
    (`verify:journey-routing-reliability`)
 8. Portal journey contract matrix verification
    (`verify:portal-journey-contract`)
+9. Recovery CTA contract verification
+   (`verify:recovery-cta-contract`)
 
 Human-required (OAuth or environment controls):
 
@@ -368,6 +373,21 @@ Expected:
 2. `/diagnostico` entry resolver enforces planning prerequisite and stale-state redirects
 3. Post-login resolver routes all journey states to canonical destinations
 
+### A11. Recovery CTA Contract
+
+Run:
+
+```bash
+cd web
+npm run verify:recovery-cta-contract
+```
+
+Expected:
+
+1. Goals/planning retry callbacks are wired from hook -> page -> section components
+2. Planning, goals editor, simulator, and next-action error states render shared recovery UI
+3. Recovery panel export surface remains available for reuse across portal screens
+
 ## Section B - Human Full E2E (Staging Preferred)
 
 ### B1. New Student Journey
@@ -454,6 +474,7 @@ Blockers:
 - A8 analytics milestone context contract: pass/fail
 - A9 callback + stale-link reliability contract: pass/fail
 - A10 portal journey contract matrix: pass/fail
+- A11 recovery CTA contract: pass/fail
 - B1 new student journey: pass/fail
 - B2 returning journeys: pass/fail
 - B3 direct URL matrix: pass/fail

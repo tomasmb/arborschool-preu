@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, useState } from "react";
 import {
   useGoalsLoader,
   useGoalsSimulator,
@@ -13,17 +14,28 @@ import {
 
 export function usePortalGoals() {
   const state = useGoalsState();
+  const [loadRetryVersion, setLoadRetryVersion] = useState(0);
+  const [simulatorRetryVersion, setSimulatorRetryVersion] = useState(0);
   const slotMutations = useGoalSlotMutations(state);
   const draftMutations = useGoalDraftMutations(state);
   const saveHandlers = useGoalSaveHandlers(state);
 
-  useGoalsLoader(state);
-  useGoalsSimulator(state);
+  useGoalsLoader(state, loadRetryVersion);
+  useGoalsSimulator(state, simulatorRetryVersion);
+
+  const retryLoadGoals = useCallback(() => {
+    setLoadRetryVersion((current) => current + 1);
+  }, []);
+
+  const retrySimulation = useCallback(() => {
+    setSimulatorRetryVersion((current) => current + 1);
+  }, []);
 
   return {
     loading: state.loading,
     saving: state.saving,
     simLoading: state.simLoading,
+    loadError: state.loadError,
     error: state.error,
     simulatorError: state.simulatorError,
     infoMessage: state.infoMessage,
@@ -49,5 +61,7 @@ export function usePortalGoals() {
     updatePlanningProfile: slotMutations.updatePlanningProfile,
     handleSave: saveHandlers.handleSave,
     handlePlanningSave: saveHandlers.handlePlanningSave,
+    retryLoadGoals,
+    retrySimulation,
   };
 }

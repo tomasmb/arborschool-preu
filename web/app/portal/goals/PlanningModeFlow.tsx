@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { InlineRecoveryPanel } from "../components";
 import type { GoalOption, PlanningProfileDraft } from "./types";
 import {
   formatPlanningCutoff,
@@ -14,8 +15,10 @@ type PlanningModeFlowProps = {
   options: GoalOption[];
   selectedOfferingId: string;
   planningProfile: PlanningProfileDraft;
+  loadError: string | null;
   error: string | null;
   infoMessage: string | null;
+  onRetryLoadGoals: () => void;
   onSelectOffering: (offeringId: string) => void;
   onPlanningProfileChange: (patch: Partial<PlanningProfileDraft>) => void;
   onStartDiagnostic: () => Promise<void>;
@@ -24,12 +27,26 @@ type PlanningModeFlowProps = {
 
 function PlanningMessagePanel({
   loading,
+  loadError,
   error,
   infoMessage,
-}: Pick<PlanningModeFlowProps, "loading" | "error" | "infoMessage">) {
+  onRetryLoadGoals,
+}: Pick<
+  PlanningModeFlowProps,
+  "loading" | "loadError" | "error" | "infoMessage" | "onRetryLoadGoals"
+>) {
   if (loading) {
     return (
       <p className="text-sm text-gray-600">Cargando datos de admisión...</p>
+    );
+  }
+  if (loadError) {
+    return (
+      <InlineRecoveryPanel
+        message={loadError}
+        onRetry={onRetryLoadGoals}
+        retryLabel="Reintentar carga"
+      />
     );
   }
   if (error) {
@@ -221,8 +238,10 @@ export function PlanningModeFlow(props: PlanningModeFlowProps) {
 
       <PlanningMessagePanel
         loading={props.loading}
+        loadError={props.loadError}
         error={props.error}
         infoMessage={props.infoMessage}
+        onRetryLoadGoals={props.onRetryLoadGoals}
       />
       <PlanningActions
         saving={props.saving}

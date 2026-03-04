@@ -23,7 +23,8 @@
     "verify:analytics-funnel-report": "npx --yes tsx scripts/verifyAnalyticsFunnelReport.ts",
     "verify:analytics-milestone-context": "npx --yes tsx scripts/verifyAnalyticsMilestoneContext.ts",
     "verify:journey-routing-reliability": "npx --yes tsx scripts/verifyJourneyRoutingReliability.ts",
-    "verify:portal-journey-contract": "npx --yes tsx scripts/verifyPortalJourneyContract.ts"
+    "verify:portal-journey-contract": "npx --yes tsx scripts/verifyPortalJourneyContract.ts",
+    "verify:recovery-cta-contract": "npx --yes tsx scripts/verifyRecoveryCtaContract.ts"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.38.0",

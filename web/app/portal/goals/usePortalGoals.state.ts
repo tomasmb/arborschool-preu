@@ -19,6 +19,7 @@ export function useGoalsState() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [simLoading, setSimLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [simulatorError, setSimulatorError] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
@@ -74,6 +75,7 @@ export function useGoalsState() {
     loading,
     saving,
     simLoading,
+    loadError,
     error,
     simulatorError,
     infoMessage,
@@ -94,6 +96,7 @@ export function useGoalsState() {
     setLoading,
     setSaving,
     setSimLoading,
+    setLoadError,
     setError,
     setSimulatorError,
     setInfoMessage,
@@ -162,12 +165,13 @@ export function applyGoalsPayload(
   });
 }
 
-export function useGoalsLoader(state: GoalsState) {
+export function useGoalsLoader(state: GoalsState, loadRetryVersion: number) {
   useEffect(() => {
     let isMounted = true;
 
     async function load() {
       state.setLoading(true);
+      state.setLoadError(null);
       state.setError(null);
       try {
         const payload = await fetchGoals();
@@ -179,7 +183,7 @@ export function useGoalsLoader(state: GoalsState) {
         if (!isMounted) {
           return;
         }
-        state.setError(
+        state.setLoadError(
           loadError instanceof Error
             ? loadError.message
             : "No se pudo cargar objetivos"
@@ -196,12 +200,15 @@ export function useGoalsLoader(state: GoalsState) {
     return () => {
       isMounted = false;
     };
-    // Uses stable state setters only; one bootstrap cycle per mount.
+    // Uses stable state setters only; reruns only when retry is requested.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadRetryVersion]);
 }
 
-export function useGoalsSimulator(state: GoalsState) {
+export function useGoalsSimulator(
+  state: GoalsState,
+  simulatorRetryVersion: number
+) {
   const {
     selectedGoal,
     selectedOption,
@@ -266,6 +273,7 @@ export function useGoalsSimulator(state: GoalsState) {
     selectedOption,
     selectedGoalId,
     selectedDraft,
+    simulatorRetryVersion,
     setSimulation,
     setSimulatorError,
     setSimLoading,
