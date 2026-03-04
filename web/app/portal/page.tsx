@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
 import { getAuthenticatedUserById } from "@/lib/auth/users";
+import { getStudentJourneySnapshot } from "@/lib/student/journeyState";
+import { PageShell } from "./components";
 import { M1DashboardClient } from "./M1DashboardClient";
 
 export default async function PortalPage() {
@@ -16,36 +18,39 @@ export default async function PortalPage() {
     redirect("/auth/signin?callbackUrl=/portal");
   }
 
+  const journey = await getStudentJourneySnapshot(user.id);
+  if (journey.journeyState === "planning_required") {
+    redirect("/portal/goals?mode=planning");
+  }
+
+  if (journey.journeyState === "diagnostic_in_progress") {
+    redirect("/diagnostico");
+  }
+
   const displayName = user.firstName ?? session.user.name ?? "Estudiante";
 
   return (
-    <main className="min-h-screen bg-background text-foreground px-4 py-10">
-      <div className="max-w-5xl mx-auto space-y-6">
-        <header className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-sm text-gray-500">Portal estudiante</p>
-            <h1 className="text-3xl font-serif font-bold text-primary">
-              Hola, {displayName}
-            </h1>
-          </div>
-
-          <form
-            action={async () => {
-              "use server";
-              await signOut({ redirectTo: "/" });
-            }}
+    <PageShell
+      eyebrow="Portal estudiante"
+      title={`Hola, ${displayName}`}
+      subtitle="Revisa tu misión semanal y ejecuta la siguiente mejor acción para mover tu puntaje."
+      actions={
+        <form
+          action={async () => {
+            "use server";
+            await signOut({ redirectTo: "/" });
+          }}
+        >
+          <button
+            type="submit"
+            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50"
           >
-            <button
-              type="submit"
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50"
-            >
-              Cerrar sesión
-            </button>
-          </form>
-        </header>
-
-        <M1DashboardClient />
-      </div>
-    </main>
+            Cerrar sesión
+          </button>
+        </form>
+      }
+    >
+      <M1DashboardClient />
+    </PageShell>
   );
 }

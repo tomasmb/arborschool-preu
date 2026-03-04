@@ -1,37 +1,27 @@
-import { NextResponse } from "next/server";
-import { auth } from "@/auth";
-import { getAuthenticatedUserById } from "@/lib/auth/users";
 import { getStudentNextAction } from "@/lib/student/nextAction";
-
-async function getAuthenticatedUserId() {
-  const session = await auth();
-  const userId = session?.user?.id;
-
-  if (!userId) {
-    return null;
-  }
-
-  const user = await getAuthenticatedUserById(userId);
-  if (!user) {
-    return null;
-  }
-
-  return user.id;
-}
+import { studentApiError, studentApiSuccess } from "@/lib/student/apiEnvelope";
+import { getAuthenticatedStudentUserId } from "@/lib/student/auth";
 
 export async function GET() {
-  const userId = await getAuthenticatedUserId();
+  const userId = await getAuthenticatedStudentUserId();
   if (!userId) {
-    return NextResponse.json(
-      { success: false, error: "Unauthorized" },
-      { status: 401 }
-    );
+    return studentApiError("UNAUTHORIZED", "Unauthorized", 401);
   }
 
-  const nextActionData = await getStudentNextAction(userId);
+  try {
+    const nextActionData = await getStudentNextAction(userId);
 
-  return NextResponse.json({
-    success: true,
-    data: nextActionData,
-  });
+    return studentApiSuccess({
+      ...nextActionData,
+      sprintHint: {
+        ctaHref: "/portal/study",
+        suggestedItemCount: 5,
+        estimatedMinutes: nextActionData.nextAction?.studyMinutes ?? 25,
+      },
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to load next action";
+    return studentApiError("NEXT_ACTION_LOAD_FAILED", message, 500);
+  }
 }

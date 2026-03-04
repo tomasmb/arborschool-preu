@@ -39,3 +39,4 @@ export { QuestionSkeleton } from "./QuestionSkeleton";
 export { QuestionScreenWrapper } from "./QuestionScreenWrapper";
 export { ResultsScreenWrapper } from "./ResultsScreenWrapper";
 export { ImprovementHeroCard, formatStudyTime } from "./ImprovementHeroCard";
+export { StudentResultsHandoffScreen } from "./StudentResultsHandoffScreen";

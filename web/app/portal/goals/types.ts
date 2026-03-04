@@ -49,6 +49,21 @@ export type StudentGoalsPayload = {
   } | null;
   options: GoalOption[];
   goals: StudentGoal[];
+  planningProfile: {
+    examDate: string | null;
+    weeklyMinutesTarget: number;
+    timezone: string;
+    reminderInApp: boolean;
+    reminderEmail: boolean;
+    updatedAt: string | Date;
+  } | null;
+};
+
+export type PlanningProfileDraft = {
+  examDate: string;
+  weeklyMinutesTarget: string;
+  reminderInApp: boolean;
+  reminderEmail: boolean;
 };
 
 export type SimulatorPayload = {

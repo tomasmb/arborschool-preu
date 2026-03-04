@@ -1,34 +1,29 @@
-import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getStudentJourneySnapshot } from "@/lib/student/journeyState";
+import { studentApiError, studentApiSuccess } from "@/lib/student/apiEnvelope";
+import { getAuthenticatedStudentUserId } from "@/lib/student/auth";
 import { getAuthenticatedUserById } from "@/lib/auth/users";
 
 export async function GET() {
-  const session = await auth();
-  const userId = session?.user?.id;
-
+  const userId = await getAuthenticatedStudentUserId();
   if (!userId) {
-    return NextResponse.json(
-      { success: false, error: "Unauthorized" },
-      { status: 401 }
-    );
+    return studentApiError("UNAUTHORIZED", "Unauthorized", 401);
   }
 
   const user = await getAuthenticatedUserById(userId);
   if (!user) {
-    return NextResponse.json(
-      { success: false, error: "User not found" },
-      { status: 404 }
-    );
+    return studentApiError("USER_NOT_FOUND", "User not found", 404);
   }
 
-  return NextResponse.json({
-    success: true,
-    data: {
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      hasDiagnosticSnapshot: user.hasDiagnosticSnapshot,
-    },
+  const journey = await getStudentJourneySnapshot(user.id);
+
+  return studentApiSuccess({
+    id: user.id,
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    hasDiagnosticSnapshot: user.hasDiagnosticSnapshot,
+    journeyState: journey.journeyState,
+    hasPlanningProfile: journey.hasPlanningProfile,
+    hasActiveMission: journey.hasActiveMission,
   });
 }

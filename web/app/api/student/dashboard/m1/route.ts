@@ -1,37 +1,38 @@
-import { NextResponse } from "next/server";
-import { auth } from "@/auth";
-import { getAuthenticatedUserById } from "@/lib/auth/users";
 import { getM1Dashboard } from "@/lib/student/dashboardM1";
-
-async function getAuthenticatedUserId() {
-  const session = await auth();
-  const userId = session?.user?.id;
-
-  if (!userId) {
-    return null;
-  }
-
-  const user = await getAuthenticatedUserById(userId);
-  if (!user) {
-    return null;
-  }
-
-  return user.id;
-}
+import { getOrCreateCurrentMission } from "@/lib/student/missions";
+import { getStudentJourneySnapshot } from "@/lib/student/journeyState";
+import { getStudentNextAction } from "@/lib/student/nextAction";
+import { studentApiError, studentApiSuccess } from "@/lib/student/apiEnvelope";
+import { getAuthenticatedStudentUserId } from "@/lib/student/auth";
 
 export async function GET() {
-  const userId = await getAuthenticatedUserId();
+  const userId = await getAuthenticatedStudentUserId();
   if (!userId) {
-    return NextResponse.json(
-      { success: false, error: "Unauthorized" },
-      { status: 401 }
-    );
+    return studentApiError("UNAUTHORIZED", "Unauthorized", 401);
   }
 
-  const dashboard = await getM1Dashboard(userId);
+  try {
+    const [dashboard, mission, journey, nextAction] = await Promise.all([
+      getM1Dashboard(userId),
+      getOrCreateCurrentMission(userId),
+      getStudentJourneySnapshot(userId),
+      getStudentNextAction(userId),
+    ]);
 
-  return NextResponse.json({
-    success: true,
-    data: dashboard,
-  });
+    return studentApiSuccess({
+      ...dashboard,
+      mission,
+      journeyState: journey.journeyState,
+      nextActionSummary: {
+        status: nextAction.status,
+        hasAction: Boolean(nextAction.nextAction),
+        estimatedMinutes: nextAction.nextAction?.studyMinutes ?? null,
+        pointsGain: nextAction.nextAction?.pointsGain ?? null,
+      },
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to load dashboard";
+    return studentApiError("DASHBOARD_LOAD_FAILED", message, 500);
+  }
 }

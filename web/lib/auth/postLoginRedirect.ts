@@ -1,14 +1,34 @@
-type ResolvePostLoginRedirectParams = {
-  isStudentPortalEnabled: boolean;
-  hasDiagnosticSnapshot: boolean;
-};
+import {
+  type StudentJourneyState,
+  resolvePostLoginRouteByJourneyState,
+} from "@/lib/student/journeyState";
+
+type ResolvePostLoginRedirectParams =
+  | {
+      isStudentPortalEnabled: boolean;
+      hasDiagnosticSnapshot: boolean;
+      journeyState?: never;
+    }
+  | {
+      isStudentPortalEnabled: boolean;
+      hasDiagnosticSnapshot?: boolean;
+      journeyState: StudentJourneyState;
+    };
 
 export function resolvePostLoginRedirect(
   params: ResolvePostLoginRedirectParams
-): "/portal" | "/diagnostico" {
-  if (params.isStudentPortalEnabled && params.hasDiagnosticSnapshot) {
-    return "/portal";
+) {
+  if (!params.isStudentPortalEnabled) {
+    return "/diagnostico" as const;
   }
 
-  return "/diagnostico";
+  if ("journeyState" in params && params.journeyState) {
+    return resolvePostLoginRouteByJourneyState(params.journeyState);
+  }
+
+  if (params.isStudentPortalEnabled && params.hasDiagnosticSnapshot) {
+    return "/portal" as const;
+  }
+
+  return "/portal/goals?mode=planning" as const;
 }

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { trackStudentNextActionClicked } from "@/lib/analytics";
+import { ActionCard } from "./components";
 
 export type NextActionPayload = {
   status: "ready" | "missing_diagnostic" | "missing_mastery";
@@ -30,6 +31,11 @@ export type NextActionPayload = {
     ctaLabel: string;
     ctaHref: string;
   } | null;
+  sprintHint: {
+    ctaHref: string;
+    suggestedItemCount: number;
+    estimatedMinutes: number;
+  };
 };
 
 function formatMinutes(value: number | null): string {
@@ -65,6 +71,8 @@ export function NextActionSection({
   error,
   data,
 }: NextActionSectionProps) {
+  const emptyState = data?.emptyState ?? null;
+
   return (
     <section className="rounded-2xl border border-gray-200 bg-white p-6 space-y-4">
       <h2 className="text-xl font-serif font-semibold text-primary">
@@ -77,84 +85,82 @@ export function NextActionSection({
 
       {!loading && error && <p className="text-sm text-red-700">{error}</p>}
 
-      {!loading && !error && data?.emptyState && (
+      {!loading && !error && emptyState ? (
         <div className="space-y-3">
-          <p className="text-sm text-gray-700">{data.emptyState.description}</p>
+          <p className="text-sm text-gray-700">{emptyState.description}</p>
           <Link
-            href={data.emptyState.ctaHref}
+            href={emptyState.ctaHref}
             className="btn-primary text-sm"
             onClick={() =>
-              trackStudentNextActionClicked(
-                data.emptyState?.ctaHref ?? "",
-                false
-              )
+              trackStudentNextActionClicked(emptyState.ctaHref, false)
             }
           >
-            {data.emptyState.ctaLabel}
+            {emptyState.ctaLabel}
           </Link>
         </div>
-      )}
+      ) : null}
 
-      {!loading && !error && !data?.emptyState && (
-        <div className="grid gap-3 lg:grid-cols-2">
-          <article className="rounded-lg border border-gray-200 p-4 space-y-2">
-            <p className="text-xs text-gray-500">Acción recomendada ahora</p>
-            <p className="text-lg font-semibold text-primary">
-              {data?.nextAction?.axis ?? "Sin acción disponible"}
-            </p>
-            <p className="text-sm text-gray-700">
-              +{data?.nextAction?.pointsGain ?? 0} pts potenciales en{" "}
-              {formatMinutes(data?.nextAction?.studyMinutes ?? null)}
-            </p>
-            <p className="text-xs text-gray-500">
-              {data?.nextAction?.questionsUnlocked ?? 0} preguntas oficiales
-              desbloqueables
-            </p>
-            <p className="text-xs text-gray-500">
-              Primer átomo: {data?.nextAction?.firstAtom?.title ?? "-"}
-            </p>
-            <Link
-              href="/diagnostico"
-              className="btn-primary text-sm"
-              onClick={() =>
-                trackStudentNextActionClicked("/diagnostico", true)
-              }
-            >
-              Empezar siguiente acción
-            </Link>
-          </article>
+      {!loading && !error && !emptyState ? (
+        <div className="grid gap-4 lg:grid-cols-2">
+          <ActionCard
+            title={data?.nextAction?.axis ?? "Sin acción disponible"}
+            description={`+${data?.nextAction?.pointsGain ?? 0} pts potenciales en ${formatMinutes(
+              data?.nextAction?.studyMinutes ??
+                data?.sprintHint.estimatedMinutes ??
+                null
+            )}.`}
+            metrics={
+              <div className="space-y-1 text-xs text-gray-600">
+                <p>
+                  {data?.nextAction?.questionsUnlocked ?? 0} preguntas
+                  desbloqueables.
+                </p>
+                <p>
+                  Primer foco:{" "}
+                  {data?.nextAction?.firstAtom?.title ?? "No definido"}.
+                </p>
+              </div>
+            }
+            primaryLabel="Comenzar sprint de hoy"
+            primaryHref={data?.sprintHint.ctaHref ?? "/portal/study"}
+            secondaryLabel="Ajustar meta"
+            secondaryHref="/portal/goals"
+            onPrimaryClick={() =>
+              trackStudentNextActionClicked(
+                data?.sprintHint.ctaHref ?? "/portal/study",
+                true
+              )
+            }
+          />
 
-          <article className="rounded-lg border border-gray-200 p-4 space-y-2">
-            <p className="text-xs text-gray-500">
-              Vista previa de cola (top átomos)
+          <article className="rounded-2xl border border-gray-200 bg-white p-4 space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Cola recomendada (ROI)
             </p>
             <div className="space-y-2">
-              {(data?.queuePreview ?? []).slice(0, 3).map((item) => (
+              {(data?.queuePreview ?? []).slice(0, 4).map((item, index) => (
                 <div
                   key={item.atomId}
-                  className="rounded-md border border-gray-100 p-2"
+                  className="rounded-lg border border-gray-100 px-3 py-2"
                 >
                   <p className="text-sm font-medium text-primary">
-                    {item.title}
+                    {index + 1}. {item.title}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-600">
                     {item.axis} · eficiencia{" "}
                     {item.efficiency.toLocaleString("es-CL")}
                   </p>
                 </div>
               ))}
-              {(data?.queuePreview ?? []).length === 0 && (
+              {(data?.queuePreview ?? []).length === 0 ? (
                 <p className="text-sm text-gray-600">
                   Sin elementos para mostrar.
                 </p>
-              )}
+              ) : null}
             </div>
-            <p className="text-xs text-gray-500">
-              Orquestación completa de SR: próxima iteración.
-            </p>
           </article>
         </div>
-      )}
+      ) : null}
     </section>
   );
 }

@@ -189,11 +189,11 @@ function buildEmptyState(
 ): M1DashboardData["emptyState"] {
   if (status === "missing_diagnostic") {
     return {
-      title: "Completa tu diagnóstico M1",
+      title: "Activa planificación y diagnóstico",
       description:
-        "Necesitamos tu diagnóstico para estimar tu nivel actual, brecha y esfuerzo recomendado.",
-      ctaLabel: "Ir al diagnóstico",
-      ctaHref: "/diagnostico",
+        "Primero define tu meta y compromiso semanal para iniciar el diagnóstico con foco.",
+      ctaLabel: "Ir a planificación",
+      ctaHref: "/portal/goals?mode=planning",
     };
   }
 
@@ -203,7 +203,7 @@ function buildEmptyState(
       description:
         "Agrega un puntaje objetivo M1 en tus metas para activar la brecha y el plan de esfuerzo.",
       ctaLabel: "Configurar metas",
-      ctaHref: "/portal/goals",
+      ctaHref: "/portal/goals?mode=planning",
     };
   }
 
@@ -212,8 +212,8 @@ function buildEmptyState(
       title: "Aún no hay señal de aprendizaje",
       description:
         "Todavía no encontramos registros de dominio por átomo para calcular una proyección confiable.",
-      ctaLabel: "Ir al diagnóstico",
-      ctaHref: "/diagnostico",
+      ctaLabel: "Comenzar estudio",
+      ctaHref: "/portal/study",
     };
   }
 

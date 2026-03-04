@@ -1,100 +1,66 @@
-import { NextResponse } from "next/server";
-import { auth } from "@/auth";
-import { getAuthenticatedUserById } from "@/lib/auth/users";
 import {
   MAX_PRIMARY_GOALS,
   saveStudentGoalsView,
+  type StudentPlanningProfileInput,
   type StudentGoalInput,
   getStudentGoalsView,
 } from "@/lib/student/goals";
+import { studentApiError, studentApiSuccess } from "@/lib/student/apiEnvelope";
+import { getAuthenticatedStudentUserId } from "@/lib/student/auth";
 
 type GoalsRequestBody = {
   goals?: StudentGoalInput[];
+  planningProfile?: StudentPlanningProfileInput;
 };
 
-async function getAuthenticatedUserId() {
-  const session = await auth();
-  const userId = session?.user?.id;
-
-  if (!userId) {
-    return null;
-  }
-
-  const user = await getAuthenticatedUserById(userId);
-  if (!user) {
-    return null;
-  }
-
-  return user.id;
-}
-
 export async function GET() {
-  const userId = await getAuthenticatedUserId();
+  const userId = await getAuthenticatedStudentUserId();
   if (!userId) {
-    return NextResponse.json(
-      { success: false, error: "Unauthorized" },
-      { status: 401 }
-    );
+    return studentApiError("UNAUTHORIZED", "Unauthorized", 401);
   }
 
   const view = await getStudentGoalsView(userId);
-  return NextResponse.json({
-    success: true,
-    data: view,
-  });
+  return studentApiSuccess(view);
 }
 
 export async function POST(request: Request) {
-  const userId = await getAuthenticatedUserId();
+  const userId = await getAuthenticatedStudentUserId();
   if (!userId) {
-    return NextResponse.json(
-      { success: false, error: "Unauthorized" },
-      { status: 401 }
-    );
+    return studentApiError("UNAUTHORIZED", "Unauthorized", 401);
   }
 
   let body: GoalsRequestBody;
   try {
     body = (await request.json()) as GoalsRequestBody;
   } catch {
-    return NextResponse.json(
-      { success: false, error: "Invalid JSON body" },
-      { status: 400 }
-    );
+    return studentApiError("INVALID_BODY", "Invalid JSON body", 400);
   }
 
   if (!body.goals || !Array.isArray(body.goals)) {
-    return NextResponse.json(
-      { success: false, error: "goals array is required" },
-      { status: 400 }
-    );
+    return studentApiError("GOALS_REQUIRED", "goals array is required", 400);
   }
 
   if (
     body.goals.filter((goal) => goal.isPrimary !== false).length >
     MAX_PRIMARY_GOALS
   ) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: `A maximum of ${MAX_PRIMARY_GOALS} primary goals is allowed`,
-      },
-      { status: 400 }
+    return studentApiError(
+      "GOALS_LIMIT_EXCEEDED",
+      `A maximum of ${MAX_PRIMARY_GOALS} primary goals is allowed`,
+      400
     );
   }
 
   try {
-    const view = await saveStudentGoalsView(userId, body.goals);
-    return NextResponse.json({
-      success: true,
-      data: view,
-    });
+    const view = await saveStudentGoalsView(
+      userId,
+      body.goals,
+      body.planningProfile
+    );
+    return studentApiSuccess(view);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to save goals";
-    return NextResponse.json(
-      { success: false, error: message },
-      { status: 400 }
-    );
+    return studentApiError("GOALS_SAVE_FAILED", message, 400);
   }
 }

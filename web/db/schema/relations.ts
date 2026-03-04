@@ -21,6 +21,12 @@ import {
   studentGoals,
   studentGoalScores,
   studentGoalBuffers,
+  studentPlanningProfiles,
+  studentWeeklyMissions,
+  studentStudySprints,
+  studentStudySprintItems,
+  studentStudySprintResponses,
+  studentReminderJobs,
 } from "./studentPortal";
 
 /**
@@ -124,6 +130,12 @@ export const usersRelations = relations(users, ({ many }) => ({
   atomMastery: many(atomMastery),
   testAttempts: many(testAttempts),
   studentResponses: many(studentResponses),
+  studentGoals: many(studentGoals),
+  planningProfiles: many(studentPlanningProfiles),
+  weeklyMissions: many(studentWeeklyMissions),
+  studySprints: many(studentStudySprints),
+  studySprintResponses: many(studentStudySprintResponses),
+  reminderJobs: many(studentReminderJobs),
 }));
 
 export const atomMasteryRelations = relations(atomMastery, ({ one }) => ({
@@ -262,6 +274,85 @@ export const studentGoalBuffersRelations = relations(
     goal: one(studentGoals, {
       fields: [studentGoalBuffers.goalId],
       references: [studentGoals.id],
+    }),
+  })
+);
+
+export const studentPlanningProfilesRelations = relations(
+  studentPlanningProfiles,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [studentPlanningProfiles.userId],
+      references: [users.id],
+    }),
+  })
+);
+
+export const studentWeeklyMissionsRelations = relations(
+  studentWeeklyMissions,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [studentWeeklyMissions.userId],
+      references: [users.id],
+    }),
+  })
+);
+
+export const studentStudySprintsRelations = relations(
+  studentStudySprints,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [studentStudySprints.userId],
+      references: [users.id],
+    }),
+    items: many(studentStudySprintItems),
+    responses: many(studentStudySprintResponses),
+  })
+);
+
+export const studentStudySprintItemsRelations = relations(
+  studentStudySprintItems,
+  ({ one, many }) => ({
+    sprint: one(studentStudySprints, {
+      fields: [studentStudySprintItems.sprintId],
+      references: [studentStudySprints.id],
+    }),
+    atom: one(atoms, {
+      fields: [studentStudySprintItems.atomId],
+      references: [atoms.id],
+    }),
+    question: one(questions, {
+      fields: [studentStudySprintItems.questionId],
+      references: [questions.id],
+    }),
+    responses: many(studentStudySprintResponses),
+  })
+);
+
+export const studentStudySprintResponsesRelations = relations(
+  studentStudySprintResponses,
+  ({ one }) => ({
+    sprint: one(studentStudySprints, {
+      fields: [studentStudySprintResponses.sprintId],
+      references: [studentStudySprints.id],
+    }),
+    sprintItem: one(studentStudySprintItems, {
+      fields: [studentStudySprintResponses.sprintItemId],
+      references: [studentStudySprintItems.id],
+    }),
+    user: one(users, {
+      fields: [studentStudySprintResponses.userId],
+      references: [users.id],
+    }),
+  })
+);
+
+export const studentReminderJobsRelations = relations(
+  studentReminderJobs,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [studentReminderJobs.userId],
+      references: [users.id],
     }),
   })
 );

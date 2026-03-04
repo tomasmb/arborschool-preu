@@ -309,6 +309,84 @@ CREATE TABLE student_goal_buffers (
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(goal_id)
 );
+
+CREATE TABLE student_planning_profiles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    exam_date DATE,
+    weekly_minutes_target INTEGER NOT NULL DEFAULT 360,
+    timezone VARCHAR(80) NOT NULL DEFAULT 'America/Santiago',
+    reminder_in_app BOOLEAN NOT NULL DEFAULT TRUE,
+    reminder_email BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id)
+);
+
+CREATE TABLE student_weekly_missions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    week_start_date DATE NOT NULL,
+    week_end_date DATE NOT NULL,
+    target_sessions INTEGER NOT NULL DEFAULT 5,
+    completed_sessions INTEGER NOT NULL DEFAULT 0,
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
+    last_progress_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id, week_start_date)
+);
+
+CREATE TABLE student_study_sprints (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'in_progress',
+    source VARCHAR(30) NOT NULL DEFAULT 'next_action',
+    estimated_minutes INTEGER NOT NULL DEFAULT 25,
+    started_at TIMESTAMPTZ DEFAULT NOW(),
+    completed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE student_study_sprint_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    sprint_id UUID REFERENCES student_study_sprints(id) ON DELETE CASCADE NOT NULL,
+    position INTEGER NOT NULL,
+    atom_id VARCHAR(50) REFERENCES atoms(id) NOT NULL,
+    question_id VARCHAR(100) REFERENCES questions(id) NOT NULL,
+    prompt_label VARCHAR(160),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(sprint_id, position)
+);
+
+CREATE TABLE student_study_sprint_responses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    sprint_id UUID REFERENCES student_study_sprints(id) ON DELETE CASCADE NOT NULL,
+    sprint_item_id UUID REFERENCES student_study_sprint_items(id) ON DELETE CASCADE NOT NULL,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    selected_answer VARCHAR(50) NOT NULL,
+    is_correct BOOLEAN NOT NULL,
+    response_time_seconds INTEGER,
+    answered_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(sprint_item_id, user_id)
+);
+
+CREATE TABLE student_reminder_jobs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    channel VARCHAR(20) NOT NULL DEFAULT 'email',
+    job_type VARCHAR(40) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    dedupe_key VARCHAR(180) NOT NULL,
+    scheduled_for TIMESTAMPTZ NOT NULL,
+    sent_at TIMESTAMPTZ,
+    payload JSONB,
+    last_error TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(dedupe_key)
+);
 ```
 
 ### Indexes
@@ -328,6 +406,19 @@ CREATE INDEX idx_atom_mastery_spaced_rep ON atom_mastery(last_demonstrated_at) W
 CREATE INDEX idx_test_attempts_user ON test_attempts(user_id);
 CREATE INDEX idx_student_responses_user ON student_responses(user_id);
 CREATE INDEX idx_student_responses_question ON student_responses(question_id);
+CREATE INDEX idx_admissions_datasets_active ON admissions_datasets(is_active);
+CREATE INDEX idx_student_goals_user ON student_goals(user_id);
+CREATE INDEX idx_student_planning_profiles_user ON student_planning_profiles(user_id);
+CREATE INDEX idx_student_weekly_missions_user ON student_weekly_missions(user_id);
+CREATE INDEX idx_student_weekly_missions_status ON student_weekly_missions(status);
+CREATE INDEX idx_student_study_sprints_user ON student_study_sprints(user_id);
+CREATE INDEX idx_student_study_sprints_status ON student_study_sprints(status);
+CREATE INDEX idx_student_study_sprint_items_sprint ON student_study_sprint_items(sprint_id);
+CREATE INDEX idx_student_study_sprint_responses_sprint ON student_study_sprint_responses(sprint_id);
+CREATE INDEX idx_student_study_sprint_responses_user ON student_study_sprint_responses(user_id);
+CREATE INDEX idx_student_reminder_jobs_user ON student_reminder_jobs(user_id);
+CREATE INDEX idx_student_reminder_jobs_status ON student_reminder_jobs(status);
+CREATE INDEX idx_student_reminder_jobs_schedule ON student_reminder_jobs(scheduled_for);
 ```
 
 ---

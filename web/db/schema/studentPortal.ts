@@ -6,10 +6,14 @@ import {
   timestamp,
   decimal,
   boolean,
+  date,
+  text,
+  jsonb,
   index,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { users } from "./users";
+import { atoms, questions } from "./content";
 
 /**
  * Student portal tables for admissions datasets and account-bound goals.
@@ -181,5 +185,163 @@ export const studentGoalBuffers = pgTable(
   (table) => [
     uniqueIndex("ux_student_goal_buffers_goal").on(table.goalId),
     index("idx_student_goal_buffers_goal").on(table.goalId),
+  ]
+);
+
+export const studentPlanningProfiles = pgTable(
+  "student_planning_profiles",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    examDate: date("exam_date"),
+    weeklyMinutesTarget: integer("weekly_minutes_target")
+      .notNull()
+      .default(360),
+    timezone: varchar("timezone", { length: 80 })
+      .notNull()
+      .default("America/Santiago"),
+    reminderInApp: boolean("reminder_in_app").notNull().default(true),
+    reminderEmail: boolean("reminder_email").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("ux_student_planning_profiles_user").on(table.userId),
+    index("idx_student_planning_profiles_user").on(table.userId),
+  ]
+);
+
+export const studentWeeklyMissions = pgTable(
+  "student_weekly_missions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    weekStartDate: date("week_start_date").notNull(),
+    weekEndDate: date("week_end_date").notNull(),
+    targetSessions: integer("target_sessions").notNull().default(5),
+    completedSessions: integer("completed_sessions").notNull().default(0),
+    status: varchar("status", { length: 20 }).notNull().default("active"),
+    lastProgressAt: timestamp("last_progress_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("ux_student_weekly_missions_user_week_start").on(
+      table.userId,
+      table.weekStartDate
+    ),
+    index("idx_student_weekly_missions_user").on(table.userId),
+    index("idx_student_weekly_missions_status").on(table.status),
+  ]
+);
+
+export const studentStudySprints = pgTable(
+  "student_study_sprints",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    status: varchar("status", { length: 20 }).notNull().default("in_progress"),
+    source: varchar("source", { length: 30 }).notNull().default("next_action"),
+    estimatedMinutes: integer("estimated_minutes").notNull().default(25),
+    startedAt: timestamp("started_at", { withTimezone: true }).defaultNow(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index("idx_student_study_sprints_user").on(table.userId),
+    index("idx_student_study_sprints_status").on(table.status),
+    index("idx_student_study_sprints_user_status").on(
+      table.userId,
+      table.status
+    ),
+  ]
+);
+
+export const studentStudySprintItems = pgTable(
+  "student_study_sprint_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sprintId: uuid("sprint_id")
+      .references(() => studentStudySprints.id, { onDelete: "cascade" })
+      .notNull(),
+    position: integer("position").notNull(),
+    atomId: varchar("atom_id", { length: 50 })
+      .references(() => atoms.id)
+      .notNull(),
+    questionId: varchar("question_id", { length: 100 })
+      .references(() => questions.id)
+      .notNull(),
+    promptLabel: varchar("prompt_label", { length: 160 }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("ux_student_study_sprint_items_sprint_position").on(
+      table.sprintId,
+      table.position
+    ),
+    index("idx_student_study_sprint_items_sprint").on(table.sprintId),
+  ]
+);
+
+export const studentStudySprintResponses = pgTable(
+  "student_study_sprint_responses",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sprintId: uuid("sprint_id")
+      .references(() => studentStudySprints.id, { onDelete: "cascade" })
+      .notNull(),
+    sprintItemId: uuid("sprint_item_id")
+      .references(() => studentStudySprintItems.id, { onDelete: "cascade" })
+      .notNull(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    selectedAnswer: varchar("selected_answer", { length: 50 }).notNull(),
+    isCorrect: boolean("is_correct").notNull(),
+    responseTimeSeconds: integer("response_time_seconds"),
+    answeredAt: timestamp("answered_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("ux_student_study_sprint_responses_item_user").on(
+      table.sprintItemId,
+      table.userId
+    ),
+    index("idx_student_study_sprint_responses_sprint").on(table.sprintId),
+    index("idx_student_study_sprint_responses_user").on(table.userId),
+  ]
+);
+
+export const studentReminderJobs = pgTable(
+  "student_reminder_jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    channel: varchar("channel", { length: 20 }).notNull().default("email"),
+    jobType: varchar("job_type", { length: 40 }).notNull(),
+    status: varchar("status", { length: 20 }).notNull().default("pending"),
+    dedupeKey: varchar("dedupe_key", { length: 180 }).notNull(),
+    scheduledFor: timestamp("scheduled_for", { withTimezone: true }).notNull(),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    payload: jsonb("payload").$type<Record<string, unknown>>(),
+    lastError: text("last_error"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("ux_student_reminder_jobs_dedupe_key").on(table.dedupeKey),
+    index("idx_student_reminder_jobs_user").on(table.userId),
+    index("idx_student_reminder_jobs_status").on(table.status),
+    index("idx_student_reminder_jobs_schedule").on(table.scheduledFor),
   ]
 );

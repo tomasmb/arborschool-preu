@@ -132,11 +132,11 @@ export function buildNextActionInsights(
 function buildEmptyState(status: Exclude<NextActionStatus, "ready">) {
   if (status === "missing_diagnostic") {
     return {
-      title: "Completa tu diagnóstico M1",
+      title: "Activa tu planificación",
       description:
-        "Necesitamos tu diagnóstico para recomendar la mejor acción de estudio.",
-      ctaLabel: "Ir al diagnóstico",
-      ctaHref: "/diagnostico",
+        "Antes del diagnóstico define tu meta objetivo para personalizar el primer sprint.",
+      ctaLabel: "Ir a planificación",
+      ctaHref: "/portal/goals?mode=planning",
     };
   }
 
@@ -144,8 +144,8 @@ function buildEmptyState(status: Exclude<NextActionStatus, "ready">) {
     title: "Aún no hay señal de aprendizaje",
     description:
       "Todavía no hay registros de dominio por átomo para priorizar tu siguiente acción.",
-    ctaLabel: "Ir al diagnóstico",
-    ctaHref: "/diagnostico",
+    ctaLabel: "Comenzar sprint",
+    ctaHref: "/portal/study",
   };
 }
 

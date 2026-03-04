@@ -1,523 +1,292 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import {
-  MST_QUESTIONS,
-  getRoute,
-  getStage2Questions,
-  buildQuestionId,
-  QUESTIONS_PER_STAGE,
-  type MSTQuestion,
-  type Route,
-} from "@/lib/diagnostic/config";
-import {
-  computeAtomMastery,
-  type DiagnosticResponse,
-  type DiagnosticResults,
-} from "@/lib/diagnostic/resultsCalculator";
-import {
-  getStoredResponses,
-  saveAttemptId,
-  isLocalAttempt,
-  generateLocalAttemptId,
-  clearAllDiagnosticData,
-  getResponsesForReview,
-  reconstructFullResponses,
-  getResponseCounts,
-  type ResponseForReview,
-} from "@/lib/diagnostic/storage";
+import { useCallback, type MutableRefObject } from "react";
 import { useSessionPersistence } from "../hooks/useSessionPersistence";
-import { type QuestionAtom } from "@/lib/diagnostic/qtiParser";
-import { getPerformanceTier } from "@/lib/config/tiers";
+import { getCurrentQuestion } from "./useDiagnosticFlow.actions";
 import {
-  trackDiagnosticIntroViewed,
-  trackDiagnosticCompleted,
-  trackMiniFormCompleted,
-  trackStage1Completed,
-  trackTimeExpired,
-  trackProfilingCompleted,
-  trackConfirmSkipViewed,
-  trackConfirmSkipExit,
-  trackConfirmSkipBackToProfiling,
-} from "@/lib/analytics";
-import { type MiniFormData } from "../components/MiniFormScreen";
-import { type ProfilingData } from "../components/ProfilingScreen";
-import { type TopRouteInfo } from "../components/ResultsScreen";
-import { type LearningRoutesResponse } from "./useLearningRoutes";
+  useDiagnosticProfileExitActions,
+  useDiagnosticQuestionActions,
+  useDiagnosticResultsActions,
+  useDiagnosticStartActions,
+} from "./useDiagnosticFlow.actions";
 import {
-  registerUser,
-  startTestAttempt,
-  completeTestAttempt,
-  fetchLearningRoutesApi,
-  saveQuestionResponse,
-  buildAndSaveProfile,
-  computeScoredResults,
-} from "../utils/diagnosticApi";
+  useDiagnosticIntroTracking,
+  useDiagnosticScrollToTop,
+  useDiagnosticStudentBootstrap,
+} from "./useDiagnosticFlow.bootstrap";
+import {
+  useDiagnosticFlowCacheState,
+  useDiagnosticFlowCoreState,
+  useDiagnosticFlowTimerState,
+} from "./useDiagnosticFlow.state";
+import { useDiagnosticTimer, useRouteRef } from "./useDiagnosticFlow.timer";
+import type { Screen } from "./useDiagnosticFlow.types";
 
-export type Screen =
-  | "mini-form"
-  | "question"
-  | "transition"
-  | "partial-results"
-  | "profiling"
-  | "confirm-skip"
-  | "results"
-  | "thank-you"
-  | "maintenance"
-  /** New onboarding: shown after results when NEXT_PUBLIC_NEW_ONBOARDING=true */
-  | "plan-preview";
+export type { Screen };
 
-const TOTAL_TIME_SECONDS = 30 * 60; // 30 minutes
+type CoreState = ReturnType<typeof useDiagnosticFlowCoreState>;
+type CacheState = ReturnType<typeof useDiagnosticFlowCacheState>;
+type TimerState = ReturnType<typeof useDiagnosticFlowTimerState>;
 
-/** Core diagnostic flow hook — state, effects, and handlers for all screens. */
-export function useDiagnosticFlow() {
-  const [screen, setScreen] = useState<Screen>("mini-form");
-  const [stage, setStage] = useState<1 | 2>(1);
-  const [questionIndex, setQuestionIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [isDontKnow, setIsDontKnow] = useState(false);
+function useLifecycleControllers(core: CoreState, timer: TimerState) {
+  const startActions = useDiagnosticStartActions({
+    userId: core.userId,
+    setUserId: core.setUserId,
+    setStage: core.setStage,
+    setQuestionIndex: core.setQuestionIndex,
+    setSelectedAnswer: core.setSelectedAnswer,
+    setIsDontKnow: core.setIsDontKnow,
+    setRoute: core.setRoute,
+    setResults: core.setResults,
+    setTimeRemaining: timer.setTimeRemaining,
+    setTimeExpiredAt: timer.setTimeExpiredAt,
+    setShowTimeUpModal: timer.setShowTimeUpModal,
+    setProfileSaved: core.setProfileSaved,
+    setAttemptId: timer.setAttemptId,
+    setTimerStartedAt: timer.setTimerStartedAt,
+    setScreen: core.setScreen,
+    questionStartTime: timer.questionStartTime,
+  });
 
-  const [r1Responses, setR1Responses] = useState<DiagnosticResponse[]>([]);
-  const [stage2Responses, setStage2Responses] = useState<DiagnosticResponse[]>(
-    []
-  );
-  const [route, setRoute] = useState<Route | null>(null);
-  const [results, setResults] = useState<DiagnosticResults | null>(null);
-  const [consistentScore, setConsistentScore] = useState<number | null>(null);
-  const [topRouteInfo, setTopRouteInfo] = useState<TopRouteInfo | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [profileSaved, setProfileSaved] = useState(false);
-  const [cachedResponsesForReview, setCachedResponsesForReview] = useState<
-    ResponseForReview[]
-  >([]);
-  const [cachedResults, setCachedResults] = useState<DiagnosticResults | null>(
-    null
-  );
-  const [cachedAtomResults, setCachedAtomResults] = useState<
-    { atomId: string; mastered: boolean }[]
-  >([]);
-  const [cachedScoredCorrect, setCachedScoredCorrect] = useState<number>(0);
-  const [cachedActualRoute, setCachedActualRoute] = useState<Route | null>(
-    null
-  );
-  const [routesData, setRoutesData] = useState<LearningRoutesResponse | null>(
-    null
-  );
-  const [routesLoading, setRoutesLoading] = useState(false);
-  const [cachedRoutesData, setCachedRoutesData] =
-    useState<LearningRoutesResponse | null>(null);
-  const [attemptId, setAttemptId] = useState<string | null>(null);
-  const [timeRemaining, setTimeRemaining] = useState(TOTAL_TIME_SECONDS);
-  const [timerStartedAt, setTimerStartedAt] = useState<number | null>(null);
-  const [timeExpiredAt, setTimeExpiredAt] = useState<number | null>(null);
-  const [showTimeUpModal, setShowTimeUpModal] = useState(false);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const questionStartTime = useRef<number>(Date.now());
-  const routeRef = useRef(route);
+  useDiagnosticStudentBootstrap({
+    setIsStudentPortalUser: core.setIsStudentPortalUser,
+    setUserId: core.setUserId,
+    setStudentSessionChecked: core.setStudentSessionChecked,
+    setIsInitializingStudentSession: core.setIsInitializingStudentSession,
+    startTest: startActions.startTest,
+  });
 
-  useEffect(() => {
-    routeRef.current = route;
-  }, [route]);
-  useEffect(() => {
-    if (screen === "mini-form") {
-      trackDiagnosticIntroViewed();
-    }
-    // Only fire on initial mount — not on every screen change
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  useSessionPersistence(
+  return { startActions };
+}
+
+function useExecutionControllers(
+  core: CoreState,
+  cache: CacheState,
+  timer: TimerState,
+  routeRef: MutableRefObject<CoreState["route"]>
+) {
+  const resultActions = useDiagnosticResultsActions({
+    userId: core.userId,
+    attemptId: timer.attemptId,
+    route: core.route,
+    topRouteInfo: core.topRouteInfo,
+    routesData: cache.routesData,
+    isStudentPortalUser: core.isStudentPortalUser,
+    timerRef: timer.timerRef,
+    setScreen: core.setScreen,
+    setResults: core.setResults,
+    setConsistentScore: core.setConsistentScore,
+    setProfileSaved: core.setProfileSaved,
+    setCachedResponsesForReview: cache.setCachedResponsesForReview,
+    setCachedResults: cache.setCachedResults,
+    setCachedAtomResults: cache.setCachedAtomResults,
+    setCachedScoredCorrect: cache.setCachedScoredCorrect,
+    setCachedActualRoute: cache.setCachedActualRoute,
+    setCachedRoutesData: cache.setCachedRoutesData,
+    setRoutesLoading: cache.setRoutesLoading,
+    setRoutesData: cache.setRoutesData,
+  });
+
+  const questionActions = useDiagnosticQuestionActions({
+    stage: core.stage,
+    questionIndex: core.questionIndex,
+    route: core.route,
+    selectedAnswer: core.selectedAnswer,
+    isDontKnow: core.isDontKnow,
+    timeExpiredAt: timer.timeExpiredAt,
+    attemptId: timer.attemptId,
+    isStudentPortalUser: core.isStudentPortalUser,
+    questionStartTime: timer.questionStartTime,
+    setQuestionIndex: core.setQuestionIndex,
+    setStage: core.setStage,
+    setRoute: core.setRoute,
+    setScreen: core.setScreen,
+    setSelectedAnswer: core.setSelectedAnswer,
+    setIsDontKnow: core.setIsDontKnow,
+    onDiagnosticComplete: resultActions.calculateAndShowResults,
+  });
+
+  const profileExitActions = useDiagnosticProfileExitActions({
+    route: core.route,
+    userId: core.userId,
+    attemptId: timer.attemptId,
+    topRouteInfo: core.topRouteInfo,
+    profileSaved: core.profileSaved,
+    setScreen: core.setScreen,
+    onSaveProfile: resultActions.saveProfileAndShowResults,
+  });
+
+  const timerActions = useDiagnosticTimer(
     {
-      setScreen,
-      setStage,
-      setQuestionIndex,
-      setRoute,
-      setTimerStartedAt,
-      setTimeExpiredAt,
-      setTimeRemaining,
-      setResults,
-      setAttemptId,
+      stage: core.stage,
+      questionIndex: core.questionIndex,
+      route: core.route,
+      screen: core.screen,
+      timeExpiredAt: timer.timeExpiredAt,
+      timerRef: timer.timerRef,
+      setTimeExpiredAt: timer.setTimeExpiredAt,
+      setTimeRemaining: timer.setTimeRemaining,
+      setShowTimeUpModal: timer.setShowTimeUpModal,
+      setScreen: core.setScreen,
+      setResults: core.setResults,
+      setConsistentScore: core.setConsistentScore,
     },
-    {
-      screen,
-      stage,
-      questionIndex,
-      route,
-      timerStartedAt,
-      timeExpiredAt,
-      results,
-    }
-  );
-  useEffect(() => {
-    requestAnimationFrame(() => window.scrollTo(0, 0));
-  }, [screen, questionIndex, stage]);
-
-  const handleTimeUp = useCallback(() => {
-    // Calculate questions answered before time expired
-    const stage1Answered = stage === 1 ? questionIndex : QUESTIONS_PER_STAGE;
-    const stage2Answered = stage === 2 ? questionIndex : 0;
-    trackTimeExpired(stage, questionIndex, stage1Answered + stage2Answered);
-
-    setTimeExpiredAt(Date.now());
-    setTimeRemaining(0);
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    setShowTimeUpModal(true);
-  }, [stage, questionIndex]);
-  const handleContinueAfterTimeUp = useCallback(() => {
-    setShowTimeUpModal(false);
-  }, []);
-  const handleViewResultsAfterTimeUp = useCallback(() => {
-    setShowTimeUpModal(false);
-    const currentRoute = routeRef.current;
-    if (!currentRoute) {
-      setScreen("maintenance");
-      return;
-    }
-    const { calc, midScore } = computeScoredResults(currentRoute);
-    setResults(calc);
-    setConsistentScore(midScore);
-    setScreen("partial-results");
-  }, []);
-
-  useEffect(() => {
-    if (timeExpiredAt !== null) return;
-    if (screen === "question" && !timerRef.current) {
-      timerRef.current = setInterval(() => {
-        setTimeRemaining((prev) => {
-          if (prev <= 1) {
-            if (timerRef.current) clearInterval(timerRef.current);
-            timerRef.current = null;
-            setTimeout(() => handleTimeUp(), 0);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => {
-      if (timerRef.current && screen !== "question") {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, [screen, handleTimeUp, timeExpiredAt]);
-
-  const resetQuestionState = () => {
-    setSelectedAnswer(null);
-    setIsDontKnow(false);
-    questionStartTime.current = Date.now();
-  };
-  const getCurrentQuestion = (): MSTQuestion => {
-    if (stage === 1) return MST_QUESTIONS.R1[questionIndex];
-    if (!route)
-      throw new Error("getCurrentQuestion: route is not set for stage 2");
-    return getStage2Questions(route)[questionIndex];
-  };
-  const handleSelectAnswer = useCallback((answer: string) => {
-    setSelectedAnswer(answer);
-    setIsDontKnow(false);
-  }, []);
-  const handleSelectDontKnow = useCallback(() => {
-    setIsDontKnow(true);
-    setSelectedAnswer(null);
-  }, []);
-  const handleFatalError = useCallback(() => setScreen("maintenance"), []);
-
-  const fetchRoutes = async (
-    atomResults: { atomId: string; mastered: boolean }[],
-    diagnosticScore: number
-  ) => {
-    setRoutesLoading(true);
-    try {
-      const data = await fetchLearningRoutesApi(atomResults, diagnosticScore);
-      if (data) setRoutesData(data);
-    } catch (error) {
-      console.error("Failed to fetch learning routes:", error);
-    } finally {
-      setRoutesLoading(false);
-    }
-  };
-
-  const showResultsScreen = () => {
-    if (!route) {
-      setScreen("maintenance");
-      return;
-    }
-    const { calc, midScore } = computeScoredResults(route);
-    setResults(calc);
-    setConsistentScore(midScore);
-    fetchRoutes(computeAtomMastery(reconstructFullResponses()), midScore);
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    setScreen("partial-results");
-  };
-  const handleMiniFormSubmit = async (data: MiniFormData) => {
-    const result = await registerUser(data.email, data.userType, data.curso);
-    if (!result.success || !result.userId) {
-      throw new Error(result.error || "Error al registrar");
-    }
-    trackMiniFormCompleted(data.email, data.userType, data.curso);
-    setUserId(result.userId);
-    await startTest(result.userId);
-  };
-  const startTest = async (registeredUserId?: string) => {
-    clearAllDiagnosticData();
-    setStage(1);
-    setQuestionIndex(0);
-    setSelectedAnswer(null);
-    setIsDontKnow(false);
-    setR1Responses([]);
-    setStage2Responses([]);
-    setRoute(null);
-    setResults(null);
-    setTimeRemaining(TOTAL_TIME_SECONDS);
-    setTimeExpiredAt(null);
-    setShowTimeUpModal(false);
-    setProfileSaved(false);
-
-    const currentUserId = registeredUserId ?? userId;
-    try {
-      const data = await startTestAttempt(currentUserId);
-      if (!data.success || !data.attemptId) throw new Error("No attemptId");
-      setAttemptId(data.attemptId);
-      saveAttemptId(data.attemptId);
-    } catch (error) {
-      console.error("Failed to start test:", error);
-      const localId = generateLocalAttemptId();
-      setAttemptId(localId);
-      saveAttemptId(localId);
-    }
-
-    const now = Date.now();
-    setTimerStartedAt(now);
-    window.scrollTo(0, 0);
-    setScreen("question");
-    questionStartTime.current = now;
-  };
-  const continueToStage2 = () => {
-    setStage(2);
-    setQuestionIndex(0);
-    resetQuestionState();
-    setScreen("question");
-  };
-  const calculateAndShowResults = async () => {
-    const counts = getResponseCounts();
-    if (!route) {
-      setScreen("maintenance");
-      return;
-    }
-    const tier = getPerformanceTier(counts.scoredCorrect);
-    trackDiagnosticCompleted(counts.scoredCorrect, tier, route);
-    showResultsScreen();
-
-    if (!isLocalAttempt(attemptId)) {
-      const stage1Correct = getStoredResponses().filter(
-        (r) => r.stage === 1 && !r.answeredAfterTimeUp && r.isCorrect
-      ).length;
-      try {
-        await completeTestAttempt({
-          attemptId,
-          totalQuestions: 16,
-          correctAnswers: counts.scoredCorrect,
-          stage1Score: stage1Correct,
-          stage2Difficulty: route,
-        });
-      } catch (error) {
-        console.error("Failed to complete test:", error);
-      }
-    }
-  };
-
-  const handleNext = useCallback(
-    async (
-      correctAnswer: string | null,
-      atoms: QuestionAtom[],
-      alternateQuestionId: string | null
-    ) => {
-      const question = getCurrentQuestion();
-      const responseTime = Math.floor(
-        (Date.now() - questionStartTime.current) / 1000
-      );
-      const isCorrect =
-        !isDontKnow &&
-        selectedAnswer !== null &&
-        correctAnswer !== null &&
-        selectedAnswer === correctAnswer;
-
-      const responseData: DiagnosticResponse = {
-        question,
-        selectedAnswer,
-        isCorrect,
-        responseTime,
-        atoms,
-      };
-      const questionId = buildQuestionId(
-        question.exam,
-        question.questionNumber
-      );
-
-      await saveQuestionResponse({
-        questionId,
-        selectedAnswer: selectedAnswer || "skip",
-        isCorrect,
-        responseTimeSeconds: responseTime,
-        stage,
-        questionIndex,
-        route: stage === 2 ? route : null,
-        atoms: atoms.map((a) => ({
-          atomId: a.atomId,
-          relevance: a.relevance,
-        })),
-        answeredAfterTimeUp: timeExpiredAt !== null,
-        alternateQuestionId: alternateQuestionId ?? undefined,
-        attemptId,
-      });
-
-      if (stage === 1) {
-        setR1Responses([...r1Responses, responseData]);
-        if (questionIndex === QUESTIONS_PER_STAGE - 1) {
-          const storedR1 = getStoredResponses().filter((r) => r.stage === 1);
-          const correctCount = storedR1.filter((r) => r.isCorrect).length;
-          const assignedRoute = getRoute(correctCount);
-          trackStage1Completed(correctCount, assignedRoute);
-          setRoute(assignedRoute);
-          setScreen("transition");
-        } else {
-          setQuestionIndex(questionIndex + 1);
-          resetQuestionState();
-        }
-      } else {
-        setStage2Responses([...stage2Responses, responseData]);
-        if (questionIndex === QUESTIONS_PER_STAGE - 1) {
-          calculateAndShowResults();
-        } else {
-          setQuestionIndex(questionIndex + 1);
-          resetQuestionState();
-        }
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [
-      isDontKnow,
-      selectedAnswer,
-      stage,
-      questionIndex,
-      route,
-      attemptId,
-      r1Responses,
-      stage2Responses,
-      timeExpiredAt,
-    ]
+    routeRef
   );
 
-  const saveProfileAndShowResults = async (profilingData?: ProfilingData) => {
-    if (!route) throw new Error("Cannot save profile: route is not set");
-    const result = await buildAndSaveProfile({
-      userId,
-      attemptId,
-      route,
-      topRouteInfo,
-      profilingData,
-    });
-    setCachedResponsesForReview(getResponsesForReview());
-    setCachedResults(result.calculatedResults);
-    setCachedAtomResults(result.atomResults);
-    setCachedScoredCorrect(result.scoredCorrect);
-    setCachedActualRoute(result.actualRoute);
-    setCachedRoutesData(routesData);
-    clearAllDiagnosticData();
-    setProfileSaved(true);
-    setScreen("results");
-  };
-
-  const handleProfileSubmit = async (profilingData: ProfilingData) => {
-    trackProfilingCompleted({
-      paesGoal: !!profilingData.paesGoal,
-      paesDate: !!profilingData.paesDate,
-      inPreu: profilingData.inPreu !== undefined,
-    });
-    await saveProfileAndShowResults(profilingData);
-  };
-  /**
-   * Navigate to the plan-preview screen (new onboarding Phase 2).
-   * Called from the results screen when NEXT_PUBLIC_NEW_ONBOARDING=true.
-   */
-  const handleShowPlanPreview = useCallback(() => {
-    setScreen("plan-preview");
-  }, []);
-
-  /** Navigate to confirm-skip screen (from partial-results or profiling) */
-  const handleSkipToConfirm = () => {
-    trackConfirmSkipViewed();
-    setScreen("confirm-skip");
-  };
-  /** User confirmed exit — persist snapshot, clear data, and show thank-you */
-  const handleConfirmExit = async () => {
-    trackConfirmSkipExit();
-    if (!profileSaved && route) {
-      try {
-        await buildAndSaveProfile({
-          userId,
-          attemptId,
-          route,
-          topRouteInfo,
-        });
-      } catch (error) {
-        console.error("Failed to save profile on confirm exit:", error);
-      }
-    }
-    clearAllDiagnosticData();
-    setScreen("thank-you");
-  };
-  /** User changed their mind on confirm-skip — go back to profiling */
-  const handleBackToProfiling = () => {
-    trackConfirmSkipBackToProfiling();
-    setScreen("profiling");
-  };
   return {
-    screen,
-    setScreen,
-    stage,
-    questionIndex,
-    route,
-    selectedAnswer,
-    isDontKnow,
-    results,
-    consistentScore,
-    setConsistentScore,
-    topRouteInfo,
-    setTopRouteInfo,
-    profileSaved,
-    cachedResults,
-    cachedAtomResults,
-    cachedScoredCorrect,
-    cachedActualRoute,
-    cachedResponsesForReview,
-    cachedRoutesData,
-    routesData,
-    routesLoading,
-    attemptId,
-    timeRemaining,
-    timeExpiredAt,
-    showTimeUpModal,
-    handleMiniFormSubmit,
-    getCurrentQuestion,
+    resultActions,
+    questionActions,
+    profileExitActions,
+    timerActions,
+  };
+}
+
+function useUiHandlers(core: CoreState) {
+  const handleSelectAnswer = useCallback(
+    (answer: string) => {
+      core.setSelectedAnswer(answer);
+      core.setIsDontKnow(false);
+    },
+    [core]
+  );
+
+  const handleSelectDontKnow = useCallback(() => {
+    core.setIsDontKnow(true);
+    core.setSelectedAnswer(null);
+  }, [core]);
+
+  const handleFatalError = useCallback(() => {
+    core.setScreen("maintenance");
+  }, [core]);
+
+  const handleShowPlanPreview = useCallback(() => {
+    core.setScreen("plan-preview");
+  }, [core]);
+
+  return {
     handleSelectAnswer,
     handleSelectDontKnow,
-    handleNext,
     handleFatalError,
-    handleTimeUp,
-    handleContinueAfterTimeUp,
-    handleViewResultsAfterTimeUp,
-    continueToStage2,
-    handleProfileSubmit,
-    handleSkipToConfirm,
-    handleConfirmExit,
-    handleBackToProfiling,
     handleShowPlanPreview,
   };
+}
+
+function buildFlowResult(params: {
+  core: CoreState;
+  cache: CacheState;
+  timer: TimerState;
+  startActions: ReturnType<typeof useLifecycleControllers>["startActions"];
+  execution: ReturnType<typeof useExecutionControllers>;
+  uiHandlers: ReturnType<typeof useUiHandlers>;
+}) {
+  return {
+    screen: params.core.screen,
+    setScreen: params.core.setScreen,
+    isStudentPortalUser: params.core.isStudentPortalUser,
+    isInitializingStudentSession: params.core.isInitializingStudentSession,
+    stage: params.core.stage,
+    questionIndex: params.core.questionIndex,
+    route: params.core.route,
+    selectedAnswer: params.core.selectedAnswer,
+    isDontKnow: params.core.isDontKnow,
+    results: params.core.results,
+    consistentScore: params.core.consistentScore,
+    setConsistentScore: params.core.setConsistentScore,
+    topRouteInfo: params.core.topRouteInfo,
+    setTopRouteInfo: params.core.setTopRouteInfo,
+    profileSaved: params.core.profileSaved,
+    cachedResults: params.cache.cachedResults,
+    cachedAtomResults: params.cache.cachedAtomResults,
+    cachedScoredCorrect: params.cache.cachedScoredCorrect,
+    cachedActualRoute: params.cache.cachedActualRoute,
+    cachedResponsesForReview: params.cache.cachedResponsesForReview,
+    cachedRoutesData: params.cache.cachedRoutesData,
+    routesData: params.cache.routesData,
+    routesLoading: params.cache.routesLoading,
+    attemptId: params.timer.attemptId,
+    timeRemaining: params.timer.timeRemaining,
+    timeExpiredAt: params.timer.timeExpiredAt,
+    showTimeUpModal: params.timer.showTimeUpModal,
+    handleMiniFormSubmit: params.startActions.handleMiniFormSubmit,
+    getCurrentQuestion: () =>
+      getCurrentQuestion({
+        stage: params.core.stage,
+        questionIndex: params.core.questionIndex,
+        route: params.core.route,
+      }),
+    handleSelectAnswer: params.uiHandlers.handleSelectAnswer,
+    handleSelectDontKnow: params.uiHandlers.handleSelectDontKnow,
+    handleNext: params.execution.questionActions.handleNext,
+    handleFatalError: params.uiHandlers.handleFatalError,
+    handleTimeUp: params.execution.timerActions.handleTimeUp,
+    handleContinueAfterTimeUp:
+      params.execution.timerActions.handleContinueAfterTimeUp,
+    handleViewResultsAfterTimeUp:
+      params.execution.timerActions.handleViewResultsAfterTimeUp,
+    continueToStage2: params.execution.questionActions.continueToStage2,
+    handleProfileSubmit:
+      params.execution.profileExitActions.handleProfileSubmit,
+    handleSkipToConfirm:
+      params.execution.profileExitActions.handleSkipToConfirm,
+    handleConfirmExit: params.execution.profileExitActions.handleConfirmExit,
+    handleBackToProfiling:
+      params.execution.profileExitActions.handleBackToProfiling,
+    handleShowPlanPreview: params.uiHandlers.handleShowPlanPreview,
+  };
+}
+
+export function useDiagnosticFlow() {
+  const core = useDiagnosticFlowCoreState();
+  const cache = useDiagnosticFlowCacheState();
+  const timer = useDiagnosticFlowTimerState();
+  const routeRef = useRouteRef(core.route);
+
+  useDiagnosticIntroTracking({
+    screen: core.screen,
+    studentSessionChecked: core.studentSessionChecked,
+    isStudentPortalUser: core.isStudentPortalUser,
+  });
+
+  useSessionPersistence(
+    {
+      setScreen: core.setScreen,
+      setStage: core.setStage,
+      setQuestionIndex: core.setQuestionIndex,
+      setRoute: core.setRoute,
+      setTimerStartedAt: timer.setTimerStartedAt,
+      setTimeExpiredAt: timer.setTimeExpiredAt,
+      setTimeRemaining: timer.setTimeRemaining,
+      setResults: core.setResults,
+      setAttemptId: timer.setAttemptId,
+    },
+    {
+      screen: core.screen,
+      stage: core.stage,
+      questionIndex: core.questionIndex,
+      route: core.route,
+      timerStartedAt: timer.timerStartedAt,
+      timeExpiredAt: timer.timeExpiredAt,
+      results: core.results,
+    }
+  );
+
+  useDiagnosticScrollToTop({
+    screen: core.screen,
+    questionIndex: core.questionIndex,
+    stage: core.stage,
+  });
+
+  const lifecycle = useLifecycleControllers(core, timer);
+  const execution = useExecutionControllers(core, cache, timer, routeRef);
+  const uiHandlers = useUiHandlers(core);
+
+  return buildFlowResult({
+    core,
+    cache,
+    timer,
+    startActions: lifecycle.startActions,
+    execution,
+    uiHandlers,
+  });
 }
