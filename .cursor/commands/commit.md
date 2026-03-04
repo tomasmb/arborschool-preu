@@ -74,6 +74,17 @@ cd web && npm run format:check
 - If formatting issues exist, run `npm run format` to fix them
 - All files must pass formatting check before committing
 
+### 3d. Production Build Check (Vercel Parity)
+
+Run a local production build for the web app:
+
+```bash
+cd web && npm run build
+```
+
+- This catches deploy-time issues that lint/typecheck miss (for example App Router prerender failures like `useSearchParams` without `Suspense`)
+- Do not commit if build fails
+
 ### 4. File Length
 
 Verify all modified files are under 500 lines:
