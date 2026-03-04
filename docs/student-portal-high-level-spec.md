@@ -26,20 +26,233 @@ Secondary goal:
 - Global prediction only when all relevant test diagnostics exist
 - Until then, global simulation uses user-entered values for non-diagnosed tests
 
-## Onboarding and Entry Model
+## Onboarding and Entry Model (Portal-First, Live Product)
+Decision update (March 4, 2026):
+- Arbor PreU is now a live portal, not a waitlist product.
+- Remove "we will notify you when we launch" framing from landing, diagnostic,
+  and all lifecycle emails.
+- Every major screen must end with a concrete in-product next action.
+
 Recommended model: `soft gate with structured unlock`
 
-Flow:
-1. Student creates account
-2. Student sets goals (career/university exploration first)
-3. Student can explore simulator in "planning mode"
-4. Personalized learning path and predictions remain locked until diagnostic completion
-5. Student completes M1 diagnostic
-6. M1 personalized dashboard unlocks immediately
+Canonical sequence:
+1. Student authenticates (Google in v1)
+2. Student defines target in planning mode (`/portal/goals?mode=planning`)
+3. Student starts and completes M1 diagnostic
+4. Student receives immediate handoff to first study action
+5. Student enters active weekly mission loop in portal
 
-Rationale:
-- Maintains autonomy and motivation while preserving rigor before personalization
-- Works better for hesitant students who are still defining goals
+Why this remains the right model:
+- Keeps aspiration and planning first, which reduces overwhelm at entry.
+- Preserves rigor by locking personalized predictions until diagnostic evidence.
+- Makes post-diagnostic value immediate (study sprint and mission), not deferred.
+
+### Journey State Model (Source of Truth)
+State set:
+- `anonymous`: not authenticated
+- `planning_required`: authenticated, no diagnostic snapshot yet, no completed
+  planning+diagnostic path
+- `diagnostic_in_progress`: started diagnostic, not finished
+- `activation_ready`: diagnostic completed, ready for first mission/sprint
+- `active_learning`: at least one completed sprint or active weekly mission
+
+Routing contract:
+- `anonymous` -> `/auth/signin` with callback to requested page
+- `planning_required` -> `/portal/goals?mode=planning`
+- `diagnostic_in_progress` -> `/diagnostico` (resume)
+- `activation_ready` -> `/portal` (first action visible above the fold)
+- `active_learning` -> `/portal` (mission + next best action)
+
+### Case-by-Case User Journeys (Must Be Implemented Consistently)
+1. New student from landing (not authenticated)
+- Landing primary CTA: "Crear mi plan y empezar diagnóstico"
+- Flow: sign in -> planning mode -> diagnostic -> handoff -> portal
+- Never drop to a dead-end "thanks, we will contact you" page
+
+2. Returning student from landing (signed out)
+- Flow: sign in -> state-based redirect
+- If unfinished diagnostic exists, land directly in diagnostic resume
+- If diagnostic already complete, land directly in portal dashboard
+
+3. Authenticated student with no planning yet
+- Entering `/portal` or `/portal/goals` lands in planning mode
+- Planning mode has one primary CTA: "Empezar diagnóstico (15 min)"
+- Secondary action: "Guardar y continuar después"
+
+4. Authenticated student with planning done but no completed diagnostic
+- `/portal` shows locked dashboard shell with one dominant CTA to diagnostic
+- CTA copy explains value and time: "Completar diagnóstico para desbloquear tu
+  plan personalizado (15 min)"
+
+5. Authenticated student with diagnostic in progress
+- Resume from exact saved point whenever possible
+- Provide explicit "guardar y salir" behavior and resume confirmation
+- Returning from email/deep-link must keep state and callback context
+
+6. Authenticated student right after diagnostic completion
+- Show immediate handoff with two actions:
+  - Primary: "Comenzar sprint de hoy"
+  - Secondary: "Ajustar meta"
+- Entering portal afterwards must show the same first action priority
+
+7. Active student in weekly loop
+- `/portal` starts with mission status, current-vs-target, and next action
+- `/portal/study` starts sprint quickly with minimal preamble
+- `/portal/goals` remains available as an intentional secondary surface
+
+### UX Clarity Rules Across All Cases
+- Keep one dominant primary CTA per screen.
+- Keep vocabulary stable across product and email:
+  - `meta` -> `diagnóstico` -> `sprint` -> `misión semanal`
+- Always show "what happens next" and estimated effort/time.
+- Use progress/status indicators for long or multi-step tasks.
+- Prefer recognition over recall: prefill known context and show recent state.
+
+## Email and Notification Lifecycle (Portal-Live)
+Objective:
+- Email must move students to the next concrete step in the portal, not announce
+  future availability.
+
+### Message Types
+1. Transactional emails (event-critical)
+- Account and sign-in confirmations
+- Save-and-resume confirmation for interrupted diagnostic/planning
+- Diagnostic completion summary with direct CTA to first sprint
+
+2. Lifecycle nudges (state-driven)
+- Planning started but not saved
+- Diagnostic started but not completed
+- Diagnostic completed but first sprint not started
+- Weekly mission kickoff and check-in
+- Inactivity reactivation based on last study activity
+
+3. Optional digest emails
+- Weekly progress summary for active students
+- Include clear benefit and one next action only
+
+### Trigger Policy by Journey State
+1. `planning_required`
+- Trigger: no planning save after first authenticated session
+- Send: reminder with direct link to planning mode
+- Stop condition: planning saved
+
+2. `diagnostic_in_progress`
+- Trigger: diagnostic started, incomplete after inactivity window
+- Send: resume link to exact diagnostic state
+- Stop condition: diagnostic completed
+
+3. `activation_ready`
+- Trigger: diagnostic completed, no sprint started
+- Send: "start first sprint" email with effort and expected impact context
+- Stop condition: first sprint started
+
+4. `active_learning`
+- Trigger: weekly mission cycle and inactivity windows
+- Send: mission kickoff, checkpoint reminder, and recovery nudge
+- Stop condition: weekly mission complete or user reactivates
+
+### Email Copy and Delivery Rules
+- Each email must have exactly one primary CTA.
+- Include destination and expected effort in copy ("10-15 min", "5 preguntas").
+- Deep links must preserve auth callback and return to exact pending task.
+- Suppress outdated emails once the target action is completed.
+- Frequency guardrails for lifecycle (non-transactional) messages:
+  - max 1 per day
+  - max 3 per week
+- Respect local time windows to avoid late-night sends.
+
+## Landing Page UX Decision Set (Production)
+Goal:
+- Make landing a high-clarity router into the right next action for each user
+  state, with minimal ambiguity and no dead-end outcomes.
+
+### Landing Behavior by Session State
+1. Signed out
+- Primary CTA: `Crear mi plan y empezar diagnóstico`
+- Action: send user to auth, then route by journey state
+- Secondary CTA: product explainer (non-blocking)
+
+2. Signed in + `planning_required`
+- Primary CTA: `Continuar planificación`
+- Destination: `/portal/goals?mode=planning`
+- Message: diagnostic unlocks after setting target
+
+3. Signed in + `diagnostic_in_progress`
+- Primary CTA: `Retomar diagnóstico`
+- Destination: `/diagnostico` resume
+- Message: preserve prior progress
+
+4. Signed in + `activation_ready` or `active_learning`
+- Primary CTA: `Ir a mi portal`
+- Destination: `/portal`
+- Message: immediate study action available
+
+### Landing Content Contract
+- Hero must state immediate value and time expectation (goal + diagnostic + first
+  sprint), not future availability.
+- "How it works" must map exactly to live flow:
+  - Define target
+  - Complete diagnostic
+  - Start first sprint
+- Every section CTA uses same destination logic as session-state router.
+- Remove copy variants that imply waitlist, beta wait, or launch-not-ready status.
+- Keep a single dominant CTA visual style per viewport.
+
+## Cross-Entry Journey Matrix (Must Match Routing Logic)
+1. Entry: `/` signed out -> auth -> resolver -> state route
+2. Entry: `/portal` signed out -> auth -> callback `/portal` -> resolver
+3. Entry: `/portal/goals` signed out -> auth -> callback `/portal/goals`
+4. Entry: `/diagnostico` signed out -> redirect to auth with callback
+   `/diagnostico`
+5. Entry: `/diagnostico` signed in + `planning_required`:
+- Redirect to planning mode before test start.
+6. Entry: `/diagnostico` signed in + `diagnostic_in_progress`:
+- Resume in-progress attempt.
+7. Entry: `/diagnostico` signed in + `activation_ready`/`active_learning`:
+- Route to `/portal` next action by default.
+- Retest entry is a separate explicit action, not an implicit route side effect.
+8. Entry from email links while signed out:
+- Require auth, preserve callback, then route to exact pending task.
+9. Entry from stale email links:
+- Route to current canonical task and show context banner ("ya completaste X").
+
+## UX Production Readiness Gates (Release Criteria)
+No launch should be considered production-ready unless all gates pass.
+
+### Clarity and Navigation
+- User can always answer:
+  - where they are
+  - what happens next
+  - how long next step takes
+- No dead-end screen without primary next action.
+- No contradictory CTA labels for same action across pages/emails.
+
+### Accessibility
+- Meet WCAG 2.2 AA on all core journey screens:
+  landing, auth, goals planning, diagnostic, results handoff, portal dashboard,
+  study sprint, and email templates.
+
+### Performance
+- Meet Core Web Vitals "good" thresholds at p75 for core pages:
+  - LCP <= 2.5s
+  - INP <= 200ms
+  - CLS <= 0.1
+
+### Reliability and Recovery
+- Save-and-resume works for planning and diagnostic interruption paths.
+- Auth callback preserves intended destination.
+- Error states always provide recovery action, not just failure messaging.
+
+### Messaging and Lifecycle
+- Each lifecycle email maps to one journey state and one primary CTA.
+- Suppression logic prevents outdated nudges after action completion.
+- Frequency caps enforced for non-transactional lifecycle messages.
+
+### Instrumentation
+- Track every stage transition and drop-off point:
+  landing CTA -> auth success -> planning saved -> diagnostic started/completed
+  -> first sprint started -> weekly active.
+- Publish weekly funnel report by state and entry-point.
 
 ## Goal-Setting Module (Independent Surface)
 This is a standalone module, not mixed with learning analytics.
@@ -223,90 +436,6 @@ Trust requirements:
 - Short adaptive/IRT-style assessments have higher measurement uncertainty in low-information zones.
   This supports using explicit prediction bands and conservative claims for early snapshots.
 
-## Research Alignment Appendix (External Benchmarks)
-
-### What top systems do vs Arbor strategy
-
-1. **Math Academy (official pedagogy + AI docs)**
-- Benchmark pattern:
-  - Knowledge graph with prerequisites
-  - Adaptive diagnostic
-  - Task selection for maximum learning per unit time
-  - Spaced repetition with implicit transfer across related knowledge
-- Alignment with Arbor:
-  - Strong alignment with atom graph, prerequisite logic, ROI path optimization, and SR + transfer probing
-- Keep/change:
-  - **Keep** current core strategy
-  - **Add** explicit UI copy around \"learning per hour\" as a first-class metric
-- Sources:
-  - https://www.mathacademy.com/how-our-ai-works
-  - https://www.mathacademy.com/how-it-works
-  - https://www.mathacademy.com/pedagogy
-
-2. **Duolingo (official research/product science)**
-- Benchmark pattern:
-  - Habit-first mechanics (daily consistency, streak behavior)
-  - Bite-sized sessions
-  - Personalized difficulty/modeling (Birdbrain)
-  - Constant experimentation and outcome tracking
-- Alignment with Arbor:
-  - Good alignment on adaptivity and short learning loops
-  - Current Arbor strategy is less explicit on habit scaffolding
-- Keep/change:
-  - **Keep** mastery rigor and path optimization
-  - **Add** a minimal daily commitment mechanic (for example, 10-15 minutes)
-    to improve consistency without replacing deep-study goals
-- Sources:
-  - https://blog.duolingo.com/how-duolingo-streak-builds-habit/
-  - https://blog.duolingo.com/learning-how-to-help-you-learn-introducing-birdbrain/
-  - https://blog.duolingo.com/results-duolingo-efficacy-studies/
-
-3. **ALEKS / MATHia style mastery systems**
-- Benchmark pattern:
-  - Periodic reassessment cycles after learning intervals
-  - Skill-probability mastery and remediation states
-  - Detection of persistent gaps and targeted intervention
-- Alignment with Arbor:
-  - High alignment with retest gating, SR gap detection, and failed-atom remediation
-- Keep/change:
-  - **Keep** `X/Y` retest gating and direct-atom rescans after ambiguous SR failures
-  - **Add** teacher-facing uncertainty and remediation flags in B2B views from day one
-- Sources:
-  - https://www.sciencedirect.com/science/article/pii/S0022249621000134
-  - https://support.carnegielearning.com/help-center/math/teaching-strategies/
-    educators/teaching-strategies/mathia/getting-started-in-mathia/article/
-    understanding-mastery-and-concept-builder-workspaces-in-mathia/
-  - https://www.carnegielearning.com/texas-help/article/understanding-the-skills-report/
-
-### Chile-relevant behavioral evidence
-
-PISA 2022 evidence shows Chile among systems with relatively high mathematics
-anxiety, and anxiety is linked to lower performance and avoidance behavior.
-This supports:
-- separating aspiration planning from performance prediction
-- keeping feedback concrete and actionable (\"next best action\")
-- avoiding overly punitive high-frequency retest loops
-- using consistency-first goals with flexible catch-up to reduce anxiety-friction
-
-Sources:
-- https://www.oecd.org/en/publications/pisa-2022-results-volume-v_c2e44201-en/full-report/component-12.html
-- https://www.oecd.org/en/publications/pisa-2022-results-volume-i-and-ii-
-  country-notes_ed6fbcc5-en/chile_d038b73d-en.html
-
-### PAES admissions data implications
-
-Admission is determined by career/university-specific weighting and annually
-updated official information. Product implication:
-- store versioned cutoff/ponderación datasets
-- display dataset date/version in simulator UX
-- clearly label when non-M1 scores are user-entered assumptions
-
-Sources:
-- https://portaldemre.demre.cl/paes/postulacion/como-postulo-a-una-universidad/paso2-seleccion-carreras
-- https://portaldemre.demre.cl/paes/factores-seleccion/notas-ensenanza-media
-- https://portaldemre.demre.cl/paes/factores-seleccion/
-  tabla-transformacion-puntajes-paes-regular-p2025-m1
-
 ## Remaining Implementation Decisions
 1. Default safety buffer value (`+20` vs `+30` vs adaptive by competitiveness)
 2. Final threshold values for full-test unlock conditions
@@ -325,6 +454,26 @@ Sources:
 - Monthly cap: 3 full tests
 
 ## References
+- Progressive disclosure for novice-to-expert onboarding (NN/g):
+  https://www.nngroup.com/articles/progressive-disclosure/
+- Visibility of system status and clarity heuristics (NN/g):
+  https://www.nngroup.com/articles/ten-usability-heuristics/
+- Recognition over recall for resume and navigation clarity (NN/g):
+  https://www.nngroup.com/articles/recognition-and-recall/
+- Progress indicators for multi-step flows (NN/g):
+  https://www.nngroup.com/articles/progress-indicators/
+- User journeys in government digital services (GOV.UK Service Manual):
+  https://www.gov.uk/service-manual/design/user-journeys
+- Task-list pattern for linear, stateful journeys (GOV.UK):
+  https://design-patterns.service.justice.gov.uk/patterns/task-list/
+- Account creation + save-progress journey guidance (GOV.UK One Login):
+  https://www.gov.uk/service-manual/design/designing-user-journeys-for-onelogin
+- Save-and-return account pattern details (GOV.UK One Login):
+  https://www.gov.uk/service-manual/design/designing-user-journeys-for-onelogin/let-users-create-account-save-progress
+- Text nudging and parent engagement in education transitions (IES):
+  https://ies.ed.gov/use-work/awards/text-based-nudging-and-parent-engagement?ID=312
+- Effects of scaling behavioral interventions in online education (PNAS / PubMed):
+  https://pubmed.ncbi.nlm.nih.gov/32571979/
 - Interleaved practice in physics (npj Science of Learning, 2021):
   https://www.nature.com/articles/s41539-021-00110-x
 - Spaced retrieval in STEM classrooms (Int. J. STEM Education, 2024):
