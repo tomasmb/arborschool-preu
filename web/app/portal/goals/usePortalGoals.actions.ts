@@ -206,7 +206,6 @@ function buildSavePayload(state: GoalsState): SaveGoalPayload[] {
 
 export function useGoalSaveHandlers(state: GoalsState) {
   const router = useRouter();
-
   const persistGoals = useCallback(
     async (payloadGoals: SaveGoalPayload[]) => {
       const planningProfilePayload = planningProfileToApi(
@@ -216,16 +215,18 @@ export function useGoalSaveHandlers(state: GoalsState) {
         goals: payloadGoals,
         planningProfile: planningProfilePayload,
       });
+      const mode = state.savedGoals.length === 0 ? "create" : "update";
 
       trackStudentGoalsSaved(
-        state.savedGoals.length === 0 ? "create" : "update",
+        mode,
         payloadGoals.length,
         payloadGoals.filter((goal) => goal.isPrimary).length
       );
       trackPlanningSavedMilestone({
-        mode: state.savedGoals.length === 0 ? "create" : "update",
+        mode,
         goalCount: payloadGoals.length,
         entryPoint: "/portal/goals",
+        journeyState: saved.journeyState,
       });
       applyGoalsPayload(state, saved);
     },
@@ -238,11 +239,9 @@ export function useGoalSaveHandlers(state: GoalsState) {
       state.setError(validationError);
       return;
     }
-
     state.setSaving(true);
     state.setError(null);
     state.setInfoMessage(null);
-
     try {
       await persistGoals(buildSavePayload(state));
       state.setInfoMessage("Objetivos guardados.");
@@ -263,11 +262,9 @@ export function useGoalSaveHandlers(state: GoalsState) {
         state.setError("Selecciona una carrera/universidad objetivo");
         return;
       }
-
       state.setSaving(true);
       state.setError(null);
       state.setInfoMessage(null);
-
       try {
         await persistGoals([
           {

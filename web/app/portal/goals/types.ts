@@ -49,6 +49,11 @@ export type StudentGoalsPayload = {
   } | null;
   options: GoalOption[];
   goals: StudentGoal[];
+  journeyState:
+    | "planning_required"
+    | "diagnostic_in_progress"
+    | "activation_ready"
+    | "active_learning";
   planningProfile: {
     examDate: string | null;
     weeklyMinutesTarget: number;

@@ -114,6 +114,7 @@ export function useDiagnosticStartActions(params: {
       trackDiagnosticStarted({
         attemptId: data.attemptId,
         entryPoint: "/diagnostico",
+        journeyState: "diagnostic_in_progress",
       });
     } catch (error) {
       console.error("Failed to start test:", error);
@@ -123,6 +124,7 @@ export function useDiagnosticStartActions(params: {
       trackDiagnosticStarted({
         attemptId: localId,
         entryPoint: "/diagnostico",
+        journeyState: "diagnostic_in_progress",
       });
     }
 
@@ -406,7 +408,10 @@ export function useDiagnosticResultsActions(params: {
     }
 
     const tier = getPerformanceTier(counts.scoredCorrect);
-    trackDiagnosticCompleted(counts.scoredCorrect, tier, params.route);
+    trackDiagnosticCompleted(counts.scoredCorrect, tier, params.route, {
+      entryPoint: "/diagnostico",
+      journeyState: "activation_ready",
+    });
 
     await presentCompletionResults({
       isStudentPortalUser: params.isStudentPortalUser,

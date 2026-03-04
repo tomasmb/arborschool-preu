@@ -47,6 +47,7 @@ function useDashboardPayload() {
         trackAuthSuccessOnce({
           source: "dashboard",
           entryPoint: "/portal",
+          journeyState: payload.data.journeyState,
         });
         trackStudentDashboardViewed(payload.data.status);
       } catch (loadError) {

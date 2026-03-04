@@ -54,6 +54,7 @@ export async function fetchGoals(): Promise<StudentGoalsPayload> {
   trackAuthSuccessOnce({
     source: "goals",
     entryPoint: "/portal/goals",
+    journeyState: payload.data.journeyState,
   });
   return payload.data;
 }

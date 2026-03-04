@@ -217,9 +217,9 @@ export function trackDiagnosticCompleted(
   totalCorrect: number,
   performanceTier: AnalyticsEventMap["diagnostic_completed"]["performance_tier"],
   route: AnalyticsEventMap["diagnostic_completed"]["route"],
-  options?: {
-    entryPoint?: string;
-    journeyState?: AnalyticsEventMap["diagnostic_completed"]["journey_state"];
+  options: {
+    entryPoint: string;
+    journeyState: AnalyticsEventMap["diagnostic_completed"]["journey_state"];
   }
 ): void {
   trackEvent("diagnostic_completed", {
@@ -227,10 +227,8 @@ export function trackDiagnosticCompleted(
     performance_tier: performanceTier,
     time_elapsed_seconds: getDiagnosticElapsedSeconds(),
     route,
-    entry_point:
-      options?.entryPoint ??
-      (typeof window !== "undefined" ? window.location.pathname : undefined),
-    journey_state: options?.journeyState,
+    entry_point: options.entryPoint,
+    journey_state: options.journeyState,
   });
 }
 

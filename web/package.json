@@ -20,7 +20,8 @@
     "db:studio": "drizzle-kit studio",
     "verify:student-portal-v1": "npx --yes tsx scripts/verifyStudentPortalV1.ts",
     "verify:lifecycle-reminder-dispatch": "npx --yes tsx scripts/verifyLifecycleReminderDispatch.ts",
-    "verify:analytics-funnel-report": "npx --yes tsx scripts/verifyAnalyticsFunnelReport.ts"
+    "verify:analytics-funnel-report": "npx --yes tsx scripts/verifyAnalyticsFunnelReport.ts",
+    "verify:analytics-milestone-context": "npx --yes tsx scripts/verifyAnalyticsMilestoneContext.ts"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.38.0",

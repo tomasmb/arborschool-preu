@@ -75,6 +75,7 @@ export function LandingPageClient({
     trackLandingCtaClicked(ctaLocation, {
       destination: primaryAction.href,
       entryPoint: "/",
+      journeyState: primaryAction.journeyState,
     });
     setIsNavigating(true);
     window.location.href = primaryAction.href;

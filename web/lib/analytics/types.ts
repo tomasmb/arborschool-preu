@@ -24,6 +24,7 @@ export interface UTMParams {
 export type DeviceType = "mobile" | "tablet" | "desktop";
 
 export type JourneyStateAnalytics =
+  | "anonymous"
   | "planning_required"
   | "diagnostic_in_progress"
   | "activation_ready"
@@ -39,8 +40,8 @@ export interface BaseEventProperties {
 }
 
 export interface JourneyMilestoneBaseProperties extends BaseEventProperties {
-  entry_point?: string;
-  journey_state?: JourneyStateAnalytics;
+  entry_point: string;
+  journey_state: JourneyStateAnalytics;
 }
 
 /** Landing page viewed event */
@@ -78,12 +79,11 @@ export interface DiagnosticIntroViewedProperties extends BaseEventProperties {
 }
 
 /** Diagnostic completed event */
-export interface DiagnosticCompletedProperties extends BaseEventProperties {
+export interface DiagnosticCompletedProperties
+  extends JourneyMilestoneBaseProperties {
   total_correct: number;
   performance_tier: PerformanceTier;
   time_elapsed_seconds: number;
-  entry_point?: string;
-  journey_state?: JourneyStateAnalytics;
   /** MST route taken: A=Fundamental, B=Intermedio, C=Avanzado */
   route: "A" | "B" | "C";
 }

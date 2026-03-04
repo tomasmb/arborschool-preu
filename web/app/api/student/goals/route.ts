@@ -5,6 +5,7 @@ import {
   type StudentGoalInput,
   getStudentGoalsView,
 } from "@/lib/student/goals";
+import { getStudentJourneySnapshot } from "@/lib/student/journeyState";
 import { studentApiError, studentApiSuccess } from "@/lib/student/apiEnvelope";
 import { getAuthenticatedStudentUserId } from "@/lib/student/auth";
 
@@ -19,8 +20,14 @@ export async function GET() {
     return studentApiError("UNAUTHORIZED", "Unauthorized", 401);
   }
 
-  const view = await getStudentGoalsView(userId);
-  return studentApiSuccess(view);
+  const [view, journey] = await Promise.all([
+    getStudentGoalsView(userId),
+    getStudentJourneySnapshot(userId),
+  ]);
+  return studentApiSuccess({
+    ...view,
+    journeyState: journey.journeyState,
+  });
 }
 
 export async function POST(request: Request) {
@@ -52,12 +59,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const view = await saveStudentGoalsView(
-      userId,
-      body.goals,
-      body.planningProfile
-    );
-    return studentApiSuccess(view);
+    const [view, journey] = await Promise.all([
+      saveStudentGoalsView(userId, body.goals, body.planningProfile),
+      getStudentJourneySnapshot(userId),
+    ]);
+    return studentApiSuccess({
+      ...view,
+      journeyState: journey.journeyState,
+    });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to save goals";

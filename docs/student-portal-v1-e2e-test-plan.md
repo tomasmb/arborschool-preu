@@ -58,6 +58,8 @@ Implemented and ready for validation:
     `diagnostic_completed`, `first_sprint_started`, `weekly_active`
 11. Follow-up reminder jobs are now dispatched via internal worker path with
     send-time suppression checks (`/api/internal/reminders/dispatch`)
+12. Canonical milestone emitters now attach explicit `entry_point` and
+    `journey_state` context (including `anonymous` for signed-out landing CTA)
 
 Still pending and must be tested after implementation:
 1. Stale email link context banner ("ya completaste X") behavior
@@ -71,6 +73,7 @@ Codex-runnable now:
 3. Unauthenticated route/API guard smoke checks with `curl`
 4. Link/copy checks for no waitlist messaging in key product/email files
 5. Legacy artifact grep checks (`MiniFormScreen` / `mini-form` / `mini_form_completed`)
+6. Milestone context runtime verification (`verify:analytics-milestone-context`)
 
 Human-required (OAuth or environment controls):
 1. Full Google OAuth browser journeys
@@ -252,6 +255,17 @@ Expected:
 2. Weekly stage counts dedupe duplicate milestone emits per user
 3. Segment output is available by `entry_point` and `journey_state`
 4. Legacy/non-canonical events are ignored by canonical report aggregation
+
+### A8. Analytics Milestone Context Contract
+Run:
+```bash
+cd web
+npm run verify:analytics-milestone-context
+```
+Expected:
+1. Every canonical milestone emits with non-empty `entry_point`
+2. Every canonical milestone emits with non-empty `journey_state`
+3. Signed-out landing CTA milestone supports `journey_state=anonymous`
 
 ## Section B - Human Full E2E (Staging Preferred)
 

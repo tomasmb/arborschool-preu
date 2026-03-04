@@ -4,6 +4,12 @@ export interface LandingPrimaryAction {
   label: string;
   href: string;
   supportingText: string;
+  journeyState:
+    | "anonymous"
+    | "planning_required"
+    | "diagnostic_in_progress"
+    | "activation_ready"
+    | "active_learning";
 }
 
 export const AUTH_POST_LOGIN_CALLBACK_URL =
@@ -26,6 +32,7 @@ export function resolveLandingPrimaryAction(params: {
       href: AUTH_POST_LOGIN_CALLBACK_URL,
       supportingText:
         "Define tu meta, completa el diagnóstico (~15 min) y arranca tu primer sprint.",
+      journeyState: "anonymous",
     };
   }
 
@@ -34,6 +41,7 @@ export function resolveLandingPrimaryAction(params: {
       label: "Iniciar sesión para continuar",
       href: AUTH_POST_LOGIN_CALLBACK_URL,
       supportingText: "Entrar toma menos de un minuto y conserva tu progreso.",
+      journeyState: "anonymous",
     };
   }
 
@@ -46,6 +54,7 @@ export function resolveLandingPrimaryAction(params: {
       href: PLANNING_ROUTE,
       supportingText:
         "Define tu meta en 5 min para desbloquear tu diagnóstico personalizado.",
+      journeyState: "planning_required",
     };
   }
 
@@ -55,6 +64,7 @@ export function resolveLandingPrimaryAction(params: {
       href: DIAGNOSTIC_ROUTE,
       supportingText:
         "Ya definiste tu meta. Completa el diagnóstico para activar tu plan.",
+      journeyState: "planning_required",
     };
   }
 
@@ -63,6 +73,7 @@ export function resolveLandingPrimaryAction(params: {
       label: "Retomar diagnóstico",
       href: DIAGNOSTIC_ROUTE,
       supportingText: "Retomas desde donde quedaste, sin perder respuestas.",
+      journeyState: "diagnostic_in_progress",
     };
   }
 
@@ -71,6 +82,7 @@ export function resolveLandingPrimaryAction(params: {
     href: PORTAL_ROUTE,
     supportingText:
       "Revisa tu misión semanal y ejecuta la siguiente mejor acción.",
+    journeyState: params.journeySnapshot.journeyState,
   };
 }
 

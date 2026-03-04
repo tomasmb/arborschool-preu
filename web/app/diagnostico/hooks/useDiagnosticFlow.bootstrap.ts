@@ -53,7 +53,7 @@ export function useDiagnosticStudentBootstrap(params: {
           success: boolean;
           data?: {
             id?: string;
-            journeyState?:
+            journeyState:
               | "planning_required"
               | "diagnostic_in_progress"
               | "activation_ready"

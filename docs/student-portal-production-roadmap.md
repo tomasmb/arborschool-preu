@@ -72,10 +72,17 @@ Scope completed in current code pass:
 - Removed runtime `STUDENT_PORTAL_V1` branching from app flow.
 - Updated verification script assertions to current post-login routing behavior.
 
+5. `Workstream D` milestone context rollout completed in active emitters.
+- Canonical milestones now emit explicit `entry_point` + `journey_state`
+  context from landing, auth success, planning save, diagnostic start/complete,
+  first sprint start, and weekly active surfaces.
+- Goals and dashboard API payloads now return `journeyState` for consistent
+  analytics event context wiring in portal clients.
+- Added runtime milestone context verification script:
+  `npm run verify:analytics-milestone-context`
+
 Open items after this pass:
-1. Complete full milestone context rollout (`journey_state` + `entry_point`)
-   across all emitters and dashboards (Workstream D).
-2. Complete reliability, accessibility, and performance release gates
+1. Complete reliability, accessibility, and performance release gates
   (Workstreams E/F).
 
 ## Current Gap Analysis (Spec vs Implementation)
@@ -122,6 +129,10 @@ Open items after this pass:
     `web/lib/analytics/funnelReport.ts`
   - Added internal endpoint for analytics definition consumers:
     `GET /api/internal/analytics/funnel-definition`
+  - Canonical milestone emitters now require explicit journey context
+    (`entry_point` + `journey_state`) and support `anonymous` landing state.
+  - Added codex-runnable runtime verification for milestone context emission:
+    `scripts/verifyAnalyticsMilestoneContext.ts`
 
 3. Legacy wording and semantics remain in comments/types/docs.
 - Current: diagnostic utils and component docs still refer to signup/waitlist.
