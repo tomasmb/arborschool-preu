@@ -13,6 +13,11 @@ export type {
   JourneyStateAnalytics,
   UTMParams,
 } from "./types";
+export {
+  CANONICAL_FUNNEL_MILESTONES,
+  buildWeeklyFunnelReport,
+  buildCanonicalFunnelInsightDefinition,
+} from "./funnelReport";
 
 // Tracker functions
 export {

@@ -241,6 +241,18 @@ Expected:
 2. Dispatcher suppresses stale jobs after journey state changes
 3. Dispatcher suppresses jobs when reminder email preference is disabled
 
+### A7. Analytics Funnel Report Contract
+Run:
+```bash
+cd web
+npm run verify:analytics-funnel-report
+```
+Expected:
+1. Canonical milestone order matches roadmap contract
+2. Weekly stage counts dedupe duplicate milestone emits per user
+3. Segment output is available by `entry_point` and `journey_state`
+4. Legacy/non-canonical events are ignored by canonical report aggregation
+
 ## Section B - Human Full E2E (Staging Preferred)
 
 ### B1. New Student Journey
@@ -312,6 +324,7 @@ Blockers:
 - A4 legacy artifact guard: pass/fail
 - A5 lifecycle + milestone wiring guard: pass/fail
 - A6 lifecycle dispatch suppression: pass/fail
+- A7 analytics funnel report contract: pass/fail
 - B1 new student journey: pass/fail
 - B2 returning journeys: pass/fail
 - B3 direct URL matrix: pass/fail

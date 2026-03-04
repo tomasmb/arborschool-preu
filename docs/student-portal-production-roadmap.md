@@ -73,8 +73,8 @@ Scope completed in current code pass:
 - Updated verification script assertions to current post-login routing behavior.
 
 Open items after this pass:
-1. Refactor analytics schema + reporting to canonical state-transition milestones
-  (Workstream D).
+1. Complete full milestone context rollout (`journey_state` + `entry_point`)
+   across all emitters and dashboards (Workstream D).
 2. Complete reliability, accessibility, and performance release gates
   (Workstreams E/F).
 
@@ -117,6 +117,11 @@ Open items after this pass:
 2. Analytics schema is transition-funnel oriented.
 - Current: `web/lib/analytics/types.ts`, `web/lib/analytics/tracker.ts`
 - Target: state transitions and portal outcomes as primary funnel model.
+- Status: In progress.
+  - Added canonical weekly funnel definition and aggregation utility:
+    `web/lib/analytics/funnelReport.ts`
+  - Added internal endpoint for analytics definition consumers:
+    `GET /api/internal/analytics/funnel-definition`
 
 3. Legacy wording and semantics remain in comments/types/docs.
 - Current: diagnostic utils and component docs still refer to signup/waitlist.
