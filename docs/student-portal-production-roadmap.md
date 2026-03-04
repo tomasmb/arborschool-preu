@@ -23,30 +23,81 @@ This roadmap executes the decisions in:
 4. Landing, auth, portal, diagnostic, and emails use the same journey states.
 5. Journey analytics are state-driven and measurable end-to-end.
 
+## Engineering Principles
+All implementation work in this roadmap should follow:
+1. `SOLID`
+- Keep modules and components with single clear responsibility.
+- Depend on explicit interfaces/contracts between layers.
+- Prefer extension points over rewriting stable behavior.
+
+2. `DRY`
+- Reuse shared routing/state utilities instead of duplicating logic.
+- Keep one canonical source for journey-state decisions and copy semantics.
+- Remove dead or duplicate transition code once replacement is live.
+
+3. Testability and readability
+- Every workstream change should map to explicit E2E scenarios.
+- Keep docs and tests synchronized with real production behavior.
+
+## Implementation Status Update (March 4, 2026)
+Scope completed in current code pass:
+1. `Workstream A` mostly completed.
+- Landing CTA now resolves by auth + `journeyState` instead of hard-routing to
+  `/diagnostico`.
+- Post-login redirect now uses journey-state routing contract only.
+- Transition portal-disable branch was removed from middleware/post-login path.
+
+2. `Workstream B` partially completed.
+- `/diagnostico` now enforces auth + planning prerequisite server-side.
+- Diagnostic API start/response/complete/profile routes now require authenticated
+  student identity.
+- Anonymous register route was retired (`410` deprecated).
+- Mini-form dependency was removed from active diagnostic start flow.
+
+3. `Workstream C` partially completed.
+- Confirmation and follow-up emails were rewritten to drive immediate portal
+  actions (primary CTA to sprint).
+- Waitlist/launch wording was removed from diagnostic results and email templates.
+
+4. Cross-cutting copy/routing cleanup completed.
+- Removed runtime `STUDENT_PORTAL_V1` branching from app flow.
+- Updated verification script assertions to current post-login routing behavior.
+
+Open items after this pass:
+1. Remove remaining legacy mini-form artifacts (`MiniFormScreen` component,
+  `mini-form` state references, and related analytics events/comments).
+2. Implement lifecycle suppression + frequency guardrails by journey state
+  (Workstream C hard requirements).
+3. Refactor analytics schema to canonical state-transition milestones
+  (Workstream D).
+4. Complete reliability, accessibility, and performance release gates
+  (Workstreams E/F).
+
 ## Current Gap Analysis (Spec vs Implementation)
 
 ### P0 Gaps (Blockers for 100% Portal Commitment)
-1. Landing still sends everyone directly to `/diagnostico`.
+1. Landing still sends everyone directly to `/diagnostico`. `Status: Resolved`
 - Current: `web/app/page.tsx`
 - Target: session-aware routing aligned to journey state.
 
-2. Anonymous mini-form lead flow is still active.
+2. Anonymous mini-form lead flow is still active. `Status: Mostly resolved`
 - Current: `web/app/diagnostico/components/MiniFormScreen.tsx`,
   `web/app/api/diagnostic/register/route.ts`,
   `web/app/diagnostico/hooks/useDiagnosticFlow.actions.ts`
 - Target: account-first diagnostic only (no pre-auth email capture funnel).
 
-3. Waitlist messaging still appears in core results UX.
+3. Waitlist messaging still appears in core results UX. `Status: Resolved`
 - Current: `web/app/diagnostico/components/ResultsScreen.tsx`,
   `web/app/diagnostico/components/TierContent.tsx`
 - Target: immediate portal actions (`/portal`, `/portal/study`, `/portal/goals`).
 
 4. Confirmation and follow-up emails still imply future platform access.
+`Status: Partially resolved`
 - Current: `web/lib/email/confirmationEmail.ts`,
   `web/lib/email/followupEmail.ts`
 - Target: state-based lifecycle nudges with one concrete portal CTA.
 
-5. Transition flags can still disable or split portal flow.
+5. Transition flags can still disable or split portal flow. `Status: Resolved`
 - Current: `STUDENT_PORTAL_V1` checks in `web/middleware.ts`,
   `web/app/auth/post-login/page.tsx`, `web/lib/auth/postLoginRedirect.ts`
 - Target: single production path (remove or freeze transition toggles).

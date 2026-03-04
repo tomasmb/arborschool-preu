@@ -232,7 +232,8 @@ const GENERIC_NEXT_STEPS: Record<
   veryLow: {
     title: "Fundamentos Esenciales",
     description:
-      "Todo el mundo empieza en algún lugar. Tu ruta empieza desde los bloques base — los más importantes — y cada uno que dominas suma puntos reales al PAES.",
+      "Todo el mundo empieza en algún lugar. Tu ruta empieza desde los bloques " +
+      "base — los más importantes — y cada uno que dominas suma puntos reales al PAES.",
   },
 };
 
@@ -247,12 +248,12 @@ export function GenericNextStep({ tier }: GenericNextStepProps) {
   return (
     <div className="card p-5 bg-gradient-to-br from-primary/5 to-white border-primary/20 text-center">
       <p className="text-sm text-cool-gray mb-2">
-        Tu siguiente paso (cuando lancemos):
+        Tu siguiente paso esta semana:
       </p>
       <h4 className="font-bold text-charcoal mb-2">{stepData.title}</h4>
       <p className="text-sm text-cool-gray">{stepData.description}</p>
       <p className="text-xs text-primary mt-3">
-        Guarda tu progreso para recibir acceso prioritario
+        Llévalo a tu sprint y empieza por el tema de mayor impacto
       </p>
     </div>
   );
@@ -435,8 +436,8 @@ export function BottomCtaSection({
             Tu ruta ya está calculada
           </h3>
           <p className="text-white/80 mb-6 max-w-md mx-auto">
-            Guarda tu diagnóstico y te avisamos en cuanto puedas empezar —
-            exactamente desde donde estás hoy.
+            Continúa en tu portal y empieza hoy con la siguiente acción de
+            estudio recomendada.
           </p>
           <button
             onClick={onCtaClick}

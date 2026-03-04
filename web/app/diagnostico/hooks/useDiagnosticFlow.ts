@@ -30,8 +30,6 @@ type TimerState = ReturnType<typeof useDiagnosticFlowTimerState>;
 
 function useLifecycleControllers(core: CoreState, timer: TimerState) {
   const startActions = useDiagnosticStartActions({
-    userId: core.userId,
-    setUserId: core.setUserId,
     setStage: core.setStage,
     setQuestionIndex: core.setQuestionIndex,
     setSelectedAnswer: core.setSelectedAnswer,
@@ -208,7 +206,6 @@ function buildFlowResult(params: {
     timeRemaining: params.timer.timeRemaining,
     timeExpiredAt: params.timer.timeExpiredAt,
     showTimeUpModal: params.timer.showTimeUpModal,
-    handleMiniFormSubmit: params.startActions.handleMiniFormSubmit,
     getCurrentQuestion: () =>
       getCurrentQuestion({
         stage: params.core.stage,

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { trackDiagnosticIntroViewed } from "@/lib/analytics";
+import { AUTH_DIAGNOSTIC_CALLBACK_URL } from "@/lib/student/journeyRouting";
 import type { Screen } from "./useDiagnosticFlow.types";
 
 export function useDiagnosticIntroTracking(params: {
@@ -10,11 +11,7 @@ export function useDiagnosticIntroTracking(params: {
   isStudentPortalUser: boolean;
 }) {
   useEffect(() => {
-    if (
-      params.studentSessionChecked &&
-      !params.isStudentPortalUser &&
-      params.screen === "mini-form"
-    ) {
+    if (params.studentSessionChecked && params.screen === "question") {
       trackDiagnosticIntroViewed();
     }
   }, [params.screen, params.studentSessionChecked, params.isStudentPortalUser]);
@@ -25,10 +22,11 @@ export function useDiagnosticStudentBootstrap(params: {
   setUserId: (value: string | null) => void;
   setStudentSessionChecked: (value: boolean) => void;
   setIsInitializingStudentSession: (value: boolean) => void;
-  startTest: (registeredUserId?: string) => Promise<void>;
+  startTest: () => Promise<void>;
 }) {
   useEffect(() => {
     let cancelled = false;
+    const signInUrl = AUTH_DIAGNOSTIC_CALLBACK_URL;
 
     async function bootstrapStudentSession() {
       try {
@@ -38,6 +36,9 @@ export function useDiagnosticStudentBootstrap(params: {
         });
 
         if (!response.ok) {
+          if (!cancelled) {
+            window.location.href = signInUrl;
+          }
           return;
         }
 
@@ -47,14 +48,19 @@ export function useDiagnosticStudentBootstrap(params: {
         };
 
         if (!payload.success || !payload.data?.id || cancelled) {
+          if (!cancelled) {
+            window.location.href = signInUrl;
+          }
           return;
         }
 
         params.setIsStudentPortalUser(true);
         params.setUserId(payload.data.id);
-        await params.startTest(payload.data.id);
+        await params.startTest();
       } catch {
-        // Keep anonymous diagnostic flow as fallback.
+        if (!cancelled) {
+          window.location.href = signInUrl;
+        }
       } finally {
         if (!cancelled) {
           params.setStudentSessionChecked(true);

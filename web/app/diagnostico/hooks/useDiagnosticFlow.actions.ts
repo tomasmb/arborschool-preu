@@ -26,14 +26,12 @@ import {
   trackConfirmSkipExit,
   trackConfirmSkipViewed,
   trackDiagnosticCompleted,
-  trackMiniFormCompleted,
   trackProfilingCompleted,
   trackStage1Completed,
 } from "@/lib/analytics";
 import { getPerformanceTier } from "@/lib/config/tiers";
 import type { QuestionAtom } from "@/lib/diagnostic/qtiParser";
 import type { DiagnosticResults } from "@/lib/diagnostic/resultsCalculator";
-import type { MiniFormData } from "../components/MiniFormScreen";
 import type { ProfilingData } from "../components/ProfilingScreen";
 import type { TopRouteInfo } from "../components/ResultsScreen";
 import type { LearningRoutesResponse } from "./useLearningRoutes";
@@ -42,7 +40,6 @@ import {
   completeTestAttempt,
   computeScoredResults,
   fetchLearningRoutesApi,
-  registerUser,
   saveQuestionResponse,
   startTestAttempt,
 } from "../utils/diagnosticApi";
@@ -75,8 +72,6 @@ export function getCurrentQuestion(params: {
 }
 
 export function useDiagnosticStartActions(params: {
-  userId: string | null;
-  setUserId: (value: string | null) => void;
   setStage: (value: 1 | 2) => void;
   setQuestionIndex: (value: number) => void;
   setSelectedAnswer: (value: string | null) => void;
@@ -94,61 +89,42 @@ export function useDiagnosticStartActions(params: {
   setScreen: (value: Screen) => void;
   questionStartTime: MutableRefObject<number>;
 }) {
-  const startTest = useCallback(
-    async (registeredUserId?: string) => {
-      clearAllDiagnosticData();
-      params.setStage(1);
-      params.setQuestionIndex(0);
-      params.setSelectedAnswer(null);
-      params.setIsDontKnow(false);
-      params.setRoute(null);
-      params.setResults(null);
-      params.setTimeRemaining(30 * 60);
-      params.setTimeExpiredAt(null);
-      params.setShowTimeUpModal(false);
-      params.setProfileSaved(false);
+  const startTest = useCallback(async () => {
+    clearAllDiagnosticData();
+    params.setStage(1);
+    params.setQuestionIndex(0);
+    params.setSelectedAnswer(null);
+    params.setIsDontKnow(false);
+    params.setRoute(null);
+    params.setResults(null);
+    params.setTimeRemaining(30 * 60);
+    params.setTimeExpiredAt(null);
+    params.setShowTimeUpModal(false);
+    params.setProfileSaved(false);
 
-      const currentUserId = registeredUserId ?? params.userId;
-      try {
-        const data = await startTestAttempt(currentUserId);
-        if (!data.success || !data.attemptId) {
-          throw new Error("No attemptId");
-        }
-        params.setAttemptId(data.attemptId);
-        saveAttemptId(data.attemptId);
-      } catch (error) {
-        console.error("Failed to start test:", error);
-        const localId = generateLocalAttemptId();
-        params.setAttemptId(localId);
-        saveAttemptId(localId);
+    try {
+      const data = await startTestAttempt();
+      if (!data.success || !data.attemptId) {
+        throw new Error("No attemptId");
       }
+      params.setAttemptId(data.attemptId);
+      saveAttemptId(data.attemptId);
+    } catch (error) {
+      console.error("Failed to start test:", error);
+      const localId = generateLocalAttemptId();
+      params.setAttemptId(localId);
+      saveAttemptId(localId);
+    }
 
-      const now = Date.now();
-      params.setTimerStartedAt(now);
-      window.scrollTo(0, 0);
-      params.setScreen("question");
-      params.questionStartTime.current = now;
-    },
-    [params]
-  );
-
-  const handleMiniFormSubmit = useCallback(
-    async (data: MiniFormData) => {
-      const result = await registerUser(data.email, data.userType, data.curso);
-      if (!result.success || !result.userId) {
-        throw new Error(result.error || "Error al registrar");
-      }
-
-      trackMiniFormCompleted(data.email, data.userType, data.curso);
-      params.setUserId(result.userId);
-      await startTest(result.userId);
-    },
-    [params, startTest]
-  );
+    const now = Date.now();
+    params.setTimerStartedAt(now);
+    window.scrollTo(0, 0);
+    params.setScreen("question");
+    params.questionStartTime.current = now;
+  }, [params]);
 
   return {
     startTest,
-    handleMiniFormSubmit,
   };
 }
 
@@ -269,6 +245,84 @@ function useRouteFetcher(params: {
   );
 }
 
+function stopTimer(timerRef: MutableRefObject<NodeJS.Timeout | null>) {
+  if (timerRef.current) {
+    clearInterval(timerRef.current);
+    timerRef.current = null;
+  }
+}
+
+function cacheSavedProfileResult(
+  params: {
+    routesData: LearningRoutesResponse | null;
+    setCachedResponsesForReview: (
+      value: ReturnType<typeof getResponsesForReview>
+    ) => void;
+    setCachedResults: (
+      value: ReturnType<typeof computeScoredResults>["calc"] | null
+    ) => void;
+    setCachedAtomResults: (
+      value: { atomId: string; mastered: boolean }[]
+    ) => void;
+    setCachedScoredCorrect: (value: number) => void;
+    setCachedActualRoute: (value: Route | null) => void;
+    setCachedRoutesData: (value: LearningRoutesResponse | null) => void;
+    setProfileSaved: (value: boolean) => void;
+    setScreen: (value: Screen) => void;
+  },
+  result: Awaited<ReturnType<typeof buildAndSaveProfile>>
+) {
+  params.setCachedResponsesForReview(getResponsesForReview());
+  params.setCachedResults(result.calculatedResults);
+  params.setCachedAtomResults(result.atomResults);
+  params.setCachedScoredCorrect(result.scoredCorrect);
+  params.setCachedActualRoute(result.actualRoute);
+  params.setCachedRoutesData(params.routesData);
+  clearAllDiagnosticData();
+  params.setProfileSaved(true);
+  params.setScreen("results");
+}
+
+async function completeRemoteAttempt(params: {
+  attemptId: string | null;
+  correctAnswers: number;
+  route: Route;
+}) {
+  if (isLocalAttempt(params.attemptId)) {
+    return;
+  }
+
+  const stage1Correct = getStoredResponses().filter(
+    (r) => r.stage === 1 && !r.answeredAfterTimeUp && r.isCorrect
+  ).length;
+
+  await completeTestAttempt({
+    attemptId: params.attemptId,
+    totalQuestions: 16,
+    correctAnswers: params.correctAnswers,
+    stage1Score: stage1Correct,
+    stage2Difficulty: params.route,
+  });
+}
+
+async function presentCompletionResults(params: {
+  isStudentPortalUser: boolean;
+  saveProfileAndShowResults: () => Promise<void>;
+  showResultsScreen: () => void;
+}) {
+  if (!params.isStudentPortalUser) {
+    params.showResultsScreen();
+    return;
+  }
+
+  try {
+    await params.saveProfileAndShowResults();
+  } catch (error) {
+    console.error("Failed to save student diagnostic profile:", error);
+    params.showResultsScreen();
+  }
+}
+
 export function useDiagnosticResultsActions(params: {
   userId: string | null;
   attemptId: string | null;
@@ -311,12 +365,7 @@ export function useDiagnosticResultsActions(params: {
     params.setResults(calc);
     params.setConsistentScore(midScore);
     void fetchRoutes(computeAtomMastery(reconstructFullResponses()), midScore);
-
-    if (params.timerRef.current) {
-      clearInterval(params.timerRef.current);
-      params.timerRef.current = null;
-    }
-
+    stopTimer(params.timerRef);
     params.setScreen("partial-results");
   }, [fetchRoutes, params]);
 
@@ -333,16 +382,7 @@ export function useDiagnosticResultsActions(params: {
         topRouteInfo: params.topRouteInfo,
         profilingData,
       });
-
-      params.setCachedResponsesForReview(getResponsesForReview());
-      params.setCachedResults(result.calculatedResults);
-      params.setCachedAtomResults(result.atomResults);
-      params.setCachedScoredCorrect(result.scoredCorrect);
-      params.setCachedActualRoute(result.actualRoute);
-      params.setCachedRoutesData(params.routesData);
-      clearAllDiagnosticData();
-      params.setProfileSaved(true);
-      params.setScreen("results");
+      cacheSavedProfileResult(params, result);
     },
     [params]
   );
@@ -357,32 +397,17 @@ export function useDiagnosticResultsActions(params: {
     const tier = getPerformanceTier(counts.scoredCorrect);
     trackDiagnosticCompleted(counts.scoredCorrect, tier, params.route);
 
-    if (params.isStudentPortalUser) {
-      try {
-        await saveProfileAndShowResults();
-      } catch (error) {
-        console.error("Failed to save student diagnostic profile:", error);
-        showResultsScreen();
-      }
-    } else {
-      showResultsScreen();
-    }
-
-    if (isLocalAttempt(params.attemptId)) {
-      return;
-    }
-
-    const stage1Correct = getStoredResponses().filter(
-      (r) => r.stage === 1 && !r.answeredAfterTimeUp && r.isCorrect
-    ).length;
+    await presentCompletionResults({
+      isStudentPortalUser: params.isStudentPortalUser,
+      saveProfileAndShowResults,
+      showResultsScreen,
+    });
 
     try {
-      await completeTestAttempt({
+      await completeRemoteAttempt({
         attemptId: params.attemptId,
-        totalQuestions: 16,
         correctAnswers: counts.scoredCorrect,
-        stage1Score: stage1Correct,
-        stage2Difficulty: params.route,
+        route: params.route,
       });
     } catch (error) {
       console.error("Failed to complete test:", error);

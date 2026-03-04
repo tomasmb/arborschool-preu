@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { testAttempts } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
+import { requireAuthenticatedStudentUser } from "@/lib/student/apiAuth";
 
 /**
  * POST /api/diagnostic/complete
@@ -9,6 +10,12 @@ import { eq } from "drizzle-orm";
  */
 export async function POST(request: NextRequest) {
   try {
+    const authResult = await requireAuthenticatedStudentUser();
+    if (authResult.unauthorizedResponse) {
+      return authResult.unauthorizedResponse;
+    }
+    const userId = authResult.userId;
+
     const body = await request.json();
     const {
       attemptId,
@@ -34,7 +41,9 @@ export async function POST(request: NextRequest) {
         stage1Score,
         stage2Difficulty,
       })
-      .where(eq(testAttempts.id, attemptId));
+      .where(
+        and(eq(testAttempts.id, attemptId), eq(testAttempts.userId, userId))
+      );
 
     return NextResponse.json({ success: true });
   } catch (error) {

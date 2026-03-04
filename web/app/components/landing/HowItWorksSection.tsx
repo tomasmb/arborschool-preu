@@ -14,20 +14,20 @@ export function HowItWorksSection() {
         <div className="grid md:grid-cols-3 gap-6 sm:gap-8 lg:gap-12">
           <StepCard
             number={1}
-            title="Descubre dónde estás"
-            description="16 preguntas adaptativas (~15 min) que mapean exactamente qué sabes y qué no de la PAES M1."
+            title="Define tu meta"
+            description="Elige carrera y puntaje objetivo para fijar una brecha clara antes de empezar."
             variant="primary"
           />
           <StepCard
             number={2}
-            title="Tu ruta, por impacto"
-            description="Solo estudias lo que te falta. Ordenado por cuántos puntos ganas al dominar cada tema."
+            title="Completa diagnóstico M1"
+            description="Responde 16 preguntas adaptativas (~15 min) y obtiene tu rango estimado con evidencia."
             variant="primary"
           />
           <StepCard
             number={3}
-            title="Domina, no memorices"
-            description="Mini-clases + práctica real con preguntas PAES. Cada tema dominado suma puntos concretos."
+            title="Empieza tu primer sprint"
+            description="Arbor prioriza tu siguiente acción por impacto para mover puntaje semana a semana."
             variant="accent"
           />
         </div>
@@ -56,7 +56,9 @@ function StepCard({
     <div className="relative group">
       <div className="card p-6 sm:p-8 h-full">
         <div
-          className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl ${gradientClass} flex items-center justify-center mb-4 sm:mb-6 shadow-lg group-hover:scale-110 transition-transform`}
+          className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl ${gradientClass}
+            flex items-center justify-center mb-4 sm:mb-6 shadow-lg
+            group-hover:scale-110 transition-transform`}
         >
           <span className="text-xl sm:text-2xl font-bold text-white">
             {number}

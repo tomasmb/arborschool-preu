@@ -5,7 +5,6 @@ import { getStudentJourneySnapshot } from "@/lib/student/journeyState";
 import { resolvePostLoginRedirect } from "@/lib/auth/postLoginRedirect";
 
 export default async function PostLoginPage() {
-  const isStudentPortalEnabled = process.env.STUDENT_PORTAL_V1 !== "false";
   const session = await auth();
   const userId = session?.user?.id;
 
@@ -20,8 +19,6 @@ export default async function PostLoginPage() {
 
   const journeySnapshot = await getStudentJourneySnapshot(user.id);
   const destination = resolvePostLoginRedirect({
-    isStudentPortalEnabled,
-    hasDiagnosticSnapshot: user.hasDiagnosticSnapshot,
     journeyState: journeySnapshot.journeyState,
   });
 

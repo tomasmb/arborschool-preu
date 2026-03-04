@@ -1,86 +1,222 @@
 "use client";
 
-/**
- * Full Results Screen
- *
- * Shows complete diagnostic results including learning routes, question review,
- * and personalized recommendations. This is the endpoint for signed-up users.
- *
- * When hasSignedUp=true (user came from signup flow):
- * - Shows success banner confirming signup
- * - Hides signup CTA (already done)
- * - Shows "Volver al Inicio" link at bottom
- */
-
-import React, { useEffect, useState, useMemo, useRef } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import { Confetti } from "./Confetti";
-import { AnimatedCounter } from "./shared";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   useLearningRoutes,
   sortRoutesByImpact,
 } from "../hooks/useLearningRoutes";
-import {
-  QuestionReviewDrawer,
-  type ResponseForReview,
-} from "./QuestionReviewDrawer";
-import { RoutesSection } from "./RoutesSection";
 import {
   getPerformanceTier,
   isLowSignalTier,
   getNextConceptsConfig,
 } from "@/lib/config";
 import { trackResultsViewed, trackRouteExplored } from "@/lib/analytics";
-import {
-  TierHeadline,
-  LimitationCopy,
-  GenericNextStep,
-  SecondaryScoreDisplay,
-  CtaButton,
-  shouldShowRoutes,
-  getScoreEmphasis,
-} from "./TierContent";
-import { ImprovementHeroCard } from "./ImprovementHeroCard";
+import { shouldShowRoutes, getScoreEmphasis } from "./TierContent";
 import {
   buildNextConceptsFromResponses,
   type ResultsScreenProps,
 } from "../utils";
+import { ResultsScreenView } from "./ResultsScreenView";
 
-// Re-export types for backward compatibility
 export type { AtomResult, TopRouteInfo } from "../utils";
 
-// ============================================================================
-// CONSTANTS
-// ============================================================================
-
-// Canonical CTA label - single source of truth
-const CTA_LABEL = "Guardar y recibir acceso";
-
-// Expectation line shown under CTA
+const CTA_LABEL = "Crear mi plan y empezar diagnóstico";
 const EXPECTATION_LINE =
-  "Te avisamos cuando la plataforma esté lista para continuar. 1–2 correos, sin spam. Puedes darte de baja cuando quieras.";
+  "Inicias sesión, defines tu meta y arrancas tu primer sprint dentro del portal.";
 
-// ============================================================================
-// HELPERS
-// ============================================================================
+type PerformanceTier = ReturnType<typeof getPerformanceTier>;
 
-/**
- * Generates animation classes for staggered fade-in effect.
- * @param showContent - Whether content should be visible
- * @param delay - Tailwind delay class (e.g., "100", "200", "300")
- */
-function getAnimationClasses(showContent: boolean, delay?: string): string {
-  const delayClass = delay ? `delay-${delay}` : "";
-  const visibilityClass = showContent
-    ? "opacity-100 translate-y-0"
-    : "opacity-0 translate-y-8";
-  return `transition-all duration-700 ${delayClass} ${visibilityClass}`.trim();
+function useTopRouteSync(params: {
+  onTopRouteCalculated: ResultsScreenProps["onTopRouteCalculated"];
+  routesLoading: boolean;
+  sortedRoutes: ReturnType<typeof sortRoutesByImpact>;
+}) {
+  const { onTopRouteCalculated, routesLoading, sortedRoutes } = params;
+
+  useEffect(() => {
+    if (!onTopRouteCalculated || routesLoading) {
+      return;
+    }
+
+    if (sortedRoutes.length === 0) {
+      onTopRouteCalculated(null);
+      return;
+    }
+
+    onTopRouteCalculated({
+      name: sortedRoutes[0].axis,
+      questionsUnlocked: sortedRoutes[0].questionsUnlocked,
+      pointsGain: sortedRoutes[0].pointsGain,
+      studyHours: sortedRoutes[0].studyHours,
+    });
+  }, [onTopRouteCalculated, routesLoading, sortedRoutes]);
 }
 
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
+function useResponsesForReview(responses: ResultsScreenProps["responses"]) {
+  return useMemo(
+    () =>
+      (responses ?? []).map((response) => ({
+        question: response.question,
+        selectedAnswer: response.selectedAnswer,
+        isCorrect: response.isCorrect,
+      })),
+    [responses]
+  );
+}
+
+function useResultsDerivedData(params: {
+  totalCorrect: number;
+  results: ResultsScreenProps["results"];
+  atomResults: ResultsScreenProps["atomResults"];
+  responses: ResultsScreenProps["responses"];
+  precomputedRoutes: ResultsScreenProps["precomputedRoutes"];
+  precomputedNextConcepts: ResultsScreenProps["precomputedNextConcepts"];
+  onScoreCalculated: ResultsScreenProps["onScoreCalculated"];
+  onTopRouteCalculated: ResultsScreenProps["onTopRouteCalculated"];
+}) {
+  const {
+    totalCorrect,
+    results,
+    atomResults,
+    responses,
+    precomputedRoutes,
+    precomputedNextConcepts,
+    onScoreCalculated,
+    onTopRouteCalculated,
+  } = params;
+
+  const performanceTier = useMemo(
+    () => getPerformanceTier(totalCorrect),
+    [totalCorrect]
+  );
+  const isLowSignal = useMemo(
+    () => isLowSignalTier(performanceTier),
+    [performanceTier]
+  );
+  const responsesForReview = useResponsesForReview(responses);
+
+  const midScore = Math.round((results.paesMin + results.paesMax) / 2);
+  const scoreMin = results.paesMin;
+  const scoreMax = results.paesMax;
+  const scoreEmphasis = getScoreEmphasis(performanceTier);
+
+  const liveRoutes = useLearningRoutes(atomResults ?? [], midScore, {
+    skip: !!precomputedRoutes,
+  });
+  const routesData = precomputedRoutes ?? liveRoutes.data;
+  const routesLoading = precomputedRoutes ? false : liveRoutes.isLoading;
+
+  useEffect(() => {
+    onScoreCalculated?.(midScore);
+  }, [midScore, onScoreCalculated]);
+
+  const sortedRoutes = useMemo(
+    () => (routesData?.routes ? sortRoutesByImpact(routesData.routes) : []),
+    [routesData?.routes]
+  );
+
+  useTopRouteSync({ onTopRouteCalculated, routesLoading, sortedRoutes });
+
+  const { potentialImprovement, studyHours } = useMemo(() => {
+    if (!sortedRoutes.length) {
+      return { potentialImprovement: 0, studyHours: 0 };
+    }
+
+    return {
+      potentialImprovement: sortedRoutes[0].pointsGain,
+      studyHours: sortedRoutes[0].studyHours,
+    };
+  }, [sortedRoutes]);
+
+  const nextConcepts = useMemo(() => {
+    if (precomputedNextConcepts) {
+      return precomputedNextConcepts;
+    }
+
+    const recommendedRoute = sortedRoutes.length ? sortedRoutes[0] : null;
+    return buildNextConceptsFromResponses(responses ?? [], recommendedRoute);
+  }, [responses, sortedRoutes, precomputedNextConcepts]);
+
+  const nextConceptsConfig = useMemo(
+    () => getNextConceptsConfig(performanceTier),
+    [performanceTier]
+  );
+
+  return {
+    performanceTier,
+    isLowSignal,
+    responsesForReview,
+    midScore,
+    scoreMin,
+    scoreMax,
+    scoreEmphasis,
+    routesData,
+    routesLoading,
+    potentialImprovement,
+    studyHours,
+    nextConcepts,
+    showNextConcepts:
+      nextConceptsConfig.showPersonalized ||
+      nextConceptsConfig.showGenericLadder,
+    showRoutes: shouldShowRoutes(performanceTier),
+    sortedRoutes,
+  };
+}
+
+function useResultsUiState(params: {
+  results: ResultsScreenProps["results"];
+  route: ResultsScreenProps["route"];
+  totalCorrect: number;
+  performanceTier: PerformanceTier;
+}) {
+  const [showContent, setShowContent] = useState(false);
+  const [showReviewDrawer, setShowReviewDrawer] = useState(false);
+  const [showMoreDetails, setShowMoreDetails] = useState(false);
+  const hasTrackedView = useRef(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowContent(true), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (hasTrackedView.current) {
+      return;
+    }
+
+    hasTrackedView.current = true;
+    trackResultsViewed(
+      params.results.paesMin,
+      params.results.paesMax,
+      params.performanceTier,
+      params.totalCorrect,
+      params.route
+    );
+  }, [
+    params.results,
+    params.performanceTier,
+    params.totalCorrect,
+    params.route,
+  ]);
+
+  const toggleRoutes = () => {
+    setShowMoreDetails((current) => {
+      if (!current) {
+        trackRouteExplored(params.performanceTier, params.route);
+      }
+      return !current;
+    });
+  };
+
+  return {
+    showContent,
+    showReviewDrawer,
+    showMoreDetails,
+    openReviewDrawer: () => setShowReviewDrawer(true),
+    closeReviewDrawer: () => setShowReviewDrawer(false),
+    toggleRoutes,
+  };
+}
 
 export function ResultsScreen({
   results,
@@ -95,400 +231,52 @@ export function ResultsScreen({
   precomputedNextConcepts,
   hasSignedUp = false,
 }: ResultsScreenProps) {
-  const [showContent, setShowContent] = useState(false);
-  const [showReviewDrawer, setShowReviewDrawer] = useState(false);
-  const [showMoreDetails, setShowMoreDetails] = useState(false);
-  const hasTrackedView = useRef(false);
-
-  // Get performance tier and config
-  const performanceTier = useMemo(
-    () => getPerformanceTier(totalCorrect),
-    [totalCorrect]
-  );
-  const isLowSignal = useMemo(
-    () => isLowSignalTier(performanceTier),
-    [performanceTier]
-  );
-
-  // Prepare responses for review drawer
-  const responsesForReview: ResponseForReview[] = useMemo(() => {
-    return responses.map((r) => ({
-      question: r.question,
-      selectedAnswer: r.selectedAnswer,
-      isCorrect: r.isCorrect,
-    }));
-  }, [responses]);
-
-  // Calculate score display
-  const midScore = Math.round((results.paesMin + results.paesMax) / 2);
-  const scoreMin = results.paesMin;
-  const scoreMax = results.paesMax;
-  const scoreEmphasis = getScoreEmphasis(performanceTier);
-
-  // Fetch personalized learning routes based on diagnostic atom results
-  // Skip API call entirely if precomputed routes are provided (example mode)
-  const liveRoutes = useLearningRoutes(atomResults, midScore, {
-    skip: !!precomputedRoutes,
+  const derived = useResultsDerivedData({
+    totalCorrect,
+    results,
+    atomResults,
+    responses,
+    precomputedRoutes,
+    precomputedNextConcepts,
+    onScoreCalculated,
+    onTopRouteCalculated,
   });
-  const routesData = precomputedRoutes ?? liveRoutes.data;
-  const routesLoading = precomputedRoutes ? false : liveRoutes.isLoading;
 
-  // Notify parent of the diagnostic score for ProfilingScreen
-  useEffect(() => {
-    if (onScoreCalculated) {
-      onScoreCalculated(midScore);
-    }
-  }, [midScore, onScoreCalculated]);
-
-  // Sort routes by impact and memoize
-  const sortedRoutes = useMemo(() => {
-    if (!routesData?.routes) return [];
-    return sortRoutesByImpact(routesData.routes);
-  }, [routesData?.routes]);
-
-  // Notify parent of the top route for profile data
-  useEffect(() => {
-    if (onTopRouteCalculated && !routesLoading) {
-      if (sortedRoutes.length > 0) {
-        onTopRouteCalculated({
-          name: sortedRoutes[0].axis,
-          questionsUnlocked: sortedRoutes[0].questionsUnlocked,
-          pointsGain: sortedRoutes[0].pointsGain,
-          studyHours: sortedRoutes[0].studyHours,
-        });
-      } else {
-        onTopRouteCalculated(null);
-      }
-    }
-  }, [sortedRoutes, routesLoading, onTopRouteCalculated]);
-
-  // Use the best route's improvement and study hours as the main value proposition
-  const { potentialImprovement, studyHours } = useMemo(() => {
-    if (sortedRoutes.length > 0) {
-      return {
-        potentialImprovement: sortedRoutes[0].pointsGain,
-        studyHours: sortedRoutes[0].studyHours,
-      };
-    }
-    return { potentialImprovement: 0, studyHours: 0 };
-  }, [sortedRoutes]);
-
-  // Build next concepts from wrong answers and recommended route
-  // Use precomputed data if provided (example mode)
-  const nextConcepts = useMemo(() => {
-    if (precomputedNextConcepts) {
-      return precomputedNextConcepts;
-    }
-    const recommendedRoute = sortedRoutes.length > 0 ? sortedRoutes[0] : null;
-    return buildNextConceptsFromResponses(responses, recommendedRoute);
-  }, [responses, sortedRoutes, precomputedNextConcepts]);
-
-  // Check if we should show next concepts based on tier
-  const nextConceptsConfig = useMemo(
-    () => getNextConceptsConfig(performanceTier),
-    [performanceTier]
-  );
-  const showNextConcepts =
-    nextConceptsConfig.showPersonalized || nextConceptsConfig.showGenericLadder;
-
-  // Animation timing
-  useEffect(() => {
-    const timer = setTimeout(() => setShowContent(true), 500);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Track results viewed (once on mount)
-  useEffect(() => {
-    if (!hasTrackedView.current) {
-      hasTrackedView.current = true;
-      trackResultsViewed(
-        results.paesMin,
-        results.paesMax,
-        performanceTier,
-        totalCorrect,
-        route
-      );
-    }
-  }, [results.paesMin, results.paesMax, performanceTier, totalCorrect, route]);
-
-  // Handler for CTA click (only used in ExampleResultsModal preview)
-  const handleCtaClick = () => {
-    onSignup?.();
-  };
-
-  // Handler for route exploration toggle with analytics tracking
-  const handleRouteToggle = () => {
-    // Only track when expanding, not collapsing
-    if (!showMoreDetails) {
-      trackRouteExplored(performanceTier, route);
-    }
-    setShowMoreDetails(!showMoreDetails);
-  };
-
-  // Should we show calculated routes?
-  const showRoutes = shouldShowRoutes(performanceTier);
+  const ui = useResultsUiState({
+    results,
+    route,
+    totalCorrect,
+    performanceTier: derived.performanceTier,
+  });
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      <Confetti />
-      <div className="fixed inset-0 bg-gradient-to-b from-cream via-white to-off-white" />
-      <div className="fixed top-20 left-1/4 w-48 h-48 sm:w-72 sm:h-72 lg:w-96 lg:h-96 bg-accent/10 rounded-full blur-3xl" />
-      <div className="fixed bottom-20 right-1/4 w-40 h-40 sm:w-60 sm:h-60 lg:w-80 lg:h-80 bg-primary/10 rounded-full blur-3xl" />
-
-      <div className="relative z-10">
-        {/* Header */}
-        <header className="bg-white/80 backdrop-blur-lg border-b border-gray-100 sticky top-0 z-20">
-          <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-center gap-3">
-            <Image src="/logo-arbor.svg" alt="Arbor" width={36} height={36} />
-            <span className="text-xl font-serif font-bold text-primary">
-              Arbor PreU
-            </span>
-          </div>
-        </header>
-
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          {/* Completion Badge */}
-          <div
-            className={`text-center mb-6 ${getAnimationClasses(showContent)}`}
-          >
-            <div className="inline-flex items-center gap-2 text-sm font-medium text-success bg-success/10 px-4 py-2 rounded-full">
-              <span className="w-2 h-2 bg-success rounded-full animate-pulse" />
-              Diagnóstico Completado
-            </div>
-          </div>
-
-          {/* Success Banner - shown when user signed up */}
-          {hasSignedUp && (
-            <div className={`mb-6 ${getAnimationClasses(showContent)}`}>
-              <div className="flex items-center justify-center gap-2 p-4 bg-gradient-to-r from-success/10 to-success/5 border border-success/20 rounded-xl">
-                <svg
-                  className="w-5 h-5 text-success shrink-0"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-                <span className="text-success font-medium">
-                  ¡Listo! Tu diagnóstico está guardado — te avisamos cuando
-                  lancemos.
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Limitation Copy (for low-signal tiers - shown first) */}
-          {isLowSignal && (
-            <div className={`mb-6 ${getAnimationClasses(showContent)}`}>
-              <LimitationCopy
-                tier={performanceTier}
-                className="justify-center text-center"
-              />
-            </div>
-          )}
-
-          {/* Hero Score (primary emphasis only) */}
-          {scoreEmphasis === "primary" && (
-            <div
-              className={`text-center mb-6 ${getAnimationClasses(showContent)}`}
-            >
-              <h1 className="text-3xl sm:text-4xl font-serif font-bold text-charcoal mb-2">
-                Tu Puntaje PAES Estimado
-              </h1>
-              <div className="text-5xl sm:text-6xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary-light my-4">
-                <AnimatedCounter
-                  target={midScore}
-                  duration={2500}
-                  delay={200}
-                />
-              </div>
-              <div className="text-base text-cool-gray mb-2">
-                Rango probable: {scoreMin}–{scoreMax}{" "}
-                <span className="text-sm">(≈ ±5 preguntas)</span>
-              </div>
-              <div className="text-sm text-cool-gray">
-                {totalCorrect}/16 correctas
-              </div>
-            </div>
-          )}
-
-          {/* Question Review Card - prominent for signed-up users (their reward) */}
-          {hasSignedUp && responsesForReview.length > 0 && (
-            <div className={`mb-6 ${getAnimationClasses(showContent, "100")}`}>
-              <button
-                onClick={() => setShowReviewDrawer(true)}
-                className="w-full max-w-md mx-auto flex items-center gap-4 p-4 rounded-xl 
-                  bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20
-                  hover:from-primary/15 hover:to-primary/10 hover:border-primary/30
-                  transition-all duration-300 group"
-              >
-                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                  <svg
-                    className="w-6 h-6 text-primary"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
-                    />
-                  </svg>
-                </div>
-                <div className="flex-1 text-left">
-                  <div className="font-semibold text-charcoal">
-                    Revisar mis respuestas
-                  </div>
-                  <div className="text-sm text-cool-gray">
-                    {responsesForReview.length} preguntas · Ver correctas e
-                    incorrectas
-                  </div>
-                </div>
-                <svg
-                  className="w-5 h-5 text-primary group-hover:translate-x-1 transition-transform"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </button>
-            </div>
-          )}
-
-          {/* Tier Headline */}
-          <div
-            className={`text-center mb-6 ${getAnimationClasses(showContent, "150")}`}
-          >
-            <TierHeadline tier={performanceTier} totalCorrect={totalCorrect} />
-          </div>
-
-          {/* Limitation Copy (for high-signal tiers with missing modules) */}
-          {performanceTier === "perfect" && (
-            <div className={`mb-6 ${getAnimationClasses(showContent, "200")}`}>
-              <LimitationCopy
-                tier={performanceTier}
-                className="justify-center text-center"
-              />
-            </div>
-          )}
-
-          {/* Improvement Hero Card - Key value proposition */}
-          <div className={`mb-6 ${getAnimationClasses(showContent, "250")}`}>
-            <ImprovementHeroCard
-              potentialImprovement={potentialImprovement}
-              studyHours={studyHours}
-              variant="hero"
-              isLoading={routesLoading}
-            />
-          </div>
-
-          {/* Primary CTA (early - right after value proposition) - hidden if already signed up */}
-          {!hasSignedUp && (
-            <div
-              className={`text-center mb-6 ${getAnimationClasses(showContent, "300")}`}
-            >
-              <CtaButton onClick={handleCtaClick} ctaLabel={CTA_LABEL} />
-              <p className="text-xs text-cool-gray mt-3 max-w-md mx-auto">
-                {EXPECTATION_LINE}
-              </p>
-            </div>
-          )}
-
-          {/* Generic Next Step (for tiers without calculated routes) */}
-          {!showRoutes && (
-            <div className={`mb-6 ${getAnimationClasses(showContent, "350")}`}>
-              <GenericNextStep tier={performanceTier} />
-            </div>
-          )}
-
-          {/* Routes Section */}
-          {showRoutes && (
-            <div className={`mb-6 ${getAnimationClasses(showContent, "350")}`}>
-              <RoutesSection
-                hasSignedUp={hasSignedUp}
-                routesLoading={routesLoading}
-                sortedRoutes={sortedRoutes}
-                lowHangingFruit={routesData?.lowHangingFruit}
-                showMoreDetails={showMoreDetails}
-                onToggle={handleRouteToggle}
-                showNextConcepts={showNextConcepts}
-                nextConcepts={nextConcepts}
-                performanceTier={performanceTier}
-                onCtaClick={handleCtaClick}
-              />
-            </div>
-          )}
-
-          {/* Secondary Score Display (for low-signal tiers) */}
-          {scoreEmphasis !== "primary" && (
-            <div className={getAnimationClasses(showContent, "400")}>
-              <SecondaryScoreDisplay
-                scoreMin={scoreMin}
-                scoreMax={scoreMax}
-                tier={performanceTier}
-              />
-            </div>
-          )}
-
-          {/* Home Link - shown when user signed up (this is the endpoint) */}
-          {hasSignedUp && (
-            <div
-              className={`text-center mt-10 pb-8 ${getAnimationClasses(showContent, "500")}`}
-            >
-              <div className="card p-6 bg-gradient-to-br from-success/5 to-white border-success/20 mb-4">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <svg
-                    className="w-5 h-5 text-success"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  <span className="font-semibold text-charcoal">
-                    Tu diagnóstico está guardado
-                  </span>
-                </div>
-                <p className="text-sm text-cool-gray">
-                  Cuando lancemos la plataforma, empiezas exactamente desde
-                  donde estás hoy — con tu ruta ya calculada.
-                </p>
-              </div>
-              <Link
-                href="/"
-                className="text-sm text-cool-gray hover:text-charcoal transition-colors underline underline-offset-2"
-              >
-                Volver al inicio
-              </Link>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Question Review Drawer */}
-      <QuestionReviewDrawer
-        isOpen={showReviewDrawer}
-        onClose={() => setShowReviewDrawer(false)}
-        responses={responsesForReview}
-      />
-    </div>
+    <ResultsScreenView
+      showContent={ui.showContent}
+      hasSignedUp={hasSignedUp}
+      isLowSignal={derived.isLowSignal}
+      performanceTier={derived.performanceTier}
+      totalCorrect={totalCorrect}
+      scoreEmphasis={derived.scoreEmphasis}
+      midScore={derived.midScore}
+      scoreMin={derived.scoreMin}
+      scoreMax={derived.scoreMax}
+      potentialImprovement={derived.potentialImprovement}
+      studyHours={derived.studyHours}
+      routesLoading={derived.routesLoading}
+      showRoutes={derived.showRoutes}
+      showMoreDetails={ui.showMoreDetails}
+      sortedRoutes={derived.sortedRoutes}
+      lowHangingFruit={derived.routesData?.lowHangingFruit}
+      showNextConcepts={derived.showNextConcepts}
+      nextConcepts={derived.nextConcepts}
+      responsesForReview={derived.responsesForReview}
+      showReviewDrawer={ui.showReviewDrawer}
+      ctaLabel={CTA_LABEL}
+      expectationLine={EXPECTATION_LINE}
+      onOpenReview={ui.openReviewDrawer}
+      onCloseReview={ui.closeReviewDrawer}
+      onToggleRoutes={ui.toggleRoutes}
+      onCtaClick={() => onSignup?.()}
+    />
   );
 }

@@ -176,7 +176,7 @@ function GenericFoundationsLadder({
       <div>
         <h4 className="text-sm font-semibold text-charcoal">
           Tu siguiente paso{" "}
-          <span className="font-normal text-cool-gray">(cuando lancemos)</span>
+          <span className="font-normal text-cool-gray">(esta semana)</span>
         </h4>
       </div>
 

@@ -247,27 +247,27 @@ async function benchmark(
 }
 
 async function verifyPostLoginRedirectPolicy(): Promise<void> {
-  const withDiagnostic = resolvePostLoginRedirect({
-    isStudentPortalEnabled: true,
-    hasDiagnosticSnapshot: true,
+  const planningRequired = resolvePostLoginRedirect({
+    journeyState: "planning_required",
   });
-  const noDiagnostic = resolvePostLoginRedirect({
-    isStudentPortalEnabled: true,
-    hasDiagnosticSnapshot: false,
+  const diagnosticInProgress = resolvePostLoginRedirect({
+    journeyState: "diagnostic_in_progress",
   });
-  const disabledPortal = resolvePostLoginRedirect({
-    isStudentPortalEnabled: false,
-    hasDiagnosticSnapshot: true,
+  const activeLearning = resolvePostLoginRedirect({
+    journeyState: "active_learning",
   });
 
-  assert(withDiagnostic === "/portal", "Expected /portal for diagnostic users");
   assert(
-    noDiagnostic === "/diagnostico",
-    "Expected /diagnostico without diagnostic"
+    planningRequired === "/portal/goals?mode=planning",
+    "Expected planning users to route to planning mode"
   );
   assert(
-    disabledPortal === "/diagnostico",
-    "Expected /diagnostico when portal disabled"
+    diagnosticInProgress === "/diagnostico",
+    "Expected in-progress users to route to diagnostic"
+  );
+  assert(
+    activeLearning === "/portal",
+    "Expected active users to route to portal"
   );
 }
 
