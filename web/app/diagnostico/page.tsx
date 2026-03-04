@@ -1,24 +1,36 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import {
+  appendSearchParamsToPath,
+  buildSignInUrlWithCallback,
+  type QueryParamsRecord,
+} from "@/lib/auth/callbackUrl";
 import { getAuthenticatedUserById } from "@/lib/auth/users";
 import { getStudentJourneySnapshot } from "@/lib/student/journeyState";
-import {
-  AUTH_DIAGNOSTIC_CALLBACK_URL,
-  resolveDiagnosticEntryRoute,
-} from "@/lib/student/journeyRouting";
+import { resolveDiagnosticEntryRoute } from "@/lib/student/journeyRouting";
 import DiagnosticoClientPage from "./DiagnosticoClientPage";
 
-export default async function DiagnosticoPage() {
+interface DiagnosticoPageProps {
+  searchParams?: Promise<QueryParamsRecord>;
+}
+
+export default async function DiagnosticoPage({
+  searchParams,
+}: DiagnosticoPageProps) {
+  const queryParams = await searchParams;
+  const callbackPath = appendSearchParamsToPath("/diagnostico", queryParams);
+  const signInUrl = buildSignInUrlWithCallback(callbackPath);
+
   const session = await auth();
   const userId = session?.user?.id;
 
   if (!userId) {
-    redirect(AUTH_DIAGNOSTIC_CALLBACK_URL);
+    redirect(signInUrl);
   }
 
   const user = await getAuthenticatedUserById(userId);
   if (!user) {
-    redirect(AUTH_DIAGNOSTIC_CALLBACK_URL);
+    redirect(signInUrl);
   }
 
   const journey = await getStudentJourneySnapshot(user.id);

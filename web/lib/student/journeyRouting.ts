@@ -1,3 +1,4 @@
+import { buildSignInUrlWithCallback } from "@/lib/auth/callbackUrl";
 import type { StudentJourneySnapshot } from "./journeyState";
 
 export interface LandingPrimaryAction {
@@ -13,13 +14,23 @@ export interface LandingPrimaryAction {
 }
 
 export const AUTH_POST_LOGIN_CALLBACK_URL =
-  "/auth/signin?callbackUrl=/auth/post-login";
+  buildSignInUrlWithCallback("/auth/post-login");
 export const AUTH_DIAGNOSTIC_CALLBACK_URL =
-  "/auth/signin?callbackUrl=/diagnostico";
+  buildSignInUrlWithCallback("/diagnostico");
+
+export const EMAIL_LINK_SOURCE_PARAM = "source";
+export const EMAIL_LINK_INTENT_PARAM = "intent";
+export const EMAIL_LINK_SOURCE_VALUE = "email";
+export const EMAIL_LINK_INTENT_START_FIRST_SPRINT = "start_first_sprint";
+
+export const PORTAL_CONTEXT_BANNER_PARAM = "context";
+export const STALE_EMAIL_FIRST_SPRINT_BANNER = "stale_email_first_sprint";
+export type PortalContextBannerCode = typeof STALE_EMAIL_FIRST_SPRINT_BANNER;
 
 const PLANNING_ROUTE = "/portal/goals?mode=planning";
 const DIAGNOSTIC_ROUTE = "/diagnostico";
 const PORTAL_ROUTE = "/portal";
+const STUDY_ROUTE = "/portal/study";
 
 export function resolveLandingPrimaryAction(params: {
   isAuthenticated: boolean;
@@ -108,4 +119,58 @@ export function resolveDiagnosticEntryRoute(
   }
 
   return DIAGNOSTIC_ROUTE;
+}
+
+export function resolveStudyEntryRoute(params: {
+  journeySnapshot: Pick<
+    StudentJourneySnapshot,
+    "journeyState" | "hasPlanningProfile"
+  >;
+  isEmailLink: boolean;
+  emailIntent?: string | null;
+}): {
+  route:
+    | "/portal/study"
+    | "/portal/goals?mode=planning"
+    | "/diagnostico"
+    | "/portal";
+  contextBannerCode?: PortalContextBannerCode;
+} {
+  if (!params.journeySnapshot.hasPlanningProfile) {
+    return { route: PLANNING_ROUTE };
+  }
+
+  if (params.journeySnapshot.journeyState === "planning_required") {
+    return { route: DIAGNOSTIC_ROUTE };
+  }
+
+  if (params.journeySnapshot.journeyState === "diagnostic_in_progress") {
+    return { route: DIAGNOSTIC_ROUTE };
+  }
+
+  if (params.journeySnapshot.journeyState === "activation_ready") {
+    return { route: STUDY_ROUTE };
+  }
+
+  if (
+    params.isEmailLink &&
+    params.emailIntent === EMAIL_LINK_INTENT_START_FIRST_SPRINT
+  ) {
+    return {
+      route: PORTAL_ROUTE,
+      contextBannerCode: STALE_EMAIL_FIRST_SPRINT_BANNER,
+    };
+  }
+
+  return { route: STUDY_ROUTE };
+}
+
+export function resolvePortalContextBanner(
+  code: string | null | undefined
+): string | null {
+  if (code === STALE_EMAIL_FIRST_SPRINT_BANNER) {
+    return "Ya completaste ese primer sprint. Te llevamos a tu misión actual.";
+  }
+
+  return null;
 }

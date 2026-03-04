@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { buildSignInUrlWithCallback } from "@/lib/auth/callbackUrl";
 
 export default auth((request) => {
   const isAuthenticated = Boolean(request.auth?.user);
@@ -13,9 +14,8 @@ export default auth((request) => {
   }
 
   if (!isAuthenticated && pathname.startsWith("/portal")) {
-    const signInUrl = new URL("/auth/signin", request.url);
-    signInUrl.searchParams.set("callbackUrl", `${pathname}${search}`);
-    return NextResponse.redirect(signInUrl);
+    const signInPath = buildSignInUrlWithCallback(`${pathname}${search}`);
+    return NextResponse.redirect(new URL(signInPath, request.url));
   }
 
   return NextResponse.next();

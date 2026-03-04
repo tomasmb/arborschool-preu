@@ -83,7 +83,18 @@ export function NextActionSection({
         <p className="text-sm text-gray-600">Cargando siguiente acción...</p>
       )}
 
-      {!loading && error && <p className="text-sm text-red-700">{error}</p>}
+      {!loading && error ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 space-y-3">
+          <p className="text-sm text-red-700">{error}</p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="rounded-lg bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800"
+          >
+            Reintentar
+          </button>
+        </div>
+      ) : null}
 
       {!loading && !error && emptyState ? (
         <div className="space-y-3">

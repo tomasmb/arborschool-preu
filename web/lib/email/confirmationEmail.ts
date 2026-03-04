@@ -1,12 +1,13 @@
 import { emailService, EMAIL_CONFIG } from "./service";
 import type { EmailResult, ResultsSnapshot, EmailRecipient } from "./types";
+import { buildEmailStartSprintUrl } from "./links";
 
 function generateConfirmationHtml(
   recipient: EmailRecipient,
   results: ResultsSnapshot
 ): string {
   const unsubscribeUrl = `${EMAIL_CONFIG.baseUrl}/api/unsubscribe?token=${encodeURIComponent(recipient.userId)}`;
-  const startSprintUrl = `${EMAIL_CONFIG.baseUrl}/portal/study`;
+  const startSprintUrl = buildEmailStartSprintUrl("confirmation");
   const midScore = Math.round((results.paesMin + results.paesMax) / 2);
   const greeting = recipient.firstName ? `Hola ${recipient.firstName}` : "Hola";
 
@@ -89,7 +90,7 @@ function generateConfirmationText(
   results: ResultsSnapshot
 ): string {
   const unsubscribeUrl = `${EMAIL_CONFIG.baseUrl}/api/unsubscribe?token=${encodeURIComponent(recipient.userId)}`;
-  const startSprintUrl = `${EMAIL_CONFIG.baseUrl}/portal/study`;
+  const startSprintUrl = buildEmailStartSprintUrl("confirmation");
   const midScore = Math.round((results.paesMin + results.paesMax) / 2);
   const greeting = recipient.firstName ? `Hola ${recipient.firstName}` : "Hola";
 

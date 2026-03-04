@@ -1,21 +1,39 @@
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
+import {
+  appendSearchParamsToPath,
+  buildSignInUrlWithCallback,
+  toUrlSearchParams,
+  type QueryParamsRecord,
+} from "@/lib/auth/callbackUrl";
 import { getAuthenticatedUserById } from "@/lib/auth/users";
 import { getStudentJourneySnapshot } from "@/lib/student/journeyState";
+import {
+  PORTAL_CONTEXT_BANNER_PARAM,
+  resolvePortalContextBanner,
+} from "@/lib/student/journeyRouting";
 import { PageShell } from "./components";
 import { M1DashboardClient } from "./M1DashboardClient";
 
-export default async function PortalPage() {
+interface PortalPageProps {
+  searchParams?: Promise<QueryParamsRecord>;
+}
+
+export default async function PortalPage({ searchParams }: PortalPageProps) {
+  const queryParams = await searchParams;
+  const callbackPath = appendSearchParamsToPath("/portal", queryParams);
+  const signInUrl = buildSignInUrlWithCallback(callbackPath);
+
   const session = await auth();
   const userId = session?.user?.id;
 
   if (!userId) {
-    redirect("/auth/signin?callbackUrl=/portal");
+    redirect(signInUrl);
   }
 
   const user = await getAuthenticatedUserById(userId);
   if (!user) {
-    redirect("/auth/signin?callbackUrl=/portal");
+    redirect(signInUrl);
   }
 
   const journey = await getStudentJourneySnapshot(user.id);
@@ -28,6 +46,10 @@ export default async function PortalPage() {
   }
 
   const displayName = user.firstName ?? session.user.name ?? "Estudiante";
+  const bannerCode = toUrlSearchParams(queryParams).get(
+    PORTAL_CONTEXT_BANNER_PARAM
+  );
+  const contextBanner = resolvePortalContextBanner(bannerCode);
 
   return (
     <PageShell
@@ -50,7 +72,7 @@ export default async function PortalPage() {
         </form>
       }
     >
-      <M1DashboardClient />
+      <M1DashboardClient contextBanner={contextBanner} />
     </PageShell>
   );
 }

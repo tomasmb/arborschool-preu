@@ -10,6 +10,7 @@ import {
   trackWeeklyActive,
 } from "@/lib/analytics";
 import type { JourneyStateAnalytics } from "@/lib/analytics";
+import { AUTH_POST_LOGIN_CALLBACK_URL } from "@/lib/student/journeyRouting";
 
 type CapturedEvent = {
   eventName: string;
@@ -95,7 +96,7 @@ function main() {
   });
 
   trackLandingCtaClicked("hero", {
-    destination: "/auth/signin?callbackUrl=/auth/post-login",
+    destination: AUTH_POST_LOGIN_CALLBACK_URL,
     entryPoint: "/",
     journeyState: "anonymous",
   });

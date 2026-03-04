@@ -9,7 +9,19 @@ import {
 import { EmptyStatePanel, ErrorStatePanel } from "./components";
 import { usePortalDashboard } from "./usePortalDashboard";
 
-export function M1DashboardClient() {
+type M1DashboardClientProps = {
+  contextBanner?: string | null;
+};
+
+function ContextBanner({ message }: { message: string }) {
+  return (
+    <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+      <p className="text-sm text-amber-900">{message}</p>
+    </section>
+  );
+}
+
+export function M1DashboardClient({ contextBanner }: M1DashboardClientProps) {
   const {
     loading,
     error,
@@ -35,7 +47,9 @@ export function M1DashboardClient() {
   }
 
   if (!data) {
-    return null;
+    return (
+      <ErrorStatePanel message="No pudimos cargar tu estado del portal." />
+    );
   }
 
   if (data.status !== "ready" && data.emptyState) {
@@ -51,6 +65,7 @@ export function M1DashboardClient() {
 
   return (
     <div className="space-y-6">
+      {contextBanner ? <ContextBanner message={contextBanner} /> : null}
       <DashboardHeroSection data={data} />
       <DashboardEffortSection
         data={data}

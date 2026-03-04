@@ -188,7 +188,12 @@ export function StudySprintView(props: StudySprintViewProps) {
   }
 
   if (!props.sprint) {
-    return null;
+    return (
+      <ErrorStatePanel
+        message="No encontramos un sprint activo para mostrar."
+        retryLabel="Cargar sprint"
+      />
+    );
   }
 
   if (props.completion) {

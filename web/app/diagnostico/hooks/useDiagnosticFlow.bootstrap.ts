@@ -5,7 +5,7 @@ import {
   trackAuthSuccessOnce,
   trackDiagnosticIntroViewed,
 } from "@/lib/analytics";
-import { AUTH_DIAGNOSTIC_CALLBACK_URL } from "@/lib/student/journeyRouting";
+import { buildSignInUrlWithCallback } from "@/lib/auth/callbackUrl";
 import type { Screen } from "./useDiagnosticFlow.types";
 
 export function useDiagnosticIntroTracking(params: {
@@ -33,7 +33,9 @@ export function useDiagnosticStudentBootstrap(params: {
 }) {
   useEffect(() => {
     let cancelled = false;
-    const signInUrl = AUTH_DIAGNOSTIC_CALLBACK_URL;
+    const signInUrl = buildSignInUrlWithCallback(
+      `${window.location.pathname}${window.location.search}`
+    );
 
     async function bootstrapStudentSession() {
       try {

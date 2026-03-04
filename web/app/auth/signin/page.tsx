@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth, signIn } from "@/auth";
+import { resolveSafeCallbackUrl } from "@/lib/auth/callbackUrl";
 
 interface SignInPageProps {
   searchParams?: Promise<{
@@ -7,21 +8,13 @@ interface SignInPageProps {
   }>;
 }
 
-function resolveSafeCallbackUrl(callbackUrl: string | undefined): string {
-  if (!callbackUrl || !callbackUrl.startsWith("/")) {
-    return "/auth/post-login";
-  }
-  return callbackUrl;
-}
-
 export default async function SignInPage({ searchParams }: SignInPageProps) {
-  const session = await auth();
-  if (session?.user?.id) {
-    redirect("/auth/post-login");
-  }
-
   const params = await searchParams;
   const callbackUrl = resolveSafeCallbackUrl(params?.callbackUrl);
+  const session = await auth();
+  if (session?.user?.id) {
+    redirect(callbackUrl);
+  }
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-cream via-white to-off-white flex items-center justify-center px-4">
