@@ -56,25 +56,13 @@ export function resolveLandingPrimaryAction(params: {
     };
   }
 
-  if (
-    params.journeySnapshot.journeyState === "planning_required" &&
-    !params.journeySnapshot.hasPlanningProfile
-  ) {
+  if (params.journeySnapshot.journeyState === "planning_required") {
     return {
       label: "Continuar planificación",
       href: PLANNING_ROUTE,
-      supportingText:
-        "Define tu meta en 5 min para desbloquear tu diagnóstico personalizado.",
-      journeyState: "planning_required",
-    };
-  }
-
-  if (params.journeySnapshot.journeyState === "planning_required") {
-    return {
-      label: "Empezar diagnóstico (15 min)",
-      href: DIAGNOSTIC_ROUTE,
-      supportingText:
-        "Ya definiste tu meta. Completa el diagnóstico para activar tu plan.",
+      supportingText: params.journeySnapshot.hasPlanningProfile
+        ? "Tu meta ya está guardada. Revisa la planificación y activa tu diagnóstico (15 min)."
+        : "Define tu meta en 5 min para desbloquear tu diagnóstico personalizado.",
       journeyState: "planning_required",
     };
   }
@@ -103,6 +91,10 @@ export function resolveDiagnosticEntryRoute(
     "journeyState" | "hasPlanningProfile"
   >
 ): "/diagnostico" | "/portal/goals?mode=planning" | "/portal" {
+  if (journeySnapshot.journeyState === "planning_required") {
+    return PLANNING_ROUTE;
+  }
+
   if (journeySnapshot.journeyState === "diagnostic_in_progress") {
     return DIAGNOSTIC_ROUTE;
   }
@@ -136,12 +128,12 @@ export function resolveStudyEntryRoute(params: {
     | "/portal";
   contextBannerCode?: PortalContextBannerCode;
 } {
-  if (!params.journeySnapshot.hasPlanningProfile) {
+  if (params.journeySnapshot.journeyState === "planning_required") {
     return { route: PLANNING_ROUTE };
   }
 
-  if (params.journeySnapshot.journeyState === "planning_required") {
-    return { route: DIAGNOSTIC_ROUTE };
+  if (!params.journeySnapshot.hasPlanningProfile) {
+    return { route: PLANNING_ROUTE };
   }
 
   if (params.journeySnapshot.journeyState === "diagnostic_in_progress") {

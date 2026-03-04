@@ -59,8 +59,8 @@ function assertLandingPrimaryActionMatrix() {
     },
   });
   assert(
-    planningRequiredWithProfile.href === "/diagnostico",
-    "Planning-complete users without diagnostic snapshot must start diagnostic"
+    planningRequiredWithProfile.href === "/portal/goals?mode=planning",
+    "Planning-required users must route to planning mode from landing"
   );
 
   const diagnosticInProgress = resolveLandingPrimaryAction({
@@ -122,8 +122,8 @@ function assertDiagnosticEntryMatrix() {
     resolveDiagnosticEntryRoute({
       journeyState: "planning_required",
       hasPlanningProfile: true,
-    }) === "/diagnostico",
-    "Planning-complete users should be allowed into diagnostic"
+    }) === "/portal/goals?mode=planning",
+    "Planning-required users must be redirected to planning mode from diagnostic entry"
   );
 
   assert(

@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { questions, questionAtoms } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { parseQtiXml } from "@/lib/diagnostic/qtiParser";
+import { requireAuthenticatedStudentUser } from "@/lib/student/apiAuth";
 
 /**
  * GET /api/diagnostic/question
@@ -14,6 +15,9 @@ import { parseQtiXml } from "@/lib/diagnostic/qtiParser";
  */
 export async function GET(request: Request) {
   try {
+    const authResult = await requireAuthenticatedStudentUser();
+    if (authResult.unauthorizedResponse) return authResult.unauthorizedResponse;
+
     const { searchParams } = new URL(request.url);
     const exam = searchParams.get("exam");
     const questionNumber = searchParams.get("questionNumber");

@@ -114,11 +114,30 @@ Scope completed in current code pass:
   explicit retry and fallback portal actions (no dead-end error copy blocks).
 - Added runtime recovery CTA contract verification script:
   `npm run verify:recovery-cta-contract`
+- `planning_required` routing now resolves canonically to
+  `/portal/goals?mode=planning` across landing, diagnostic, and study entry
+  resolvers.
+- Diagnostic content endpoints now require authenticated student identity:
+  `/api/diagnostic/question`, `/api/diagnostic/review`,
+  `/api/diagnostic/learning-routes`.
+- Added runtime diagnostic API auth contract verification script:
+  `npm run verify:diagnostic-api-auth-contract`
+
+7. `Workstream F` partially completed.
+
+- Added runtime lifecycle email contract verification script:
+  `npm run verify:email-lifecycle-contract` (no waitlist language + sprint CTA
+  destination contract).
+- Added release-readiness aggregate verification runner:
+  `npm run verify:portal-release-readiness` (executes portal contract checks as
+  one pre-release gate bundle).
 
 Open items after this pass:
 
-1. Complete reliability, accessibility, and performance release gates
-   (Workstreams E/F).
+1. Complete CI-enforced accessibility and Core Web Vitals gates
+   (Workstream F).
+2. Complete staging OAuth/inbox validation passes for reliability and lifecycle
+   dispatch (Workstream E).
 
 ## Current Gap Analysis (Spec vs Implementation)
 
@@ -196,7 +215,8 @@ Open items after this pass:
    verification coverage (`verify:journey-routing-reliability`,
    `verify:portal-journey-contract`); staging OAuth and inbox flows still
    required.
-3. Accessibility and performance gates are specified but not enforced in CI.
+3. Accessibility and performance gates are specified but not yet enforced in
+   CI with hard fail thresholds.
 
 ## Target Architecture (Production Journey Contract)
 

@@ -24,7 +24,10 @@
     "verify:analytics-milestone-context": "npx --yes tsx scripts/verifyAnalyticsMilestoneContext.ts",
     "verify:journey-routing-reliability": "npx --yes tsx scripts/verifyJourneyRoutingReliability.ts",
     "verify:portal-journey-contract": "npx --yes tsx scripts/verifyPortalJourneyContract.ts",
-    "verify:recovery-cta-contract": "npx --yes tsx scripts/verifyRecoveryCtaContract.ts"
+    "verify:recovery-cta-contract": "npx --yes tsx scripts/verifyRecoveryCtaContract.ts",
+    "verify:diagnostic-api-auth-contract": "npx --yes tsx scripts/verifyDiagnosticApiAuthContract.ts",
+    "verify:email-lifecycle-contract": "npx --yes tsx scripts/verifyEmailLifecycleContract.ts",
+    "verify:portal-release-readiness": "npx --yes tsx scripts/verifyPortalReleaseReadiness.ts"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.38.0",

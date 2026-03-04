@@ -5,6 +5,7 @@ import {
   calculatePAESImprovement,
   DEFAULT_SCORING_CONFIG,
 } from "@/lib/diagnostic/questionUnlock";
+import { requireAuthenticatedStudentUser } from "@/lib/student/apiAuth";
 
 /**
  * POST /api/diagnostic/learning-routes
@@ -37,6 +38,9 @@ import {
  */
 export async function POST(request: NextRequest) {
   try {
+    const authResult = await requireAuthenticatedStudentUser();
+    if (authResult.unauthorizedResponse) return authResult.unauthorizedResponse;
+
     const body = await request.json();
     const { atomResults, diagnosticScore } = body;
 

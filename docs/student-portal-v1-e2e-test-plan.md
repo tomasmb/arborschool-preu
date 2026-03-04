@@ -80,6 +80,16 @@ Implemented and ready for validation:
 16. Goals/planning and next-action error states now use shared recovery panels
     with explicit retry actions; goals and simulator retries are wired through
     dedicated hook callbacks
+17. `planning_required` routing is now canonicalized to planning mode
+    (`/portal/goals?mode=planning`) across landing, diagnostic, and study entry
+    resolvers
+18. Remaining diagnostic content endpoints now require authenticated student
+    identity (`/api/diagnostic/question`, `/api/diagnostic/review`,
+    `/api/diagnostic/learning-routes`)
+19. Lifecycle email contract verification now includes no-waitlist copy and
+    sprint CTA destination enforcement
+20. Release readiness now has a codex-runnable verification aggregator
+    (`verify:portal-release-readiness`)
 
 Still pending and must be tested after implementation:
 
@@ -102,6 +112,12 @@ Codex-runnable now:
    (`verify:portal-journey-contract`)
 9. Recovery CTA contract verification
    (`verify:recovery-cta-contract`)
+10. Diagnostic API auth contract verification
+    (`verify:diagnostic-api-auth-contract`)
+11. Lifecycle email CTA/copy contract verification
+    (`verify:email-lifecycle-contract`)
+12. Release-readiness aggregate verification
+    (`verify:portal-release-readiness`)
 
 Human-required (OAuth or environment controls):
 
@@ -388,6 +404,50 @@ Expected:
 2. Planning, goals editor, simulator, and next-action error states render shared recovery UI
 3. Recovery panel export surface remains available for reuse across portal screens
 
+### A12. Diagnostic API Auth Contract
+
+Run:
+
+```bash
+cd web
+npm run verify:diagnostic-api-auth-contract
+```
+
+Expected:
+
+1. All active diagnostic APIs in product flow require authenticated student access
+2. Diagnostic register endpoint remains deprecated with `410`
+
+### A13. Lifecycle Email Contract
+
+Run:
+
+```bash
+cd web
+npm run verify:email-lifecycle-contract
+```
+
+Expected:
+
+1. Confirmation/follow-up templates contain no waitlist or future-launch wording
+2. Sprint CTA copy is present and wired through one canonical CTA link builder
+3. CTA destination remains `/portal/study` with intent context parameters
+
+### A14. Release Readiness Aggregate
+
+Run:
+
+```bash
+cd web
+set -a && source .env.local && set +a
+npm run verify:portal-release-readiness
+```
+
+Expected:
+
+1. All codex-runnable portal reliability/lifecycle/analytics/recovery contracts pass
+2. Script exits `0` and returns an all-pass summary
+
 ## Section B - Human Full E2E (Staging Preferred)
 
 ### B1. New Student Journey
@@ -475,6 +535,9 @@ Blockers:
 - A9 callback + stale-link reliability contract: pass/fail
 - A10 portal journey contract matrix: pass/fail
 - A11 recovery CTA contract: pass/fail
+- A12 diagnostic API auth contract: pass/fail
+- A13 lifecycle email contract: pass/fail
+- A14 release readiness aggregate: pass/fail
 - B1 new student journey: pass/fail
 - B2 returning journeys: pass/fail
 - B3 direct URL matrix: pass/fail

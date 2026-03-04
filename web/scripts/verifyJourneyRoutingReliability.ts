@@ -92,8 +92,8 @@ function assertStudyEntryRoutingMatrix() {
     isEmailLink: false,
   });
   assert(
-    planningDone.route === "/diagnostico",
-    "Planning-complete users without diagnostic must continue to diagnostic"
+    planningDone.route === "/portal/goals?mode=planning",
+    "Planning-required users must return to planning mode before study entry"
   );
 
   const diagnosticInProgress = resolveStudyEntryRoute({
