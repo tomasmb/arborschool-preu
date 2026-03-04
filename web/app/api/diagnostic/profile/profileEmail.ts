@@ -1,11 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { users } from "@/db/schema";
-import {
-  sendConfirmationEmail,
-  scheduleFollowupEmail,
-  isEmailConfigured,
-} from "@/lib/email";
+import { sendConfirmationEmail, isEmailConfigured } from "@/lib/email";
 import {
   ACTIVATION_READY_FOLLOWUP_JOB_TYPE,
   buildActivationReadyFollowupDedupeKey,
@@ -13,8 +9,8 @@ import {
   evaluateActivationReadyConfirmationPolicy,
   evaluateActivationReadyFollowupPolicy,
   resolveActivationReadyFollowupSchedule,
-  updateLifecycleReminderJob,
 } from "@/lib/student/lifecycleEmailPolicy";
+import { buildActivationReadyFollowupPayload } from "@/lib/student/lifecycleReminderDispatch";
 import type { ProfilingData, ResultsSnapshot } from "./types";
 
 function toEmailResultsSnapshot(resultsSnapshot: ResultsSnapshot) {
@@ -26,18 +22,36 @@ function toEmailResultsSnapshot(resultsSnapshot: ResultsSnapshot) {
   };
 }
 
+function logLifecycleSkip(params: {
+  userEmail: string;
+  reason: string;
+  message: "confirmation email" | "follow-up";
+}) {
+  console.log(
+    `[Profile] Skipping ${params.message} for ${params.userEmail}: ${params.reason}`
+  );
+}
+
+function logDeniedLifecyclePolicy(params: {
+  userEmail: string;
+  reason: string;
+  message: "confirmation email" | "follow-up";
+}) {
+  logLifecycleSkip(params);
+}
+
 async function sendConfirmationEmailSafely(params: {
   userId: string;
   userEmail: string;
   resultsSnapshot: ResultsSnapshot;
 }) {
   const policy = await evaluateActivationReadyConfirmationPolicy(params.userId);
-  if (!policy.allowed) {
-    console.log(
-      `[Profile] Skipping confirmation email for ${params.userEmail}: ${policy.reason}`
-    );
-    return;
-  }
+  if (!policy.allowed)
+    return logDeniedLifecyclePolicy({
+      userEmail: params.userEmail,
+      reason: policy.reason,
+      message: "confirmation email",
+    });
 
   try {
     const emailResult = await sendConfirmationEmail(
@@ -64,12 +78,12 @@ async function scheduleFollowupEmailSafely(params: {
   attemptId: string | null;
 }) {
   const policy = await evaluateActivationReadyFollowupPolicy(params.userId);
-  if (!policy.allowed) {
-    console.log(
-      `[Profile] Skipping follow-up for ${params.userEmail}: ${policy.reason}`
-    );
-    return;
-  }
+  if (!policy.allowed)
+    return logDeniedLifecyclePolicy({
+      userEmail: params.userEmail,
+      reason: policy.reason,
+      message: "follow-up",
+    });
 
   try {
     const scheduledAt = resolveActivationReadyFollowupSchedule({
@@ -85,10 +99,13 @@ async function scheduleFollowupEmailSafely(params: {
       jobType: ACTIVATION_READY_FOLLOWUP_JOB_TYPE,
       dedupeKey,
       scheduledFor: new Date(scheduledAt),
-      payload: {
-        kind: "activation_ready_followup",
+      payload: buildActivationReadyFollowupPayload({
         resultsSnapshot: toEmailResultsSnapshot(params.resultsSnapshot),
-      },
+        context: {
+          paesGoal: params.profilingData?.paesGoal,
+          paesDate: params.profilingData?.paesDate,
+        },
+      }),
     });
 
     if (!reminderJob.created || !reminderJob.jobId) {
@@ -98,40 +115,13 @@ async function scheduleFollowupEmailSafely(params: {
       return;
     }
 
-    const followupResult = await scheduleFollowupEmail({
-      recipient: { email: params.userEmail, userId: params.userId },
-      results: toEmailResultsSnapshot(params.resultsSnapshot),
-      context: {
-        paesGoal: params.profilingData?.paesGoal,
-        paesDate: params.profilingData?.paesDate,
-      },
-      scheduledAt,
-    });
-
-    if (!followupResult.success) {
-      await updateLifecycleReminderJob({
-        jobId: reminderJob.jobId,
-        status: "failed",
-        lastError: followupResult.error ?? "Unknown scheduling error",
-      });
-      console.warn(
-        `[Profile] Failed to schedule follow-up: ${followupResult.error}`
-      );
-      return;
-    }
-
-    await updateLifecycleReminderJob({
-      jobId: reminderJob.jobId,
-      status: "scheduled",
-    });
-
     await db
       .update(users)
-      .set({ followupEmailScheduledAt: new Date() })
+      .set({ followupEmailScheduledAt: new Date(scheduledAt) })
       .where(eq(users.id, params.userId));
 
     console.log(
-      `[Profile] Follow-up email scheduled for ${params.userEmail} at ${scheduledAt}`
+      `[Profile] Follow-up reminder queued for ${params.userEmail} at ${scheduledAt}`
     );
   } catch (error) {
     console.error("[Profile] Follow-up scheduling exception:", error);

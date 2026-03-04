@@ -56,6 +56,8 @@ Implemented and ready for validation:
 10. Canonical analytics milestone events are emitted in active flow:
     `landing_cta`, `auth_success`, `planning_saved`, `diagnostic_started`,
     `diagnostic_completed`, `first_sprint_started`, `weekly_active`
+11. Follow-up reminder jobs are now dispatched via internal worker path with
+    send-time suppression checks (`/api/internal/reminders/dispatch`)
 
 Still pending and must be tested after implementation:
 1. Stale email link context banner ("ya completaste X") behavior
@@ -227,6 +229,18 @@ Expected:
 1. Lifecycle policy exports include suppression + cap controls
 2. Canonical milestone schema and tracker emitters are present
 
+### A6. Lifecycle Dispatch Suppression (Stale Reminder Guard)
+Run:
+```bash
+cd web
+set -a && source .env.local && set +a
+npm run verify:lifecycle-reminder-dispatch
+```
+Expected:
+1. Dispatcher sends only activation-ready due jobs
+2. Dispatcher suppresses stale jobs after journey state changes
+3. Dispatcher suppresses jobs when reminder email preference is disabled
+
 ## Section B - Human Full E2E (Staging Preferred)
 
 ### B1. New Student Journey
@@ -296,6 +310,8 @@ Blockers:
 - A2 scripted verification: pass/fail
 - A3 guard smoke: pass/fail
 - A4 legacy artifact guard: pass/fail
+- A5 lifecycle + milestone wiring guard: pass/fail
+- A6 lifecycle dispatch suppression: pass/fail
 - B1 new student journey: pass/fail
 - B2 returning journeys: pass/fail
 - B3 direct URL matrix: pass/fail

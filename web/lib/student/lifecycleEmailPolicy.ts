@@ -1,4 +1,4 @@
-import { and, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   studentPlanningProfiles,
@@ -26,13 +26,21 @@ type LifecycleDecisionReason =
   | "daily_cap_reached"
   | "weekly_cap_reached";
 
-type LifecycleJobStatus = "pending" | "scheduled" | "sent" | "failed";
+export type LifecycleJobStatus =
+  | "pending"
+  | "scheduled"
+  | "processing"
+  | "sent"
+  | "failed"
+  | "skipped";
 
 const COUNTABLE_LIFECYCLE_STATUSES: LifecycleJobStatus[] = [
   "pending",
   "scheduled",
   "sent",
 ];
+
+const CLAIMABLE_LIFECYCLE_STATUSES: LifecycleJobStatus[] = ["pending"];
 
 export const ACTIVATION_READY_FOLLOWUP_JOB_TYPE =
   "activation_ready_followup" as const;
@@ -52,6 +60,11 @@ export type LifecyclePolicyDecision = {
   allowed: boolean;
   reason: LifecycleDecisionReason;
   context: LifecycleContext;
+};
+
+type LifecyclePolicyOptions = {
+  excludeJobId?: string;
+  enforceCaps?: boolean;
 };
 
 type ZonedDateTimeParts = {
@@ -123,17 +136,21 @@ function toComparableTimestamp(parts: ZonedDateTimeParts): number {
   );
 }
 
-function zonedLocalToUtc(value: ZonedDateTimeParts, timeZone: string): Date {
-  let guess = new Date(
+function toUtcDate(parts: ZonedDateTimeParts): Date {
+  return new Date(
     Date.UTC(
-      value.year,
-      value.month - 1,
-      value.day,
-      value.hour,
-      value.minute,
-      value.second
+      parts.year,
+      parts.month - 1,
+      parts.day,
+      parts.hour,
+      parts.minute,
+      parts.second
     )
   );
+}
+
+function zonedLocalToUtc(value: ZonedDateTimeParts, timeZone: string): Date {
+  let guess = toUtcDate(value);
 
   for (let index = 0; index < 6; index += 1) {
     const guessParts = getZonedDateTimeParts(guess, timeZone);
@@ -154,16 +171,7 @@ function addDaysLocal(
   value: ZonedDateTimeParts,
   days: number
 ): ZonedDateTimeParts {
-  const shifted = new Date(
-    Date.UTC(
-      value.year,
-      value.month - 1,
-      value.day + days,
-      value.hour,
-      value.minute,
-      value.second
-    )
-  );
+  const shifted = toUtcDate({ ...value, day: value.day + days });
 
   return {
     year: shifted.getUTCFullYear(),
@@ -194,27 +202,35 @@ function resolveTimeZone(value: string | null | undefined): string {
 
 async function countLifecycleEmailsSince(
   userId: string,
-  since: Date
+  since: Date,
+  options?: { excludeJobId?: string }
 ): Promise<number> {
+  const baseWhere = and(
+    eq(studentReminderJobs.userId, userId),
+    eq(studentReminderJobs.channel, "email"),
+    inArray(studentReminderJobs.jobType, [...LIFECYCLE_JOB_TYPES]),
+    inArray(studentReminderJobs.status, [
+      ...COUNTABLE_LIFECYCLE_STATUSES,
+    ] as string[]),
+    gte(studentReminderJobs.createdAt, since)
+  );
+
   const [row] = await db
     .select({ count: sql<number>`count(*)` })
     .from(studentReminderJobs)
     .where(
-      and(
-        eq(studentReminderJobs.userId, userId),
-        eq(studentReminderJobs.channel, "email"),
-        inArray(studentReminderJobs.jobType, [...LIFECYCLE_JOB_TYPES]),
-        inArray(studentReminderJobs.status, [
-          ...COUNTABLE_LIFECYCLE_STATUSES,
-        ] as string[]),
-        gte(studentReminderJobs.createdAt, since)
-      )
+      options?.excludeJobId
+        ? and(baseWhere, ne(studentReminderJobs.id, options.excludeJobId))
+        : baseWhere
     );
 
   return Number(row?.count ?? 0);
 }
 
-async function getLifecycleContext(userId: string): Promise<LifecycleContext> {
+async function getLifecycleContext(
+  userId: string,
+  options?: { excludeJobId?: string }
+): Promise<LifecycleContext> {
   const now = Date.now();
 
   const [
@@ -238,8 +254,8 @@ async function getLifecycleContext(userId: string): Promise<LifecycleContext> {
       .from(studentPlanningProfiles)
       .where(eq(studentPlanningProfiles.userId, userId))
       .limit(1),
-    countLifecycleEmailsSince(userId, new Date(now - DAY_MS)),
-    countLifecycleEmailsSince(userId, new Date(now - 7 * DAY_MS)),
+    countLifecycleEmailsSince(userId, new Date(now - DAY_MS), options),
+    countLifecycleEmailsSince(userId, new Date(now - 7 * DAY_MS), options),
   ]);
 
   return {
@@ -271,44 +287,52 @@ function deny(
   };
 }
 
+function evaluateActivationReadyBase(context: LifecycleContext) {
+  if (context.unsubscribed) {
+    return deny(context, "unsubscribed");
+  }
+
+  if (context.journeyState !== "activation_ready") {
+    return deny(context, "journey_not_activation_ready");
+  }
+
+  return null;
+}
+
 export async function evaluateActivationReadyConfirmationPolicy(
   userId: string
 ): Promise<LifecyclePolicyDecision> {
   const context = await getLifecycleContext(userId);
-
-  if (context.unsubscribed) {
-    return deny(context, "unsubscribed");
-  }
-
-  if (context.journeyState !== "activation_ready") {
-    return deny(context, "journey_not_activation_ready");
-  }
-
-  return allow(context);
+  return evaluateActivationReadyBase(context) ?? allow(context);
 }
 
 export async function evaluateActivationReadyFollowupPolicy(
-  userId: string
+  userId: string,
+  options: LifecyclePolicyOptions = {}
 ): Promise<LifecyclePolicyDecision> {
-  const context = await getLifecycleContext(userId);
-
-  if (context.unsubscribed) {
-    return deny(context, "unsubscribed");
-  }
-
-  if (context.journeyState !== "activation_ready") {
-    return deny(context, "journey_not_activation_ready");
+  const context = await getLifecycleContext(userId, {
+    excludeJobId: options.excludeJobId,
+  });
+  const baseDecision = evaluateActivationReadyBase(context);
+  if (baseDecision) {
+    return baseDecision;
   }
 
   if (!context.reminderEmailEnabled) {
     return deny(context, "reminder_email_disabled");
   }
 
-  if (context.lifecycleCountLastDay >= LIFECYCLE_DAILY_CAP) {
+  if (
+    options.enforceCaps !== false &&
+    context.lifecycleCountLastDay >= LIFECYCLE_DAILY_CAP
+  ) {
     return deny(context, "daily_cap_reached");
   }
 
-  if (context.lifecycleCountLastWeek >= LIFECYCLE_WEEKLY_CAP) {
+  if (
+    options.enforceCaps !== false &&
+    context.lifecycleCountLastWeek >= LIFECYCLE_WEEKLY_CAP
+  ) {
     return deny(context, "weekly_cap_reached");
   }
 
@@ -381,6 +405,28 @@ export async function createLifecycleReminderJob(params: {
     created: inserted.length > 0,
     jobId: inserted[0]?.id ?? null,
   };
+}
+
+export async function claimLifecycleReminderJob(
+  jobId: string
+): Promise<boolean> {
+  const claimed = await db
+    .update(studentReminderJobs)
+    .set({
+      status: "processing",
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(studentReminderJobs.id, jobId),
+        inArray(studentReminderJobs.status, [
+          ...CLAIMABLE_LIFECYCLE_STATUSES,
+        ] as string[])
+      )
+    )
+    .returning({ id: studentReminderJobs.id });
+
+  return claimed.length > 0;
 }
 
 export async function updateLifecycleReminderJob(params: {
