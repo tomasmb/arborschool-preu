@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useRef } from "react";
 import {
+  trackPlanningSavedMilestone,
   trackStudentGoalsSaved,
   trackStudentSimulatorInteraction,
 } from "@/lib/analytics";
@@ -221,6 +222,11 @@ export function useGoalSaveHandlers(state: GoalsState) {
         payloadGoals.length,
         payloadGoals.filter((goal) => goal.isPrimary).length
       );
+      trackPlanningSavedMilestone({
+        mode: state.savedGoals.length === 0 ? "create" : "update",
+        goalCount: payloadGoals.length,
+        entryPoint: "/portal/goals",
+      });
       applyGoalsPayload(state, saved);
     },
     [state]

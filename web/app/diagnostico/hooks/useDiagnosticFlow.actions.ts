@@ -27,6 +27,7 @@ import {
   trackConfirmSkipExit,
   trackConfirmSkipViewed,
   trackDiagnosticCompleted,
+  trackDiagnosticStarted,
   trackProfilingCompleted,
   trackStage1Completed,
 } from "@/lib/analytics";
@@ -110,11 +111,19 @@ export function useDiagnosticStartActions(params: {
       }
       params.setAttemptId(data.attemptId);
       saveAttemptId(data.attemptId);
+      trackDiagnosticStarted({
+        attemptId: data.attemptId,
+        entryPoint: "/diagnostico",
+      });
     } catch (error) {
       console.error("Failed to start test:", error);
       const localId = generateLocalAttemptId();
       params.setAttemptId(localId);
       saveAttemptId(localId);
+      trackDiagnosticStarted({
+        attemptId: localId,
+        entryPoint: "/diagnostico",
+      });
     }
 
     const now = Date.now();

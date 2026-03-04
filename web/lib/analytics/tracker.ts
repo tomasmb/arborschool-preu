@@ -202,17 +202,6 @@ export function trackLandingPageViewed(): void {
 }
 
 /**
- * Tracks landing CTA click. Call when user clicks any CTA to go to diagnostic.
- */
-export function trackLandingCtaClicked(
-  ctaLocation: AnalyticsEventMap["landing_cta_clicked"]["cta_location"]
-): void {
-  trackEvent("landing_cta_clicked", {
-    cta_location: ctaLocation,
-  });
-}
-
-/**
  * Tracks diagnostic intro/welcome screen view. Call when welcome screen mounts.
  */
 export function trackDiagnosticIntroViewed(): void {
@@ -227,13 +216,21 @@ export function trackDiagnosticIntroViewed(): void {
 export function trackDiagnosticCompleted(
   totalCorrect: number,
   performanceTier: AnalyticsEventMap["diagnostic_completed"]["performance_tier"],
-  route: AnalyticsEventMap["diagnostic_completed"]["route"]
+  route: AnalyticsEventMap["diagnostic_completed"]["route"],
+  options?: {
+    entryPoint?: string;
+    journeyState?: AnalyticsEventMap["diagnostic_completed"]["journey_state"];
+  }
 ): void {
   trackEvent("diagnostic_completed", {
     total_correct: totalCorrect,
     performance_tier: performanceTier,
     time_elapsed_seconds: getDiagnosticElapsedSeconds(),
     route,
+    entry_point:
+      options?.entryPoint ??
+      (typeof window !== "undefined" ? window.location.pathname : undefined),
+    journey_state: options?.journeyState,
   });
 }
 

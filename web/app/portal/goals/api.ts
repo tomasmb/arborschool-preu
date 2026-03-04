@@ -1,21 +1,9 @@
 import type { SimulatorPayload, StudentGoalsPayload } from "./types";
-
-export type ApiErrorPayload =
-  | string
-  | {
-      code: string;
-      message: string;
-    };
-
-export type ApiEnvelope<T> =
-  | {
-      success: true;
-      data: T;
-    }
-  | {
-      success: false;
-      error: ApiErrorPayload;
-    };
+import { trackAuthSuccessOnce } from "@/lib/analytics";
+import {
+  resolveApiErrorMessage,
+  type ApiEnvelope,
+} from "@/lib/student/apiClientEnvelope";
 
 export const DEFAULT_PLANNING_PROFILE = {
   examDate: "",
@@ -23,21 +11,6 @@ export const DEFAULT_PLANNING_PROFILE = {
   reminderInApp: true,
   reminderEmail: true,
 };
-
-export function apiErrorMessage(
-  payload: ApiEnvelope<unknown>,
-  fallback: string
-) {
-  if (payload.success) {
-    return fallback;
-  }
-
-  if (typeof payload.error === "string") {
-    return payload.error;
-  }
-
-  return payload.error.message;
-}
 
 export function planningProfileToApi(draft: {
   examDate: string;
@@ -74,8 +47,14 @@ export async function fetchGoals(): Promise<StudentGoalsPayload> {
   });
   const payload = (await response.json()) as ApiEnvelope<StudentGoalsPayload>;
   if (!response.ok || !payload.success) {
-    throw new Error(apiErrorMessage(payload, "No se pudo cargar objetivos"));
+    throw new Error(
+      resolveApiErrorMessage(payload, "No se pudo cargar objetivos")
+    );
   }
+  trackAuthSuccessOnce({
+    source: "goals",
+    entryPoint: "/portal/goals",
+  });
   return payload.data;
 }
 
@@ -95,7 +74,9 @@ export async function saveGoals(params: {
 
   const payload = (await response.json()) as ApiEnvelope<StudentGoalsPayload>;
   if (!response.ok || !payload.success) {
-    throw new Error(apiErrorMessage(payload, "No se pudo guardar objetivos"));
+    throw new Error(
+      resolveApiErrorMessage(payload, "No se pudo guardar objetivos")
+    );
   }
 
   return payload.data;
@@ -109,7 +90,9 @@ export async function simulateGoal(query: string): Promise<SimulatorPayload> {
 
   const payload = (await response.json()) as ApiEnvelope<SimulatorPayload>;
   if (!response.ok || !payload.success) {
-    throw new Error(apiErrorMessage(payload, "No se pudo calcular simulación"));
+    throw new Error(
+      resolveApiErrorMessage(payload, "No se pudo calcular simulación")
+    );
   }
 
   return payload.data;

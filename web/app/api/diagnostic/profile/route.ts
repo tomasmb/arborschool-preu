@@ -335,6 +335,7 @@ export async function POST(request: NextRequest) {
       userEmail: user.email,
       resultsSnapshot,
       profilingData: payload.profilingData,
+      attemptId: attemptResolution.attemptId,
     });
 
     return NextResponse.json({

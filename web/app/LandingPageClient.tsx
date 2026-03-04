@@ -72,7 +72,10 @@ export function LandingPageClient({
   const goToPrimaryAction = (
     ctaLocation: "hero" | "navbar" | "bottom" | "other" = "other"
   ) => {
-    trackLandingCtaClicked(ctaLocation);
+    trackLandingCtaClicked(ctaLocation, {
+      destination: primaryAction.href,
+      entryPoint: "/",
+    });
     setIsNavigating(true);
     window.location.href = primaryAction.href;
   };

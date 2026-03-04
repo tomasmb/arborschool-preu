@@ -20,7 +20,7 @@ export async function createStudySprint(itemCount = 5) {
     throw new Error(resolveErrorMessage(payload, "No se pudo crear sprint"));
   }
 
-  return payload.data.sprintId;
+  return payload.data;
 }
 
 export async function fetchStudySprint(sprintId: string) {

@@ -1,8 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { trackStudentDashboardViewed } from "@/lib/analytics";
+import {
+  trackAuthSuccessOnce,
+  trackStudentDashboardViewed,
+} from "@/lib/analytics";
 import type { NextActionPayload } from "./NextActionSection";
+import { toErrorMessage } from "./errorUtils";
 import { getErrorMessage } from "./formatters";
 import type {
   ApiEnvelope,
@@ -40,16 +44,16 @@ function useDashboardPayload() {
 
         setData(payload.data);
         setWeeklyMinutes(payload.data.effort.model.recommendedWeeklyMinutes);
+        trackAuthSuccessOnce({
+          source: "dashboard",
+          entryPoint: "/portal",
+        });
         trackStudentDashboardViewed(payload.data.status);
       } catch (loadError) {
         if (!isMounted) {
           return;
         }
-        setError(
-          loadError instanceof Error
-            ? loadError.message
-            : "No se pudo cargar portal"
-        );
+        setError(toErrorMessage(loadError, "No se pudo cargar portal"));
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -100,9 +104,7 @@ function useNextActionPayload() {
           return;
         }
         setNextActionError(
-          loadError instanceof Error
-            ? loadError.message
-            : "No se pudo cargar siguiente acción"
+          toErrorMessage(loadError, "No se pudo cargar siguiente acción")
         );
       } finally {
         if (isMounted) {

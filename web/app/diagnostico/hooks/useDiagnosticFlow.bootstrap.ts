@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
-import { trackDiagnosticIntroViewed } from "@/lib/analytics";
+import {
+  trackAuthSuccessOnce,
+  trackDiagnosticIntroViewed,
+} from "@/lib/analytics";
 import { AUTH_DIAGNOSTIC_CALLBACK_URL } from "@/lib/student/journeyRouting";
 import type { Screen } from "./useDiagnosticFlow.types";
 
@@ -48,7 +51,14 @@ export function useDiagnosticStudentBootstrap(params: {
 
         const payload = (await response.json()) as {
           success: boolean;
-          data?: { id?: string };
+          data?: {
+            id?: string;
+            journeyState?:
+              | "planning_required"
+              | "diagnostic_in_progress"
+              | "activation_ready"
+              | "active_learning";
+          };
         };
 
         if (!payload.success || !payload.data?.id || cancelled) {
@@ -60,6 +70,11 @@ export function useDiagnosticStudentBootstrap(params: {
 
         params.setIsStudentPortalUser(true);
         params.setUserId(payload.data.id);
+        trackAuthSuccessOnce({
+          source: "student_me",
+          entryPoint: "/diagnostico",
+          journeyState: payload.data.journeyState,
+        });
         await params.startTest();
       } catch {
         if (!cancelled) {

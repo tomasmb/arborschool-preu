@@ -60,15 +60,18 @@ Scope completed in current code pass:
 - Confirmation and follow-up emails were rewritten to drive immediate portal
   actions (primary CTA to sprint).
 - Waitlist/launch wording was removed from diagnostic results and email templates.
+- Lifecycle policy now gates follow-up by journey state (`activation_ready`),
+  unsubscribe/reminder preferences, and caps (`max 1/day`, `max 3/week`).
+- Follow-up scheduling now targets local daytime send windows.
 
 4. Cross-cutting copy/routing cleanup completed.
 - Removed runtime `STUDENT_PORTAL_V1` branching from app flow.
 - Updated verification script assertions to current post-login routing behavior.
 
 Open items after this pass:
-1. Implement lifecycle suppression + frequency guardrails by journey state
-  (Workstream C hard requirements).
-2. Refactor analytics schema to canonical state-transition milestones
+1. Complete stale-lifecycle suppression for already-scheduled reminders when
+  state changes after scheduling (Workstream C follow-through).
+2. Refactor analytics schema + reporting to canonical state-transition milestones
   (Workstream D).
 3. Complete reliability, accessibility, and performance release gates
   (Workstreams E/F).
@@ -94,7 +97,8 @@ Open items after this pass:
 4. Confirmation and follow-up emails still imply future platform access.
 `Status: Partially resolved`
 - Current: `web/lib/email/confirmationEmail.ts`,
-  `web/lib/email/followupEmail.ts`
+  `web/lib/email/followupEmail.ts`,
+  `web/lib/student/lifecycleEmailPolicy.ts`
 - Target: state-based lifecycle nudges with one concrete portal CTA.
 
 5. Transition flags can still disable or split portal flow. `Status: Resolved`
@@ -117,7 +121,8 @@ Open items after this pass:
 - Target: terminology normalized to portal journey vocabulary.
 
 ### P2 Gaps (Operational Hardening)
-1. Lifecycle trigger governance not centralized by journey state.
+1. Lifecycle trigger governance now centralized for activation-ready reminders,
+   but stale reminder invalidation still needs a send-time worker path.
 2. Stale-link handling and callback consistency need explicit E2E guarantees.
 3. Accessibility and performance gates are specified but not enforced in CI.
 

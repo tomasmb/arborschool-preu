@@ -6,10 +6,16 @@ import {
   scheduleFollowupEmail,
   isEmailConfigured,
 } from "@/lib/email";
+import {
+  ACTIVATION_READY_FOLLOWUP_JOB_TYPE,
+  buildActivationReadyFollowupDedupeKey,
+  createLifecycleReminderJob,
+  evaluateActivationReadyConfirmationPolicy,
+  evaluateActivationReadyFollowupPolicy,
+  resolveActivationReadyFollowupSchedule,
+  updateLifecycleReminderJob,
+} from "@/lib/student/lifecycleEmailPolicy";
 import type { ProfilingData, ResultsSnapshot } from "./types";
-
-const FOLLOWUP_DEDUP_WINDOW_MS = 23 * 60 * 60 * 1000;
-const FOLLOWUP_DELAY_MS = 24 * 60 * 60 * 1000;
 
 function toEmailResultsSnapshot(resultsSnapshot: ResultsSnapshot) {
   return {
@@ -25,6 +31,14 @@ async function sendConfirmationEmailSafely(params: {
   userEmail: string;
   resultsSnapshot: ResultsSnapshot;
 }) {
+  const policy = await evaluateActivationReadyConfirmationPolicy(params.userId);
+  if (!policy.allowed) {
+    console.log(
+      `[Profile] Skipping confirmation email for ${params.userEmail}: ${policy.reason}`
+    );
+    return;
+  }
+
   try {
     const emailResult = await sendConfirmationEmail(
       { email: params.userEmail, userId: params.userId, firstName: undefined },
@@ -42,38 +56,48 @@ async function sendConfirmationEmailSafely(params: {
   }
 }
 
-async function wasFollowupScheduledRecently(userId: string): Promise<boolean> {
-  const [userRecord] = await db
-    .select({ followupEmailScheduledAt: users.followupEmailScheduledAt })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
-
-  const lastScheduled = userRecord?.followupEmailScheduledAt;
-  if (!lastScheduled) {
-    return false;
-  }
-
-  return (
-    Date.now() - new Date(lastScheduled).getTime() < FOLLOWUP_DEDUP_WINDOW_MS
-  );
-}
-
 async function scheduleFollowupEmailSafely(params: {
   userId: string;
   userEmail: string;
   resultsSnapshot: ResultsSnapshot;
   profilingData?: ProfilingData;
+  attemptId: string | null;
 }) {
+  const policy = await evaluateActivationReadyFollowupPolicy(params.userId);
+  if (!policy.allowed) {
+    console.log(
+      `[Profile] Skipping follow-up for ${params.userEmail}: ${policy.reason}`
+    );
+    return;
+  }
+
   try {
-    if (await wasFollowupScheduledRecently(params.userId)) {
+    const scheduledAt = resolveActivationReadyFollowupSchedule({
+      timeZone: policy.context.timeZone,
+    });
+    const dedupeKey = buildActivationReadyFollowupDedupeKey(
+      params.userId,
+      params.attemptId
+    );
+
+    const reminderJob = await createLifecycleReminderJob({
+      userId: params.userId,
+      jobType: ACTIVATION_READY_FOLLOWUP_JOB_TYPE,
+      dedupeKey,
+      scheduledFor: new Date(scheduledAt),
+      payload: {
+        kind: "activation_ready_followup",
+        resultsSnapshot: toEmailResultsSnapshot(params.resultsSnapshot),
+      },
+    });
+
+    if (!reminderJob.created || !reminderJob.jobId) {
       console.log(
-        `[Profile] Skipping follow-up for ${params.userEmail} — already scheduled recently`
+        `[Profile] Skipping follow-up for ${params.userEmail}: duplicate attempt/job`
       );
       return;
     }
 
-    const scheduledAt = new Date(Date.now() + FOLLOWUP_DELAY_MS).toISOString();
     const followupResult = await scheduleFollowupEmail({
       recipient: { email: params.userEmail, userId: params.userId },
       results: toEmailResultsSnapshot(params.resultsSnapshot),
@@ -85,11 +109,21 @@ async function scheduleFollowupEmailSafely(params: {
     });
 
     if (!followupResult.success) {
+      await updateLifecycleReminderJob({
+        jobId: reminderJob.jobId,
+        status: "failed",
+        lastError: followupResult.error ?? "Unknown scheduling error",
+      });
       console.warn(
         `[Profile] Failed to schedule follow-up: ${followupResult.error}`
       );
       return;
     }
+
+    await updateLifecycleReminderJob({
+      jobId: reminderJob.jobId,
+      status: "scheduled",
+    });
 
     await db
       .update(users)
@@ -109,6 +143,7 @@ export async function processProfileEmails(params: {
   userEmail: string;
   resultsSnapshot: ResultsSnapshot | null;
   profilingData?: ProfilingData;
+  attemptId: string | null;
 }) {
   if (!params.resultsSnapshot || !isEmailConfigured()) {
     return;
@@ -125,5 +160,6 @@ export async function processProfileEmails(params: {
     userEmail: params.userEmail,
     resultsSnapshot: params.resultsSnapshot,
     profilingData: params.profilingData,
+    attemptId: params.attemptId,
   });
 }

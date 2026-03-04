@@ -8,12 +8,14 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
+import { trackFirstSprintStarted, trackWeeklyActive } from "@/lib/analytics";
 import {
   completeStudySprint,
   createStudySprint,
   fetchStudySprint,
   submitStudySprintAnswer,
 } from "./api";
+import { toErrorMessage } from "../errorUtils";
 import type {
   AnswerResponse,
   CompletionResponse,
@@ -51,22 +53,42 @@ function useSprintBootstrap(
       setLoading(true);
       setError(null);
       try {
-        const sprintId = sprintIdFromUrl ?? (await createStudySprint());
+        let sprintId = sprintIdFromUrl;
+        let createdSprint: Awaited<
+          ReturnType<typeof createStudySprint>
+        > | null = null;
+
+        if (!sprintId) {
+          createdSprint = await createStudySprint();
+          sprintId = createdSprint.sprintId;
+        }
+
+        if (!sprintId) {
+          throw new Error("No se pudo resolver sprint");
+        }
+
         const loaded = await fetchStudySprint(sprintId);
         if (!mounted) {
           return;
         }
+
+        if (createdSprint?.isFirstSprintStarted) {
+          trackFirstSprintStarted({
+            sprintId: createdSprint.sprintId,
+            estimatedMinutes: createdSprint.estimatedMinutes,
+            itemCount: createdSprint.itemCount,
+            entryPoint: "/portal/study",
+            journeyState: "activation_ready",
+          });
+        }
+
         setSprint(loaded);
         setActiveIndex(firstUnansweredIndex(loaded.items));
       } catch (loadError) {
         if (!mounted) {
           return;
         }
-        setError(
-          loadError instanceof Error
-            ? loadError.message
-            : "No se pudo iniciar el sprint"
-        );
+        setError(toErrorMessage(loadError, "No se pudo iniciar el sprint"));
       } finally {
         if (mounted) {
           setLoading(false);
@@ -180,11 +202,7 @@ function useAnswerAction(params: {
         setActiveIndex(updated.nextUnansweredIndex);
       }
     } catch (submitError) {
-      setError(
-        submitError instanceof Error
-          ? submitError.message
-          : "No se pudo guardar la respuesta"
-      );
+      setError(toErrorMessage(submitError, "No se pudo guardar la respuesta"));
     } finally {
       setSubmitting(false);
     }
@@ -212,13 +230,23 @@ function useCompleteAction(params: {
     try {
       const payload = await completeStudySprint(params.sprint.sprintId);
       setCompletion(payload);
+      if (
+        !payload.alreadyCompleted &&
+        payload.mission.completedSessions === 1
+      ) {
+        trackWeeklyActive({
+          weekStartDate: payload.mission.weekStartDate,
+          completedSessions: payload.mission.completedSessions,
+          targetSessions: payload.mission.targetSessions,
+          entryPoint: "/portal/study",
+          journeyState: "active_learning",
+        });
+      }
       const refreshed = await fetchStudySprint(params.sprint.sprintId);
       params.setSprint(refreshed);
     } catch (completeError) {
       params.setError(
-        completeError instanceof Error
-          ? completeError.message
-          : "No se pudo completar el sprint"
+        toErrorMessage(completeError, "No se pudo completar el sprint")
       );
     } finally {
       setCompleting(false);

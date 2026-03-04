@@ -10,17 +10,26 @@ export type {
   AnalyticsEventName,
   AnalyticsEventMap,
   DeviceType,
+  JourneyStateAnalytics,
   UTMParams,
 } from "./types";
 
 // Tracker functions
+export {
+  trackLandingCtaClicked,
+  trackAuthSuccessOnce,
+  trackPlanningSavedMilestone,
+  trackDiagnosticStarted,
+  trackFirstSprintStarted,
+  trackWeeklyActive,
+} from "./milestones";
+
 export {
   initializeTracker,
   trackEvent,
   identifyUser,
   // Convenience functions (funnel events)
   trackLandingPageViewed,
-  trackLandingCtaClicked,
   markDiagnosticStart,
   trackDiagnosticIntroViewed,
   trackDiagnosticCompleted,

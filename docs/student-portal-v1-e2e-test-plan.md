@@ -48,10 +48,18 @@ Implemented and ready for validation:
 5. Waitlist wording removed from results + confirmation/follow-up emails
 6. Runtime `STUDENT_PORTAL_V1` branching removed from active app flow
 7. Remaining mini-form artifacts removed from diagnostic UI/state and analytics schema
+8. Lifecycle follow-up scheduling is now state-gated (`activation_ready` only),
+   suppression-aware (`unsubscribed` / `reminderEmail=false`), and capped
+   (`max 1/day`, `max 3/week`) via reminder-job policy
+9. Follow-up schedule now respects local daytime window (planning timezone,
+   fallback `America/Santiago`)
+10. Canonical analytics milestone events are emitted in active flow:
+    `landing_cta`, `auth_success`, `planning_saved`, `diagnostic_started`,
+    `diagnostic_completed`, `first_sprint_started`, `weekly_active`
 
 Still pending and must be tested after implementation:
-1. Journey-state lifecycle suppression/frequency caps
-2. Canonical analytics milestone schema (`landing_cta -> ... -> weekly_active`)
+1. Stale email link context banner ("ya completaste X") behavior
+2. Funnel dashboard/report QA for milestone segmentation by entry/journey state
 3. CI-enforced accessibility/performance gates
 
 ## Ownership Matrix
@@ -112,7 +120,12 @@ Required entry points:
 4. Stale email link -> routed to canonical current task with context banner
    (test once implemented)
 5. Lifecycle suppression and send caps:
-   max 1/day, max 3/week (test once implemented)
+   max 1/day, max 3/week
+6. Follow-up scheduling blocked when:
+   `journeyState != activation_ready`, `unsubscribed=true`,
+   or `planning.reminderEmail=false`
+7. Follow-up scheduling timestamp falls inside local send window
+   (09:00-21:00 planning timezone)
 
 ### E. Analytics and Observability
 Validate event quality for funnel milestones:
@@ -200,6 +213,20 @@ rg -n "MiniFormScreen|mini-form|mini_form_completed|trackMiniFormCompleted" web/
 Expected:
 1. No matches
 
+### A5. Lifecycle + Milestone Wiring Guard
+Run:
+```bash
+rg -n \
+  "evaluateActivationReady(Followup|Confirmation)Policy|LIFECYCLE_DAILY_CAP|LIFECYCLE_WEEKLY_CAP|resolveActivationReadyFollowupSchedule" \
+  web/lib/student/lifecycleEmailPolicy.ts
+rg -n \
+  "\"landing_cta\"|\"auth_success\"|\"planning_saved\"|\"diagnostic_started\"|\"first_sprint_started\"|\"weekly_active\"" \
+  web/lib/analytics/types.ts web/lib/analytics/tracker.ts
+```
+Expected:
+1. Lifecycle policy exports include suppression + cap controls
+2. Canonical milestone schema and tracker emitters are present
+
 ## Section B - Human Full E2E (Staging Preferred)
 
 ### B1. New Student Journey
@@ -233,6 +260,18 @@ Then sign in and validate callback + final route matches journey state.
 1. Open confirmation and follow-up emails in test inbox
 2. Click CTA while signed out and signed in
 3. Confirm destination is canonical and actionable
+
+### B5. Lifecycle Suppression + Caps Validation
+1. Complete diagnostic while `activation_ready` and confirm:
+   confirmation send + follow-up reminder job created
+2. Disable planning reminder email and repeat diagnostic completion path:
+   no new follow-up reminder job created
+3. Mark user unsubscribed and repeat diagnostic completion path:
+   no confirmation or follow-up is sent
+4. Force `active_learning` before profile save replay:
+   confirmation/follow-up are suppressed
+5. Trigger repeated diagnostic completion attempts in one week:
+   no more than 1 lifecycle follow-up in 24h, no more than 3 in 7 days
 
 ## Pass/Fail Rules
 Release candidate is `PASS` when:

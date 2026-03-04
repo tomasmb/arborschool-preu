@@ -16,34 +16,20 @@ import {
   getOrCreateCurrentMission,
   incrementMissionProgress,
 } from "@/lib/student/missions";
+import type {
+  StudySprintCreatePayload,
+  StudySprintItemPayload,
+  StudySprintPayload,
+} from "./studySprint.types";
+
 const DEFAULT_SPRINT_ITEMS = 5;
+
 type CandidateAtom = {
   atomId: string;
   title: string;
   axis: string;
 };
-export type StudySprintItemPayload = {
-  itemId: string;
-  position: number;
-  atomId: string;
-  atomTitle: string;
-  questionId: string;
-  questionHtml: string;
-  options: { letter: string; text: string }[];
-  selectedAnswer: string | null;
-  isCorrect: boolean | null;
-};
-export type StudySprintPayload = {
-  sprintId: string;
-  status: string;
-  estimatedMinutes: number;
-  progress: {
-    answered: number;
-    total: number;
-    remaining: number;
-  };
-  items: StudySprintItemPayload[];
-};
+
 function normalizeAnswer(value: string): string {
   return value.trim().toUpperCase();
 }
@@ -213,7 +199,14 @@ async function getSprintOwnership(sprintId: string, userId: string) {
 export async function createStudySprintForUser(
   userId: string,
   itemCount = DEFAULT_SPRINT_ITEMS
-): Promise<{ sprintId: string; estimatedMinutes: number; itemCount: number }> {
+): Promise<StudySprintCreatePayload> {
+  const [existingSprint] = await db
+    .select({ id: studentStudySprints.id })
+    .from(studentStudySprints)
+    .where(eq(studentStudySprints.userId, userId))
+    .limit(1);
+  const hasAnyPriorSprint = Boolean(existingSprint);
+
   const [existingInProgress] = await db
     .select({
       id: studentStudySprints.id,
@@ -241,6 +234,7 @@ export async function createStudySprintForUser(
         sprintId: existingInProgress.id,
         estimatedMinutes: existingInProgress.estimatedMinutes,
         itemCount: totalItems,
+        isFirstSprintStarted: false,
       };
     }
   }
@@ -272,6 +266,7 @@ export async function createStudySprintForUser(
     sprintId: sprint.id,
     estimatedMinutes,
     itemCount: selected.length,
+    isFirstSprintStarted: !hasAnyPriorSprint,
   };
 }
 export async function getStudySprint(

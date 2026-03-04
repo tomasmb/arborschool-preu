@@ -23,6 +23,12 @@ export interface UTMParams {
 
 export type DeviceType = "mobile" | "tablet" | "desktop";
 
+export type JourneyStateAnalytics =
+  | "planning_required"
+  | "diagnostic_in_progress"
+  | "activation_ready"
+  | "active_learning";
+
 // ============================================================================
 // EVENT PROPERTIES
 // ============================================================================
@@ -30,6 +36,11 @@ export type DeviceType = "mobile" | "tablet" | "desktop";
 /** Base properties included in all events (added automatically) */
 export interface BaseEventProperties {
   build_version?: string;
+}
+
+export interface JourneyMilestoneBaseProperties extends BaseEventProperties {
+  entry_point?: string;
+  journey_state?: JourneyStateAnalytics;
 }
 
 /** Landing page viewed event */
@@ -45,6 +56,22 @@ export interface LandingCtaClickedProperties extends BaseEventProperties {
   cta_location: "hero" | "navbar" | "bottom" | "other";
 }
 
+export interface LandingCtaMilestoneProperties
+  extends JourneyMilestoneBaseProperties {
+  cta_location: "hero" | "navbar" | "bottom" | "other";
+  destination: string;
+}
+
+export interface AuthSuccessProperties extends JourneyMilestoneBaseProperties {
+  source: "student_me" | "dashboard" | "goals";
+}
+
+export interface PlanningSavedProperties
+  extends JourneyMilestoneBaseProperties {
+  mode: "create" | "update";
+  goal_count: number;
+}
+
 /** Diagnostic intro viewed event - user sees welcome screen */
 export interface DiagnosticIntroViewedProperties extends BaseEventProperties {
   device_type: DeviceType;
@@ -55,8 +82,15 @@ export interface DiagnosticCompletedProperties extends BaseEventProperties {
   total_correct: number;
   performance_tier: PerformanceTier;
   time_elapsed_seconds: number;
+  entry_point?: string;
+  journey_state?: JourneyStateAnalytics;
   /** MST route taken: A=Fundamental, B=Intermedio, C=Avanzado */
   route: "A" | "B" | "C";
+}
+
+export interface DiagnosticStartedProperties
+  extends JourneyMilestoneBaseProperties {
+  attempt_id?: string;
 }
 
 /** Results viewed event */
@@ -148,15 +182,34 @@ export interface StudentNextActionClickedProperties
   has_next_action: boolean;
 }
 
+export interface FirstSprintStartedProperties
+  extends JourneyMilestoneBaseProperties {
+  sprint_id: string;
+  estimated_minutes: number;
+  item_count: number;
+}
+
+export interface WeeklyActiveProperties extends JourneyMilestoneBaseProperties {
+  week_start_date: string;
+  completed_sessions: number;
+  target_sessions: number;
+}
+
 // ============================================================================
-// EVENT NAMES (14 core funnel events)
+// EVENT NAMES
 // ============================================================================
 
 export type AnalyticsEventName =
   | "landing_page_viewed"
   | "landing_cta_clicked"
+  | "landing_cta"
+  | "auth_success"
+  | "planning_saved"
+  | "diagnostic_started"
   | "diagnostic_intro_viewed"
   | "diagnostic_completed"
+  | "first_sprint_started"
+  | "weekly_active"
   | "stage_1_completed"
   | "time_expired"
   | "partial_results_viewed"
@@ -179,8 +232,14 @@ export type AnalyticsEventName =
 export interface AnalyticsEventMap {
   landing_page_viewed: LandingPageViewedProperties;
   landing_cta_clicked: LandingCtaClickedProperties;
+  landing_cta: LandingCtaMilestoneProperties;
+  auth_success: AuthSuccessProperties;
+  planning_saved: PlanningSavedProperties;
+  diagnostic_started: DiagnosticStartedProperties;
   diagnostic_intro_viewed: DiagnosticIntroViewedProperties;
   diagnostic_completed: DiagnosticCompletedProperties;
+  first_sprint_started: FirstSprintStartedProperties;
+  weekly_active: WeeklyActiveProperties;
   stage_1_completed: Stage1CompletedProperties;
   time_expired: TimeExpiredProperties;
   partial_results_viewed: PartialResultsViewedProperties;

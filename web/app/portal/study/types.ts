@@ -1,86 +1,28 @@
-export type ApiErrorPayload =
-  | string
-  | {
-      code: string;
-      message: string;
-      details?: Record<string, unknown>;
-    };
+export type {
+  ApiEnvelope,
+  ApiErrorPayload,
+} from "@/lib/student/apiClientEnvelope";
+import type { ApiEnvelope } from "@/lib/student/apiClientEnvelope";
+import { resolveApiErrorMessage } from "@/lib/student/apiClientEnvelope";
+import type {
+  StudySprintAnswerPayload,
+  StudySprintCompletionPayload,
+  StudySprintCreatePayload,
+  StudySprintItemPayload,
+  StudySprintPayload,
+} from "@/lib/student/studySprint.types";
 
-export type ApiEnvelope<T> =
-  | {
-      success: true;
-      data: T;
-    }
-  | {
-      success: false;
-      error: ApiErrorPayload;
-    };
-
-export type SprintCreateData = {
-  sprintId: string;
-  estimatedMinutes: number;
-  itemCount: number;
-};
-
-export type SprintItem = {
-  itemId: string;
-  position: number;
-  atomId: string;
-  atomTitle: string;
-  questionId: string;
-  questionHtml: string;
-  options: { letter: string; text: string }[];
-  selectedAnswer: string | null;
-  isCorrect: boolean | null;
-};
-
-export type SprintData = {
-  sprintId: string;
-  status: string;
-  estimatedMinutes: number;
-  progress: {
-    answered: number;
-    total: number;
-    remaining: number;
-  };
-  items: SprintItem[];
-};
-
-export type AnswerResponse = {
-  sprintItemId: string;
-  selectedAnswer: string;
-  correctAnswer: string;
-  isCorrect: boolean;
-  progress: SprintData["progress"] | null;
-};
-
-export type CompletionResponse = {
-  sprintId: string;
-  status: string;
-  alreadyCompleted: boolean;
-  mission: {
-    id: string;
-    weekStartDate: string;
-    weekEndDate: string;
-    targetSessions: number;
-    completedSessions: number;
-    status: string;
-  };
-};
+export type SprintCreateData = StudySprintCreatePayload;
+export type SprintItem = StudySprintItemPayload;
+export type SprintData = StudySprintPayload;
+export type AnswerResponse = StudySprintAnswerPayload;
+export type CompletionResponse = StudySprintCompletionPayload;
 
 export function resolveErrorMessage(
   payload: ApiEnvelope<unknown>,
   fallback: string
 ) {
-  if (payload.success) {
-    return fallback;
-  }
-
-  if (typeof payload.error === "string") {
-    return payload.error;
-  }
-
-  return payload.error.message;
+  return resolveApiErrorMessage(payload, fallback);
 }
 
 export function sanitizeSprintId(value: string): string | null {
