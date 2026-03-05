@@ -293,3 +293,86 @@ function findCorrectAnswer(
 
   return null;
 }
+
+// ============================================================================
+// FEEDBACK EXTRACTION (post-answer, server-side)
+// ============================================================================
+
+export interface QtiChoiceFeedback {
+  identifier: string;
+  letter: string;
+  feedbackHtml?: string;
+}
+
+export interface QtiExtractedFeedback {
+  choiceFeedbacks: QtiChoiceFeedback[];
+  generalFeedbackHtml?: string;
+}
+
+const INLINE_FEEDBACK_TAGS = new Set([
+  "qti-feedback-inline",
+  "feedbackinline",
+]);
+
+const BLOCK_FEEDBACK_TAGS = new Set([
+  "qti-feedback-block",
+  "feedbackblock",
+  "qti-modal-feedback",
+  "modalfeedback",
+]);
+
+/**
+ * Extract feedback content from QTI XML after a student answers.
+ * Returns per-choice inline feedback and the general feedback block.
+ */
+export function extractFeedbackFromQti(
+  xmlString: string
+): QtiExtractedFeedback {
+  const { document: xmlDoc } = parseHTML(xmlString);
+  const choices = xmlDoc.querySelectorAll(
+    "simpleChoice, qti-simple-choice"
+  );
+  const itemBody = xmlDoc.querySelector("itemBody, qti-item-body");
+
+  const letters = ["A", "B", "C", "D"];
+  const choiceFeedbacks: QtiChoiceFeedback[] = [];
+
+  choices.forEach((choice, index) => {
+    const identifier =
+      choice.getAttribute("identifier") || letters[index];
+    let feedbackHtml: string | undefined;
+
+    for (const child of Array.from(choice.childNodes)) {
+      if (child.nodeType !== ELEMENT_NODE) continue;
+      const el = child as Element;
+      const tag = (el.localName || el.tagName).toLowerCase();
+      if (INLINE_FEEDBACK_TAGS.has(tag)) {
+        const content = serializeChildNodes(el).trim();
+        if (content) feedbackHtml = content;
+        break;
+      }
+    }
+
+    choiceFeedbacks.push({
+      identifier,
+      letter: letters[index],
+      feedbackHtml,
+    });
+  });
+
+  let generalFeedbackHtml: string | undefined;
+  if (itemBody) {
+    for (const child of Array.from(itemBody.childNodes)) {
+      if (child.nodeType !== ELEMENT_NODE) continue;
+      const el = child as Element;
+      const tag = (el.localName || el.tagName).toLowerCase();
+      if (BLOCK_FEEDBACK_TAGS.has(tag)) {
+        const content = serializeChildNodes(el).trim();
+        if (content) generalFeedbackHtml = content;
+        break;
+      }
+    }
+  }
+
+  return { choiceFeedbacks, generalFeedbackHtml };
+}

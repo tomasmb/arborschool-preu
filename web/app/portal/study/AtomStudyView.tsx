@@ -1,15 +1,16 @@
 "use client";
 
-import { MAX_QUESTIONS } from "@/lib/student/atomMasteryAlgorithm";
 import type { SessionDifficulty } from "@/lib/student/atomMasteryAlgorithm";
 import type {
   NextQuestionPayload,
   AnswerResultPayload,
 } from "@/lib/student/atomMasteryAlgorithm";
 import { MathContent } from "@/lib/qti/MathRenderer";
-import { ErrorStatePanel, ProgressRail } from "../components";
+import { FeedbackCard } from "@/lib/qti/FeedbackCard";
+import { ErrorStatePanel } from "../components";
 import { AtomLessonView } from "./AtomLessonView";
 import { AtomResultPanel } from "./AtomResultPanel";
+import { MasteryMeter } from "./MasteryMeter";
 import type { useAtomStudyController } from "./useAtomStudyController";
 
 type Controller = ReturnType<typeof useAtomStudyController>;
@@ -21,7 +22,10 @@ type Controller = ReturnType<typeof useAtomStudyController>;
 function AtomStudySkeleton() {
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 animate-pulse">
+      <div
+        className="rounded-2xl border border-gray-200 bg-white
+          p-5 animate-pulse"
+      >
         <div className="flex items-center justify-between gap-3 mb-4">
           <div className="space-y-2">
             <div className="h-5 w-48 bg-gray-200 rounded" />
@@ -31,7 +35,10 @@ function AtomStudySkeleton() {
         </div>
         <div className="h-2.5 w-full bg-gray-100 rounded-full" />
       </div>
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 animate-pulse space-y-4">
+      <div
+        className="rounded-2xl border border-gray-200 bg-white
+          p-5 animate-pulse space-y-4"
+      >
         <div className="h-4 w-28 bg-gray-200 rounded" />
         <div className="h-20 w-full bg-gray-100 rounded-lg" />
         <div className="space-y-2">
@@ -58,7 +65,11 @@ const DIFFICULTY_CONFIG: Record<
   hard: { label: "Difícil", color: "bg-rose-100 text-rose-700" },
 };
 
-function DifficultyBadge({ difficulty }: { difficulty: SessionDifficulty }) {
+function DifficultyBadge({
+  difficulty,
+}: {
+  difficulty: SessionDifficulty;
+}) {
   const cfg = DIFFICULTY_CONFIG[difficulty];
   return (
     <span
@@ -80,9 +91,11 @@ type AtomQuestionCardProps = {
   selectedAnswer: string | null;
   answerResult: AnswerResultPayload | null;
   submitting: boolean;
+  canAdvance: boolean;
   onSelectAnswer: (letter: string) => void;
   onSubmit: () => void;
   onNext: () => void;
+  onViewSolution: () => void;
 };
 
 function AtomQuestionCard({
@@ -91,145 +104,186 @@ function AtomQuestionCard({
   selectedAnswer,
   answerResult,
   submitting,
+  canAdvance,
   onSelectAnswer,
   onSubmit,
   onNext,
+  onViewSolution,
 }: AtomQuestionCardProps) {
   const hasFeedback = answerResult !== null;
 
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-5 space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs uppercase tracking-wide text-gray-500 font-medium">
-          Pregunta {question.position}
-        </p>
-        <DifficultyBadge difficulty={difficulty} />
-      </div>
-
-      <MathContent
-        html={question.questionHtml}
-        className="prose prose-sm max-w-none text-gray-800"
-      />
-
-      <div className="grid gap-2">
-        {question.options.map((option) => {
-          const checked = selectedAnswer === option.letter;
-          const isCorrectAnswer =
-            hasFeedback && answerResult.correctAnswer === option.letter;
-          const isWrongSelection =
-            hasFeedback && checked && !answerResult.isCorrect;
-
-          let optionStyle = "border-gray-200 hover:bg-gray-50";
-          let feedbackAnim = "";
-          if (isCorrectAnswer && hasFeedback) {
-            optionStyle = "border-emerald-300 bg-emerald-50 text-emerald-800";
-            feedbackAnim = "animate-correct-pulse";
-          } else if (isWrongSelection) {
-            optionStyle = "border-red-300 bg-red-50 text-red-800";
-            feedbackAnim = "animate-shake";
-          } else if (checked) {
-            optionStyle = "border-primary bg-primary/10 text-primary";
-          }
-
-          return (
-            <button
-              key={option.letter}
-              type="button"
-              onClick={() => !hasFeedback && onSelectAnswer(option.letter)}
-              disabled={hasFeedback}
-              className={[
-                "rounded-xl border-2 px-4 py-3 text-left text-sm",
-                "transition-all duration-200 flex items-center gap-3",
-                "active:scale-[0.98]",
-                optionStyle,
-                feedbackAnim,
-                hasFeedback ? "cursor-default" : "",
-              ].join(" ")}
-            >
-              <OptionCircle
-                letter={option.letter}
-                checked={checked}
-                isCorrect={isCorrectAnswer && hasFeedback}
-                isWrong={isWrongSelection}
-              />
-              <MathContent html={option.text} className="flex-1" />
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Feedback banner */}
-      {hasFeedback && (
-        <div
-          className={[
-            "rounded-xl border px-4 py-3 text-sm animate-fade-in-up",
-            answerResult.isCorrect
-              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-              : "border-amber-200 bg-amber-50 text-amber-900",
-          ].join(" ")}
-        >
-          <p className="font-semibold">
-            {answerResult.isCorrect ? "¡Correcto!" : "Incorrecto"}
+    <div className="space-y-4">
+      <section
+        className="rounded-2xl border border-gray-200 bg-white
+          p-5 space-y-5"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p
+            className="text-xs uppercase tracking-wide
+              text-gray-500 font-medium"
+          >
+            Pregunta {question.position}
           </p>
-          {!answerResult.isCorrect && (
-            <p className="mt-1">
-              La respuesta correcta es{" "}
-              <strong>{answerResult.correctAnswer}</strong>.
-            </p>
-          )}
+          <DifficultyBadge difficulty={difficulty} />
         </div>
+
+        <MathContent
+          html={question.questionHtml}
+          className="prose prose-sm max-w-none text-gray-800"
+        />
+
+        <div className="grid gap-2">
+          {question.options.map((option) => {
+            const checked = selectedAnswer === option.letter;
+            const isCorrectAnswer =
+              hasFeedback &&
+              answerResult.correctAnswer === option.letter;
+            const isWrongSelection =
+              hasFeedback && checked && !answerResult.isCorrect;
+
+            let optionStyle = "border-gray-200 hover:bg-gray-50";
+            let feedbackAnim = "";
+            if (isCorrectAnswer && hasFeedback) {
+              optionStyle =
+                "border-emerald-300 bg-emerald-50 text-emerald-800";
+              feedbackAnim = "animate-correct-pulse";
+            } else if (isWrongSelection) {
+              optionStyle = "border-red-300 bg-red-50 text-red-800";
+              feedbackAnim = "animate-shake";
+            } else if (checked) {
+              optionStyle = "border-primary bg-primary/10 text-primary";
+            }
+
+            return (
+              <button
+                key={option.letter}
+                type="button"
+                onClick={() =>
+                  !hasFeedback && onSelectAnswer(option.letter)
+                }
+                disabled={hasFeedback}
+                className={[
+                  "rounded-xl border-2 px-4 py-3 text-left text-sm",
+                  "transition-all duration-200 flex items-center gap-3",
+                  "active:scale-[0.98]",
+                  optionStyle,
+                  feedbackAnim,
+                  hasFeedback ? "cursor-default" : "",
+                ].join(" ")}
+              >
+                <OptionCircle
+                  letter={option.letter}
+                  checked={checked}
+                  isCorrect={isCorrectAnswer && hasFeedback}
+                  isWrong={isWrongSelection}
+                />
+                <MathContent html={option.text} className="flex-1" />
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Submit button (no feedback yet) */}
+        {!hasFeedback && (
+          <>
+            <div className="hidden sm:flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={onSubmit}
+                disabled={submitting || !selectedAnswer}
+                className="btn-primary text-sm disabled:opacity-60"
+              >
+                {submitting ? "Guardando..." : "Responder"}
+              </button>
+            </div>
+            <div
+              className="fixed bottom-0 inset-x-0 p-4 bg-white/90
+                backdrop-blur border-t border-gray-100
+                safe-area-bottom sm:hidden z-30"
+            >
+              <button
+                type="button"
+                onClick={onSubmit}
+                disabled={submitting || !selectedAnswer}
+                className="btn-primary w-full text-sm disabled:opacity-60"
+              >
+                {submitting ? "Guardando..." : "Responder"}
+              </button>
+            </div>
+          </>
+        )}
+      </section>
+
+      {/* Feedback card (after answering) */}
+      {hasFeedback && (
+        <FeedbackCard
+          isCorrect={answerResult.isCorrect}
+          selectedAnswer={selectedAnswer!}
+          correctAnswer={answerResult.correctAnswer}
+          selectedFeedbackHtml={answerResult.selectedFeedbackHtml}
+          correctFeedbackHtml={answerResult.correctFeedbackHtml}
+          generalFeedbackHtml={answerResult.generalFeedbackHtml}
+          forceViewSolution={
+            !answerResult.isCorrect &&
+            Boolean(answerResult.generalFeedbackHtml)
+          }
+          onViewSolution={onViewSolution}
+        />
       )}
 
-      {/* Desktop buttons */}
-      <div className="hidden sm:flex flex-wrap gap-3">
-        {!hasFeedback ? (
-          <button
-            type="button"
-            onClick={onSubmit}
-            disabled={submitting || !selectedAnswer}
-            className="btn-primary text-sm disabled:opacity-60"
+      {/* Next button (after feedback) */}
+      {hasFeedback && (
+        <>
+          <div className="hidden sm:flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={onNext}
+              disabled={!canAdvance}
+              className={[
+                "btn-primary text-sm flex items-center gap-2",
+                !canAdvance ? "opacity-50 cursor-not-allowed" : "",
+              ].join(" ")}
+            >
+              Siguiente
+              <ArrowRightIcon />
+            </button>
+            {!canAdvance && (
+              <p className="text-xs text-amber-700 self-center">
+                Lee la explicación completa para continuar
+              </p>
+            )}
+          </div>
+          <div
+            className="fixed bottom-0 inset-x-0 p-4 bg-white/90
+              backdrop-blur border-t border-gray-100
+              safe-area-bottom sm:hidden z-30"
           >
-            {submitting ? "Guardando..." : "Responder"}
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={onNext}
-            className="btn-primary text-sm flex items-center gap-2"
-          >
-            Siguiente
-            <ArrowRightIcon />
-          </button>
-        )}
-      </div>
-
-      {/* Mobile pinned button */}
-      <div
-        className="fixed bottom-0 inset-x-0 p-4 bg-white/90 backdrop-blur
-          border-t border-gray-100 safe-area-bottom sm:hidden z-30"
-      >
-        {!hasFeedback ? (
-          <button
-            type="button"
-            onClick={onSubmit}
-            disabled={submitting || !selectedAnswer}
-            className="btn-primary w-full text-sm disabled:opacity-60"
-          >
-            {submitting ? "Guardando..." : "Responder"}
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={onNext}
-            className="btn-primary w-full text-sm flex items-center
-              justify-center gap-2"
-          >
-            Siguiente
-            <ArrowRightIcon />
-          </button>
-        )}
-      </div>
-    </section>
+            {!canAdvance ? (
+              <p
+                className="text-xs text-amber-700 text-center
+                  mb-2 font-medium"
+              >
+                Lee la explicación completa para continuar
+              </p>
+            ) : null}
+            <button
+              type="button"
+              onClick={onNext}
+              disabled={!canAdvance}
+              className={[
+                "btn-primary w-full text-sm flex items-center",
+                "justify-center gap-2",
+                !canAdvance ? "opacity-50 cursor-not-allowed" : "",
+              ].join(" ")}
+            >
+              Siguiente
+              <ArrowRightIcon />
+            </button>
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -271,7 +325,9 @@ export function AtomStudyView({ ctrl }: { ctrl: Controller }) {
   if (ctrl.phase === "loading") return <AtomStudySkeleton />;
 
   if (ctrl.phase === "error") {
-    return <ErrorStatePanel message={ctrl.error ?? "Algo salió mal"} />;
+    return (
+      <ErrorStatePanel message={ctrl.error ?? "Algo salió mal"} />
+    );
   }
 
   if (ctrl.phase === "lesson" && ctrl.session?.lessonHtml) {
@@ -298,22 +354,30 @@ export function AtomStudyView({ ctrl }: { ctrl: Controller }) {
 
   // question & feedback phases share the same layout
   if (!ctrl.question) {
-    return <ErrorStatePanel message="No se pudo cargar la pregunta." />;
+    return (
+      <ErrorStatePanel message="No se pudo cargar la pregunta." />
+    );
   }
 
   const atomTitle = ctrl.session?.atomTitle ?? "Mini-clase";
 
   return (
     <div className="space-y-4">
-      {/* Header card with progress */}
-      <section className="rounded-2xl border border-gray-200 bg-white p-5 space-y-3">
+      {/* Header card with mastery progress */}
+      <section
+        className="rounded-2xl border border-gray-200 bg-white
+          p-5 space-y-3"
+      >
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 className="text-lg font-serif font-semibold text-primary">
+            <h2
+              className="text-lg font-serif font-semibold text-primary"
+            >
               {atomTitle}
             </h2>
             <p className="text-xs text-gray-500">
-              Concepto adaptativo · intento {ctrl.session?.attemptNumber ?? 1}
+              Concepto adaptativo · intento{" "}
+              {ctrl.session?.attemptNumber ?? 1}
             </p>
           </div>
           <div className="flex items-center gap-2 text-sm">
@@ -321,28 +385,40 @@ export function AtomStudyView({ ctrl }: { ctrl: Controller }) {
               {ctrl.totalCorrect}
             </span>
             <span className="text-gray-400">/</span>
-            <span className="text-gray-600">{ctrl.totalAnswered}</span>
+            <span className="text-gray-600">
+              {ctrl.totalAnswered}
+            </span>
             <span className="text-xs text-gray-400">correctas</span>
           </div>
         </div>
-        <ProgressRail
-          label="Progreso"
-          current={ctrl.totalAnswered}
-          total={MAX_QUESTIONS}
+        <MasteryMeter
+          difficulty={ctrl.difficulty}
+          consecutiveCorrect={
+            ctrl.answerResult?.consecutiveCorrect ?? 0
+          }
+          totalAnswered={ctrl.totalAnswered}
+          totalCorrect={ctrl.totalCorrect}
         />
       </section>
 
       {/* Question / feedback card */}
-      <div key={ctrl.question.responseId} className="animate-fade-in-up">
+      <div
+        key={ctrl.question.responseId}
+        className="animate-fade-in-up"
+      >
         <AtomQuestionCard
           question={ctrl.question}
           difficulty={ctrl.difficulty}
           selectedAnswer={ctrl.selectedAnswer}
-          answerResult={ctrl.phase === "feedback" ? ctrl.answerResult : null}
+          answerResult={
+            ctrl.phase === "feedback" ? ctrl.answerResult : null
+          }
           submitting={ctrl.submitting}
+          canAdvance={ctrl.canAdvance}
           onSelectAnswer={ctrl.setSelectedAnswer}
           onSubmit={() => void ctrl.submitAnswer()}
           onNext={() => void ctrl.advanceAfterFeedback()}
+          onViewSolution={ctrl.markExplanationViewed}
         />
       </div>
     </div>
@@ -362,7 +438,11 @@ function ArrowRightIcon() {
       strokeWidth={2}
       viewBox="0 0 24 24"
     >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9 5l7 7-7 7"
+      />
     </svg>
   );
 }
@@ -376,7 +456,11 @@ function CheckIcon() {
       strokeWidth={2.5}
       viewBox="0 0 24 24"
     >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M5 13l4 4L19 7"
+      />
     </svg>
   );
 }

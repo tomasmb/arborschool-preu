@@ -14,8 +14,20 @@ export type FeedbackCardProps = {
   isCorrect: boolean;
   selectedAnswer: string;
   correctAnswer: string;
-  options: FeedbackOption[];
+  /** Legacy: full option objects with per-option feedback */
+  options?: FeedbackOption[];
+  /** Direct HTML feedback for the selected choice */
+  selectedFeedbackHtml?: string;
+  /** Direct HTML feedback for the correct choice */
+  correctFeedbackHtml?: string;
   generalFeedbackHtml?: string;
+  /**
+   * When true the "Siguiente" button is gated until the student
+   * has opened the full explanation. Intended for wrong answers.
+   */
+  forceViewSolution?: boolean;
+  /** Called when the student opens the full solution for the first time */
+  onViewSolution?: () => void;
 };
 
 export function FeedbackCard({
@@ -23,16 +35,29 @@ export function FeedbackCard({
   selectedAnswer,
   correctAnswer,
   options,
+  selectedFeedbackHtml,
+  correctFeedbackHtml,
   generalFeedbackHtml,
+  forceViewSolution = false,
+  onViewSolution,
 }: FeedbackCardProps) {
   const [showSolution, setShowSolution] = useState(false);
 
-  const selectedOpt = options.find((o) => o.identifier === selectedAnswer);
-  const correctOpt = options.find((o) => o.identifier === correctAnswer);
+  // Resolve feedback HTML: prefer direct props, fall back to options array
+  const selectedOpt = options?.find((o) => o.identifier === selectedAnswer);
+  const correctOpt = options?.find((o) => o.identifier === correctAnswer);
+  const selFeedback = selectedFeedbackHtml ?? selectedOpt?.feedback;
+  const corFeedback = correctFeedbackHtml ?? correctOpt?.feedback;
   const showCorrectFeedback =
-    !isCorrect &&
-    correctOpt?.feedback &&
-    correctOpt.identifier !== selectedOpt?.identifier;
+    !isCorrect && corFeedback && selectedAnswer !== correctAnswer;
+
+  function handleToggleSolution() {
+    const willOpen = !showSolution;
+    setShowSolution(willOpen);
+    if (willOpen && onViewSolution) onViewSolution();
+  }
+
+  const hasGeneralFeedback = Boolean(generalFeedbackHtml);
 
   return (
     <div
@@ -53,7 +78,9 @@ export function FeedbackCard({
         <span
           className={[
             "w-8 h-8 rounded-full flex items-center justify-center",
-            isCorrect ? "bg-emerald-500 text-white" : "bg-red-500 text-white",
+            isCorrect
+              ? "bg-emerald-500 text-white"
+              : "bg-red-500 text-white",
           ].join(" ")}
         >
           {isCorrect ? <CheckIcon /> : <XIcon />}
@@ -70,10 +97,14 @@ export function FeedbackCard({
 
       <div className="px-5 py-4 space-y-4">
         {/* Selected answer feedback */}
-        {selectedOpt?.feedback && (
+        {selFeedback && (
           <ChoiceFeedback
-            label={`Opción ${selectedOpt.label}`}
-            html={selectedOpt.feedback}
+            label={
+              isCorrect
+                ? `Tu respuesta (${selectedAnswer})`
+                : `Tu respuesta (${selectedAnswer})`
+            }
+            html={selFeedback}
             variant={isCorrect ? "correct" : "incorrect"}
           />
         )}
@@ -81,23 +112,39 @@ export function FeedbackCard({
         {/* Correct answer feedback (when wrong) */}
         {showCorrectFeedback && (
           <ChoiceFeedback
-            label={`Respuesta correcta: ${correctOpt!.label}`}
-            html={correctOpt!.feedback!}
+            label={`Respuesta correcta (${correctAnswer})`}
+            html={corFeedback!}
             variant="correct"
           />
         )}
 
         {/* Expandable general feedback / full solution */}
-        {generalFeedbackHtml && (
+        {hasGeneralFeedback && (
           <div>
             <button
               type="button"
-              onClick={() => setShowSolution((v) => !v)}
-              className="flex items-center gap-2 text-sm font-medium
-                text-primary hover:text-primary-light transition-colors"
+              onClick={handleToggleSolution}
+              className={[
+                "flex items-center gap-2 text-sm font-medium",
+                "transition-colors",
+                forceViewSolution && !showSolution
+                  ? "text-accent-dark hover:text-accent"
+                  : "text-primary hover:text-primary-light",
+              ].join(" ")}
             >
               <ChevronIcon open={showSolution} />
-              Ver solución completa
+              {showSolution
+                ? "Ocultar explicación"
+                : "Ver explicación completa"}
+              {forceViewSolution && !showSolution && (
+                <span
+                  className="ml-1 text-[10px] uppercase tracking-wider
+                    font-bold bg-amber-200 text-amber-800
+                    px-2 py-0.5 rounded-full"
+                >
+                  Requerido
+                </span>
+              )}
             </button>
 
             <div
@@ -109,7 +156,7 @@ export function FeedbackCard({
               ].join(" ")}
             >
               <MathContent
-                html={generalFeedbackHtml}
+                html={generalFeedbackHtml!}
                 className="prose prose-sm max-w-none text-charcoal
                   rounded-xl bg-primary/5 border border-primary/15 p-4"
               />
@@ -121,7 +168,7 @@ export function FeedbackCard({
   );
 }
 
-/* ── Choice-level feedback sub-card ────────────────────────────────── */
+/* -- Choice-level feedback sub-card ---------------------------------------- */
 
 function ChoiceFeedback({
   label,
@@ -148,7 +195,7 @@ function ChoiceFeedback({
   );
 }
 
-/* ── Inline SVG icons ──────────────────────────────────────────────── */
+/* -- Inline SVG icons ------------------------------------------------------ */
 
 function CheckIcon() {
   return (
@@ -159,7 +206,11 @@ function CheckIcon() {
       strokeWidth={2.5}
       viewBox="0 0 24 24"
     >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M5 13l4 4L19 7"
+      />
     </svg>
   );
 }
@@ -194,7 +245,11 @@ function ChevronIcon({ open }: { open: boolean }) {
       strokeWidth={2}
       viewBox="0 0 24 24"
     >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9 5l7 7-7 7"
+      />
     </svg>
   );
 }

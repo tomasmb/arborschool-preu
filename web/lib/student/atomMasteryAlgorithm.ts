@@ -46,6 +46,9 @@ export type AnswerResultPayload = {
   consecutiveCorrect: number;
   totalQuestions: number;
   correctQuestions: number;
+  selectedFeedbackHtml?: string;
+  correctFeedbackHtml?: string;
+  generalFeedbackHtml?: string;
 };
 
 export type SessionResponsePayload = {

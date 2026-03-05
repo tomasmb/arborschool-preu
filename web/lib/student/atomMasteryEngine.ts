@@ -14,7 +14,10 @@ import {
   questionAtoms,
   questions,
 } from "@/db/schema";
-import { parseQtiXml } from "@/lib/diagnostic/qtiParser";
+import {
+  parseQtiXml,
+  extractFeedbackFromQti,
+} from "@/lib/diagnostic/qtiParser";
 import {
   computeUpdatedState,
   DIFF_FALLBACKS,
@@ -442,6 +445,14 @@ export async function submitAnswer(params: {
     await syncAtomMasteryOnMastered(params.userId, session.atomId);
   }
 
+  const feedback = extractFeedbackFromQti(question.qtiXml);
+  const selectedCf = feedback.choiceFeedbacks.find(
+    (cf) => cf.letter === normalized
+  );
+  const correctCf = feedback.choiceFeedbacks.find(
+    (cf) => cf.letter === correctAnswer
+  );
+
   return {
     sessionId: params.sessionId,
     responseId: params.responseId,
@@ -452,6 +463,9 @@ export async function submitAnswer(params: {
     consecutiveCorrect: updated.consecutiveCorrect,
     totalQuestions: updated.totalQuestions,
     correctQuestions: updated.correctQuestions,
+    selectedFeedbackHtml: selectedCf?.feedbackHtml,
+    correctFeedbackHtml: correctCf?.feedbackHtml,
+    generalFeedbackHtml: feedback.generalFeedbackHtml,
   };
 }
 
