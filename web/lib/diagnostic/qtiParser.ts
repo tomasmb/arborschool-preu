@@ -89,8 +89,8 @@ function serializeNodeToHtml(node: Node): string {
       return `<${tagName} ${attrs}>${content}</${tagName}>`;
     }
 
-    // Handle div containers
-    if (tagName === "div") {
+    // Handle div containers and QTI content-body wrapper
+    if (tagName === "div" || tagName === "qti-content-body") {
       const content = serializeChildNodes(el);
       return `<div class="my-4">${content}</div>`;
     }
@@ -99,6 +99,40 @@ function serializeNodeToHtml(node: Node): string {
     if (tagName === "p") {
       const content = serializeChildNodes(el);
       return `<p class="mb-4">${content}</p>`;
+    }
+
+    // Lists
+    if (tagName === "ol") {
+      const content = serializeChildNodes(el);
+      return `<ol class="list-decimal list-outside pl-6 my-4 space-y-3">${content}</ol>`;
+    }
+    if (tagName === "ul") {
+      const content = serializeChildNodes(el);
+      return `<ul class="list-disc list-outside pl-6 my-4 space-y-2">${content}</ul>`;
+    }
+    if (tagName === "li") {
+      const content = serializeChildNodes(el);
+      return `<li class="pl-1">${content}</li>`;
+    }
+
+    // Inline formatting
+    if (tagName === "strong" || tagName === "b") {
+      return `<strong>${serializeChildNodes(el)}</strong>`;
+    }
+    if (tagName === "em" || tagName === "i") {
+      return `<em>${serializeChildNodes(el)}</em>`;
+    }
+    if (tagName === "sup") {
+      return `<sup>${serializeChildNodes(el)}</sup>`;
+    }
+    if (tagName === "sub") {
+      return `<sub>${serializeChildNodes(el)}</sub>`;
+    }
+    if (tagName === "br") {
+      return "<br />";
+    }
+    if (tagName === "span") {
+      return `<span>${serializeChildNodes(el)}</span>`;
     }
 
     // Recursively process children for other elements

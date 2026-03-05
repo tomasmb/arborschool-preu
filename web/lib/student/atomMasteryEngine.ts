@@ -10,9 +10,8 @@ import {
   atomStudyResponses,
   atomStudySessions,
   atoms,
+  generatedQuestions,
   lessons,
-  questionAtoms,
-  questions,
 } from "@/db/schema";
 import {
   parseQtiXml,
@@ -94,7 +93,7 @@ async function getUsedQuestionIds(
   return rows.map((r) => r.questionId);
 }
 
-/** Queries candidate questions for an atom at a specific difficulty */
+/** Queries candidate generated questions for an atom at a specific difficulty */
 async function findQuestions(
   atomId: string,
   difficulty: "low" | "medium" | "high",
@@ -102,18 +101,17 @@ async function findQuestions(
   limit = 10
 ) {
   const conds = [
-    eq(questionAtoms.atomId, atomId),
-    eq(questions.difficultyLevel, difficulty),
+    eq(generatedQuestions.atomId, atomId),
+    eq(generatedQuestions.difficultyLevel, difficulty),
   ];
   if (excludeIds.length > 0) {
-    conds.push(notInArray(questions.id, excludeIds));
+    conds.push(notInArray(generatedQuestions.id, excludeIds));
   }
   return db
-    .select({ id: questions.id, qtiXml: questions.qtiXml })
-    .from(questionAtoms)
-    .innerJoin(questions, eq(questions.id, questionAtoms.questionId))
+    .select({ id: generatedQuestions.id, qtiXml: generatedQuestions.qtiXml })
+    .from(generatedQuestions)
     .where(and(...conds))
-    .orderBy(desc(questions.createdAt))
+    .orderBy(desc(generatedQuestions.createdAt))
     .limit(limit);
 }
 
@@ -294,9 +292,9 @@ export async function getNextQuestion(
 
   if (pending) {
     const [q] = await db
-      .select({ qtiXml: questions.qtiXml })
-      .from(questions)
-      .where(eq(questions.id, pending.questionId))
+      .select({ qtiXml: generatedQuestions.qtiXml })
+      .from(generatedQuestions)
+      .where(eq(generatedQuestions.id, pending.questionId))
       .limit(1);
     const parsed = parseQtiXml(q.qtiXml);
     return {
@@ -378,9 +376,9 @@ export async function submitAnswer(params: {
   if (!response) throw new Error("Response not found");
 
   const [question] = await db
-    .select({ qtiXml: questions.qtiXml })
-    .from(questions)
-    .where(eq(questions.id, response.questionId))
+    .select({ qtiXml: generatedQuestions.qtiXml })
+    .from(generatedQuestions)
+    .where(eq(generatedQuestions.id, response.questionId))
     .limit(1);
   if (!question) throw new Error("Question not found");
 
@@ -495,10 +493,13 @@ export async function getSessionState(
         difficultyLevel: atomStudyResponses.difficultyLevel,
         selectedAnswer: atomStudyResponses.selectedAnswer,
         isCorrect: atomStudyResponses.isCorrect,
-        qtiXml: questions.qtiXml,
+        qtiXml: generatedQuestions.qtiXml,
       })
       .from(atomStudyResponses)
-      .innerJoin(questions, eq(questions.id, atomStudyResponses.questionId))
+      .innerJoin(
+        generatedQuestions,
+        eq(generatedQuestions.id, atomStudyResponses.questionId)
+      )
       .where(eq(atomStudyResponses.sessionId, sessionId))
       .orderBy(asc(atomStudyResponses.position)),
   ]);
