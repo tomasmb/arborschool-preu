@@ -274,8 +274,14 @@ export function buildAllRoutes(
     }
   }
 
-  // Sort by total questions unlocked (descending)
-  routes.sort((a, b) => b.totalQuestionsUnlocked - a.totalQuestionsUnlocked);
+  // Sort by estimated PAES improvement (descending), which already accounts
+  // for per-test normalization (totalQuestionsUnlocked / NUM_OFFICIAL_TESTS).
+  // Fall back to estimated minutes (ascending) for ties.
+  routes.sort((a, b) => {
+    const pointsDiff = b.estimatedPointsGain - a.estimatedPointsGain;
+    if (pointsDiff !== 0) return pointsDiff;
+    return a.estimatedMinutes - b.estimatedMinutes;
+  });
 
   return routes;
 }

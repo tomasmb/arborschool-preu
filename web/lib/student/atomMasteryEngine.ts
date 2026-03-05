@@ -3,7 +3,7 @@
  * Types and pure algorithm live in ./atomMasteryAlgorithm.ts.
  */
 
-import { and, asc, desc, eq, inArray, notInArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, notInArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   atomMastery,
@@ -27,10 +27,17 @@ import {
   type AtomSessionPayload,
   type NextQuestionPayload,
   type SessionDifficulty,
-  type SessionResponsePayload,
-  type SessionStatePayload,
   type SessionStatus,
 } from "./atomMasteryAlgorithm";
+import {
+  determineMasteryQuality,
+  initializeReviewSchedule,
+  incrementSessionCounters,
+  applyImplicitRepetition,
+  applyInactivityDecay,
+} from "./spacedRepetition";
+import { startPrereqScan, checkCooldownExpiry } from "./prerequisiteScan";
+import type { ScanStartResult } from "./prerequisiteScan";
 
 export type {
   AnswerResultPayload,
@@ -43,14 +50,17 @@ export type {
 } from "./atomMasteryAlgorithm";
 export { computeUpdatedState } from "./atomMasteryAlgorithm";
 
-// ============================================================================
-// HELPERS
-// ============================================================================
-
+export type AnswerResultWithLifecycle = AnswerResultPayload & {
+  prereqScan?: {
+    sessionId: string | null;
+    prereqCount: number;
+    status: "in_progress" | "no_prereqs";
+  };
+  cooldownApplied?: boolean;
+};
 function normalizeAnswer(v: string): string {
   return v.trim().toUpperCase();
 }
-
 async function verifyOwnership(sessionId: string, userId: string) {
   const [row] = await db
     .select()
@@ -64,8 +74,6 @@ async function verifyOwnership(sessionId: string, userId: string) {
     .limit(1);
   return row ?? null;
 }
-
-/** Collects all question IDs already used across every session for a user+atom */
 async function getUsedQuestionIds(
   userId: string,
   atomId: string
@@ -92,8 +100,6 @@ async function getUsedQuestionIds(
     );
   return rows.map((r) => r.questionId);
 }
-
-/** Queries candidate generated questions for an atom at a specific difficulty */
 async function findQuestions(
   atomId: string,
   difficulty: "low" | "medium" | "high",
@@ -114,8 +120,6 @@ async function findQuestions(
     .orderBy(desc(generatedQuestions.createdAt))
     .limit(limit);
 }
-
-/** Syncs the atom_mastery summary row when a session reaches mastered */
 async function syncAtomMasteryOnMastered(userId: string, atomId: string) {
   const now = new Date();
   const common = {
@@ -142,16 +146,13 @@ async function syncAtomMasteryOnMastered(userId: string, atomId: string) {
       },
     });
 }
-
-// ============================================================================
-// PUBLIC API
-// ============================================================================
-
 /** Creates (or resumes) a mastery session for the given user + atom. */
 export async function createAtomSession(
   userId: string,
   atomId: string
 ): Promise<AtomSessionPayload> {
+  await applyInactivityDecay(userId);
+
   const [atom] = await db
     .select({ id: atoms.id, title: atoms.title })
     .from(atoms)
@@ -345,14 +346,14 @@ export async function getNextQuestion(
   };
 }
 
-/** Grades an answer, runs mastery algorithm, syncs atom_mastery on terminal. */
+/** Grades an answer, runs mastery algorithm, triggers lifecycle hooks. */
 export async function submitAnswer(params: {
   sessionId: string;
   responseId: string;
   selectedAnswer: string;
   userId: string;
   responseTimeSeconds?: number;
-}): Promise<AnswerResultPayload> {
+}): Promise<AnswerResultWithLifecycle> {
   const session = await verifyOwnership(params.sessionId, params.userId);
   if (!session) throw new Error("Session not found");
   if (session.status !== "in_progress") {
@@ -439,8 +440,27 @@ export async function submitAnswer(params: {
     })
     .where(eq(atomStudySessions.id, params.sessionId));
 
+  let scanResult: ScanStartResult | undefined;
+  let cooldownApplied = false;
+
   if (updated.status === "mastered") {
     await syncAtomMasteryOnMastered(params.userId, session.atomId);
+
+    const accuracy =
+      updated.totalQuestions > 0
+        ? updated.correctQuestions / updated.totalQuestions
+        : 0;
+    const quality = determineMasteryQuality(updated.totalQuestions, accuracy);
+    await initializeReviewSchedule(params.userId, session.atomId, quality);
+    await applyImplicitRepetition(params.userId, session.atomId);
+    await checkCooldownExpiry(params.userId, session.atomId);
+    await incrementSessionCounters(params.userId);
+  }
+
+  if (updated.status === "failed") {
+    scanResult = await startPrereqScan(params.userId, session.atomId);
+    cooldownApplied = scanResult.status === "no_prereqs";
+    await incrementSessionCounters(params.userId);
   }
 
   const feedback = extractFeedbackFromQti(question.qtiXml);
@@ -464,73 +484,15 @@ export async function submitAnswer(params: {
     selectedFeedbackHtml: selectedCf?.feedbackHtml,
     correctFeedbackHtml: correctCf?.feedbackHtml,
     generalFeedbackHtml: feedback.generalFeedbackHtml,
+    prereqScan: scanResult
+      ? {
+          sessionId: scanResult.sessionId,
+          prereqCount: scanResult.prereqCount,
+          status: scanResult.status,
+        }
+      : undefined,
+    cooldownApplied,
   };
 }
 
-/** Full session state with parsed questions. Correct answers hidden until answered. */
-export async function getSessionState(
-  sessionId: string,
-  userId: string
-): Promise<SessionStatePayload | null> {
-  const session = await verifyOwnership(sessionId, userId);
-  if (!session) return null;
-
-  const [[atom], [lesson], responseRows] = await Promise.all([
-    db
-      .select({ title: atoms.title })
-      .from(atoms)
-      .where(eq(atoms.id, session.atomId))
-      .limit(1),
-    db
-      .select({ id: lessons.id })
-      .from(lessons)
-      .where(eq(lessons.atomId, session.atomId))
-      .limit(1),
-    db
-      .select({
-        responseId: atomStudyResponses.id,
-        position: atomStudyResponses.position,
-        difficultyLevel: atomStudyResponses.difficultyLevel,
-        selectedAnswer: atomStudyResponses.selectedAnswer,
-        isCorrect: atomStudyResponses.isCorrect,
-        qtiXml: generatedQuestions.qtiXml,
-      })
-      .from(atomStudyResponses)
-      .innerJoin(
-        generatedQuestions,
-        eq(generatedQuestions.id, atomStudyResponses.questionId)
-      )
-      .where(eq(atomStudyResponses.sessionId, sessionId))
-      .orderBy(asc(atomStudyResponses.position)),
-  ]);
-
-  const responses: SessionResponsePayload[] = responseRows.map((r) => {
-    const parsed = parseQtiXml(r.qtiXml);
-    return {
-      responseId: r.responseId,
-      position: r.position,
-      questionHtml: parsed.html,
-      options: parsed.options,
-      difficultyLevel: r.difficultyLevel,
-      selectedAnswer: r.selectedAnswer,
-      isCorrect: r.isCorrect,
-      correctAnswer: r.selectedAnswer !== null ? parsed.correctAnswer : null,
-    };
-  });
-
-  return {
-    sessionId: session.id,
-    atomId: session.atomId,
-    atomTitle: atom?.title ?? session.atomId,
-    status: session.status as SessionStatus,
-    currentDifficulty: session.currentDifficulty as SessionDifficulty,
-    totalQuestions: session.totalQuestions,
-    correctQuestions: session.correctQuestions,
-    consecutiveCorrect: session.consecutiveCorrect,
-    consecutiveIncorrect: session.consecutiveIncorrect,
-    attemptNumber: session.attemptNumber,
-    hasLesson: Boolean(lesson),
-    lessonViewedAt: session.lessonViewedAt,
-    responses,
-  };
-}
+export { getSessionState } from "./atomSessionState";

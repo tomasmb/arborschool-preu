@@ -15,6 +15,7 @@ import {
   type StudentLearningAnalysis,
 } from "@/lib/diagnostic/questionUnlock";
 import { buildNextActionInsights } from "@/lib/student/nextAction";
+import { getRetestStatus, type RetestStatus } from "@/lib/student/retestGating";
 
 const DEFAULT_FORECAST_WEEKS = 8;
 const DEFAULT_WEEKLY_MINUTES = 360;
@@ -36,6 +37,8 @@ type MasteryRow = {
   atomId: string;
   isMastered: boolean;
 };
+
+export type DiagnosticSource = "short_diagnostic" | "full_test";
 
 export type M1DashboardData = {
   status: DashboardStatus;
@@ -75,6 +78,8 @@ export type M1DashboardData = {
       minutesPerTenPoints: number | null;
     };
   };
+  diagnosticSource: DiagnosticSource;
+  retestStatus: RetestStatus | null;
   emptyState: {
     title: string;
     description: string;
@@ -248,6 +253,8 @@ function buildMissingDashboard(params: {
       topRoute: null,
       model: defaultEffortModel(),
     },
+    diagnosticSource: "short_diagnostic",
+    retestStatus: null,
     emptyState: buildEmptyState(params.status),
   };
 }
@@ -316,6 +323,8 @@ function buildReadyDashboard(params: {
   maxScore: number;
   target: StudentM1Target;
   analysis: StudentLearningAnalysis;
+  diagnosticSource: DiagnosticSource;
+  retestStatus: RetestStatus | null;
 }): M1DashboardData {
   const effortMetrics = computeEffortMetrics({
     currentScore: params.currentScore,
@@ -371,6 +380,8 @@ function buildReadyDashboard(params: {
         minutesPerTenPoints: effortMetrics.minutesPerTenPoints,
       },
     },
+    diagnosticSource: params.diagnosticSource,
+    retestStatus: params.retestStatus,
     emptyState: null,
   };
 }
@@ -415,13 +426,19 @@ export async function getM1Dashboard(userId: string): Promise<M1DashboardData> {
     });
   }
 
-  const analysis = await analyzeLearningPotential(
-    masteryRows.map((row) => ({
-      atomId: row.atomId,
-      mastered: row.isMastered,
-    })),
-    { currentPaesScore: currentScore }
-  );
+  const [analysis, retestStatus] = await Promise.all([
+    analyzeLearningPotential(
+      masteryRows.map((row) => ({
+        atomId: row.atomId,
+        mastered: row.isMastered,
+      })),
+      { currentPaesScore: currentScore }
+    ),
+    getRetestStatus(userId),
+  ]);
+
+  const diagnosticSource: DiagnosticSource =
+    retestStatus.daysSinceLastTest !== null ? "full_test" : "short_diagnostic";
 
   return buildReadyDashboard({
     currentScore,
@@ -429,5 +446,7 @@ export async function getM1Dashboard(userId: string): Promise<M1DashboardData> {
     maxScore,
     target,
     analysis,
+    diagnosticSource,
+    retestStatus,
   });
 }

@@ -1,5 +1,13 @@
 import type { NextActionPayload } from "./NextActionSection";
 
+export type RetestStatusPayload = {
+  atomsMasteredSinceLastTest: number;
+  eligible: boolean;
+  recommended: boolean;
+  blockedReason: string | null;
+  daysSinceLastTest: number | null;
+};
+
 export type DashboardPayload = {
   status: "ready" | "missing_diagnostic" | "missing_target" | "missing_mastery";
   journeyState:
@@ -43,6 +51,8 @@ export type DashboardPayload = {
       minutesPerTenPoints: number | null;
     };
   };
+  diagnosticSource: "short_diagnostic" | "full_test";
+  retestStatus: RetestStatusPayload | null;
   mission: {
     id: string;
     weekStartDate: string;

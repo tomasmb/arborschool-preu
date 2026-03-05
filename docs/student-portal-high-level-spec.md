@@ -1,3 +1,5 @@
+> **NOTE**: Learning methodology and algorithm details have moved to [arbor-learning-system-spec.md](./arbor-learning-system-spec.md). This file covers product/UI spec only.
+
 # Student Portal High-Level Specification (Locked Draft)
 
 ## Context and Priority

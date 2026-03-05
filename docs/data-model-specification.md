@@ -1,5 +1,7 @@
 # Arbor Data Model
 
+> **NOTE**: For learning algorithm details and methodology, see [arbor-learning-system-spec.md](./arbor-learning-system-spec.md).
+
 ## System Context
 
 Test preparation platform for PAES Chile. Content repo manages atoms, questions, lessons. Student app serves content and tracks progress.
@@ -29,8 +31,7 @@ CREATE TYPE skill_type AS ENUM (
 
 CREATE TYPE question_source AS ENUM (
     'official',
-    'alternate',
-    'question_set'
+    'alternate'
 );
 
 CREATE TYPE difficulty_level AS ENUM ('low', 'medium', 'high');
@@ -43,9 +44,12 @@ CREATE TYPE mastery_status AS ENUM ('not_started', 'in_progress', 'mastered', 'f
 
 CREATE TYPE mastery_source AS ENUM ('diagnostic', 'practice_test', 'study');
 
-CREATE TYPE question_set_status AS ENUM ('pending', 'generated', 'reviewed');
-
 CREATE TYPE user_role AS ENUM ('student', 'admin');
+
+-- Session enums (for atom_study_sessions)
+CREATE TYPE session_type AS ENUM ('mastery', 'prereq_scan', 'review');
+CREATE TYPE session_status AS ENUM ('lesson', 'in_progress', 'mastered', 'failed', 'abandoned');
+CREATE TYPE session_difficulty AS ENUM ('easy', 'medium', 'hard');
 ```
 
 ---
@@ -94,22 +98,17 @@ CREATE TABLE atoms (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE question_sets (
-    id VARCHAR(100) PRIMARY KEY,
-    atom_id VARCHAR(50) REFERENCES atoms(id) UNIQUE NOT NULL,
-    status question_set_status NOT NULL DEFAULT 'pending',
-    low_count INTEGER DEFAULT 0,
-    medium_count INTEGER DEFAULT 0,
-    high_count INTEGER DEFAULT 0,
-    generated_at TIMESTAMPTZ,
-    reviewed_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE generated_questions (
+    id VARCHAR PRIMARY KEY,
+    atom_id VARCHAR(50) REFERENCES atoms(id) NOT NULL,
+    difficulty_level difficulty_level NOT NULL,
+    qti_xml TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
 CREATE TABLE lessons (
     id VARCHAR(100) PRIMARY KEY,
     atom_id VARCHAR(50) REFERENCES atoms(id) UNIQUE NOT NULL,
-    question_set_id VARCHAR(100) REFERENCES question_sets(id),
     title VARCHAR(255) NOT NULL,
     lesson_html TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -120,7 +119,6 @@ CREATE TABLE questions (
     id VARCHAR(100) PRIMARY KEY,
     source question_source NOT NULL,
     parent_question_id VARCHAR(100) REFERENCES questions(id),
-    question_set_id VARCHAR(100) REFERENCES question_sets(id),
     qti_xml TEXT NOT NULL,
     title VARCHAR(255),
     correct_answer VARCHAR(50) NOT NULL,
@@ -387,6 +385,41 @@ CREATE TABLE student_reminder_jobs (
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(dedupe_key)
 );
+
+-- Atom study sessions (mastery engine)
+CREATE TABLE atom_study_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) NOT NULL,
+    atom_id VARCHAR(50) REFERENCES atoms(id) NOT NULL,
+    session_type session_type NOT NULL DEFAULT 'mastery',
+    attempt_number INTEGER NOT NULL DEFAULT 1,
+    status session_status NOT NULL DEFAULT 'lesson',
+    current_difficulty session_difficulty NOT NULL DEFAULT 'easy',
+    easy_streak INTEGER NOT NULL DEFAULT 0,
+    medium_streak INTEGER NOT NULL DEFAULT 0,
+    hard_streak INTEGER NOT NULL DEFAULT 0,
+    consecutive_correct INTEGER NOT NULL DEFAULT 0,
+    consecutive_incorrect INTEGER NOT NULL DEFAULT 0,
+    hard_correct_in_streak INTEGER NOT NULL DEFAULT 0,
+    total_questions INTEGER NOT NULL DEFAULT 0,
+    correct_questions INTEGER NOT NULL DEFAULT 0,
+    lesson_viewed_at TIMESTAMPTZ,
+    started_at TIMESTAMPTZ DEFAULT NOW(),
+    completed_at TIMESTAMPTZ
+);
+
+CREATE TABLE atom_study_responses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id UUID REFERENCES atom_study_sessions(id) NOT NULL,
+    question_id VARCHAR REFERENCES generated_questions(id) NOT NULL,
+    position INTEGER NOT NULL,
+    difficulty_level session_difficulty NOT NULL,
+    selected_answer VARCHAR(10),
+    is_correct BOOLEAN,
+    response_time_seconds INTEGER,
+    answered_at TIMESTAMPTZ,
+    UNIQUE(session_id, position)
+);
 ```
 
 ### Indexes
@@ -397,7 +430,7 @@ CREATE INDEX idx_atoms_axis ON atoms(axis);
 CREATE INDEX idx_atoms_prerequisites ON atoms USING GIN(prerequisite_ids);
 CREATE INDEX idx_questions_source ON questions(source);
 CREATE INDEX idx_questions_difficulty ON questions(difficulty_level);
-CREATE INDEX idx_questions_question_set ON questions(question_set_id);
+CREATE INDEX idx_generated_questions_atom ON generated_questions(atom_id);
 CREATE INDEX idx_question_atoms_atom ON question_atoms(atom_id);
 CREATE INDEX idx_test_questions_position ON test_questions(test_id, position);
 CREATE INDEX idx_atom_mastery_user ON atom_mastery(user_id);
@@ -419,6 +452,10 @@ CREATE INDEX idx_student_study_sprint_responses_user ON student_study_sprint_res
 CREATE INDEX idx_student_reminder_jobs_user ON student_reminder_jobs(user_id);
 CREATE INDEX idx_student_reminder_jobs_status ON student_reminder_jobs(status);
 CREATE INDEX idx_student_reminder_jobs_schedule ON student_reminder_jobs(scheduled_for);
+CREATE INDEX idx_atom_study_sessions_user ON atom_study_sessions(user_id);
+CREATE INDEX idx_atom_study_sessions_user_atom ON atom_study_sessions(user_id, atom_id);
+CREATE INDEX idx_atom_study_sessions_status ON atom_study_sessions(status);
+CREATE INDEX idx_atom_study_responses_session ON atom_study_responses(session_id);
 ```
 
 ---
@@ -426,9 +463,9 @@ CREATE INDEX idx_student_reminder_jobs_schedule ON student_reminder_jobs(schedul
 ## Relationships
 
 ```
-subjects ──1:N──▶ atoms ──1:1──▶ question_sets ──1:N──▶ questions
-                    │                   │
-                    │                   └──1:1──▶ lessons
+subjects ──1:N──▶ atoms ──1:1──▶ lessons
+                    │
+                    ├──1:N──▶ generated_questions (AI-generated per atom)
                     │
                     ├──N:N──▶ atoms (prerequisites)
                     │
@@ -437,6 +474,8 @@ subjects ──1:N──▶ atoms ──1:1──▶ question_sets ──1:N─�
 tests ──N:N──▶ questions (via test_questions)
 
 users ──N:N──▶ atoms (via atom_mastery)
+  │
+  ├──1:N──▶ atom_study_sessions ──1:N──▶ atom_study_responses ──N:1──▶ generated_questions
   │
   ├──1:N──▶ test_attempts ──1:N──▶ student_responses
   │
@@ -452,11 +491,10 @@ users ──N:N──▶ atoms (via atom_mastery)
 | Subject              | `paes_{test}`                    | `paes_m1`                         |
 | Standard             | `{subject}-{axis}-{seq}`         | `M1-ALG-01`                       |
 | Atom                 | `A-{subject}-{axis}-{std}-{seq}` | `A-M1-ALG-01-01`                  |
-| Question Set         | `qs-{atom_id}`                   | `qs-A-M1-ALG-01-01`               |
 | Lesson               | `lesson-{atom_id}`               | `lesson-A-M1-ALG-01-01`           |
 | Question (official)  | `{test_id}-Q{num}`               | `prueba-invierno-2026-Q1`         |
 | Question (alternate) | `alt-{parent_id}-{seq}`          | `alt-prueba-invierno-2026-Q1-001` |
-| Question (set)       | `{set_id}-{diff}-{seq}`          | `qs-A-M1-ALG-01-01-low-001`       |
+| Generated question   | (pipeline-assigned)              | varies                            |
 
 ---
 
@@ -473,9 +511,8 @@ users ──N:N──▶ atoms (via atom_mastery)
 
 ### Question Generation
 
-- Generate question_sets BEFORE lessons
+- AI-generated questions stored in `generated_questions` per atom (replaces legacy `question_sets` table)
 - Minimum 3 questions per difficulty level (9+ total per atom)
-- Lessons only created after question_set status = `reviewed`
 
 ### Prerequisites
 
@@ -488,15 +525,15 @@ users ──N:N──▶ atoms (via atom_mastery)
 ## Key Queries
 
 ```sql
--- Get questions for atom
+-- Get questions for atom (official/alternate)
 SELECT q.* FROM questions q
 JOIN question_atoms qa ON q.id = qa.question_id
 WHERE qa.atom_id = $1
 ORDER BY q.difficulty_level;
 
--- Get questions for mini-clase by difficulty
-SELECT * FROM questions
-WHERE question_set_id = $1
+-- Get generated questions for atom study (mastery engine)
+SELECT * FROM generated_questions
+WHERE atom_id = $1
 ORDER BY CASE difficulty_level
     WHEN 'low' THEN 1 WHEN 'medium' THEN 2 WHEN 'high' THEN 3
 END;

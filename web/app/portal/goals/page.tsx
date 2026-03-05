@@ -1,12 +1,55 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { PageShell } from "@/app/portal/components";
 import { GoalsEditorSection } from "./GoalsEditorSection";
 import { PlanningModeFlow } from "./PlanningModeFlow";
 import { SimulatorSection } from "./SimulatorSection";
 import { usePortalGoals } from "./usePortalGoals";
+
+type GoalsTab = "metas" | "simulador";
+
+function GoalsTabBar({
+  activeTab,
+  onChange,
+}: {
+  activeTab: GoalsTab;
+  onChange: (tab: GoalsTab) => void;
+}) {
+  const tabs: Array<{ id: GoalsTab; label: string; hint: string }> = [
+    { id: "metas", label: "Metas de admisión", hint: "Se guardan" },
+    { id: "simulador", label: "Simulador", hint: "Solo exploración" },
+  ];
+
+  return (
+    <div className="flex gap-1 rounded-xl bg-gray-100 p-1">
+      {tabs.map((tab) => (
+        <button
+          key={tab.id}
+          type="button"
+          onClick={() => onChange(tab.id)}
+          className={[
+            "flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-all",
+            activeTab === tab.id
+              ? "bg-white text-primary shadow-sm"
+              : "text-gray-500 hover:text-gray-700",
+          ].join(" ")}
+        >
+          <span>{tab.label}</span>
+          <span
+            className={[
+              "block text-[10px] mt-0.5",
+              activeTab === tab.id ? "text-gray-400" : "text-gray-400",
+            ].join(" ")}
+          >
+            {tab.hint}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
 
 function usePlanningModeRedirect({
   planningModeRequested,
@@ -24,12 +67,10 @@ function usePlanningModeRedirect({
       return;
     }
 
-    // Planning wizard is only for users who haven't done diagnostic yet
     if (journeyState === "planning_required") {
       return;
     }
 
-    // Users with diagnostic results go straight to the editor view
     onRedirect("/portal/goals");
   }, [journeyState, loading, onRedirect, planningModeRequested]);
 }
@@ -38,6 +79,11 @@ function PortalGoalsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const planningModeRequested = searchParams.get("mode") === "planning";
+  const initialTab =
+    searchParams.get("tab") === "simulador"
+      ? ("simulador" as GoalsTab)
+      : ("metas" as GoalsTab);
+  const [activeTab, setActiveTab] = useState<GoalsTab>(initialTab);
   const portalGoals = usePortalGoals();
   const isPlanningMode =
     planningModeRequested &&
@@ -78,38 +124,44 @@ function PortalGoalsPageContent() {
           onSaveForLater={() => portalGoals.handlePlanningSave(false)}
         />
       ) : (
-        <>
-          <GoalsEditorSection
-            dataset={portalGoals.dataset}
-            loading={portalGoals.loading}
-            saving={portalGoals.saving}
-            goals={portalGoals.goals}
-            options={portalGoals.availableOptions}
-            loadError={portalGoals.loadError}
-            error={portalGoals.error}
-            onRetryLoadGoals={portalGoals.retryLoadGoals}
-            onSetGoalOffering={portalGoals.setGoalOffering}
-            onAddGoalSlot={portalGoals.addGoalSlot}
-            onRemoveGoalSlot={portalGoals.removeGoalSlot}
-            onSave={portalGoals.handleSave}
-          />
+        <div className="space-y-5">
+          <GoalsTabBar activeTab={activeTab} onChange={setActiveTab} />
 
-          <SimulatorSection
-            loading={portalGoals.loading}
-            simLoading={portalGoals.simLoading}
-            simulatorError={portalGoals.simulatorError}
-            savedGoals={portalGoals.savedGoals}
-            selectedGoalId={portalGoals.selectedGoalId}
-            selectedGoal={portalGoals.selectedGoal}
-            selectedOption={portalGoals.selectedOption}
-            selectedDraft={portalGoals.selectedDraft}
-            simulation={portalGoals.simulation}
-            onRetrySimulation={portalGoals.retrySimulation}
-            onSelectGoal={portalGoals.setSelectedGoalId}
-            onUpdateDraftScore={portalGoals.updateDraftScore}
-            onUpdateDraftBuffer={portalGoals.updateDraftBuffer}
-          />
-        </>
+          {activeTab === "metas" && (
+            <GoalsEditorSection
+              dataset={portalGoals.dataset}
+              loading={portalGoals.loading}
+              saving={portalGoals.saving}
+              goals={portalGoals.goals}
+              options={portalGoals.availableOptions}
+              loadError={portalGoals.loadError}
+              error={portalGoals.error}
+              onRetryLoadGoals={portalGoals.retryLoadGoals}
+              onSetGoalOffering={portalGoals.setGoalOffering}
+              onAddGoalSlot={portalGoals.addGoalSlot}
+              onRemoveGoalSlot={portalGoals.removeGoalSlot}
+              onSave={portalGoals.handleSave}
+            />
+          )}
+
+          {activeTab === "simulador" && (
+            <SimulatorSection
+              loading={portalGoals.loading}
+              simLoading={portalGoals.simLoading}
+              simulatorError={portalGoals.simulatorError}
+              savedGoals={portalGoals.savedGoals}
+              selectedGoalId={portalGoals.selectedGoalId}
+              selectedGoal={portalGoals.selectedGoal}
+              selectedOption={portalGoals.selectedOption}
+              selectedDraft={portalGoals.selectedDraft}
+              simulation={portalGoals.simulation}
+              onRetrySimulation={portalGoals.retrySimulation}
+              onSelectGoal={portalGoals.setSelectedGoalId}
+              onUpdateDraftScore={portalGoals.updateDraftScore}
+              onUpdateDraftBuffer={portalGoals.updateDraftBuffer}
+            />
+          )}
+        </div>
       )}
     </PageShell>
   );

@@ -1,3 +1,5 @@
+> **DEPRECATED**: This document is superseded by [arbor-learning-system-spec.md](./arbor-learning-system-spec.md). Consult the master spec for current rules.
+
 # Arbor Adaptive Mastery Specification
 
 Single source of truth for the learning engine powering Arbor's student portal.

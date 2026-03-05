@@ -65,11 +65,7 @@ const DIFFICULTY_CONFIG: Record<
   hard: { label: "Difícil", color: "bg-rose-100 text-rose-700" },
 };
 
-function DifficultyBadge({
-  difficulty,
-}: {
-  difficulty: SessionDifficulty;
-}) {
+function DifficultyBadge({ difficulty }: { difficulty: SessionDifficulty }) {
   const cfg = DIFFICULTY_CONFIG[difficulty];
   return (
     <span
@@ -137,16 +133,14 @@ function AtomQuestionCard({
           {question.options.map((option) => {
             const checked = selectedAnswer === option.letter;
             const isCorrectAnswer =
-              hasFeedback &&
-              answerResult.correctAnswer === option.letter;
+              hasFeedback && answerResult.correctAnswer === option.letter;
             const isWrongSelection =
               hasFeedback && checked && !answerResult.isCorrect;
 
             let optionStyle = "border-gray-200 hover:bg-gray-50";
             let feedbackAnim = "";
             if (isCorrectAnswer && hasFeedback) {
-              optionStyle =
-                "border-emerald-300 bg-emerald-50 text-emerald-800";
+              optionStyle = "border-emerald-300 bg-emerald-50 text-emerald-800";
               feedbackAnim = "animate-correct-pulse";
             } else if (isWrongSelection) {
               optionStyle = "border-red-300 bg-red-50 text-red-800";
@@ -159,9 +153,7 @@ function AtomQuestionCard({
               <button
                 key={option.letter}
                 type="button"
-                onClick={() =>
-                  !hasFeedback && onSelectAnswer(option.letter)
-                }
+                onClick={() => !hasFeedback && onSelectAnswer(option.letter)}
                 disabled={hasFeedback}
                 className={[
                   "rounded-xl border-2 px-4 py-3 text-left text-sm",
@@ -225,8 +217,7 @@ function AtomQuestionCard({
           correctFeedbackHtml={answerResult.correctFeedbackHtml}
           generalFeedbackHtml={answerResult.generalFeedbackHtml}
           forceViewSolution={
-            !answerResult.isCorrect &&
-            Boolean(answerResult.generalFeedbackHtml)
+            !answerResult.isCorrect && Boolean(answerResult.generalFeedbackHtml)
           }
           onViewSolution={onViewSolution}
         />
@@ -325,9 +316,7 @@ export function AtomStudyView({ ctrl }: { ctrl: Controller }) {
   if (ctrl.phase === "loading") return <AtomStudySkeleton />;
 
   if (ctrl.phase === "error") {
-    return (
-      <ErrorStatePanel message={ctrl.error ?? "Algo salió mal"} />
-    );
+    return <ErrorStatePanel message={ctrl.error ?? "Algo salió mal"} />;
   }
 
   if (ctrl.phase === "lesson" && ctrl.session?.lessonHtml) {
@@ -341,6 +330,7 @@ export function AtomStudyView({ ctrl }: { ctrl: Controller }) {
   }
 
   if (ctrl.phase === "result") {
+    const ar = ctrl.answerResult as Record<string, unknown> | null;
     return (
       <AtomResultPanel
         status={ctrl.finalStatus ?? "failed"}
@@ -348,15 +338,23 @@ export function AtomStudyView({ ctrl }: { ctrl: Controller }) {
         totalAnswered={ctrl.totalAnswered}
         totalCorrect={ctrl.totalCorrect}
         attemptNumber={ctrl.session?.attemptNumber ?? 1}
+        prereqScan={
+          ar?.prereqScan as
+            | {
+                sessionId: string | null;
+                prereqCount: number;
+                status: "in_progress" | "no_prereqs";
+              }
+            | undefined
+        }
+        cooldownApplied={ar?.cooldownApplied as boolean | undefined}
       />
     );
   }
 
   // question & feedback phases share the same layout
   if (!ctrl.question) {
-    return (
-      <ErrorStatePanel message="No se pudo cargar la pregunta." />
-    );
+    return <ErrorStatePanel message="No se pudo cargar la pregunta." />;
   }
 
   const atomTitle = ctrl.session?.atomTitle ?? "Mini-clase";
@@ -370,14 +368,11 @@ export function AtomStudyView({ ctrl }: { ctrl: Controller }) {
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2
-              className="text-lg font-serif font-semibold text-primary"
-            >
+            <h2 className="text-lg font-serif font-semibold text-primary">
               {atomTitle}
             </h2>
             <p className="text-xs text-gray-500">
-              Concepto adaptativo · intento{" "}
-              {ctrl.session?.attemptNumber ?? 1}
+              Concepto adaptativo · intento {ctrl.session?.attemptNumber ?? 1}
             </p>
           </div>
           <div className="flex items-center gap-2 text-sm">
@@ -385,34 +380,25 @@ export function AtomStudyView({ ctrl }: { ctrl: Controller }) {
               {ctrl.totalCorrect}
             </span>
             <span className="text-gray-400">/</span>
-            <span className="text-gray-600">
-              {ctrl.totalAnswered}
-            </span>
+            <span className="text-gray-600">{ctrl.totalAnswered}</span>
             <span className="text-xs text-gray-400">correctas</span>
           </div>
         </div>
         <MasteryMeter
           difficulty={ctrl.difficulty}
-          consecutiveCorrect={
-            ctrl.answerResult?.consecutiveCorrect ?? 0
-          }
+          consecutiveCorrect={ctrl.answerResult?.consecutiveCorrect ?? 0}
           totalAnswered={ctrl.totalAnswered}
           totalCorrect={ctrl.totalCorrect}
         />
       </section>
 
       {/* Question / feedback card */}
-      <div
-        key={ctrl.question.responseId}
-        className="animate-fade-in-up"
-      >
+      <div key={ctrl.question.responseId} className="animate-fade-in-up">
         <AtomQuestionCard
           question={ctrl.question}
           difficulty={ctrl.difficulty}
           selectedAnswer={ctrl.selectedAnswer}
-          answerResult={
-            ctrl.phase === "feedback" ? ctrl.answerResult : null
-          }
+          answerResult={ctrl.phase === "feedback" ? ctrl.answerResult : null}
           submitting={ctrl.submitting}
           canAdvance={ctrl.canAdvance}
           onSelectAnswer={ctrl.setSelectedAnswer}
@@ -438,11 +424,7 @@ function ArrowRightIcon() {
       strokeWidth={2}
       viewBox="0 0 24 24"
     >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M9 5l7 7-7 7"
-      />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
     </svg>
   );
 }
@@ -456,11 +438,7 @@ function CheckIcon() {
       strokeWidth={2.5}
       viewBox="0 0 24 24"
     >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M5 13l4 4L19 7"
-      />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
     </svg>
   );
 }

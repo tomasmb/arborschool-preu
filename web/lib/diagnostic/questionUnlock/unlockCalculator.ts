@@ -142,7 +142,16 @@ function calculateAtomMarginalValue(
 }
 
 /**
+ * Multiplier applied to unlock scores for atoms the student directly failed
+ * in the diagnostic. These "confirmed unknowns" are prioritized over atoms
+ * with unknown status (not_tested) from the short diagnostic.
+ */
+const CONFIRMED_UNKNOWN_MULTIPLIER = 1.5;
+
+/**
  * Calculates marginal values for all non-mastered atoms.
+ * Applies a priority boost to confirmed unknowns (atoms the student
+ * definitively failed in the diagnostic) over untested atoms.
  * Sorts by efficiency (best value per effort).
  */
 export function calculateAllMarginalValues(
@@ -166,6 +175,19 @@ export function calculateAllMarginalValues(
       questionStatuses,
       config
     );
+
+    const masteryState = masteryMap.get(atomId);
+    const isConfirmedUnknown =
+      masteryState &&
+      !masteryState.mastered &&
+      masteryState.source === "direct";
+
+    if (isConfirmedUnknown && value.unlockScore > 0) {
+      value.unlockScore *= CONFIRMED_UNKNOWN_MULTIPLIER;
+      value.efficiency =
+        value.totalCost > 0 ? value.unlockScore / value.totalCost : 0;
+    }
+
     marginalValues.push(value);
   }
 
