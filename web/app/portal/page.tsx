@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { auth, signOut } from "@/auth";
+import { auth } from "@/auth";
 import {
   appendSearchParamsToPath,
   buildSignInUrlWithCallback,
@@ -53,24 +53,8 @@ export default async function PortalPage({ searchParams }: PortalPageProps) {
 
   return (
     <PageShell
-      eyebrow="Portal estudiante"
       title={`Hola, ${displayName}`}
-      subtitle="Revisa tu misión semanal y ejecuta la siguiente mejor acción para mover tu puntaje."
-      actions={
-        <form
-          action={async () => {
-            "use server";
-            await signOut({ redirectTo: "/" });
-          }}
-        >
-          <button
-            type="submit"
-            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50"
-          >
-            Cerrar sesión
-          </button>
-        </form>
-      }
+      subtitle="Tu misión semanal y siguiente mejor acción."
     >
       <M1DashboardClient contextBanner={contextBanner} />
     </PageShell>

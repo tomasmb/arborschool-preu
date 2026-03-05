@@ -1,35 +1,45 @@
 /**
  * How it works section - 3 step process overview
  */
+import { ScrollReveal } from "./ScrollReveal";
+
 export function HowItWorksSection() {
   return (
     <section className="py-16 sm:py-24 bg-off-white relative">
       <div className="absolute inset-0 dot-pattern"></div>
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold text-charcoal mb-10 sm:mb-16 text-center">
-          Así funciona
-        </h2>
+        <ScrollReveal>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold text-charcoal mb-10 sm:mb-16 text-center">
+            Así funciona
+          </h2>
+        </ScrollReveal>
 
         <div className="grid md:grid-cols-3 gap-6 sm:gap-8 lg:gap-12">
-          <StepCard
-            number={1}
-            title="Define tu meta"
-            description="Elige carrera y puntaje objetivo para fijar una brecha clara antes de empezar."
-            variant="primary"
-          />
-          <StepCard
-            number={2}
-            title="Completa diagnóstico M1"
-            description="Responde 16 preguntas adaptativas (~15 min) y obtiene tu rango estimado con evidencia."
-            variant="primary"
-          />
-          <StepCard
-            number={3}
-            title="Empieza tu primer sprint"
-            description="Arbor prioriza tu siguiente acción por impacto para mover puntaje semana a semana."
-            variant="accent"
-          />
+          <ScrollReveal delay={0}>
+            <StepCard
+              number={1}
+              title="Define tu meta"
+              description="Elige carrera y puntaje objetivo para saber exactamente cuánto necesitas mejorar."
+              variant="primary"
+            />
+          </ScrollReveal>
+          <ScrollReveal delay={120}>
+            <StepCard
+              number={2}
+              title="Completa diagnóstico M1"
+              description="Responde 16 preguntas adaptativas (~15 min) y obtiene tu rango estimado con evidencia."
+              variant="primary"
+            />
+          </ScrollReveal>
+          <ScrollReveal delay={240}>
+            <StepCard
+              number={3}
+              title="Empieza tu primer sprint"
+              description="Arbor prioriza tu siguiente acción por impacto para mover puntaje semana a semana."
+              variant="accent"
+            />
+          </ScrollReveal>
         </div>
       </div>
     </section>

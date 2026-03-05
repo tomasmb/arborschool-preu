@@ -15,14 +15,14 @@ type InlineRecoveryPanelProps = {
 export function InlineRecoveryPanel({
   message,
   onRetry,
-  retryLabel = "Reintentar",
+  retryLabel = "Intentar de nuevo",
   secondaryHref = "/portal",
-  secondaryLabel = "Volver al portal",
+  secondaryLabel = "Ir al inicio",
   showSecondaryAction = true,
 }: InlineRecoveryPanelProps) {
   const studentMessage = toStudentSafeMessage(
     message,
-    "Tuvimos un problema para continuar. Reintenta en unos segundos."
+    "Algo falló. Espera un momento y prueba de nuevo."
   );
 
   return (
@@ -33,16 +33,13 @@ export function InlineRecoveryPanel({
           <button
             type="button"
             onClick={onRetry}
-            className="rounded-lg bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800"
+            className="btn-primary text-sm bg-red-700 hover:bg-red-800"
           >
             {retryLabel}
           </button>
         ) : null}
         {showSecondaryAction ? (
-          <Link
-            href={secondaryHref}
-            className="rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-800 hover:bg-red-100"
-          >
+          <Link href={secondaryHref} className="btn-secondary">
             {secondaryLabel}
           </Link>
         ) : null}

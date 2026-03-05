@@ -131,7 +131,7 @@ function BufferInput({
   return (
     <label className="rounded-lg border border-gray-200 p-3 space-y-2 h-fit">
       <span className="block text-sm font-medium text-gray-800">
-        Buffer de seguridad
+        Margen de seguridad
       </span>
       <input
         type="number"
@@ -143,7 +143,7 @@ function BufferInput({
         }
         className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
       />
-      <p className="text-xs text-gray-500">Objetivo final = corte + buffer</p>
+      <p className="text-xs text-gray-500">Objetivo = corte + margen extra</p>
     </label>
   );
 }
@@ -193,12 +193,12 @@ function SimulatorStatusPanels({
         <InlineRecoveryPanel
           message={simulatorError}
           onRetry={onRetrySimulation}
-          retryLabel="Reintentar simulación"
+          retryLabel="Intentar de nuevo"
           showSecondaryAction={false}
         />
       ) : null}
       {simLoading ? (
-        <p className="text-sm text-gray-600">Calculando simulación...</p>
+        <p className="text-sm text-gray-600">Calculando...</p>
       ) : null}
     </>
   );
@@ -241,13 +241,13 @@ function SimulatorMetrics({ simulation }: { simulation: SimulatorPayload }) {
         </p>
       </article>
       <article className="rounded-lg border border-gray-200 p-3">
-        <p className="text-xs text-gray-500">Objetivo con buffer</p>
+        <p className="text-xs text-gray-500">Objetivo con margen</p>
         <p className="text-xl font-semibold text-primary">
           {formatNumber(simulation.targets.bufferedTarget)}
         </p>
       </article>
       <article className="rounded-lg border border-gray-200 p-3">
-        <p className="text-xs text-gray-500">Delta vs objetivo buffer</p>
+        <p className="text-xs text-gray-500">Diferencia vs objetivo</p>
         <DeltaValue
           deltaVsBufferedTarget={simulation.admissibility.deltaVsBufferedTarget}
         />
@@ -318,12 +318,12 @@ function SimulatorSensitivity({
   return (
     <article className="rounded-lg border border-blue-200 bg-blue-50 p-3">
       <p className="text-sm text-blue-900 font-medium">
-        Sensibilidad ({simulation.sensitivity.testCode} +
-        {simulation.sensitivity.increment})
+        Si subes {simulation.sensitivity.testCode} en +
+        {simulation.sensitivity.increment} puntos
       </p>
       <p className="text-sm text-blue-800 mt-1">
         Nuevo ponderado:{" "}
-        {formatNumber(simulation.sensitivity.adjustedWeightedScore)} · Delta:{" "}
+        {formatNumber(simulation.sensitivity.adjustedWeightedScore)} · Cambio:{" "}
         {formatNumber(simulation.sensitivity.weightedDelta)}
       </p>
     </article>

@@ -48,7 +48,7 @@ export async function fetchGoals(): Promise<StudentGoalsPayload> {
   const payload = (await response.json()) as ApiEnvelope<StudentGoalsPayload>;
   if (!response.ok || !payload.success) {
     throw new Error(
-      resolveApiErrorMessage(payload, "No se pudo cargar objetivos")
+      resolveApiErrorMessage(payload, "No pudimos cargar tus metas")
     );
   }
   trackAuthSuccessOnce({
@@ -76,7 +76,7 @@ export async function saveGoals(params: {
   const payload = (await response.json()) as ApiEnvelope<StudentGoalsPayload>;
   if (!response.ok || !payload.success) {
     throw new Error(
-      resolveApiErrorMessage(payload, "No se pudo guardar objetivos")
+      resolveApiErrorMessage(payload, "No pudimos guardar tus metas")
     );
   }
 
@@ -92,7 +92,7 @@ export async function simulateGoal(query: string): Promise<SimulatorPayload> {
   const payload = (await response.json()) as ApiEnvelope<SimulatorPayload>;
   if (!response.ok || !payload.success) {
     throw new Error(
-      resolveApiErrorMessage(payload, "No se pudo calcular simulación")
+      resolveApiErrorMessage(payload, "No pudimos calcular la simulación")
     );
   }
 

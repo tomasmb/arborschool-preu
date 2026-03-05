@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { trackStudentNextActionClicked } from "@/lib/analytics";
-import { ActionCard, InlineRecoveryPanel } from "./components";
+import { InlineRecoveryPanel } from "./components";
 
 export type NextActionPayload = {
   status: "ready" | "missing_diagnostic" | "missing_mastery";
@@ -44,41 +44,32 @@ type NextActionSectionProps = {
   data: NextActionPayload | null;
 };
 
-type QueuePreviewItem = NextActionPayload["queuePreview"][number];
-type MaybeNextAction = NextActionPayload["nextAction"] | undefined;
-
 function formatMinutes(value: number | null): string {
-  if (value === null) {
-    return "-";
-  }
-
-  if (value === 0) {
-    return "0 min";
-  }
-
-  if (value < 60) {
-    return `${value.toLocaleString("es-CL")} min`;
-  }
-
-  const hours = Math.floor(value / 60);
-  const minutes = value % 60;
-  if (minutes === 0) {
-    return `${hours.toLocaleString("es-CL")} h`;
-  }
-
-  return `${hours.toLocaleString("es-CL")} h ${minutes.toLocaleString("es-CL")} min`;
+  if (value === null) return "-";
+  if (value === 0) return "0 min";
+  if (value < 60) return `${value} min`;
+  const h = Math.floor(value / 60);
+  const m = value % 60;
+  return m === 0 ? `${h} h` : `${h} h ${m} min`;
 }
 
 function NextActionLoadingState() {
-  return <p className="text-sm text-gray-600">Cargando siguiente acción...</p>;
+  return (
+    <section className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
+      <div className="animate-pulse space-y-3">
+        <div className="h-5 w-40 bg-gray-200 rounded" />
+        <div className="h-4 w-64 bg-gray-100 rounded" />
+        <div className="h-12 w-48 bg-gray-100 rounded-xl" />
+      </div>
+    </section>
+  );
 }
 
 function NextActionErrorState({ message }: { message: string }) {
   return (
     <InlineRecoveryPanel
       message={
-        message ||
-        "Tuvimos un problema cargando tu siguiente paso. Reintenta en 5 segundos."
+        message || "No pudimos cargar tu siguiente paso. Prueba de nuevo."
       }
       onRetry={() => window.location.reload()}
       showSecondaryAction={false}
@@ -86,155 +77,84 @@ function NextActionErrorState({ message }: { message: string }) {
   );
 }
 
-function NextActionEmptyState({
-  ctaHref,
-  ctaLabel,
-  description,
-}: {
-  ctaHref: string;
-  ctaLabel: string;
-  description: string;
-}) {
-  return (
-    <div className="space-y-3">
-      <p className="text-sm text-gray-700">{description}</p>
-      <Link
-        href={ctaHref}
-        className="btn-primary text-sm"
-        onClick={() => trackStudentNextActionClicked(ctaHref, false)}
-      >
-        {ctaLabel}
-      </Link>
-    </div>
-  );
-}
+function PrimaryCTA({ data }: { data: NextActionPayload }) {
+  const action = data.nextAction;
+  const href = data.sprintHint.ctaHref || "/portal/study";
+  const minutes = action?.studyMinutes ?? data.sprintHint.estimatedMinutes;
+  const topic = action?.firstAtom?.title ?? action?.axis;
 
-function QueuePreviewList({ queue }: { queue: QueuePreviewItem[] }) {
   return (
-    <article className="rounded-2xl border border-gray-200 bg-white p-4 space-y-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-        Cola recomendada (ROI)
-      </p>
-      <div className="space-y-2">
-        {queue.slice(0, 4).map((item, index) => (
-          <div
-            key={item.atomId}
-            className="rounded-lg border border-gray-100 px-3 py-2"
-          >
-            <p className="text-sm font-medium text-primary">
-              {index + 1}. {item.title}
-            </p>
-            <p className="text-xs text-gray-600">
-              {item.axis} · eficiencia {item.efficiency.toLocaleString("es-CL")}
-            </p>
-          </div>
-        ))}
-        {queue.length === 0 ? (
-          <p className="text-sm text-gray-600">Sin elementos para mostrar.</p>
+    <section
+      className="rounded-2xl bg-gradient-to-br from-[#0b3a5b] to-[#0f4d75]
+        p-5 sm:p-6 space-y-4 shadow-lg"
+    >
+      <div className="space-y-1">
+        <h2 className="text-lg font-serif font-semibold text-white">
+          Tu siguiente paso
+        </h2>
+        {topic ? (
+          <p className="text-sm text-white/70">
+            {topic}
+            {action?.pointsGain ? ` — hasta +${action.pointsGain} pts` : ""}
+          </p>
         ) : null}
       </div>
-    </article>
+
+      <Link
+        href={href}
+        onClick={() => trackStudentNextActionClicked(href, true)}
+        className="btn-cta text-base w-full sm:w-auto flex items-center
+          justify-center gap-2 py-3.5 animate-glow-pulse"
+      >
+        Comenzar sprint
+        <span className="text-sm opacity-80">~{formatMinutes(minutes)}</span>
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M13 7l5 5m0 0l-5 5m5-5H6"
+          />
+        </svg>
+      </Link>
+
+      {data.queuePreview.length > 0 ? (
+        <p className="text-xs text-white/50">
+          Después:{" "}
+          {data.queuePreview
+            .slice(0, 2)
+            .map((q) => q.title)
+            .join(", ")}
+        </p>
+      ) : null}
+    </section>
   );
 }
 
-function resolvePrimaryHref(data: NextActionPayload | null): string {
-  return data?.sprintHint.ctaHref ?? "/portal/study";
-}
-
-function resolveActionTitle(nextAction: MaybeNextAction): string {
-  return nextAction?.axis ?? "Sin acción disponible";
-}
-
-function resolvePointsGain(nextAction: MaybeNextAction): number {
-  return nextAction?.pointsGain ?? 0;
-}
-
-function resolveStudyMinutes(data: NextActionPayload | null): number | null {
-  if (data?.nextAction) {
-    return data.nextAction.studyMinutes;
-  }
-
-  return data?.sprintHint.estimatedMinutes ?? null;
-}
-
-function resolveQuestionsUnlocked(nextAction: MaybeNextAction): number {
-  return nextAction?.questionsUnlocked ?? 0;
-}
-
-function resolveFirstAtomTitle(nextAction: MaybeNextAction): string {
-  return nextAction?.firstAtom?.title ?? "No definido";
-}
-
-function resolveQueuePreview(
-  data: NextActionPayload | null
-): QueuePreviewItem[] {
-  return data?.queuePreview ?? [];
-}
-
-function NextActionReadyState({ data }: { data: NextActionPayload | null }) {
-  const nextAction = data?.nextAction;
-  const primaryHref = resolvePrimaryHref(data);
-  const studyMinutes = resolveStudyMinutes(data);
-
-  return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <ActionCard
-        title={resolveActionTitle(nextAction)}
-        description={`+${resolvePointsGain(nextAction)} pts potenciales en ${formatMinutes(
-          studyMinutes
-        )}.`}
-        metrics={
-          <div className="space-y-1 text-xs text-gray-600">
-            <p>
-              {resolveQuestionsUnlocked(nextAction)} preguntas desbloqueables.
-            </p>
-            <p>Primer foco: {resolveFirstAtomTitle(nextAction)}.</p>
-          </div>
-        }
-        primaryLabel="Comenzar sprint de hoy"
-        primaryHref={primaryHref}
-        secondaryLabel="Ajustar meta"
-        secondaryHref="/portal/goals"
-        onPrimaryClick={() => trackStudentNextActionClicked(primaryHref, true)}
-      />
-      <QueuePreviewList queue={resolveQueuePreview(data)} />
-    </div>
-  );
-}
-
-function NextActionSectionContent({
+export function NextActionSection({
   loading,
   error,
   data,
 }: NextActionSectionProps) {
-  if (loading) {
-    return <NextActionLoadingState />;
-  }
-
-  if (error) {
-    return <NextActionErrorState message={error} />;
-  }
+  if (loading) return <NextActionLoadingState />;
+  if (error) return <NextActionErrorState message={error} />;
 
   if (data?.emptyState) {
     return (
-      <NextActionEmptyState
-        ctaHref={data.emptyState.ctaHref}
-        ctaLabel={data.emptyState.ctaLabel}
-        description={data.emptyState.description}
-      />
+      <section className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 space-y-3">
+        <p className="text-sm text-gray-700">{data.emptyState.description}</p>
+        <Link href={data.emptyState.ctaHref} className="btn-primary text-sm">
+          {data.emptyState.ctaLabel}
+        </Link>
+      </section>
     );
   }
 
-  return <NextActionReadyState data={data} />;
-}
-
-export function NextActionSection(props: NextActionSectionProps) {
-  return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-6 space-y-4">
-      <h2 className="text-xl font-serif font-semibold text-primary">
-        Siguiente mejor acción
-      </h2>
-      <NextActionSectionContent {...props} />
-    </section>
-  );
+  if (!data) return null;
+  return <PrimaryCTA data={data} />;
 }

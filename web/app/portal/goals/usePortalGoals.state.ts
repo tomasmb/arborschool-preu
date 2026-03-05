@@ -192,7 +192,7 @@ export function useGoalsLoader(state: GoalsState, loadRetryVersion: number) {
         state.setLoadError(
           loadError instanceof Error
             ? loadError.message
-            : "No se pudo cargar objetivos"
+            : "No pudimos cargar tus metas"
         );
       } finally {
         if (isMounted) {
@@ -259,7 +259,7 @@ export function useGoalsSimulator(
           setSimulatorError(
             simError instanceof Error
               ? simError.message
-              : "No se pudo calcular simulación"
+              : "No pudimos calcular la simulación"
           );
         }
       } finally {

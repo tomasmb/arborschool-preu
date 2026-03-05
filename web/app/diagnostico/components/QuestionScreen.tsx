@@ -254,15 +254,15 @@ export const QuestionScreen = memo(function QuestionScreen({
             Estamos en mantenimiento
           </h2>
           <p className="text-cool-gray mb-8 max-w-md mx-auto">
-            No pudimos cargar las preguntas del diagnóstico. Estamos trabajando
-            para solucionarlo lo antes posible.
+            No pudimos cargar las preguntas. Estamos en eso, vuelve a intentarlo
+            en un momento.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             {retryCount < MAX_RETRIES ? (
               <button
                 onClick={handleRetry}
-                aria-label="Reintentar cargar la pregunta"
+                aria-label="Intentar cargar la pregunta de nuevo"
                 className="btn-primary px-8 py-3 flex items-center justify-center gap-2"
               >
                 <svg
@@ -279,7 +279,7 @@ export const QuestionScreen = memo(function QuestionScreen({
                     d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                   />
                 </svg>
-                Reintentar
+                Intentar de nuevo
               </button>
             ) : null}
             <Link

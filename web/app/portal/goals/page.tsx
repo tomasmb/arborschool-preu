@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
 import { PageShell } from "@/app/portal/components";
@@ -60,21 +59,13 @@ function PortalGoalsPageContent() {
 
   return (
     <PageShell
-      eyebrow="Portal estudiante"
-      title={isPlanningMode ? "Planificación inicial" : "Objetivos y admisión"}
+      title={isPlanningMode ? "Planificación inicial" : "Metas y simulador"}
       subtitle={
         isPlanningMode
-          ? "Define meta y compromiso semanal para activar un diagnóstico con foco."
-          : "Gestiona metas, ajusta buffer y valida brecha de admisión con simulador."
+          ? "Elige tu meta y cuánto quieres estudiar para empezar el diagnóstico."
+          : "Configura tus metas de admisión y prueba distintos escenarios."
       }
-      actions={
-        <Link
-          href="/portal"
-          className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50"
-        >
-          Volver al portal
-        </Link>
-      }
+      hideNav={isPlanningMode}
     >
       {isPlanningMode ? (
         <PlanningModeFlow
@@ -132,24 +123,23 @@ function PortalGoalsPageContent() {
 
 function PortalGoalsPageFallback() {
   return (
-    <PageShell
-      eyebrow="Portal estudiante"
-      title="Objetivos y admisión"
-      subtitle="Cargando configuración de objetivos..."
-      actions={
-        <Link
-          href="/portal"
-          className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50"
-        >
-          Volver al portal
-        </Link>
-      }
-    >
-      <section className="rounded-2xl border border-gray-200 bg-white p-6">
-        <p className="text-sm text-gray-600">
-          Preparando tu panel de objetivos...
-        </p>
-      </section>
+    <PageShell title="Metas y simulador" subtitle="Cargando tus metas...">
+      <div className="space-y-4">
+        <section className="rounded-2xl border border-gray-200 bg-white p-6 animate-pulse">
+          <div className="h-5 w-48 bg-gray-200 rounded mb-4" />
+          <div className="space-y-3">
+            <div className="h-10 w-full bg-gray-100 rounded-lg" />
+            <div className="h-10 w-full bg-gray-100 rounded-lg" />
+          </div>
+        </section>
+        <section className="rounded-2xl border border-gray-200 bg-white p-6 animate-pulse">
+          <div className="h-5 w-40 bg-gray-200 rounded mb-4" />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="h-24 bg-gray-100 rounded-lg" />
+            <div className="h-24 bg-gray-100 rounded-lg" />
+          </div>
+        </section>
+      </div>
     </PageShell>
   );
 }

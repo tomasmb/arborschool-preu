@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import {
@@ -62,17 +61,8 @@ export default async function StudyPage({ searchParams }: StudyPageProps) {
 
   return (
     <PageShell
-      eyebrow="Portal estudiante"
       title="Sprint de hoy"
-      subtitle="Resuelve tu sprint personalizado. Cada respuesta actualiza tu misión semanal."
-      actions={
-        <Link
-          href="/portal"
-          className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50"
-        >
-          Volver al portal
-        </Link>
-      }
+      subtitle="Resuelve tu sprint personalizado. Cada respuesta suma a tu misión."
     >
       <StudySprintClient />
     </PageShell>

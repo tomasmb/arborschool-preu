@@ -36,7 +36,9 @@ function useDashboardPayload() {
         const payload =
           (await response.json()) as ApiEnvelope<DashboardPayload>;
         if (!response.ok || !payload.success) {
-          throw new Error(getErrorMessage(payload, "No se pudo cargar portal"));
+          throw new Error(
+            getErrorMessage(payload, "No pudimos cargar tu portal")
+          );
         }
         if (!isMounted) {
           return;
@@ -54,7 +56,7 @@ function useDashboardPayload() {
         if (!isMounted) {
           return;
         }
-        setError(toErrorMessage(loadError, "No se pudo cargar portal"));
+        setError(toErrorMessage(loadError, "No pudimos cargar tu portal"));
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -94,7 +96,7 @@ function useNextActionPayload() {
           (await response.json()) as ApiEnvelope<NextActionPayload>;
         if (!response.ok || !payload.success) {
           throw new Error(
-            getErrorMessage(payload, "No se pudo cargar siguiente acción")
+            getErrorMessage(payload, "No pudimos cargar tu siguiente paso")
           );
         }
         if (isMounted) {
@@ -106,7 +108,7 @@ function useNextActionPayload() {
         }
         console.error("[portal] next-action-load-failed", loadError);
         setNextActionError(
-          "Tuvimos un problema cargando tu siguiente paso. Reintenta en 5 segundos."
+          "Algo falló al cargar tu siguiente paso. Prueba de nuevo en unos segundos."
         );
       } finally {
         if (isMounted) {

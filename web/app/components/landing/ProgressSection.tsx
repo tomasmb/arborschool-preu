@@ -1,6 +1,8 @@
 /**
  * Progress section - dark navy section showing progress tracking
  */
+import { ScrollReveal } from "./ScrollReveal";
+
 export function ProgressSection() {
   return (
     <section className="py-16 sm:py-24 section-navy relative overflow-hidden">
@@ -9,7 +11,7 @@ export function ProgressSection() {
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
-          <div className="text-center lg:text-left">
+          <ScrollReveal className="text-center lg:text-left">
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold text-white mb-4 sm:mb-6">
               Horas de estudio inteligente,{" "}
               <span className="text-accent">no meses en un preu</span>
@@ -18,9 +20,11 @@ export function ProgressSection() {
               Sabes exactamente dónde estás, cuánto te falta, y qué estudiar
               para mover tu puntaje lo más rápido posible.
             </p>
-          </div>
+          </ScrollReveal>
 
-          <ProgressCard />
+          <ScrollReveal delay={150}>
+            <ProgressCard />
+          </ScrollReveal>
         </div>
       </div>
     </section>

@@ -64,7 +64,7 @@ function useSprintBootstrap(
         }
 
         if (!sprintId) {
-          throw new Error("No se pudo resolver sprint");
+          throw new Error("No pudimos iniciar el sprint");
         }
 
         const loaded = await fetchStudySprint(sprintId);
@@ -88,7 +88,7 @@ function useSprintBootstrap(
         if (!mounted) {
           return;
         }
-        setError(toErrorMessage(loadError, "No se pudo iniciar el sprint"));
+        setError(toErrorMessage(loadError, "No pudimos iniciar el sprint"));
       } finally {
         if (mounted) {
           setLoading(false);
@@ -202,7 +202,7 @@ function useAnswerAction(params: {
         setActiveIndex(updated.nextUnansweredIndex);
       }
     } catch (submitError) {
-      setError(toErrorMessage(submitError, "No se pudo guardar la respuesta"));
+      setError(toErrorMessage(submitError, "No pudimos guardar tu respuesta"));
     } finally {
       setSubmitting(false);
     }
@@ -246,7 +246,7 @@ function useCompleteAction(params: {
       params.setSprint(refreshed);
     } catch (completeError) {
       params.setError(
-        toErrorMessage(completeError, "No se pudo completar el sprint")
+        toErrorMessage(completeError, "No pudimos completar el sprint")
       );
     } finally {
       setCompleting(false);

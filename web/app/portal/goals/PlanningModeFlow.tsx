@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import Image from "next/image";
 import { InlineRecoveryPanel } from "../components";
 import type { GoalOption, PlanningProfileDraft } from "./types";
 import {
@@ -25,231 +26,431 @@ type PlanningModeFlowProps = {
   onSaveForLater: () => Promise<void>;
 };
 
-function PlanningMessagePanel({
-  loading,
-  loadError,
-  error,
-  infoMessage,
-  onRetryLoadGoals,
-}: Pick<
-  PlanningModeFlowProps,
-  "loading" | "loadError" | "error" | "infoMessage" | "onRetryLoadGoals"
->) {
-  if (loading) {
-    return (
-      <p className="text-sm text-gray-600">Cargando datos de admisión...</p>
-    );
-  }
-  if (loadError) {
-    return (
-      <InlineRecoveryPanel
-        message={loadError}
-        onRetry={onRetryLoadGoals}
-        retryLabel="Reintentar carga"
-      />
-    );
-  }
-  if (error) {
-    return (
-      <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-        {error}
-      </p>
-    );
-  }
-  if (infoMessage) {
-    return (
-      <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-        {infoMessage}
-      </p>
-    );
-  }
-  return null;
-}
+const TOTAL_STEPS = 3;
 
-function PlanningActions({
-  saving,
-  loading,
-  selectedOfferingId,
-  onStartDiagnostic,
-  onSaveForLater,
-}: Pick<
-  PlanningModeFlowProps,
-  | "saving"
-  | "loading"
-  | "selectedOfferingId"
-  | "onStartDiagnostic"
-  | "onSaveForLater"
->) {
-  const disabled = saving || loading || !selectedOfferingId;
+function StepIndicator({ current, total }: { current: number; total: number }) {
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      <button
-        type="button"
-        onClick={() => void onStartDiagnostic()}
-        disabled={disabled}
-        className="btn-primary text-sm disabled:opacity-60"
-      >
-        {saving ? "Guardando..." : "Empezar diagnóstico"}
-      </button>
-      <button
-        type="button"
-        onClick={() => void onSaveForLater()}
-        disabled={disabled}
-        className="btn-ghost text-sm disabled:opacity-60"
-      >
-        Guardar y continuar después
-      </button>
+    <div className="flex items-center justify-center gap-2">
+      {Array.from({ length: total }, (_, i) => (
+        <div
+          key={i}
+          className={[
+            "h-2 rounded-full transition-all duration-300",
+            i === current
+              ? "w-8 bg-primary"
+              : i < current
+                ? "w-2 bg-primary/40"
+                : "w-2 bg-gray-200",
+          ].join(" ")}
+        />
+      ))}
     </div>
   );
 }
 
-function optionLabel(option: GoalOption) {
-  return `${option.careerName} — ${option.universityName}`;
+function WizardShell({
+  step,
+  canGoBack,
+  onBack,
+  children,
+}: {
+  step: number;
+  canGoBack: boolean;
+  onBack: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="min-h-[60vh] flex flex-col">
+      <div className="flex items-center justify-between mb-6">
+        {canGoBack ? (
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex items-center gap-1 text-sm text-gray-500
+              hover:text-gray-700 transition-colors"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+            Atrás
+          </button>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Image src="/logo-arbor.svg" alt="Arbor" width={24} height={24} />
+            <span className="text-sm font-serif font-bold text-primary">
+              Arbor PreU
+            </span>
+          </div>
+        )}
+        <StepIndicator current={step} total={TOTAL_STEPS} />
+      </div>
+      <div className="flex-1">{children}</div>
+    </div>
+  );
 }
 
-function PlanningCommitmentSection({
+function StepCareer({
+  options,
+  selectedOfferingId,
+  loading,
+  loadError,
+  onSelectOffering,
+  onRetryLoadGoals,
+  onNext,
+}: {
+  options: GoalOption[];
+  selectedOfferingId: string;
+  loading: boolean;
+  loadError: string | null;
+  onSelectOffering: (id: string) => void;
+  onRetryLoadGoals: () => void;
+  onNext: () => void;
+}) {
+  return (
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <h2 className="text-2xl sm:text-3xl font-serif font-bold text-primary">
+          ¿Qué quieres estudiar?
+        </h2>
+        <p className="text-sm text-gray-600">
+          Elige tu carrera y universidad objetivo. Esto define tu meta de
+          puntaje.
+        </p>
+      </div>
+
+      {loading ? (
+        <p className="text-sm text-gray-500">Cargando carreras...</p>
+      ) : loadError ? (
+        <InlineRecoveryPanel
+          message={loadError}
+          onRetry={onRetryLoadGoals}
+          retryLabel="Intentar de nuevo"
+        />
+      ) : (
+        <PlanningGoalCombobox
+          options={options}
+          selectedOfferingId={selectedOfferingId}
+          onSelectOffering={onSelectOffering}
+        />
+      )}
+
+      {selectedOfferingId ? (
+        <button
+          type="button"
+          onClick={onNext}
+          className="btn-cta w-full sm:w-auto flex items-center
+            justify-center gap-2 py-3"
+        >
+          Continuar
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M13 7l5 5m0 0l-5 5m5-5H6"
+            />
+          </svg>
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function StepCommitment({
   planningProfile,
   onPlanningProfileChange,
-}: Pick<PlanningModeFlowProps, "planningProfile" | "onPlanningProfileChange">) {
+  onNext,
+}: {
+  planningProfile: PlanningProfileDraft;
+  onPlanningProfileChange: (patch: Partial<PlanningProfileDraft>) => void;
+  onNext: () => void;
+}) {
   return (
-    <li className="space-y-3">
-      <h3 className="text-lg font-serif font-semibold text-primary">
-        3. Define tu compromiso semanal
-      </h3>
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <h2 className="text-2xl sm:text-3xl font-serif font-bold text-primary">
+          ¿Cuánto tiempo puedes dedicar?
+        </h2>
+        <p className="text-sm text-gray-600">
+          Define tu compromiso semanal y cuándo rendirás la PAES.
+        </p>
+      </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="space-y-1">
-          <span className="text-sm text-gray-700">Minutos por semana</span>
+      <div className="space-y-4">
+        <label className="block space-y-2">
+          <span className="text-sm font-medium text-gray-700">
+            Minutos de estudio por semana
+          </span>
           <input
             type="number"
             min={60}
             max={2400}
             step={30}
             value={planningProfile.weeklyMinutesTarget}
-            onChange={(event) =>
+            onChange={(e) =>
               onPlanningProfileChange({
-                weeklyMinutesTarget: event.target.value,
+                weeklyMinutesTarget: e.target.value,
               })
             }
-            className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm"
+            className="w-full rounded-xl border border-gray-300 px-4 py-3
+              text-base focus:border-primary focus:ring-1
+              focus:ring-primary/20"
           />
+          <p className="text-xs text-gray-500">
+            Recomendamos al menos 120 min/semana (2 horas)
+          </p>
         </label>
 
-        <label className="space-y-1">
-          <span className="text-sm text-gray-700">Fecha PAES estimada</span>
+        <label className="block space-y-2">
+          <span className="text-sm font-medium text-gray-700">
+            ¿Cuándo rindes la PAES?
+          </span>
           <input
             type="date"
             value={planningProfile.examDate}
-            onChange={(event) =>
-              onPlanningProfileChange({ examDate: event.target.value })
+            onChange={(e) =>
+              onPlanningProfileChange({ examDate: e.target.value })
             }
-            className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm"
+            className="w-full rounded-xl border border-gray-300 px-4 py-3
+              text-base focus:border-primary focus:ring-1
+              focus:ring-primary/20"
           />
         </label>
+
+        <div className="space-y-2">
+          <span className="text-sm font-medium text-gray-700 block">
+            Recordatorios
+          </span>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label
+              className="flex items-center gap-3 rounded-xl border
+                border-gray-200 px-4 py-3 cursor-pointer
+                hover:bg-gray-50 transition-colors"
+            >
+              <input
+                type="checkbox"
+                checked={planningProfile.reminderInApp}
+                onChange={(e) =>
+                  onPlanningProfileChange({
+                    reminderInApp: e.target.checked,
+                  })
+                }
+                className="accent-primary w-4 h-4"
+              />
+              <span className="text-sm text-gray-700">En la app</span>
+            </label>
+            <label
+              className="flex items-center gap-3 rounded-xl border
+                border-gray-200 px-4 py-3 cursor-pointer
+                hover:bg-gray-50 transition-colors"
+            >
+              <input
+                type="checkbox"
+                checked={planningProfile.reminderEmail}
+                onChange={(e) =>
+                  onPlanningProfileChange({
+                    reminderEmail: e.target.checked,
+                  })
+                }
+                className="accent-primary w-4 h-4"
+              />
+              <span className="text-sm text-gray-700">Por email</span>
+            </label>
+          </div>
+        </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2">
-          <input
-            type="checkbox"
-            checked={planningProfile.reminderInApp}
-            onChange={(event) =>
-              onPlanningProfileChange({ reminderInApp: event.target.checked })
-            }
+      <button
+        type="button"
+        onClick={onNext}
+        className="btn-cta w-full sm:w-auto flex items-center
+          justify-center gap-2 py-3"
+      >
+        Continuar
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M13 7l5 5m0 0l-5 5m5-5H6"
           />
-          <span className="text-sm text-gray-700">Recordatorios en la app</span>
-        </label>
-        <label className="flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2">
-          <input
-            type="checkbox"
-            checked={planningProfile.reminderEmail}
-            onChange={(event) =>
-              onPlanningProfileChange({ reminderEmail: event.target.checked })
-            }
-          />
-          <span className="text-sm text-gray-700">Recordatorios por email</span>
-        </label>
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+function StepConfirm({
+  option,
+  saving,
+  error,
+  infoMessage,
+  onStartDiagnostic,
+  onSaveForLater,
+}: {
+  option: GoalOption | null;
+  saving: boolean;
+  error: string | null;
+  infoMessage: string | null;
+  onStartDiagnostic: () => Promise<void>;
+  onSaveForLater: () => Promise<void>;
+}) {
+  return (
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <h2 className="text-2xl sm:text-3xl font-serif font-bold text-primary">
+          Todo listo para tu diagnóstico
+        </h2>
+        <p className="text-sm text-gray-600">
+          Con tu meta definida, el diagnóstico priorizará qué estudiar primero.
+        </p>
       </div>
-    </li>
+
+      {option ? (
+        <div className="rounded-xl border border-primary/20 bg-primary/5 p-5 space-y-2">
+          <p className="text-sm font-medium text-primary">Tu meta</p>
+          <p className="text-base font-semibold text-gray-800">
+            {option.careerName} — {option.universityName}
+          </p>
+          <p className="text-sm text-gray-600">
+            Último corte: {formatPlanningCutoff(option)}
+          </p>
+        </div>
+      ) : null}
+
+      <div
+        className="rounded-xl bg-gradient-to-r from-amber-50 to-orange-50
+          border border-amber-200 p-4"
+      >
+        <p className="text-sm text-amber-800 font-medium">
+          El diagnóstico dura ~15 min y no tiene nota. Es para calibrar tu
+          nivel.
+        </p>
+      </div>
+
+      {error ? (
+        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {error}
+        </p>
+      ) : null}
+      {infoMessage ? (
+        <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          {infoMessage}
+        </p>
+      ) : null}
+
+      <div className="flex flex-col sm:flex-row gap-3">
+        <button
+          type="button"
+          onClick={() => void onStartDiagnostic()}
+          disabled={saving}
+          className="btn-cta py-3.5 flex-1 sm:flex-none flex items-center
+            justify-center gap-2 disabled:opacity-60"
+        >
+          {saving ? "Guardando..." : "Empezar diagnóstico"}
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M13 7l5 5m0 0l-5 5m5-5H6"
+            />
+          </svg>
+        </button>
+        <button
+          type="button"
+          onClick={() => void onSaveForLater()}
+          disabled={saving}
+          className="btn-secondary py-3 disabled:opacity-60"
+        >
+          Guardar y continuar después
+        </button>
+      </div>
+    </div>
   );
 }
 
 export function PlanningModeFlow(props: PlanningModeFlowProps) {
+  const [step, setStep] = useState(0);
+  const [direction, setDirection] = useState<"forward" | "back">("forward");
+
   const option = useMemo(
     () => selectedPlanningOption(props.options, props.selectedOfferingId),
     [props.options, props.selectedOfferingId]
   );
 
+  function goForward(next: number) {
+    setDirection("forward");
+    setStep(next);
+  }
+
+  function goBack() {
+    setDirection("back");
+    setStep((s) => Math.max(0, s - 1));
+  }
+
+  const transitionClass =
+    direction === "forward"
+      ? "animate-slide-in-right"
+      : "animate-slide-in-left";
+
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-7 space-y-7">
-      <header className="space-y-1">
-        <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-          Modo planificación
-        </p>
-        <h2 className="text-2xl font-serif font-semibold text-primary">
-          Activa tu diagnóstico con una meta clara
-        </h2>
-        <p className="text-sm text-gray-600">
-          Define objetivo, compromiso semanal y fecha. Con eso priorizamos qué
-          estudiar primero para tu PAES.
-        </p>
-      </header>
-
-      <ol className="space-y-6">
-        <li className="space-y-3">
-          <h3 className="text-lg font-serif font-semibold text-primary">
-            1. Elige carrera y universidad objetivo
-          </h3>
-          <PlanningGoalCombobox
-            options={props.options}
-            selectedOfferingId={props.selectedOfferingId}
-            onSelectOffering={props.onSelectOffering}
-          />
-        </li>
-
-        <li className="space-y-3">
-          <h3 className="text-lg font-serif font-semibold text-primary">
-            2. Confirma tu objetivo y transparencia de corte
-          </h3>
-          <article className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-2">
-            <p className="text-sm font-medium text-gray-800">
-              {option ? optionLabel(option) : "Aún no seleccionas una meta"}
-            </p>
-            <p className="text-sm text-gray-600">
-              Último corte observado: {formatPlanningCutoff(option)}
-            </p>
-            <p className="text-xs text-gray-600">
-              El simulador mostrará la brecha contra este corte más tu buffer.
-            </p>
-          </article>
-        </li>
-
-        <PlanningCommitmentSection
-          planningProfile={props.planningProfile}
-          onPlanningProfileChange={props.onPlanningProfileChange}
-        />
-
-        <li className="rounded-xl border border-primary/20 bg-primary/5 p-4">
-          <p className="text-sm text-primary font-medium">
-            Este diagnóstico te dirá qué estudiar primero para llegar a tu meta.
-          </p>
-        </li>
-      </ol>
-
-      <PlanningMessagePanel
-        loading={props.loading}
-        loadError={props.loadError}
-        error={props.error}
-        infoMessage={props.infoMessage}
-        onRetryLoadGoals={props.onRetryLoadGoals}
-      />
-      <PlanningActions
-        saving={props.saving}
-        loading={props.loading}
-        selectedOfferingId={props.selectedOfferingId}
-        onStartDiagnostic={props.onStartDiagnostic}
-        onSaveForLater={props.onSaveForLater}
-      />
+    <section className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8">
+      <WizardShell step={step} canGoBack={step > 0} onBack={goBack}>
+        <div key={step} className={transitionClass}>
+          {step === 0 ? (
+            <StepCareer
+              options={props.options}
+              selectedOfferingId={props.selectedOfferingId}
+              loading={props.loading}
+              loadError={props.loadError}
+              onSelectOffering={props.onSelectOffering}
+              onRetryLoadGoals={props.onRetryLoadGoals}
+              onNext={() => goForward(1)}
+            />
+          ) : step === 1 ? (
+            <StepCommitment
+              planningProfile={props.planningProfile}
+              onPlanningProfileChange={props.onPlanningProfileChange}
+              onNext={() => goForward(2)}
+            />
+          ) : (
+            <StepConfirm
+              option={option}
+              saving={props.saving}
+              error={props.error}
+              infoMessage={props.infoMessage}
+              onStartDiagnostic={props.onStartDiagnostic}
+              onSaveForLater={props.onSaveForLater}
+            />
+          )}
+        </div>
+      </WizardShell>
     </section>
   );
 }

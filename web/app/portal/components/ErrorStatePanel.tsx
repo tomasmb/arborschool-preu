@@ -11,9 +11,9 @@ type ErrorStatePanelProps = {
 
 export function ErrorStatePanel({
   message,
-  retryLabel = "Reintentar",
+  retryLabel = "Intentar de nuevo",
   secondaryHref = "/portal",
-  secondaryLabel = "Volver al portal",
+  secondaryLabel = "Ir al inicio",
 }: ErrorStatePanelProps) {
   return (
     <section className="rounded-2xl border border-red-200 bg-red-50 p-6 space-y-4">
@@ -22,14 +22,11 @@ export function ErrorStatePanel({
         <button
           type="button"
           onClick={() => window.location.reload()}
-          className="rounded-lg bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800"
+          className="btn-primary text-sm bg-red-700 hover:bg-red-800"
         >
           {retryLabel}
         </button>
-        <Link
-          href={secondaryHref}
-          className="rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-800 hover:bg-red-100"
-        >
+        <Link href={secondaryHref} className="btn-secondary">
           {secondaryLabel}
         </Link>
       </div>

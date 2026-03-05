@@ -69,20 +69,19 @@ export function MaintenanceScreen() {
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-serif font-bold text-charcoal mb-3">
-            Estamos en mantenimiento
+            Estamos haciendo ajustes
           </h1>
           <p className="text-cool-gray mb-4">
-            El diagnóstico no está disponible en este momento.
+            El diagnóstico no está disponible ahora.
           </p>
           <p className="text-sm text-cool-gray mb-8 max-w-sm mx-auto">
-            Nuestro equipo está trabajando para solucionarlo. Por favor, intenta
-            nuevamente en unos minutos.
+            Estamos trabajando en ello. Prueba de nuevo en unos minutos.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
               onClick={() => window.location.reload()}
-              aria-label="Reintentar cargar el diagnóstico"
+              aria-label="Intentar cargar el diagnóstico de nuevo"
               className="btn-cta px-8 py-3 flex items-center justify-center gap-2"
             >
               <svg
@@ -99,7 +98,7 @@ export function MaintenanceScreen() {
                   d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                 />
               </svg>
-              Reintentar
+              Intentar de nuevo
             </button>
             <Link
               href="/"

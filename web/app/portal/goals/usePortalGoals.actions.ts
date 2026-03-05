@@ -347,7 +347,7 @@ export function useGoalSaveHandlers(state: GoalsState) {
       state.setError(
         saveError instanceof Error
           ? saveError.message
-          : "No se pudo guardar objetivos"
+          : "No pudimos guardar tus metas"
       );
     } finally {
       state.setSaving(false);
@@ -381,7 +381,7 @@ export function useGoalSaveHandlers(state: GoalsState) {
         state.setError(
           saveError instanceof Error
             ? saveError.message
-            : "No se pudo guardar planificación"
+            : "No pudimos guardar tu plan"
         );
       } finally {
         state.setSaving(false);

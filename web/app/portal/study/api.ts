@@ -17,7 +17,7 @@ export async function createStudySprint(itemCount = 5) {
 
   const payload = (await response.json()) as ApiEnvelope<SprintCreateData>;
   if (!response.ok || !payload.success) {
-    throw new Error(resolveErrorMessage(payload, "No se pudo crear sprint"));
+    throw new Error(resolveErrorMessage(payload, "No pudimos crear el sprint"));
   }
 
   return payload.data;
@@ -31,7 +31,9 @@ export async function fetchStudySprint(sprintId: string) {
 
   const payload = (await response.json()) as ApiEnvelope<SprintData>;
   if (!response.ok || !payload.success) {
-    throw new Error(resolveErrorMessage(payload, "No se pudo cargar sprint"));
+    throw new Error(
+      resolveErrorMessage(payload, "No pudimos cargar el sprint")
+    );
   }
 
   return payload.data;
@@ -58,7 +60,7 @@ export async function submitStudySprintAnswer(params: {
   const payload = (await response.json()) as ApiEnvelope<AnswerResponse>;
   if (!response.ok || !payload.success) {
     throw new Error(
-      resolveErrorMessage(payload, "No se pudo guardar la respuesta")
+      resolveErrorMessage(payload, "No pudimos guardar tu respuesta")
     );
   }
 
@@ -77,7 +79,7 @@ export async function completeStudySprint(sprintId: string) {
   const payload = (await response.json()) as ApiEnvelope<CompletionResponse>;
   if (!response.ok || !payload.success) {
     throw new Error(
-      resolveErrorMessage(payload, "No se pudo completar el sprint")
+      resolveErrorMessage(payload, "No pudimos completar el sprint")
     );
   }
 

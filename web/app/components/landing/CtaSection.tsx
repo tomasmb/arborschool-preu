@@ -2,6 +2,7 @@
  * Final CTA section - bottom of the landing page
  */
 import { LoadingButton } from "@/app/components/ui";
+import { ScrollReveal } from "./ScrollReveal";
 
 interface CtaSectionProps {
   onStartDiagnostic: () => void;
@@ -27,7 +28,7 @@ export function CtaSection({
           bg-accent/10 rounded-full blur-3xl`}
       />
 
-      <div className="relative max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <ScrollReveal className="relative max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold text-charcoal mb-6">
           Tu siguiente paso está en el portal
         </h2>
@@ -57,7 +58,7 @@ export function CtaSection({
           </svg>
         </LoadingButton>
         <p className="text-cool-gray text-sm">{ctaSupportingText}</p>
-      </div>
+      </ScrollReveal>
     </section>
   );
 }

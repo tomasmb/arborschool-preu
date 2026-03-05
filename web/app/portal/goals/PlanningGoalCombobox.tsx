@@ -170,7 +170,7 @@ export function PlanningGoalCombobox({
 
 export function formatPlanningCutoff(option: GoalOption | null) {
   if (!option || option.lastCutoff === null) {
-    return "Sin corte histórico disponible";
+    return "No hay puntajes de corte anteriores";
   }
 
   const score = option.lastCutoff.toLocaleString("es-CL", {

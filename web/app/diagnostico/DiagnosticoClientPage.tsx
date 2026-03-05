@@ -156,7 +156,7 @@ function StudentResultsScreen(props: {
       confidenceExplanation={props.confidenceExplanation}
       targetGapLabel={
         topRoute
-          ? `Tu mayor ROI ahora está en ${topRoute.axis}.`
+          ? `Tu mayor oportunidad de mejora está en ${topRoute.axis}.`
           : "Tu siguiente sprint consolidará la señal para priorizar mejor."
       }
       firstAction={{

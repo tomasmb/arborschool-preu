@@ -73,7 +73,7 @@ function GoalRow(props: {
         <button
           type="button"
           onClick={() => props.onRemoveGoalSlot(props.goal.priority)}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50"
+          className="btn-secondary"
         >
           Quitar
         </button>
@@ -92,7 +92,7 @@ function GoalsFeedback({
       <InlineRecoveryPanel
         message={loadError}
         onRetry={onRetryLoadGoals}
-        retryLabel="Reintentar carga"
+        retryLabel="Intentar de nuevo"
       />
     );
   }
@@ -122,12 +122,9 @@ function SaveGoalsButton({
       type="button"
       onClick={onSave}
       disabled={disabled}
-      className={[
-        "inline-flex items-center rounded-lg bg-primary text-white px-4 py-2",
-        "text-sm font-semibold hover:bg-primary/90 disabled:opacity-50",
-      ].join(" ")}
+      className="btn-primary text-sm disabled:opacity-50"
     >
-      {saving ? "Guardando..." : "Guardar objetivos"}
+      {saving ? "Guardando..." : "Guardar metas"}
     </button>
   );
 }
@@ -154,7 +151,7 @@ export function GoalsEditorSection({
 
       <DatasetMeta dataset={dataset} />
 
-      {loading ? <p className="text-gray-600">Cargando objetivos...</p> : null}
+      {loading ? <p className="text-gray-600">Cargando metas...</p> : null}
 
       {!loading ? (
         <div className="space-y-3">
@@ -172,11 +169,7 @@ export function GoalsEditorSection({
       ) : null}
 
       {!loading && goals.length < MAX_PRIMARY_GOALS ? (
-        <button
-          type="button"
-          onClick={onAddGoalSlot}
-          className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50"
-        >
+        <button type="button" onClick={onAddGoalSlot} className="btn-secondary">
           Agregar meta
         </button>
       ) : null}

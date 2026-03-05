@@ -180,9 +180,21 @@ h6 {
     transform: translateY(-1px);
   }
 
+  /* Secondary button - neutral, consistent across all pages */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg;
+    @apply text-sm font-medium transition-all duration-200 ease-out;
+    @apply border border-gray-300 bg-white text-gray-700;
+  }
+
+  .btn-secondary:hover {
+    @apply bg-gray-50 text-gray-900;
+    transform: translateY(-1px);
+  }
+
   /* Card styles */
   .card {
-    @apply rounded-xl bg-white border border-gray-200;
+    @apply rounded-2xl bg-white border border-gray-200;
     box-shadow: var(--shadow-md);
     transition: all 0.2s ease-out;
   }
@@ -191,6 +203,17 @@ h6 {
     box-shadow: var(--shadow-lg);
     transform: translateY(-2px);
     border-color: transparent;
+  }
+
+  /* Portal section card — static, no hover effect */
+  .card-section {
+    @apply rounded-2xl bg-white border border-gray-200 p-5;
+  }
+
+  @media (min-width: 640px) {
+    .card-section {
+      @apply p-6;
+    }
   }
 
   /* Section backgrounds - more distinct contrast */
@@ -224,6 +247,86 @@ h6 {
     background-size: 20px 20px;
     opacity: 0.08;
   }
+
+  /* Shared input field styling */
+  .input-field {
+    @apply w-full rounded-xl border border-gray-300 px-4 py-3 text-base;
+    @apply transition-all duration-200;
+    @apply focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none;
+  }
+}
+
+/* ============================================================================
+   FORM INPUT POLISH (range, checkbox, select)
+   ============================================================================ */
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-light-bg);
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-light),
+    var(--color-primary)
+  );
+  cursor: pointer;
+  border: 3px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  transition: transform 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(0.95);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-light),
+    var(--color-primary)
+  );
+  cursor: pointer;
+  border: 3px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+select {
+  @apply rounded-xl border border-gray-300 px-4 py-3 text-base;
+  @apply transition-all duration-200 bg-white;
+  @apply focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 40px;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 /* ============================================================================
@@ -415,6 +518,47 @@ h6 {
   animation: fade-in-up 0.4s ease-out forwards;
 }
 
+/* Shake for wrong answers */
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(3px);
+  }
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-out;
+}
+
+/* Correct answer pulse ring */
+@keyframes correct-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(5, 150, 105, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(5, 150, 105, 0);
+  }
+}
+
+.animate-correct-pulse {
+  animation: correct-pulse 0.6s ease-out;
+}
+
 /* ============================================================================
    ANIMATION DELAYS
    ============================================================================ */
@@ -524,4 +668,12 @@ math * {
 
 .prose strong {
   @apply text-charcoal font-bold;
+}
+
+/* ============================================================================
+   SAFE AREA (Mobile bottom nav padding for notched devices)
+   ============================================================================ */
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
