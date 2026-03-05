@@ -1,6 +1,6 @@
 "use client";
 
-import { NextActionSection } from "./NextActionSection";
+import { LearningPathSection } from "./LearningPathSection";
 import {
   DashboardDetailsSection,
   DashboardHeroSection,
@@ -102,7 +102,7 @@ export function M1DashboardClient({ contextBanner }: M1DashboardClientProps) {
         totalAtoms={data.confidence.totalAtoms}
       />
       <DashboardHeroSection data={data} />
-      <NextActionSection
+      <LearningPathSection
         loading={nextActionLoading}
         error={nextActionError}
         data={nextActionData}

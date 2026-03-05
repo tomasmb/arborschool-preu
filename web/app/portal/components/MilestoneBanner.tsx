@@ -25,7 +25,7 @@ const MILESTONE_MESSAGES: Record<
 > = {
   first_sprint: {
     emoji: "🎉",
-    title: "Primer sprint completado",
+    title: "Primera mini-clase completada",
     subtitle: "Ya diste tu primer paso hacia la PAES. Sigue así.",
   },
   streak_3: {

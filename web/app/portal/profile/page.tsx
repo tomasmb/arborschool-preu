@@ -167,7 +167,7 @@ function NotificationsSection({
               Recordatorios por email
             </p>
             <p className="text-xs text-gray-500">
-              Recibe un email cuando tengas sprints pendientes
+              Recibe un email cuando tengas mini-clases pendientes
             </p>
           </div>
           <input

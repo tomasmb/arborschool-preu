@@ -30,7 +30,7 @@ export function HeroSection({
           <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-serif font-bold tracking-tight text-charcoal mb-8 sm:mb-10">
             Empieza tu plan PAES con
             <span className="block text-accent mt-2">
-              meta, diagnóstico y sprint.
+              meta, diagnóstico y mini-clase.
             </span>
           </h1>
 

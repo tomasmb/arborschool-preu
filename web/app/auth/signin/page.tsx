@@ -47,7 +47,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
             </h1>
             <p className="text-sm text-gray-600">
               Tus avances y respuestas se guardan para personalizar cada
-              siguiente sprint.
+              siguiente mini-clase.
             </p>
           </div>
 

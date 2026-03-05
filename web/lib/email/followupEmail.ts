@@ -282,7 +282,7 @@ function buildMainCardHtml(params: {
             color: #ffffff; font-size: 16px; font-weight: 700; text-decoration: none;
             padding: 14px 36px; border-radius: 50px;
             box-shadow: 0 4px 14px rgba(11, 58, 91, 0.3);">
-          Comenzar sprint de hoy →
+          Comenzar mini-clase de hoy →
         </a>
         <p style="font-size: 12px; color: #94a3b8; margin: 10px 0 0 0;">
           Siguiente paso recomendado: 10-15 min de estudio guiado.
@@ -423,7 +423,7 @@ ${tierCopy.subtext}
 3. 🎯 Enfócate en un solo eje esta semana
    El diagnóstico ya calculó tu ruta de mayor impacto. Empieza ahí.
 
-→ Comenzar sprint de hoy: ${ctaUrl}
+→ Comenzar mini-clase de hoy: ${ctaUrl}
 
 — El equipo de Arbor 🌿
 
@@ -468,8 +468,8 @@ export async function scheduleFollowupEmail(
 
   // Subject varies based on whether we know their name
   const subject = recipient.firstName
-    ? `Tu siguiente sprint te espera, ${recipient.firstName}`
-    : "Tu siguiente sprint te espera";
+    ? `Tu siguiente mini-clase te espera, ${recipient.firstName}`
+    : "Tu siguiente mini-clase te espera";
 
   return emailService.send({
     to: recipient.email,

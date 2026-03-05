@@ -22,7 +22,7 @@ export type { AtomResult, TopRouteInfo } from "../utils";
 
 const CTA_LABEL = "Crear mi plan y empezar diagnóstico";
 const EXPECTATION_LINE =
-  "Inicias sesión, defines tu meta y arrancas tu primer sprint dentro del portal.";
+  "Inicias sesión, defines tu meta y arrancas tu primera mini-clase dentro del portal.";
 
 type PerformanceTier = ReturnType<typeof getPerformanceTier>;
 

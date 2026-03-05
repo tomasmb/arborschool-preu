@@ -10,7 +10,12 @@ import {
   primaryKey,
   index,
 } from "drizzle-orm/pg-core";
-import { userRoleEnum, masteryStatusEnum, masterySourceEnum } from "./enums";
+import {
+  userRoleEnum,
+  masteryStatusEnum,
+  masterySourceEnum,
+  reviewResultEnum,
+} from "./enums";
 import { atoms } from "./content";
 import { questions, tests } from "./content";
 
@@ -95,6 +100,14 @@ export const atomMastery = pgTable(
     currentStreak: integer("current_streak").default(0),
     totalAttempts: integer("total_attempts").default(0),
     correctAttempts: integer("correct_attempts").default(0),
+    cooldownUntilMasteryCount: integer("cooldown_until_mastery_count").default(
+      0
+    ),
+    nextReviewAt: timestamp("next_review_at", { withTimezone: true }),
+    reviewIntervalSessions: integer("review_interval_sessions"),
+    sessionsSinceLastReview: integer("sessions_since_last_review").default(0),
+    totalReviews: integer("total_reviews").default(0),
+    lastReviewResult: reviewResultEnum("last_review_result"),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
   },
   (table) => [

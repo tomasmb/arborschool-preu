@@ -14,6 +14,11 @@ import {
 } from "drizzle-orm/pg-core";
 import { users } from "./users";
 import { atoms, questions } from "./content";
+import {
+  sessionTypeEnum,
+  sessionStatusEnum,
+  sessionDifficultyEnum,
+} from "./enums";
 
 /**
  * Student portal tables for admissions datasets and account-bound goals.
@@ -343,5 +348,74 @@ export const studentReminderJobs = pgTable(
     index("idx_student_reminder_jobs_user").on(table.userId),
     index("idx_student_reminder_jobs_status").on(table.status),
     index("idx_student_reminder_jobs_schedule").on(table.scheduledFor),
+  ]
+);
+
+// ------------------------------------------------------------------------------
+// ATOM STUDY SESSIONS - Individual mastery/review sessions per atom
+// ------------------------------------------------------------------------------
+
+export const atomStudySessions = pgTable(
+  "atom_study_sessions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .references(() => users.id)
+      .notNull(),
+    atomId: varchar("atom_id", { length: 50 })
+      .references(() => atoms.id)
+      .notNull(),
+    sessionType: sessionTypeEnum("session_type").notNull().default("mastery"),
+    attemptNumber: integer("attempt_number").notNull().default(1),
+    status: sessionStatusEnum("status").notNull().default("lesson"),
+    currentDifficulty: sessionDifficultyEnum("current_difficulty")
+      .notNull()
+      .default("easy"),
+    easyStreak: integer("easy_streak").notNull().default(0),
+    mediumStreak: integer("medium_streak").notNull().default(0),
+    hardStreak: integer("hard_streak").notNull().default(0),
+    consecutiveCorrect: integer("consecutive_correct").notNull().default(0),
+    consecutiveIncorrect: integer("consecutive_incorrect").notNull().default(0),
+    hardCorrectInStreak: integer("hard_correct_in_streak").notNull().default(0),
+    totalQuestions: integer("total_questions").notNull().default(0),
+    correctQuestions: integer("correct_questions").notNull().default(0),
+    lessonViewedAt: timestamp("lesson_viewed_at", { withTimezone: true }),
+    startedAt: timestamp("started_at", { withTimezone: true }).defaultNow(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("idx_atom_study_sessions_user").on(table.userId),
+    index("idx_atom_study_sessions_user_atom").on(table.userId, table.atomId),
+    index("idx_atom_study_sessions_status").on(table.status),
+  ]
+);
+
+// ------------------------------------------------------------------------------
+// ATOM STUDY RESPONSES - Individual answers within a study session
+// ------------------------------------------------------------------------------
+
+export const atomStudyResponses = pgTable(
+  "atom_study_responses",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    sessionId: uuid("session_id")
+      .references(() => atomStudySessions.id)
+      .notNull(),
+    questionId: varchar("question_id", { length: 100 })
+      .references(() => questions.id)
+      .notNull(),
+    position: integer("position").notNull(),
+    difficultyLevel: sessionDifficultyEnum("difficulty_level").notNull(),
+    selectedAnswer: varchar("selected_answer", { length: 10 }),
+    isCorrect: boolean("is_correct"),
+    responseTimeSeconds: integer("response_time_seconds"),
+    answeredAt: timestamp("answered_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("idx_atom_study_responses_session").on(table.sessionId),
+    uniqueIndex("ux_atom_study_responses_session_position").on(
+      table.sessionId,
+      table.position
+    ),
   ]
 );

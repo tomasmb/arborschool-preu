@@ -1,3 +1,6 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
 import { InlineRecoveryPanel } from "../components";
 import { GoalRecord, MAX_PRIMARY_GOALS } from "./types";
 
@@ -30,12 +33,10 @@ function DatasetMeta({
 }: {
   dataset: GoalsEditorSectionProps["dataset"];
 }) {
-  if (!dataset) {
-    return null;
-  }
+  if (!dataset) return null;
 
   return (
-    <p className="text-xs text-gray-500">
+    <p className="text-xs text-gray-400">
       Dataset {dataset.version} · Publicado{" "}
       {new Date(dataset.publishedAt).toLocaleDateString("es-CL")} ·{" "}
       {dataset.source}
@@ -45,39 +46,82 @@ function DatasetMeta({
 
 function GoalRow(props: {
   goal: GoalRecord;
+  index: number;
   showRemove: boolean;
   options: GoalOptionItem[];
   onSetGoalOffering: GoalsEditorSectionProps["onSetGoalOffering"];
   onRemoveGoalSlot: GoalsEditorSectionProps["onRemoveGoalSlot"];
 }) {
+  const hasSelection = props.goal.offeringId !== "";
+
   return (
-    <div className="grid gap-2 sm:grid-cols-[80px_1fr_auto] items-center">
-      <span className="text-sm font-medium text-gray-700">
-        Meta {props.goal.priority}
-      </span>
-      <select
-        value={props.goal.offeringId}
-        onChange={(event) =>
-          props.onSetGoalOffering(props.goal.priority, event.target.value)
-        }
-        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
-      >
-        <option value="">Selecciona carrera y universidad</option>
-        {props.options.map((option) => (
-          <option key={option.offeringId} value={option.offeringId}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      {props.showRemove ? (
-        <button
-          type="button"
-          onClick={() => props.onRemoveGoalSlot(props.goal.priority)}
-          className="btn-secondary"
+    <div className="group rounded-xl border border-gray-200 bg-gray-50/50 p-4 transition-colors hover:border-primary/20 hover:bg-primary/[0.02]">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+          Preferencia {props.index + 1}
+        </span>
+        {props.showRemove && (
+          <button
+            type="button"
+            onClick={() => props.onRemoveGoalSlot(props.goal.priority)}
+            className="text-xs text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1"
+          >
+            <svg
+              className="w-3.5 h-3.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+            Quitar
+          </button>
+        )}
+      </div>
+      <div className="relative">
+        <select
+          value={props.goal.offeringId}
+          onChange={(event) =>
+            props.onSetGoalOffering(props.goal.priority, event.target.value)
+          }
+          className={[
+            "w-full appearance-none rounded-lg border bg-white pl-4 pr-10",
+            "py-3 text-sm transition-all cursor-pointer",
+            "focus:border-primary focus:ring-2 focus:ring-primary/10",
+            "focus:outline-none",
+            hasSelection
+              ? "border-primary/30 text-gray-900 font-medium"
+              : "border-gray-200 text-gray-500",
+          ].join(" ")}
         >
-          Quitar
-        </button>
-      ) : null}
+          <option value="">Selecciona carrera y universidad</option>
+          {props.options.map((option) => (
+            <option key={option.offeringId} value={option.offeringId}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+          <svg
+            className="w-4 h-4 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </div>
+      </div>
     </div>
   );
 }
@@ -99,7 +143,10 @@ function GoalsFeedback({
 
   if (error) {
     return (
-      <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+      <p
+        className="rounded-xl border border-red-200 bg-red-50 px-4 py-3
+          text-sm text-red-700"
+      >
         {error}
       </p>
     );
@@ -108,24 +155,97 @@ function GoalsFeedback({
   return null;
 }
 
+function SuccessToast({ visible }: { visible: boolean }) {
+  if (!visible) return null;
+
+  return (
+    <div
+      className="flex items-center gap-2 rounded-lg bg-emerald-50 border
+        border-emerald-200 px-4 py-2.5 text-sm text-emerald-700 font-medium
+        animate-fade-in-up"
+    >
+      <svg
+        className="w-4 h-4 text-emerald-500 shrink-0"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2.5}
+        viewBox="0 0 24 24"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+      </svg>
+      Metas guardadas correctamente
+    </div>
+  );
+}
+
 function SaveGoalsButton({
   disabled,
   saving,
+  showSuccess,
   onSave,
 }: {
   disabled: boolean;
   saving: boolean;
-  onSave: () => Promise<void>;
+  showSuccess: boolean;
+  onSave: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onSave}
-      disabled={disabled}
-      className="btn-primary text-sm disabled:opacity-50"
-    >
-      {saving ? "Guardando..." : "Guardar metas"}
-    </button>
+    <div className="flex items-center gap-3 flex-wrap">
+      <button
+        type="button"
+        onClick={onSave}
+        disabled={disabled}
+        className={[
+          "btn-cta text-sm py-3 px-6 flex items-center justify-center",
+          "gap-2 disabled:opacity-50 transition-all",
+          saving ? "cursor-wait" : "",
+        ].join(" ")}
+      >
+        {saving ? (
+          <>
+            <svg
+              className="w-4 h-4 animate-spin"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+              />
+            </svg>
+            Guardando…
+          </>
+        ) : (
+          "Guardar cambios"
+        )}
+      </button>
+      <SuccessToast visible={showSuccess} />
+    </div>
+  );
+}
+
+function GoalsLoadingState() {
+  return (
+    <div className="space-y-3 animate-pulse">
+      {[1, 2].map((i) => (
+        <div
+          key={i}
+          className="rounded-xl border border-gray-100 bg-gray-50/50 p-4"
+        >
+          <div className="h-3 w-20 bg-gray-200 rounded mb-3" />
+          <div className="h-11 w-full bg-gray-100 rounded-lg" />
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -143,22 +263,40 @@ export function GoalsEditorSection({
   onRemoveGoalSlot,
   onSave,
 }: GoalsEditorSectionProps) {
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!showSuccess) return;
+    const timer = setTimeout(() => setShowSuccess(false), 3000);
+    return () => clearTimeout(timer);
+  }, [showSuccess]);
+
+  const handleSave = useCallback(async () => {
+    await onSave();
+    setShowSuccess(true);
+  }, [onSave]);
+
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-6 space-y-4">
-      <h2 className="text-xl font-serif font-semibold text-primary">
-        Tus metas principales (máximo 3)
-      </h2>
+    <section className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 space-y-5">
+      <div className="space-y-1">
+        <h2 className="text-xl font-serif font-semibold text-primary">
+          Tus metas de admisión
+        </h2>
+        <p className="text-sm text-gray-500">
+          Tu camino de estudio se ajusta según estas metas. Puedes definir hasta{" "}
+          {MAX_PRIMARY_GOALS} preferencias.
+        </p>
+      </div>
 
-      <DatasetMeta dataset={dataset} />
-
-      {loading ? <p className="text-gray-600">Cargando metas...</p> : null}
-
-      {!loading ? (
+      {loading ? (
+        <GoalsLoadingState />
+      ) : (
         <div className="space-y-3">
-          {goals.map((goal) => (
+          {goals.map((goal, index) => (
             <GoalRow
               key={goal.priority}
               goal={goal}
+              index={index}
               showRemove={goals.length > 1}
               options={options}
               onSetGoalOffering={onSetGoalOffering}
@@ -166,13 +304,32 @@ export function GoalsEditorSection({
             />
           ))}
         </div>
-      ) : null}
+      )}
 
-      {!loading && goals.length < MAX_PRIMARY_GOALS ? (
-        <button type="button" onClick={onAddGoalSlot} className="btn-secondary">
-          Agregar meta
+      {!loading && goals.length < MAX_PRIMARY_GOALS && (
+        <button
+          type="button"
+          onClick={onAddGoalSlot}
+          className="flex items-center gap-2 text-sm font-medium text-primary
+            hover:text-primary/80 transition-colors py-2 px-3 rounded-lg
+            hover:bg-primary/5"
+        >
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+          Agregar otra preferencia
         </button>
-      ) : null}
+      )}
 
       <GoalsFeedback
         loadError={loadError}
@@ -180,13 +337,16 @@ export function GoalsEditorSection({
         onRetryLoadGoals={onRetryLoadGoals}
       />
 
-      <div>
+      <div className="pt-1">
         <SaveGoalsButton
           disabled={saving || loading}
           saving={saving}
-          onSave={onSave}
+          showSuccess={showSuccess}
+          onSave={() => void handleSave()}
         />
       </div>
+
+      <DatasetMeta dataset={dataset} />
     </section>
   );
 }

@@ -42,7 +42,7 @@ export function resolveLandingPrimaryAction(params: {
       label: "Crear mi plan y empezar diagnóstico",
       href: AUTH_POST_LOGIN_CALLBACK_URL,
       supportingText:
-        "Define tu meta, completa el diagnóstico (~15 min) y arranca tu primer sprint.",
+        "Define tu meta, completa el diagnóstico (~15 min) y arranca tu primera mini-clase.",
       journeyState: "anonymous",
     };
   }
@@ -161,7 +161,7 @@ export function resolvePortalContextBanner(
   code: string | null | undefined
 ): string | null {
   if (code === STALE_EMAIL_FIRST_SPRINT_BANNER) {
-    return "Ya completaste ese primer sprint. Te llevamos a tu misión actual.";
+    return "Ya completaste esa primera mini-clase. Te llevamos a tu misión actual.";
   }
 
   return null;

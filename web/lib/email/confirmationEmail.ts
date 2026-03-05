@@ -59,7 +59,7 @@ function generateConfirmationHtml(
 
       <div style="background:#ecfdf5;border:1px solid #bbf7d0;border-radius:12px;padding:14px;">
         <p style="margin:0;font-size:14px;color:#166534;">
-          Primera acción: <strong>Comenzar sprint de hoy</strong> (10-15 min).
+          Primera acción: <strong>Comenzar mini-clase de hoy</strong> (10-15 min).
         </p>
       </div>
 
@@ -69,7 +69,7 @@ function generateConfirmationHtml(
           style="display:inline-block;background:#0b3a5b;color:#ffffff;text-decoration:none;font-size:15px;font-weight:700;
             padding:12px 24px;border-radius:999px;"
         >
-          Comenzar sprint de hoy
+          Comenzar mini-clase de hoy
         </a>
       </div>
     </div>
@@ -112,7 +112,7 @@ Impacto estimado: +${results.topRoute.pointsGain} puntos
 
   text += `
 
-Primera acción recomendada: Comenzar sprint de hoy (10-15 min)
+Primera acción recomendada: Comenzar mini-clase de hoy (10-15 min)
 ${startSprintUrl}
 
 ---
@@ -131,7 +131,7 @@ export async function sendConfirmationEmail(
 
   return emailService.send({
     to: recipient.email,
-    subject: "Tu diagnóstico está listo: comienza tu sprint de hoy",
+    subject: "Tu diagnóstico está listo: comienza tu mini-clase de hoy",
     html,
     text,
   });

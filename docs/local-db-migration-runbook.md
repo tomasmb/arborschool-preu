@@ -1,9 +1,11 @@
 # Local DB Migration Runbook
 
 ## Goal
+
 Keep local database state aligned with repository migrations and deploy behavior.
 
 ## Required Workflow
+
 1. Edit schema in `web/db/schema/*.ts`.
 2. Generate migration:
    - `cd web`
@@ -15,10 +17,12 @@ Keep local database state aligned with repository migrations and deploy behavior
    - `npm run typecheck`
 
 ## Why `scripts/migrate.js` locally
+
 This repo has historical duplicate migration prefixes (`0003_*`, `0004_*`).
 Using the same runner in local/dev and deploy avoids divergence in applied state.
 
 ## If Migration State Drifts
+
 1. Back up local DB:
    - `pg_dump -Fc -d preu -f web/db/backups/preu-<timestamp>.dump`
 2. Create clean DB and run migrations:
@@ -29,6 +33,7 @@ Using the same runner in local/dev and deploy avoids divergence in applied state
 4. Swap DB names if needed so app keeps using `preu`.
 
 ## Never Do
+
 - Never hand-edit migration SQL files.
 - Never run raw DDL directly against local dev DB.
 - Never use `drizzle-kit push` for this project workflow.

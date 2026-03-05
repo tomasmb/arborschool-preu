@@ -31,6 +31,7 @@
   },
   "dependencies": {
     "@sentry/nextjs": "^10.38.0",
+    "better-react-mathjax": "^3.0.0",
     "drizzle-orm": "^0.38.3",
     "linkedom": "^0.18.12",
     "next": "15.5.10",

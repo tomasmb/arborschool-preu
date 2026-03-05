@@ -1,6 +1,17 @@
 import { InlineRecoveryPanel } from "../components";
-import { GoalDraft, GoalOption, SimulatorPayload, StudentGoal } from "./types";
-import { formatNumber, normalizeTestCode } from "./utils";
+import type {
+  GoalDraft,
+  GoalOption,
+  SimulatorPayload,
+  StudentGoal,
+} from "./types";
+import {
+  GapIndicator,
+  MissingTestsNotice,
+  SimulatorFormulaTable,
+  SimulatorSensitivity,
+} from "./SimulatorResults";
+import { normalizeTestCode } from "./utils";
 
 type SimulatorSectionProps = {
   loading: boolean;
@@ -27,23 +38,52 @@ function SimulatorHeader({
   "savedGoals" | "selectedGoalId" | "onSelectGoal"
 >) {
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-1">
       <h2 className="text-xl font-serif font-semibold text-primary">
         Simulador de admisión
       </h2>
-      {savedGoals.length > 0 ? (
-        <select
-          value={selectedGoalId ?? ""}
-          onChange={(event) => onSelectGoal(event.target.value)}
-          className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
-        >
-          {savedGoals.map((goal) => (
-            <option key={goal.id} value={goal.id}>
-              Meta {goal.priority} · {goal.careerName} — {goal.universityName}
-            </option>
-          ))}
-        </select>
-      ) : null}
+      <p className="text-sm text-gray-500">
+        Ajusta tus puntajes y mira al instante si alcanzas el corte.
+      </p>
+      {savedGoals.length > 1 && (
+        <div className="pt-2">
+          <div className="relative">
+            <select
+              value={selectedGoalId ?? ""}
+              onChange={(event) => onSelectGoal(event.target.value)}
+              className="w-full appearance-none rounded-lg border
+                border-gray-200 bg-gray-50 pl-4 pr-10 py-2.5 text-sm
+                cursor-pointer focus:border-primary focus:ring-2
+                focus:ring-primary/10 focus:outline-none transition-all"
+            >
+              {savedGoals.map((goal) => (
+                <option key={goal.id} value={goal.id}>
+                  Meta {goal.priority} · {goal.careerName} —{" "}
+                  {goal.universityName}
+                </option>
+              ))}
+            </select>
+            <div
+              className="pointer-events-none absolute inset-y-0 right-0
+                flex items-center pr-3"
+            >
+              <svg
+                className="w-4 h-4 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -52,14 +92,72 @@ function SimulatorNoGoalsNotice({
   loading,
   savedGoals,
 }: Pick<SimulatorSectionProps, "loading" | "savedGoals">) {
-  if (savedGoals.length > 0 || loading) {
-    return null;
-  }
+  if (savedGoals.length > 0 || loading) return null;
 
   return (
-    <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-      Guarda al menos una meta para activar la simulación.
-    </p>
+    <div
+      className="rounded-xl border border-amber-200 bg-amber-50/50 px-4 py-3
+        flex items-start gap-3"
+    >
+      <svg
+        className="w-5 h-5 text-amber-500 shrink-0 mt-0.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+        />
+      </svg>
+      <p className="text-sm text-amber-700">
+        Guarda al menos una meta arriba para activar la simulación.
+      </p>
+    </div>
+  );
+}
+
+function ScoreInputCard({
+  testCode,
+  weightPercent,
+  value,
+  onChange,
+}: {
+  testCode: string;
+  weightPercent: number;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div
+      className="rounded-xl border border-gray-200 bg-gray-50/50 p-4
+        transition-colors hover:border-primary/20 space-y-2"
+    >
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-semibold text-gray-800">{testCode}</span>
+        <span
+          className="text-xs font-medium text-gray-400 bg-gray-100
+            px-2 py-0.5 rounded-full"
+        >
+          {weightPercent}%
+        </span>
+      </div>
+      <input
+        type="number"
+        min={100}
+        max={1000}
+        step={1}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder="Ej: 700"
+        className="w-full rounded-lg border border-gray-200 bg-white px-3
+          py-2.5 text-sm font-medium tabular-nums
+          focus:border-primary focus:ring-2 focus:ring-primary/10
+          focus:outline-none transition-all placeholder:text-gray-300"
+      />
+    </div>
   );
 }
 
@@ -72,43 +170,24 @@ function ScoreInputs({
   SimulatorSectionProps,
   "selectedGoal" | "selectedOption" | "selectedDraft" | "onUpdateDraftScore"
 >) {
-  if (!selectedGoal || !selectedOption || !selectedDraft) {
-    return null;
-  }
+  if (!selectedGoal || !selectedOption || !selectedDraft) return null;
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-gray-600">
-        Puntajes por prueba (edita y la simulación se recalcula de inmediato):
-      </p>
-      <div className="grid gap-2 sm:grid-cols-2">
+      <p className="text-sm font-medium text-gray-600">Puntajes por prueba</p>
+      <div className="grid gap-3 sm:grid-cols-2">
         {selectedOption.weights.map((weight) => {
           const testCode = normalizeTestCode(weight.testCode);
           return (
-            <label
+            <ScoreInputCard
               key={testCode}
-              className="rounded-lg border border-gray-200 p-3 space-y-1"
-            >
-              <span className="block text-sm font-medium text-gray-800">
-                {testCode} ({weight.weightPercent}%)
-              </span>
-              <input
-                type="number"
-                min={100}
-                max={1000}
-                step={1}
-                value={selectedDraft.scores[testCode] ?? ""}
-                onChange={(event) =>
-                  onUpdateDraftScore(
-                    selectedGoal.id,
-                    testCode,
-                    event.target.value
-                  )
-                }
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                placeholder="Ej: 700"
-              />
-            </label>
+              testCode={testCode}
+              weightPercent={weight.weightPercent}
+              value={selectedDraft.scores[testCode] ?? ""}
+              onChange={(value) =>
+                onUpdateDraftScore(selectedGoal.id, testCode, value)
+              }
+            />
           );
         })}
       </div>
@@ -124,15 +203,19 @@ function BufferInput({
   SimulatorSectionProps,
   "selectedGoal" | "selectedDraft" | "onUpdateDraftBuffer"
 >) {
-  if (!selectedGoal || !selectedDraft) {
-    return null;
-  }
+  if (!selectedGoal || !selectedDraft) return null;
 
   return (
-    <label className="rounded-lg border border-gray-200 p-3 space-y-2 h-fit">
-      <span className="block text-sm font-medium text-gray-800">
-        Margen de seguridad
-      </span>
+    <div
+      className="rounded-xl border border-gray-200 bg-gray-50/50 p-4
+        space-y-2"
+    >
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-semibold text-gray-800">
+          Margen de seguridad
+        </span>
+        <span className="text-xs text-gray-400">puntos extra</span>
+      </div>
       <input
         type="number"
         min={0}
@@ -141,10 +224,15 @@ function BufferInput({
         onChange={(event) =>
           onUpdateDraftBuffer(selectedGoal.id, event.target.value)
         }
-        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+        className="w-full rounded-lg border border-gray-200 bg-white px-3
+          py-2.5 text-sm font-medium tabular-nums
+          focus:border-primary focus:ring-2 focus:ring-primary/10
+          focus:outline-none transition-all"
       />
-      <p className="text-xs text-gray-500">Objetivo = corte + margen extra</p>
-    </label>
+      <p className="text-xs text-gray-400">
+        Tu objetivo = último corte + este margen
+      </p>
+    </div>
   );
 }
 
@@ -163,7 +251,7 @@ function SimulatorInputs(
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-[1fr_200px]">
+    <div className="space-y-4">
       <ScoreInputs
         selectedGoal={props.selectedGoal}
         selectedOption={props.selectedOption}
@@ -189,159 +277,52 @@ function SimulatorStatusPanels({
 >) {
   return (
     <>
-      {simulatorError ? (
+      {simulatorError && (
         <InlineRecoveryPanel
           message={simulatorError}
           onRetry={onRetrySimulation}
           retryLabel="Intentar de nuevo"
           showSecondaryAction={false}
         />
-      ) : null}
-      {simLoading ? (
-        <p className="text-sm text-gray-600">Calculando...</p>
-      ) : null}
+      )}
+      {simLoading && (
+        <div className="flex items-center gap-2 text-sm text-gray-500">
+          <svg
+            className="w-4 h-4 animate-spin text-primary"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            />
+          </svg>
+          Calculando simulación…
+        </div>
+      )}
     </>
   );
 }
 
-function DeltaValue({
-  deltaVsBufferedTarget,
-}: {
-  deltaVsBufferedTarget: number | null;
-}) {
-  const toneClass =
-    deltaVsBufferedTarget !== null && deltaVsBufferedTarget >= 0
-      ? "text-green-700"
-      : "text-red-700";
-
-  return (
-    <p className={["text-xl font-semibold", toneClass].join(" ")}>
-      {deltaVsBufferedTarget === null
-        ? "-"
-        : formatNumber(deltaVsBufferedTarget)}
-    </p>
-  );
-}
-
-function SimulatorMetrics({ simulation }: { simulation: SimulatorPayload }) {
-  return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      <article className="rounded-lg border border-gray-200 p-3">
-        <p className="text-xs text-gray-500">Puntaje ponderado</p>
-        <p className="text-xl font-semibold text-primary">
-          {formatNumber(simulation.formula.weightedScore)}
-        </p>
-      </article>
-      <article className="rounded-lg border border-gray-200 p-3">
-        <p className="text-xs text-gray-500">
-          Último corte ({simulation.targets.cutoffYear ?? "-"})
-        </p>
-        <p className="text-xl font-semibold text-primary">
-          {formatNumber(simulation.targets.lastCutoff)}
-        </p>
-      </article>
-      <article className="rounded-lg border border-gray-200 p-3">
-        <p className="text-xs text-gray-500">Objetivo con margen</p>
-        <p className="text-xl font-semibold text-primary">
-          {formatNumber(simulation.targets.bufferedTarget)}
-        </p>
-      </article>
-      <article className="rounded-lg border border-gray-200 p-3">
-        <p className="text-xs text-gray-500">Diferencia vs objetivo</p>
-        <DeltaValue
-          deltaVsBufferedTarget={simulation.admissibility.deltaVsBufferedTarget}
-        />
-      </article>
-    </div>
-  );
-}
-
-function MissingTestsNotice({ simulation }: { simulation: SimulatorPayload }) {
-  if (simulation.formula.isComplete) {
-    return null;
-  }
-
-  return (
-    <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-      Faltan puntajes para: {simulation.formula.missingTests.join(", ")}.
-    </p>
-  );
-}
-
-function SimulatorFormulaTable({
-  simulation,
-}: {
-  simulation: SimulatorPayload;
-}) {
-  return (
-    <div className="rounded-lg border border-gray-200 overflow-hidden">
-      <div className="px-3 py-2 border-b border-gray-200 bg-gray-50">
-        <h3 className="text-sm font-semibold text-gray-800">
-          Desglose de fórmula
-        </h3>
-      </div>
-      <table className="w-full text-sm">
-        <thead className="bg-gray-50 text-gray-600">
-          <tr>
-            <th className="text-left px-3 py-2">Prueba</th>
-            <th className="text-left px-3 py-2">Peso</th>
-            <th className="text-left px-3 py-2">Puntaje</th>
-            <th className="text-left px-3 py-2">Contribución</th>
-          </tr>
-        </thead>
-        <tbody>
-          {simulation.formula.components.map((component) => (
-            <tr key={component.testCode} className="border-t border-gray-100">
-              <td className="px-3 py-2 text-gray-800">{component.testCode}</td>
-              <td className="px-3 py-2 text-gray-700">
-                {component.weightPercent}%
-              </td>
-              <td className="px-3 py-2 text-gray-700">
-                {formatNumber(component.score)}
-              </td>
-              <td className="px-3 py-2 text-gray-700">
-                {formatNumber(component.contribution)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function SimulatorSensitivity({
-  simulation,
-}: {
-  simulation: SimulatorPayload;
-}) {
-  return (
-    <article className="rounded-lg border border-blue-200 bg-blue-50 p-3">
-      <p className="text-sm text-blue-900 font-medium">
-        Si subes {simulation.sensitivity.testCode} en +
-        {simulation.sensitivity.increment} puntos
-      </p>
-      <p className="text-sm text-blue-800 mt-1">
-        Nuevo ponderado:{" "}
-        {formatNumber(simulation.sensitivity.adjustedWeightedScore)} · Cambio:{" "}
-        {formatNumber(simulation.sensitivity.weightedDelta)}
-      </p>
-    </article>
-  );
-}
-
-function SimulatorResults({
+function SimulatorResultsPanel({
   simulation,
 }: {
   simulation: SimulatorPayload | null;
 }) {
-  if (!simulation) {
-    return null;
-  }
+  if (!simulation) return null;
 
   return (
     <div className="space-y-4">
-      <SimulatorMetrics simulation={simulation} />
+      <GapIndicator simulation={simulation} />
       <MissingTestsNotice simulation={simulation} />
       <SimulatorFormulaTable simulation={simulation} />
       <SimulatorSensitivity simulation={simulation} />
@@ -381,14 +362,17 @@ function SimulatorWorkspace(
         onRetrySimulation={props.onRetrySimulation}
         simLoading={props.simLoading}
       />
-      <SimulatorResults simulation={props.simulation} />
+      <SimulatorResultsPanel simulation={props.simulation} />
     </>
   );
 }
 
 export function SimulatorSection(props: SimulatorSectionProps) {
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-6 space-y-5">
+    <section
+      className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6
+        space-y-5"
+    >
       <SimulatorHeader
         savedGoals={props.savedGoals}
         selectedGoalId={props.selectedGoalId}

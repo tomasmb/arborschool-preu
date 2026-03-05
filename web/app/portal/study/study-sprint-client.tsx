@@ -2,8 +2,10 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
+import { AtomStudyView } from "./AtomStudyView";
 import { StudySprintView } from "./StudySprintView";
 import { sanitizeSprintId } from "./types";
+import { useAtomStudyController } from "./useAtomStudyController";
 import { useStudySprintController } from "./useStudySprintController";
 
 function resolveNextQuestionIndex(
@@ -13,43 +15,39 @@ function resolveNextQuestionIndex(
   const nextUnansweredIndex = itemAnswers.findIndex(
     (answer, index) => index > activeIndex && answer === null
   );
-  if (nextUnansweredIndex >= 0) {
-    return nextUnansweredIndex;
-  }
-
-  if (activeIndex < itemAnswers.length - 1) {
-    return activeIndex + 1;
-  }
-
+  if (nextUnansweredIndex >= 0) return nextUnansweredIndex;
+  if (activeIndex < itemAnswers.length - 1) return activeIndex + 1;
   return null;
 }
 
-export function StudySprintClient() {
-  const searchParams = useSearchParams();
+/**
+ * New atom-based study flow. Activated when URL has `?atom=ATOM_ID`.
+ */
+function AtomStudyClient({ atomId }: { atomId: string }) {
+  const ctrl = useAtomStudyController(atomId);
+  return <AtomStudyView ctrl={ctrl} />;
+}
+
+/**
+ * Legacy sprint-based study flow. Activated when URL has
+ * `?sprintId=...` or no recognised param.
+ */
+function SprintStudyClient({ sprintId }: { sprintId: string | null }) {
   const router = useRouter();
-  const sprintIdFromUrl = sanitizeSprintId(searchParams.get("sprintId") ?? "");
+  const controller = useStudySprintController(sprintId);
 
-  const controller = useStudySprintController(sprintIdFromUrl);
   const nextQuestionIndex = useMemo(() => {
-    if (!controller.sprint || !controller.activeItem) {
-      return null;
-    }
-    if (controller.activeItem.selectedAnswer === null) {
-      return null;
-    }
-
+    if (!controller.sprint || !controller.activeItem) return null;
+    if (controller.activeItem.selectedAnswer === null) return null;
     return resolveNextQuestionIndex(
-      controller.sprint.items.map((item) => item.selectedAnswer),
+      controller.sprint.items.map((i) => i.selectedAnswer),
       controller.activeIndex
     );
   }, [controller.activeIndex, controller.activeItem, controller.sprint]);
 
   const handleNextQuestion = useCallback(() => {
-    if (nextQuestionIndex === null) {
-      return;
-    }
-
-    controller.setActiveIndex(nextQuestionIndex);
+    if (nextQuestionIndex !== null)
+      controller.setActiveIndex(nextQuestionIndex);
   }, [controller, nextQuestionIndex]);
 
   return (
@@ -76,4 +74,16 @@ export function StudySprintClient() {
       onCreateAnother={() => router.refresh()}
     />
   );
+}
+
+export function StudySprintClient() {
+  const searchParams = useSearchParams();
+  const atomIdFromUrl = searchParams.get("atom");
+
+  if (atomIdFromUrl) {
+    return <AtomStudyClient atomId={atomIdFromUrl} />;
+  }
+
+  const sprintId = sanitizeSprintId(searchParams.get("sprintId") ?? "");
+  return <SprintStudyClient sprintId={sprintId} />;
 }

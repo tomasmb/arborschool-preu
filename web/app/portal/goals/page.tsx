@@ -24,18 +24,12 @@ function usePlanningModeRedirect({
       return;
     }
 
+    // Planning wizard is only for users who haven't done diagnostic yet
     if (journeyState === "planning_required") {
       return;
     }
 
-    if (
-      journeyState === "activation_ready" ||
-      journeyState === "active_learning"
-    ) {
-      onRedirect("/portal");
-      return;
-    }
-
+    // Users with diagnostic results go straight to the editor view
     onRedirect("/portal/goals");
   }, [journeyState, loading, onRedirect, planningModeRequested]);
 }

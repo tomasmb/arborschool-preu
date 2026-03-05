@@ -60,7 +60,7 @@ function confidenceFromSource(source: StudentResultsSource | null) {
     return {
       level: "medium" as ConfidenceLevel,
       explanation:
-        "Tu rango es útil para planificar, pero puede ajustarse con nuevos sprints.",
+        "Tu rango es útil para planificar, pero puede ajustarse con nuevas mini-clases.",
     };
   }
 
@@ -77,7 +77,7 @@ function confidenceFromSource(source: StudentResultsSource | null) {
     return {
       level: "medium" as ConfidenceLevel,
       explanation:
-        "Tu rango es útil para planificar, pero puede ajustarse con nuevos sprints.",
+        "Tu rango es útil para planificar, pero puede ajustarse con nuevas mini-clases.",
     };
   }
 
@@ -120,7 +120,7 @@ function StudentPartialResults(props: {
       targetGapLabel={
         props.potentialImprovement > 0
           ? `Tu siguiente foco puede mover hasta +${Math.round(props.potentialImprovement)} pts.`
-          : "Tu siguiente sprint consolidará señal de dominio."
+          : "Tu siguiente mini-clase consolidará señal de dominio."
       }
       firstAction={{
         estimatedMinutes,
@@ -128,7 +128,7 @@ function StudentPartialResults(props: {
         whyFirst:
           props.potentialImprovement > 0
             ? "Se prioriza la ruta con mejor relación impacto/tiempo."
-            : "Se recomienda un sprint inicial para acumular evidencia.",
+            : "Se recomienda una mini-clase inicial para acumular evidencia.",
       }}
       onStartSprint={props.onStartSprint}
       onAdjustGoal={props.onAdjustGoal}
@@ -157,7 +157,7 @@ function StudentResultsScreen(props: {
       targetGapLabel={
         topRoute
           ? `Tu mayor oportunidad de mejora está en ${topRoute.axis}.`
-          : "Tu siguiente sprint consolidará la señal para priorizar mejor."
+          : "Tu siguiente mini-clase consolidará la señal para priorizar mejor."
       }
       firstAction={{
         estimatedMinutes: topRoute
@@ -165,8 +165,8 @@ function StudentResultsScreen(props: {
           : 25,
         expectedPointsBand: expectedBand(topRoute?.pointsGain),
         whyFirst: topRoute
-          ? `Se recomienda partir por ${topRoute.axis} porque tiene mejor impacto por minuto.`
-          : "Se recomienda un sprint inicial para generar evidencia de dominio.",
+          ? `Se recomienda partir por ${topRoute.axis} porque tiene mejor mejor resultado por tiempo invertido.`
+          : "Se recomienda una mini-clase inicial para generar evidencia de dominio.",
       }}
       onStartSprint={props.onStartSprint}
       onAdjustGoal={props.onAdjustGoal}

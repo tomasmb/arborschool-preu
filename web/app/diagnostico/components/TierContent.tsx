@@ -253,7 +253,7 @@ export function GenericNextStep({ tier }: GenericNextStepProps) {
       <h4 className="font-bold text-charcoal mb-2">{stepData.title}</h4>
       <p className="text-sm text-cool-gray">{stepData.description}</p>
       <p className="text-xs text-primary mt-3">
-        Llévalo a tu sprint y empieza por el tema de mayor impacto
+        Llévalo a tu mini-clase y empieza por el tema de mayor impacto
       </p>
     </div>
   );

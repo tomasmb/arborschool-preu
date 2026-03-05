@@ -4,6 +4,18 @@ import Link from "next/link";
 import { trackStudentNextActionClicked } from "@/lib/analytics";
 import { InlineRecoveryPanel } from "./components";
 
+export type CompetitiveRoutePayload = {
+  axis: string;
+  axisDisplayName: string;
+  estimatedPointsGain: number;
+  atoms: Array<{ atomId: string; title: string }>;
+};
+
+export type ReviewItemPayload = {
+  atomId: string;
+  title: string;
+};
+
 export type NextActionPayload = {
   status: "ready" | "missing_diagnostic" | "missing_mastery";
   nextAction: {
@@ -25,6 +37,9 @@ export type NextActionPayload = {
     totalCost: number;
     prerequisitesNeeded: string[];
   }[];
+  competitiveRoutes?: CompetitiveRoutePayload[];
+  reviewDueCount?: number;
+  reviewItems?: ReviewItemPayload[];
   emptyState: {
     title: string;
     description: string;
@@ -106,7 +121,7 @@ function PrimaryCTA({ data }: { data: NextActionPayload }) {
         className="btn-cta text-base w-full sm:w-auto flex items-center
           justify-center gap-2 py-3.5 animate-glow-pulse"
       >
-        Comenzar sprint
+        Comenzar mini-clase
         <span className="text-sm opacity-80">~{formatMinutes(minutes)}</span>
         <svg
           className="w-5 h-5"

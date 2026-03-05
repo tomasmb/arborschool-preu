@@ -71,6 +71,20 @@
       "when": 1772588114684,
       "tag": "0009_student_portal_world_class",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1772736937809,
+      "tag": "0010_atom_study_sessions",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1772738428077,
+      "tag": "0011_add_study_mastery_source",
+      "breakpoints": true
     }
   ]
 }

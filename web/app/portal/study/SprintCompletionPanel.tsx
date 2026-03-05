@@ -88,7 +88,7 @@ export function CompletionPanel({
                 d="M5 13l4 4L19 7"
               />
             </svg>
-            Sprint completado
+            Mini-clase completada
           </div>
           <h2 className="text-2xl sm:text-3xl font-serif font-bold text-primary">
             {accuracy >= 80
@@ -144,7 +144,7 @@ export function CompletionPanel({
             onClick={onCreateAnother}
             className="btn-cta text-sm"
           >
-            Hacer otro sprint
+            Seguir estudiando
           </button>
           <Link href="/portal" className="btn-secondary text-center">
             Volver al inicio

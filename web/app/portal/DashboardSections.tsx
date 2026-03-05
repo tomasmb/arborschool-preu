@@ -276,7 +276,7 @@ export function DashboardProgressSection({ data }: ProgressSectionProps) {
           <p className="text-3xl font-bold text-emerald-600 tabular-nums">
             {animatedMastery}%
           </p>
-          <p className="text-xs text-gray-500 mt-1">Dominio general</p>
+          <p className="text-xs text-gray-500 mt-1">Tu avance</p>
           <div className="mt-2 h-2 rounded-full bg-gray-100 overflow-hidden">
             <div
               className="h-full rounded-full bg-emerald-500 transition-all duration-700 ease-out"
@@ -287,7 +287,7 @@ export function DashboardProgressSection({ data }: ProgressSectionProps) {
       </div>
       {data.effort.topRoute ? (
         <p className="text-sm text-gray-600">
-          Tu ruta de mayor impacto:{" "}
+          Tu camino recomendado:{" "}
           <span className="font-medium text-primary">
             {data.effort.topRoute.axis}
           </span>{" "}

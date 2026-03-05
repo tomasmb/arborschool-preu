@@ -5,6 +5,7 @@ import {
   analyzeLearningPotential,
   type StudentLearningAnalysis,
 } from "@/lib/diagnostic/questionUnlock";
+import { getReviewDueItems } from "./spacedRepetition";
 
 type NextActionStatus = "ready" | "missing_diagnostic" | "missing_mastery";
 
@@ -36,16 +37,32 @@ export type QueuePreviewItem = {
   prerequisitesNeeded: string[];
 };
 
+export type CompetitiveRoute = {
+  axis: string;
+  axisDisplayName: string;
+  estimatedPointsGain: number;
+  atoms: Array<{ atomId: string; title: string }>;
+};
+
 export type NextActionInsights = {
   topRoutes: StudentLearningAnalysis["routes"];
   nextAction: NextActionItem | null;
   queuePreview: QueuePreviewItem[];
+  competitiveRoutes: CompetitiveRoute[];
+};
+
+export type ReviewItemPreview = {
+  atomId: string;
+  title: string;
 };
 
 export type StudentNextActionData = {
   status: NextActionStatus;
   nextAction: NextActionItem | null;
   queuePreview: QueuePreviewItem[];
+  competitiveRoutes?: CompetitiveRoute[];
+  reviewDueCount: number;
+  reviewItems: ReviewItemPreview[];
   emptyState: NextActionEmptyState;
 };
 
@@ -88,6 +105,45 @@ function byAtomPriority(
   return a.atomId.localeCompare(b.atomId);
 }
 
+const COMPETITIVE_THRESHOLD = 0.8;
+const ROUTE_ATOM_PREVIEW_COUNT = 3;
+
+function toCompetitiveRoute(
+  route: StudentLearningAnalysis["routes"][number]
+): CompetitiveRoute {
+  return {
+    axis: route.axis,
+    axisDisplayName: route.axisDisplayName,
+    estimatedPointsGain: route.estimatedPointsGain,
+    atoms: route.atoms
+      .slice(0, ROUTE_ATOM_PREVIEW_COUNT)
+      .map((a) => ({ atomId: a.atomId, title: a.title })),
+  };
+}
+
+/**
+ * Returns the top route always, plus a second route when it's
+ * within COMPETITIVE_THRESHOLD of the top route's points gain.
+ */
+function buildCompetitiveRoutes(
+  routes: StudentLearningAnalysis["routes"]
+): CompetitiveRoute[] {
+  if (routes.length === 0) return [];
+
+  const result = [toCompetitiveRoute(routes[0])];
+
+  if (
+    routes.length > 1 &&
+    routes[0].estimatedPointsGain > 0 &&
+    routes[1].estimatedPointsGain >=
+      routes[0].estimatedPointsGain * COMPETITIVE_THRESHOLD
+  ) {
+    result.push(toCompetitiveRoute(routes[1]));
+  }
+
+  return result;
+}
+
 export function buildNextActionInsights(
   analysis: StudentLearningAnalysis
 ): NextActionInsights {
@@ -109,6 +165,8 @@ export function buildNextActionInsights(
       ),
     }));
 
+  const competitiveRoutes = buildCompetitiveRoutes(routes);
+
   return {
     topRoutes: routes,
     nextAction: topRoute
@@ -126,6 +184,7 @@ export function buildNextActionInsights(
         }
       : null,
     queuePreview: topAtoms,
+    competitiveRoutes,
   };
 }
 
@@ -134,7 +193,7 @@ function buildEmptyState(status: Exclude<NextActionStatus, "ready">) {
     return {
       title: "Activa tu planificación",
       description:
-        "Antes del diagnóstico define tu meta objetivo para personalizar el primer sprint.",
+        "Antes del diagnóstico define tu meta objetivo para personalizar tu primera mini-clase.",
       ctaLabel: "Ir a planificación",
       ctaHref: "/portal/goals?mode=planning",
     };
@@ -143,8 +202,8 @@ function buildEmptyState(status: Exclude<NextActionStatus, "ready">) {
   return {
     title: "Aún no hay señal de aprendizaje",
     description:
-      "Todavía no hay registros de dominio por átomo para priorizar tu siguiente acción.",
-    ctaLabel: "Comenzar sprint",
+      "Todavía no hay registros de dominio por concepto para priorizar tu siguiente acción.",
+    ctaLabel: "Comenzar mini-clase",
     ctaHref: "/portal/study",
   };
 }
@@ -189,6 +248,8 @@ export async function getStudentNextAction(
       status: "missing_diagnostic",
       nextAction: null,
       queuePreview: [],
+      reviewDueCount: 0,
+      reviewItems: [],
       emptyState: buildEmptyState("missing_diagnostic"),
     };
   }
@@ -198,19 +259,24 @@ export async function getStudentNextAction(
       status: "missing_mastery",
       nextAction: null,
       queuePreview: [],
+      reviewDueCount: 0,
+      reviewItems: [],
       emptyState: buildEmptyState("missing_mastery"),
     };
   }
 
   const currentScore = Math.round((minScore + maxScore) / 2);
 
-  const analysis = await analyzeLearningPotential(
-    masteryRows.map((row) => ({
-      atomId: row.atomId,
-      mastered: row.isMastered,
-    })),
-    { currentPaesScore: currentScore }
-  );
+  const [analysis, reviewDueItems] = await Promise.all([
+    analyzeLearningPotential(
+      masteryRows.map((row) => ({
+        atomId: row.atomId,
+        mastered: row.isMastered,
+      })),
+      { currentPaesScore: currentScore }
+    ),
+    getReviewDueItems(userId),
+  ]);
 
   const insights = buildNextActionInsights(analysis);
 
@@ -218,6 +284,12 @@ export async function getStudentNextAction(
     status: "ready",
     nextAction: insights.nextAction,
     queuePreview: insights.queuePreview,
+    competitiveRoutes: insights.competitiveRoutes,
+    reviewDueCount: reviewDueItems.length,
+    reviewItems: reviewDueItems.map((r) => ({
+      atomId: r.atomId,
+      title: r.atomTitle,
+    })),
     emptyState: null,
   };
 }

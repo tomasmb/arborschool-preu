@@ -1,0 +1,438 @@
+/**
+ * Prerequisite Scan — diagnoses WHY a student failed a mini-clase.
+ *
+ * After a mastery session fails, tests each prerequisite atom with one hard
+ * question. First incorrect answer identifies the gap atom. If all prereqs
+ * are solid, a cooldown counter is applied to the failed atom.
+ */
+
+import { and, asc, eq, inArray, notInArray, sql } from "drizzle-orm";
+import { db } from "@/db";
+import {
+  atomMastery,
+  atomStudyResponses,
+  atomStudySessions,
+  atoms,
+  questionAtoms,
+  questions,
+} from "@/db/schema";
+import { parseQtiXml } from "@/lib/qti/serverParser";
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+export type ScanStartResult = {
+  sessionId: string | null;
+  prereqCount: number;
+  status: "in_progress" | "no_prereqs";
+};
+
+export type ScanQuestionPayload = {
+  responseId: string;
+  questionHtml: string;
+  options: Array<{ letter: string; text: string; identifier: string }>;
+  prereqAtomId: string;
+  prereqTitle: string;
+  position: number;
+  totalPrereqs: number;
+};
+
+export type ScanNextResult =
+  | { done: false; question: ScanQuestionPayload }
+  | { done: true; cooldown: true; scannedPrereqs: ScannedPrereq[] };
+
+export type ScannedPrereq = { atomId: string; correct: boolean };
+
+export type ScanAnswerResult = {
+  responseId: string;
+  isCorrect: boolean;
+  correctAnswer: string;
+  scanComplete: boolean;
+  gapFound: boolean;
+  gapAtomId: string | null;
+  cooldown: boolean;
+  scannedPrereqs: ScannedPrereq[];
+};
+
+/** Student must master N more atoms before retrying the failed atom */
+const COOLDOWN_MASTERY_COUNT = 3;
+
+// ============================================================================
+// HELPERS
+// ============================================================================
+
+function normalizeAnswer(v: string): string {
+  return v.trim().toUpperCase();
+}
+
+async function verifyOwnership(sessionId: string, userId: string) {
+  const [row] = await db
+    .select()
+    .from(atomStudySessions)
+    .where(
+      and(
+        eq(atomStudySessions.id, sessionId),
+        eq(atomStudySessions.userId, userId)
+      )
+    )
+    .limit(1);
+  return row ?? null;
+}
+
+async function getPrereqIds(atomId: string): Promise<string[]> {
+  const [atom] = await db
+    .select({ prerequisiteIds: atoms.prerequisiteIds })
+    .from(atoms)
+    .where(eq(atoms.id, atomId))
+    .limit(1);
+  if (!atom) throw new Error("Atom not found");
+  return (atom.prerequisiteIds ?? []).filter(Boolean);
+}
+
+/**
+ * Maps answered scan responses → their prereq atoms via question_atoms join.
+ * Only includes responses that have been answered (answeredAt IS NOT NULL).
+ */
+async function getTestedPrereqs(
+  sessionId: string,
+  prereqIds: string[]
+): Promise<ScannedPrereq[]> {
+  if (prereqIds.length === 0) return [];
+  const rows = await db
+    .select({
+      atomId: questionAtoms.atomId,
+      isCorrect: atomStudyResponses.isCorrect,
+    })
+    .from(atomStudyResponses)
+    .innerJoin(
+      questionAtoms,
+      eq(questionAtoms.questionId, atomStudyResponses.questionId)
+    )
+    .where(
+      and(
+        eq(atomStudyResponses.sessionId, sessionId),
+        inArray(questionAtoms.atomId, prereqIds),
+        sql`${atomStudyResponses.answeredAt} IS NOT NULL`
+      )
+    )
+    .orderBy(asc(atomStudyResponses.position));
+
+  const seen = new Set<string>();
+  return rows.reduce<ScannedPrereq[]>((acc, r) => {
+    if (!seen.has(r.atomId)) {
+      seen.add(r.atomId);
+      acc.push({ atomId: r.atomId, correct: r.isCorrect ?? false });
+    }
+    return acc;
+  }, []);
+}
+
+/** Finds one hard question for a prereq atom, excluding already-used IDs */
+async function findHardQuestion(prereqAtomId: string, excludeIds: string[]) {
+  const conds = [
+    eq(questionAtoms.atomId, prereqAtomId),
+    eq(questions.difficultyLevel, "high"),
+  ];
+  if (excludeIds.length > 0) {
+    conds.push(notInArray(questions.id, excludeIds));
+  }
+  const rows = await db
+    .select({ id: questions.id, qtiXml: questions.qtiXml })
+    .from(questionAtoms)
+    .innerJoin(questions, eq(questions.id, questionAtoms.questionId))
+    .where(and(...conds))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+/** Upserts cooldown on the failed atom's mastery row */
+async function setCooldown(userId: string, failedAtomId: string) {
+  await db
+    .insert(atomMastery)
+    .values({
+      userId,
+      atomId: failedAtomId,
+      status: "in_progress",
+      isMastered: false,
+      cooldownUntilMasteryCount: COOLDOWN_MASTERY_COUNT,
+    })
+    .onConflictDoUpdate({
+      target: [atomMastery.userId, atomMastery.atomId],
+      set: {
+        cooldownUntilMasteryCount: COOLDOWN_MASTERY_COUNT,
+        updatedAt: new Date(),
+      },
+    });
+}
+
+async function completeScanSession(sessionId: string) {
+  await db
+    .update(atomStudySessions)
+    .set({ completedAt: new Date() })
+    .where(eq(atomStudySessions.id, sessionId));
+}
+
+/** Question IDs already used in a session (answered or not, for exclusion) */
+async function getUsedQuestionIds(sessionId: string): Promise<string[]> {
+  const rows = await db
+    .select({ questionId: atomStudyResponses.questionId })
+    .from(atomStudyResponses)
+    .where(eq(atomStudyResponses.sessionId, sessionId));
+  return rows.map((r) => r.questionId);
+}
+
+// ============================================================================
+// PUBLIC API
+// ============================================================================
+
+/** Starts (or resumes) a prerequisite scan after a mastery failure. */
+export async function startPrereqScan(
+  userId: string,
+  failedAtomId: string
+): Promise<ScanStartResult> {
+  const prereqIds = await getPrereqIds(failedAtomId);
+
+  if (prereqIds.length === 0) {
+    await setCooldown(userId, failedAtomId);
+    return { sessionId: null, prereqCount: 0, status: "no_prereqs" };
+  }
+
+  const [active] = await db
+    .select({ id: atomStudySessions.id })
+    .from(atomStudySessions)
+    .where(
+      and(
+        eq(atomStudySessions.userId, userId),
+        eq(atomStudySessions.atomId, failedAtomId),
+        eq(atomStudySessions.sessionType, "prereq_scan"),
+        sql`${atomStudySessions.completedAt} IS NULL`
+      )
+    )
+    .limit(1);
+
+  if (active) {
+    return {
+      sessionId: active.id,
+      prereqCount: prereqIds.length,
+      status: "in_progress",
+    };
+  }
+
+  const [session] = await db
+    .insert(atomStudySessions)
+    .values({
+      userId,
+      atomId: failedAtomId,
+      sessionType: "prereq_scan",
+      attemptNumber: 1,
+      status: "in_progress",
+      currentDifficulty: "hard",
+    })
+    .returning({ id: atomStudySessions.id });
+
+  return {
+    sessionId: session.id,
+    prereqCount: prereqIds.length,
+    status: "in_progress",
+  };
+}
+
+/**
+ * Serves the next scan question.
+ * If no untested prereqs remain (all answered or all lack hard questions),
+ * applies cooldown and completes the session.
+ */
+export async function getNextScanQuestion(
+  sessionId: string,
+  userId: string
+): Promise<ScanNextResult> {
+  const session = await verifyOwnership(sessionId, userId);
+  if (!session) throw new Error("Session not found");
+  if (session.sessionType !== "prereq_scan") {
+    throw new Error("Not a prereq scan session");
+  }
+
+  const prereqIds = await getPrereqIds(session.atomId);
+  const tested = await getTestedPrereqs(sessionId, prereqIds);
+  const testedSet = new Set(tested.map((t) => t.atomId));
+  const usedIds = await getUsedQuestionIds(sessionId);
+
+  for (const prereqId of prereqIds) {
+    if (testedSet.has(prereqId)) continue;
+
+    const q = await findHardQuestion(prereqId, usedIds);
+    if (!q) continue; // no hard question available → assume solid
+
+    const [prereqAtom] = await db
+      .select({ title: atoms.title })
+      .from(atoms)
+      .where(eq(atoms.id, prereqId))
+      .limit(1);
+
+    const parsed = parseQtiXml(q.qtiXml);
+    const position = tested.length + 1;
+
+    const [response] = await db
+      .insert(atomStudyResponses)
+      .values({
+        sessionId,
+        questionId: q.id,
+        position,
+        difficultyLevel: "hard",
+      })
+      .returning({ id: atomStudyResponses.id });
+
+    return {
+      done: false,
+      question: {
+        responseId: response.id,
+        questionHtml: parsed.html,
+        options: parsed.options,
+        prereqAtomId: prereqId,
+        prereqTitle: prereqAtom?.title ?? prereqId,
+        position,
+        totalPrereqs: prereqIds.length,
+      },
+    };
+  }
+
+  // All prereqs tested or skipped → cooldown the failed atom
+  await setCooldown(userId, session.atomId);
+  await completeScanSession(sessionId);
+  const scannedPrereqs = await getTestedPrereqs(sessionId, prereqIds);
+  return { done: true, cooldown: true, scannedPrereqs };
+}
+
+/**
+ * Grades a scan answer.
+ * Incorrect → marks the prereq as the gap, completes the scan.
+ * Correct   → returns scanComplete: false; caller should request next question.
+ */
+export async function submitScanAnswer(params: {
+  sessionId: string;
+  responseId: string;
+  selectedAnswer: string;
+  userId: string;
+}): Promise<ScanAnswerResult> {
+  const session = await verifyOwnership(params.sessionId, params.userId);
+  if (!session) throw new Error("Session not found");
+
+  const [resp] = await db
+    .select({
+      id: atomStudyResponses.id,
+      questionId: atomStudyResponses.questionId,
+    })
+    .from(atomStudyResponses)
+    .where(
+      and(
+        eq(atomStudyResponses.id, params.responseId),
+        eq(atomStudyResponses.sessionId, params.sessionId)
+      )
+    )
+    .limit(1);
+  if (!resp) throw new Error("Response not found");
+
+  const [question] = await db
+    .select({ qtiXml: questions.qtiXml })
+    .from(questions)
+    .where(eq(questions.id, resp.questionId))
+    .limit(1);
+  if (!question) throw new Error("Question not found");
+
+  const parsed = parseQtiXml(question.qtiXml);
+  const correctAnswer = parsed.correctAnswer
+    ? normalizeAnswer(parsed.correctAnswer)
+    : null;
+  if (!correctAnswer) throw new Error("No valid correct answer");
+
+  const normalized = normalizeAnswer(params.selectedAnswer);
+  const isCorrect = normalized === correctAnswer;
+
+  await db
+    .update(atomStudyResponses)
+    .set({ selectedAnswer: normalized, isCorrect, answeredAt: new Date() })
+    .where(eq(atomStudyResponses.id, resp.id));
+
+  const prereqIds = await getPrereqIds(session.atomId);
+  const scannedPrereqs = await getTestedPrereqs(params.sessionId, prereqIds);
+
+  if (!isCorrect) {
+    const [link] = await db
+      .select({ atomId: questionAtoms.atomId })
+      .from(questionAtoms)
+      .where(
+        and(
+          eq(questionAtoms.questionId, resp.questionId),
+          inArray(questionAtoms.atomId, prereqIds)
+        )
+      )
+      .limit(1);
+    const gapAtomId = link?.atomId ?? null;
+
+    if (gapAtomId) {
+      await db
+        .insert(atomMastery)
+        .values({
+          userId: params.userId,
+          atomId: gapAtomId,
+          status: "in_progress",
+          isMastered: false,
+        })
+        .onConflictDoUpdate({
+          target: [atomMastery.userId, atomMastery.atomId],
+          set: {
+            status: "in_progress",
+            isMastered: false,
+            updatedAt: new Date(),
+          },
+        });
+    }
+
+    await completeScanSession(params.sessionId);
+    return {
+      responseId: params.responseId,
+      isCorrect: false,
+      correctAnswer,
+      scanComplete: true,
+      gapFound: true,
+      gapAtomId,
+      cooldown: false,
+      scannedPrereqs,
+    };
+  }
+
+  return {
+    responseId: params.responseId,
+    isCorrect: true,
+    correctAnswer,
+    scanComplete: false,
+    gapFound: false,
+    gapAtomId: null,
+    cooldown: false,
+    scannedPrereqs,
+  };
+}
+
+/**
+ * Decrements cooldownUntilMasteryCount for every atom in cooldown for this
+ * user. Called after mastering any atom — count reaching 0 exits cooldown.
+ */
+export async function checkCooldownExpiry(
+  userId: string,
+  _justMasteredAtomId: string
+): Promise<void> {
+  await db
+    .update(atomMastery)
+    .set({
+      cooldownUntilMasteryCount: sql`
+        ${atomMastery.cooldownUntilMasteryCount} - 1`,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(atomMastery.userId, userId),
+        sql`${atomMastery.cooldownUntilMasteryCount} > 0`
+      )
+    );
+}

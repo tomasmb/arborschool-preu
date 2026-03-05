@@ -366,7 +366,7 @@ function SignedUpFooter({ showContent }: { showContent: boolean }) {
         </div>
         <p className="text-sm text-cool-gray">
           Tu siguiente paso ya está disponible: entra al portal y comienza tu
-          sprint desde esta misma ruta.
+          mini-clase desde este mismo camino.
         </p>
       </div>
       <Link

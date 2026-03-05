@@ -80,7 +80,7 @@ export function StudentResultsHandoffScreen({
             Primera acción recomendada
           </h2>
           <p className="text-sm text-emerald-900">
-            Sprint de {firstAction.estimatedMinutes} min · impacto esperado{" "}
+            Mini-clase de {firstAction.estimatedMinutes} min · impacto esperado{" "}
             {firstAction.expectedPointsBand}
           </p>
           <p className="text-sm text-emerald-900">{firstAction.whyFirst}</p>
@@ -92,7 +92,7 @@ export function StudentResultsHandoffScreen({
             onClick={onStartSprint}
             className="btn-primary text-sm"
           >
-            Comenzar sprint de hoy
+            Comenzar mini-clase de hoy
           </button>
           <button
             type="button"

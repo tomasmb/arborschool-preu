@@ -64,7 +64,7 @@ function useSprintBootstrap(
         }
 
         if (!sprintId) {
-          throw new Error("No pudimos iniciar el sprint");
+          throw new Error("No pudimos iniciar la mini-clase");
         }
 
         const loaded = await fetchStudySprint(sprintId);
@@ -88,7 +88,7 @@ function useSprintBootstrap(
         if (!mounted) {
           return;
         }
-        setError(toErrorMessage(loadError, "No pudimos iniciar el sprint"));
+        setError(toErrorMessage(loadError, "No pudimos iniciar la mini-clase"));
       } finally {
         if (mounted) {
           setLoading(false);
@@ -246,7 +246,7 @@ function useCompleteAction(params: {
       params.setSprint(refreshed);
     } catch (completeError) {
       params.setError(
-        toErrorMessage(completeError, "No pudimos completar el sprint")
+        toErrorMessage(completeError, "No pudimos completar la mini-clase")
       );
     } finally {
       setCompleting(false);

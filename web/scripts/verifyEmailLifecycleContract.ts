@@ -33,8 +33,8 @@ function assertSingleSprintCtaBuilder(file: string, source: string) {
 
 function assertSprintCtaCopy(file: string, source: string) {
   assert(
-    source.includes("Comenzar sprint de hoy"),
-    `${file} must include sprint CTA copy`
+    source.includes("Comenzar mini-clase de hoy"),
+    `${file} must include mini-clase CTA copy`
   );
 }
 

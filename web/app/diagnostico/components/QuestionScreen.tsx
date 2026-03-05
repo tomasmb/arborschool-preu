@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, memo } from "react";
 import Link from "next/link";
+import { MathContent } from "@/lib/qti/MathRenderer";
 import {
   AXIS_NAMES,
   SKILL_NAMES,
@@ -84,9 +85,9 @@ function OptionButton({
       >
         {letter}
       </span>
-      <span
+      <MathContent
+        html={text}
         className="text-left text-charcoal flex-1 text-sm sm:text-base min-w-0 break-words"
-        dangerouslySetInnerHTML={{ __html: text }}
       />
       {isSelected && (
         <svg
@@ -344,9 +345,9 @@ export const QuestionScreen = memo(function QuestionScreen({
         {/* Question content */}
         <div className="prose prose-sm sm:prose-lg max-w-none mb-6 sm:mb-8 overflow-x-auto">
           {parsedQuestion?.html ? (
-            <div
+            <MathContent
+              html={parsedQuestion.html}
               className="text-charcoal text-base sm:text-lg leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: parsedQuestion.html }}
             />
           ) : (
             <p className="text-charcoal text-base sm:text-lg leading-relaxed">

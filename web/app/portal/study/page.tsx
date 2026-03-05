@@ -61,8 +61,8 @@ export default async function StudyPage({ searchParams }: StudyPageProps) {
 
   return (
     <PageShell
-      title="Sprint de hoy"
-      subtitle="Resuelve tu sprint personalizado. Cada respuesta suma a tu misión."
+      title="Tu mini-clase"
+      subtitle="Aprende con tu mini-clase personalizada. Cada respuesta suma."
     >
       <StudySprintClient />
     </PageShell>

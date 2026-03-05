@@ -4,7 +4,7 @@
 
 Test preparation platform for PAES Chile. Content repo manages atoms, questions, lessons. Student app serves content and tracks progress.
 
-Core flow: Diagnostic → Learning plan → PP100 mastery → Practice tests → Spaced repetition
+Core flow: Diagnostic → Learning plan → Mini-clase mastery → Practice tests → Spaced repetition
 
 ---
 
@@ -41,7 +41,7 @@ CREATE TYPE test_type AS ENUM ('official', 'diagnostic', 'practice');
 
 CREATE TYPE mastery_status AS ENUM ('not_started', 'in_progress', 'mastered', 'frozen');
 
-CREATE TYPE mastery_source AS ENUM ('diagnostic', 'practice_test', 'pp100');
+CREATE TYPE mastery_source AS ENUM ('diagnostic', 'practice_test', 'study');
 
 CREATE TYPE question_set_status AS ENUM ('pending', 'generated', 'reviewed');
 
@@ -447,35 +447,38 @@ users ──N:N──▶ atoms (via atom_mastery)
 
 ## ID Formats
 
-| Entity | Format | Example |
-|--------|--------|---------|
-| Subject | `paes_{test}` | `paes_m1` |
-| Standard | `{subject}-{axis}-{seq}` | `M1-ALG-01` |
-| Atom | `A-{subject}-{axis}-{std}-{seq}` | `A-M1-ALG-01-01` |
-| Question Set | `qs-{atom_id}` | `qs-A-M1-ALG-01-01` |
-| Lesson | `lesson-{atom_id}` | `lesson-A-M1-ALG-01-01` |
-| Question (official) | `{test_id}-Q{num}` | `prueba-invierno-2026-Q1` |
-| Question (alternate) | `alt-{parent_id}-{seq}` | `alt-prueba-invierno-2026-Q1-001` |
-| Question (set) | `{set_id}-{diff}-{seq}` | `qs-A-M1-ALG-01-01-low-001` |
+| Entity               | Format                           | Example                           |
+| -------------------- | -------------------------------- | --------------------------------- |
+| Subject              | `paes_{test}`                    | `paes_m1`                         |
+| Standard             | `{subject}-{axis}-{seq}`         | `M1-ALG-01`                       |
+| Atom                 | `A-{subject}-{axis}-{std}-{seq}` | `A-M1-ALG-01-01`                  |
+| Question Set         | `qs-{atom_id}`                   | `qs-A-M1-ALG-01-01`               |
+| Lesson               | `lesson-{atom_id}`               | `lesson-A-M1-ALG-01-01`           |
+| Question (official)  | `{test_id}-Q{num}`               | `prueba-invierno-2026-Q1`         |
+| Question (alternate) | `alt-{parent_id}-{seq}`          | `alt-prueba-invierno-2026-Q1-001` |
+| Question (set)       | `{set_id}-{diff}-{seq}`          | `qs-A-M1-ALG-01-01-low-001`       |
 
 ---
 
 ## Business Rules
 
 ### Mastery
+
 - Binary: `is_mastered` is TRUE or FALSE
-- PP100 pass: 11 correct, 3+ at Hard, last 2 at Hard correct
-- PP100 fail: <50% accuracy → status = `frozen`
+- Mini-clase mastery: 3 consecutive correct, at least 2 at HARD difficulty
+- Mini-clase failure: 3 consecutive incorrect OR <70% accuracy after 10 questions OR 20 questions without mastery → status = `frozen`, trigger prerequisite scan
 - Auto-unfreeze: when all prerequisites become mastered, frozen → in_progress
-- `mastery_source`: records how mastery was achieved (diagnostic, practice_test, pp100)
+- `mastery_source`: records how mastery was achieved (diagnostic, practice_test, study)
 - `last_demonstrated_at`: used for spaced repetition scheduling
 
 ### Question Generation
+
 - Generate question_sets BEFORE lessons
 - Minimum 3 questions per difficulty level (9+ total per atom)
 - Lessons only created after question_set status = `reviewed`
 
 ### Prerequisites
+
 - `prerequisite_ids` array defines direct dependencies
 - Use recursive CTE for full prerequisite chain
 - Cannot start atom until all prerequisites mastered
@@ -491,7 +494,7 @@ JOIN question_atoms qa ON q.id = qa.question_id
 WHERE qa.atom_id = $1
 ORDER BY q.difficulty_level;
 
--- Get PP100 questions
+-- Get questions for mini-clase by difficulty
 SELECT * FROM questions
 WHERE question_set_id = $1
 ORDER BY CASE difficulty_level
@@ -515,7 +518,7 @@ CROSS JOIN LATERAL unnest(a.prerequisite_ids) AS prereq_id
 LEFT JOIN atom_mastery am ON am.atom_id = prereq_id AND am.user_id = $1
 WHERE a.id = $2;
 
--- Atoms due for spaced repetition
+-- Atoms due for spaced repetition (session-based: sessionsSinceLastReview >= reviewIntervalSessions)
 SELECT a.id, a.title, am.last_demonstrated_at
 FROM atom_mastery am
 JOIN atoms a ON am.atom_id = a.id
@@ -523,11 +526,11 @@ WHERE am.user_id = $1 AND am.is_mastered = TRUE
   AND am.last_demonstrated_at < NOW() - INTERVAL '7 days'
 ORDER BY am.last_demonstrated_at LIMIT 10;
 
--- Update mastery from PP100
+-- Update mastery from mini-clase
 UPDATE atom_mastery SET
     status = 'mastered',
     is_mastered = TRUE,
-    mastery_source = 'pp100',
+    mastery_source = 'study',
     first_mastered_at = COALESCE(first_mastered_at, NOW()),
     last_demonstrated_at = NOW(),
     current_streak = $streak,
@@ -542,6 +545,7 @@ WHERE user_id = $1 AND atom_id = $2;
 ## Sample Data
 
 ### Atom
+
 ```json
 {
   "id": "A-M1-ALG-01-01",
@@ -551,12 +555,16 @@ WHERE user_id = $1 AND atom_id = $2;
   "atom_type": "representacion",
   "primary_skill": "representar",
   "title": "Traducción bidireccional entre lenguaje natural y algebraico",
-  "mastery_criteria": ["Traduce enunciados con operaciones básicas", "Representa relaciones de cantidad"],
+  "mastery_criteria": [
+    "Traduce enunciados con operaciones básicas",
+    "Representa relaciones de cantidad"
+  ],
   "prerequisite_ids": []
 }
 ```
 
 ### Question feedback_per_option
+
 ```json
 {
   "ChoiceA": "Error: applied operations in wrong order...",
@@ -567,15 +575,16 @@ WHERE user_id = $1 AND atom_id = $2;
 ```
 
 ### Atom Mastery
+
 ```json
 {
   "user_id": "550e8400-e29b-41d4-a716-446655440000",
   "atom_id": "A-M1-ALG-01-01",
   "status": "mastered",
   "is_mastered": true,
-  "mastery_source": "pp100",
+  "mastery_source": "study",
   "first_mastered_at": "2026-01-10T14:30:00Z",
   "last_demonstrated_at": "2026-01-10T14:30:00Z",
-  "current_streak": 11
+  "current_streak": 3
 }
 ```

@@ -313,8 +313,8 @@ export function StudySprintView(props: StudySprintViewProps) {
   if (!props.sprint) {
     return (
       <ErrorStatePanel
-        message="No encontramos un sprint activo."
-        retryLabel="Cargar sprint"
+        message="No encontramos tu mini-clase."
+        retryLabel="Reintentar"
       />
     );
   }
@@ -331,7 +331,7 @@ export function StudySprintView(props: StudySprintViewProps) {
     );
   }
 
-  const topicName = props.activeItem?.atomTitle ?? "Sprint de estudio";
+  const topicName = props.activeItem?.atomTitle ?? "Mini-clase";
 
   return (
     <div className="space-y-4">
@@ -394,7 +394,7 @@ export function StudySprintView(props: StudySprintViewProps) {
             disabled={props.completing}
             className="btn-cta text-sm disabled:opacity-60"
           >
-            {props.completing ? "Cerrando sprint..." : "Finalizar sprint"}
+            {props.completing ? "Guardando..." : "Terminar"}
           </button>
         </section>
       ) : null}

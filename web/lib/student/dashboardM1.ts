@@ -203,7 +203,7 @@ function buildEmptyState(
       description:
         "Agrega un puntaje objetivo M1 en tus metas para activar la brecha y el plan de esfuerzo.",
       ctaLabel: "Configurar metas",
-      ctaHref: "/portal/goals?mode=planning",
+      ctaHref: "/portal/goals",
     };
   }
 
