@@ -40,10 +40,7 @@ function collectTopLevelElements(root: Element): Element[] {
  * Each heading (h1-h4) starts a new segment whose `title` is the
  * heading text. Content following the heading is the segment body.
  */
-function splitLessonIntoSegments(
-  html: string,
-  atomTitle: string
-): Segment[] {
+function splitLessonIntoSegments(html: string, atomTitle: string): Segment[] {
   if (typeof window === "undefined") {
     return [{ title: null, html }];
   }
@@ -89,8 +86,7 @@ function splitLessonIntoSegments(
   if (
     segments.length > 0 &&
     segments[0].title &&
-    segments[0].title.toLowerCase().trim() ===
-      atomTitle.toLowerCase().trim()
+    segments[0].title.toLowerCase().trim() === atomTitle.toLowerCase().trim()
   ) {
     segments[0].title = null;
   }
@@ -117,6 +113,7 @@ export function AtomLessonView({
     [lessonHtml, atomTitle]
   );
   const [page, setPage] = useState(0);
+  const [furthestReached, setFurthestReached] = useState(0);
   const total = segments.length;
   const isLast = page === total - 1;
   const [slideDir, setSlideDir] = useState<"left" | "right">("right");
@@ -146,7 +143,11 @@ export function AtomLessonView({
 
   function goNext() {
     setSlideDir("right");
-    setPage((p) => p + 1);
+    setPage((p) => {
+      const next = p + 1;
+      setFurthestReached((f) => Math.max(f, next));
+      return next;
+    });
   }
 
   function goPrev() {
@@ -155,6 +156,7 @@ export function AtomLessonView({
   }
 
   function goTo(i: number) {
+    if (i > furthestReached) return;
     setSlideDir(i > page ? "right" : "left");
     setPage(i);
   }
@@ -185,9 +187,7 @@ export function AtomLessonView({
               <BookIcon />
               Mini-clase
             </span>
-            <h2
-              className="text-lg font-serif font-semibold text-primary"
-            >
+            <h2 className="text-lg font-serif font-semibold text-primary">
               {atomTitle}
             </h2>
           </div>
@@ -211,7 +211,8 @@ export function AtomLessonView({
           >
             {segments.map((seg, i) => {
               const isCurrent = i === page;
-              const isPast = i < page;
+              const isVisited = i <= furthestReached;
+              const isLocked = i > furthestReached;
               const label = seg.title
                 ? seg.title
                 : i === 0
@@ -223,6 +224,7 @@ export function AtomLessonView({
                   key={i}
                   type="button"
                   onClick={() => goTo(i)}
+                  disabled={isLocked}
                   {...(isCurrent ? { "data-active": true } : {})}
                   className={[
                     "shrink-0 flex items-center gap-1.5 px-2.5 py-1",
@@ -230,9 +232,9 @@ export function AtomLessonView({
                     "transition-all duration-300 whitespace-nowrap",
                     isCurrent
                       ? "bg-primary text-white shadow-sm"
-                      : isPast
+                      : isVisited
                         ? "bg-primary/10 text-primary/70"
-                        : "bg-gray-100 text-gray-400",
+                        : "bg-gray-100 text-gray-400/60 cursor-not-allowed",
                   ].join(" ")}
                 >
                   <span
@@ -241,12 +243,12 @@ export function AtomLessonView({
                       "justify-center text-[9px] font-bold shrink-0",
                       isCurrent
                         ? "bg-white/25 text-white"
-                        : isPast
+                        : isVisited
                           ? "bg-primary/20 text-primary/70"
                           : "bg-gray-200 text-gray-400",
                     ].join(" ")}
                   >
-                    {isPast ? <MiniCheckIcon /> : i + 1}
+                    {isVisited && !isCurrent ? <MiniCheckIcon /> : i + 1}
                   </span>
                   <span className="hidden sm:inline truncate max-w-[120px]">
                     {label}
@@ -342,11 +344,7 @@ function ArrowLeftIcon() {
       strokeWidth={2}
       viewBox="0 0 24 24"
     >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M15 19l-7-7 7-7"
-      />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
     </svg>
   );
 }
@@ -360,11 +358,7 @@ function ArrowRightIcon() {
       strokeWidth={2}
       viewBox="0 0 24 24"
     >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M9 5l7 7-7 7"
-      />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
     </svg>
   );
 }
@@ -401,11 +395,7 @@ function ClockIcon() {
       viewBox="0 0 24 24"
     >
       <circle cx="12" cy="12" r="10" />
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M12 6v6l4 2"
-      />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2" />
     </svg>
   );
 }
@@ -437,11 +427,7 @@ function MiniCheckIcon() {
       strokeWidth={3}
       viewBox="0 0 24 24"
     >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M5 13l4 4L19 7"
-      />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
     </svg>
   );
 }

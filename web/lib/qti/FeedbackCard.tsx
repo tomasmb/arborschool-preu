@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { MathContent } from "./MathRenderer";
+import { SteppedExplanation } from "./SteppedExplanation";
 
 type FeedbackOption = {
   identifier: string;
@@ -52,9 +53,7 @@ export function FeedbackCard({
     !isCorrect && corFeedback && selectedAnswer !== correctAnswer;
 
   function handleToggleSolution() {
-    const willOpen = !showSolution;
-    setShowSolution(willOpen);
-    if (willOpen && onViewSolution) onViewSolution();
+    setShowSolution(true);
   }
 
   const hasGeneralFeedback = Boolean(generalFeedbackHtml);
@@ -78,9 +77,7 @@ export function FeedbackCard({
         <span
           className={[
             "w-8 h-8 rounded-full flex items-center justify-center",
-            isCorrect
-              ? "bg-emerald-500 text-white"
-              : "bg-red-500 text-white",
+            isCorrect ? "bg-emerald-500 text-white" : "bg-red-500 text-white",
           ].join(" ")}
         >
           {isCorrect ? <CheckIcon /> : <XIcon />}
@@ -118,49 +115,42 @@ export function FeedbackCard({
           />
         )}
 
-        {/* Expandable general feedback / full solution */}
+        {/* Expandable general feedback / stepped solution */}
         {hasGeneralFeedback && (
           <div>
-            <button
-              type="button"
-              onClick={handleToggleSolution}
-              className={[
-                "flex items-center gap-2 text-sm font-medium",
-                "transition-colors",
-                forceViewSolution && !showSolution
-                  ? "text-accent-dark hover:text-accent"
-                  : "text-primary hover:text-primary-light",
-              ].join(" ")}
-            >
-              <ChevronIcon open={showSolution} />
-              {showSolution
-                ? "Ocultar explicación"
-                : "Ver explicación completa"}
-              {forceViewSolution && !showSolution && (
-                <span
-                  className="ml-1 text-[10px] uppercase tracking-wider
-                    font-bold bg-amber-200 text-amber-800
-                    px-2 py-0.5 rounded-full"
-                >
-                  Requerido
-                </span>
-              )}
-            </button>
-
-            <div
-              className={[
-                "overflow-hidden transition-all duration-300",
-                showSolution
-                  ? "max-h-[2000px] opacity-100 mt-3"
-                  : "max-h-0 opacity-0",
-              ].join(" ")}
-            >
-              <MathContent
-                html={generalFeedbackHtml!}
-                className="prose prose-sm max-w-none text-charcoal
-                  rounded-xl bg-primary/5 border border-primary/15 p-4"
-              />
-            </div>
+            {!showSolution ? (
+              <button
+                type="button"
+                onClick={handleToggleSolution}
+                className={[
+                  "flex items-center gap-2 text-sm font-medium",
+                  "transition-colors",
+                  forceViewSolution
+                    ? "text-accent-dark hover:text-accent"
+                    : "text-primary hover:text-primary-light",
+                ].join(" ")}
+              >
+                <ChevronIcon open={false} />
+                Ver explicación completa
+                {forceViewSolution && (
+                  <span
+                    className="ml-1 text-[10px] uppercase tracking-wider
+                      font-bold bg-amber-200 text-amber-800
+                      px-2 py-0.5 rounded-full"
+                  >
+                    Requerido
+                  </span>
+                )}
+              </button>
+            ) : (
+              <div className="mt-1 animate-fade-in-up">
+                <SteppedExplanation
+                  html={generalFeedbackHtml!}
+                  forceSequential={forceViewSolution}
+                  onAllRevealed={onViewSolution}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -206,11 +196,7 @@ function CheckIcon() {
       strokeWidth={2.5}
       viewBox="0 0 24 24"
     >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M5 13l4 4L19 7"
-      />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
     </svg>
   );
 }
@@ -245,11 +231,7 @@ function ChevronIcon({ open }: { open: boolean }) {
       strokeWidth={2}
       viewBox="0 0 24 24"
     >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M9 5l7 7-7 7"
-      />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
     </svg>
   );
 }
