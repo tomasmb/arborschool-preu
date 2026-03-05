@@ -1,18 +1,62 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect } from "react";
 import { PageShell } from "@/app/portal/components";
 import { GoalsEditorSection } from "./GoalsEditorSection";
 import { PlanningModeFlow } from "./PlanningModeFlow";
 import { SimulatorSection } from "./SimulatorSection";
 import { usePortalGoals } from "./usePortalGoals";
 
+function usePlanningModeRedirect({
+  planningModeRequested,
+  loading,
+  journeyState,
+  onRedirect,
+}: {
+  planningModeRequested: boolean;
+  loading: boolean;
+  journeyState: ReturnType<typeof usePortalGoals>["journeyState"];
+  onRedirect: (path: string) => void;
+}) {
+  useEffect(() => {
+    if (!planningModeRequested || loading || !journeyState) {
+      return;
+    }
+
+    if (journeyState === "planning_required") {
+      return;
+    }
+
+    if (
+      journeyState === "activation_ready" ||
+      journeyState === "active_learning"
+    ) {
+      onRedirect("/portal");
+      return;
+    }
+
+    onRedirect("/portal/goals");
+  }, [journeyState, loading, onRedirect, planningModeRequested]);
+}
+
 function PortalGoalsPageContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const isPlanningMode = searchParams.get("mode") === "planning";
+  const planningModeRequested = searchParams.get("mode") === "planning";
   const portalGoals = usePortalGoals();
+  const isPlanningMode =
+    planningModeRequested &&
+    (portalGoals.journeyState === null ||
+      portalGoals.journeyState === "planning_required");
+
+  usePlanningModeRedirect({
+    planningModeRequested,
+    loading: portalGoals.loading,
+    journeyState: portalGoals.journeyState,
+    onRedirect: (path) => router.replace(path),
+  });
 
   return (
     <PageShell

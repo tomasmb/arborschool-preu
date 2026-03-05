@@ -57,6 +57,7 @@ type SprintQuestionCardProps = {
   latestFeedbackAnswer: string;
   error: string | null;
   submitting: boolean;
+  canGoNext: boolean;
   onSelectAnswer: (answer: string) => void;
   onSubmit: () => void;
   onNext: () => void;
@@ -71,6 +72,7 @@ function SprintQuestionCard({
   latestFeedbackAnswer,
   error,
   submitting,
+  canGoNext,
   onSelectAnswer,
   onSubmit,
   onNext,
@@ -142,7 +144,12 @@ function SprintQuestionCard({
         >
           {submitting ? "Guardando..." : "Responder"}
         </button>
-        <button type="button" onClick={onNext} className="btn-ghost text-sm">
+        <button
+          type="button"
+          onClick={onNext}
+          disabled={!canGoNext}
+          className="btn-ghost text-sm disabled:cursor-not-allowed disabled:opacity-60"
+        >
           Siguiente
         </button>
       </div>
@@ -165,6 +172,7 @@ type StudySprintViewProps = {
   submitting: boolean;
   completing: boolean;
   isFullyAnswered: boolean;
+  canGoToNextQuestion: boolean;
   onSelectAnswer: (answer: string) => void;
   onSubmitAnswer: () => void;
   onNextQuestion: () => void;
@@ -241,6 +249,7 @@ export function StudySprintView(props: StudySprintViewProps) {
           latestFeedbackAnswer={props.latestFeedbackAnswer}
           error={props.error}
           submitting={props.submitting}
+          canGoNext={props.canGoToNextQuestion}
           onSelectAnswer={props.onSelectAnswer}
           onSubmit={props.onSubmitAnswer}
           onNext={props.onNextQuestion}

@@ -1,3 +1,4 @@
+import "./loadEnv";
 import { and, eq, isNotNull } from "drizzle-orm";
 import { db } from "@/db";
 import {

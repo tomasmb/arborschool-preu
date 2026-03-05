@@ -323,7 +323,6 @@ function ResultsCoreSection(props: {
             showNextConcepts={props.showNextConcepts}
             nextConcepts={props.nextConcepts}
             performanceTier={props.performanceTier}
-            onCtaClick={props.onCtaClick}
           />
         </div>
       )}

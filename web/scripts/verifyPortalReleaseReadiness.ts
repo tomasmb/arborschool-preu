@@ -1,3 +1,4 @@
+import "./loadEnv";
 import { spawnSync } from "node:child_process";
 
 const RELEASE_GATE_SCRIPTS = [

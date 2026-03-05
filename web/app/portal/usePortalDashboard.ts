@@ -104,8 +104,9 @@ function useNextActionPayload() {
         if (!isMounted) {
           return;
         }
+        console.error("[portal] next-action-load-failed", loadError);
         setNextActionError(
-          toErrorMessage(loadError, "No se pudo cargar siguiente acción")
+          "Tuvimos un problema cargando tu siguiente paso. Reintenta en 5 segundos."
         );
       } finally {
         if (isMounted) {

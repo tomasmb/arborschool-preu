@@ -66,6 +66,14 @@ interface PersonalizedConceptsProps {
   maxExpanded: number;
 }
 
+function formatUnlockCopy(questionsCount: number): string {
+  if (questionsCount === 1) {
+    return "Desbloquea 1 pregunta PAES";
+  }
+
+  return `Desbloquea ${questionsCount} preguntas PAES`;
+}
+
 function PersonalizedConceptsList({
   concepts,
   maxDefault,
@@ -131,7 +139,7 @@ function PersonalizedConceptsList({
                       d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"
                     />
                   </svg>
-                  Desbloquea {concept.unlocksQuestionsCount} preguntas PAES
+                  {formatUnlockCopy(concept.unlocksQuestionsCount)}
                 </span>
               ) : (
                 <span className="text-xs text-cool-gray mt-0.5">

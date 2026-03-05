@@ -43,7 +43,7 @@ export function MasterySection() {
 
           {/* Right: daily plan browser mockup */}
           <div>
-            <p className="text-sm font-semibold text-primary/60 mb-3 sm:mb-4 text-center uppercase tracking-wide">
+            <p className="text-sm font-semibold text-primary/80 mb-3 sm:mb-4 text-center uppercase tracking-wide">
               Así se verá tu plan diario
             </p>
             <BrowserFrame>
@@ -96,7 +96,7 @@ function DailyPlanPreview() {
             Hoy
           </h3>
           <p className="text-cool-gray text-xs sm:text-sm">
-            Martes 13 de enero
+            Ejemplo de día de estudio
           </p>
         </div>
         <div className="text-right">
@@ -183,11 +183,11 @@ function TaskCard({
             </span>
           )}
         </div>
-        <p className="text-charcoal/60 text-xs sm:text-sm truncate">
+        <p className="text-charcoal/80 text-xs sm:text-sm truncate">
           {description}
         </p>
       </div>
-      <span className="text-[10px] sm:text-xs font-semibold text-charcoal/50 shrink-0">
+      <span className="text-[10px] sm:text-xs font-semibold text-charcoal/70 shrink-0">
         {time}
       </span>
     </div>

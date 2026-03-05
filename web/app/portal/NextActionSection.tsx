@@ -76,7 +76,10 @@ function NextActionLoadingState() {
 function NextActionErrorState({ message }: { message: string }) {
   return (
     <InlineRecoveryPanel
-      message={message}
+      message={
+        message ||
+        "Tuvimos un problema cargando tu siguiente paso. Reintenta en 5 segundos."
+      }
       onRetry={() => window.location.reload()}
       showSecondaryAction={false}
     />

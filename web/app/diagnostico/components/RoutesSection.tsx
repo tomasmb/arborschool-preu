@@ -36,8 +36,6 @@ interface RoutesSectionProps {
   nextConcepts: NextConcept[];
   /** Performance tier for next concepts display */
   performanceTier: PerformanceTier;
-  /** CTA click handler (preview mode only) */
-  onCtaClick: () => void;
 }
 
 // ============================================================================
@@ -179,7 +177,6 @@ export function RoutesSection({
   showNextConcepts,
   nextConcepts,
   performanceTier,
-  onCtaClick,
 }: RoutesSectionProps) {
   // Signed-up users: show routes directly (no toggle needed)
   if (hasSignedUp) {
@@ -257,32 +254,6 @@ export function RoutesSection({
               </div>
             </div>
           )}
-
-          {/* Secondary CTA */}
-          <div className="text-center pt-4 border-t border-gray-100">
-            <p className="text-sm text-cool-gray mb-3">
-              ¿Listo para comenzar tu ruta?
-            </p>
-            <button
-              onClick={onCtaClick}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-primary/10 text-primary font-semibold rounded-xl hover:bg-primary/20 transition-colors"
-            >
-              Continuar
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 7l5 5m0 0l-5 5m5-5H6"
-                />
-              </svg>
-            </button>
-          </div>
         </div>
       )}
     </div>

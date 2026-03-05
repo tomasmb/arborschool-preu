@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { toStudentSafeMessage } from "../errorUtils";
 
 type InlineRecoveryPanelProps = {
   message: string;
@@ -19,9 +20,14 @@ export function InlineRecoveryPanel({
   secondaryLabel = "Volver al portal",
   showSecondaryAction = true,
 }: InlineRecoveryPanelProps) {
+  const studentMessage = toStudentSafeMessage(
+    message,
+    "Tuvimos un problema para continuar. Reintenta en unos segundos."
+  );
+
   return (
     <div className="rounded-xl border border-red-200 bg-red-50 p-4 space-y-3">
-      <p className="text-sm text-red-700">{message}</p>
+      <p className="text-sm text-red-700">{studentMessage}</p>
       <div className="flex flex-wrap gap-3">
         {onRetry ? (
           <button

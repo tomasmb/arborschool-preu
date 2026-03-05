@@ -8,7 +8,7 @@ import {
   trackStudentSimulatorInteraction,
 } from "@/lib/analytics";
 import { planningProfileToApi, saveGoals } from "./api";
-import type { GoalDraft, PlanningProfileDraft } from "./types";
+import type { GoalDraft, PlanningProfileDraft, StudentGoal } from "./types";
 import { normalizeTestCode } from "./utils";
 import { applyGoalsPayload, type GoalsState } from "./usePortalGoals.state";
 
@@ -204,6 +204,104 @@ function buildSavePayload(state: GoalsState): SaveGoalPayload[] {
   });
 }
 
+function readDraftScores(draft: GoalDraft | undefined) {
+  if (!draft) {
+    return [];
+  }
+
+  return Object.entries(draft.scores)
+    .map(([testCode, rawValue]) => {
+      const parsed = Number(rawValue.trim());
+      if (!Number.isFinite(parsed) || parsed < 100 || parsed > 1000) {
+        return null;
+      }
+
+      return {
+        testCode: normalizeTestCode(testCode),
+        score: parsed,
+        source: "student" as const,
+      };
+    })
+    .filter(
+      (
+        score
+      ): score is {
+        testCode: string;
+        score: number;
+        source: "student";
+      } => score !== null
+    );
+}
+
+function hasStudentEnteredScores(
+  goal: StudentGoal | undefined,
+  draft: GoalDraft | undefined
+) {
+  if (readDraftScores(draft).length > 0) {
+    return true;
+  }
+
+  return (goal?.scores ?? []).some((score) => score.isStudentEntered);
+}
+
+function buildPlanningSavePayload(state: GoalsState): SaveGoalPayload {
+  const selectedGoal = state.savedGoals.find(
+    (goal) => goal.offeringId === state.planningOfferingId
+  );
+  const selectedDraft = selectedGoal
+    ? state.drafts[selectedGoal.id]
+    : undefined;
+  const draftScores = readDraftScores(selectedDraft);
+
+  const preservedScores =
+    draftScores.length > 0
+      ? draftScores
+      : (selectedGoal?.scores ?? [])
+          .filter((score) => score.isStudentEntered)
+          .map((score) => ({
+            testCode: normalizeTestCode(score.testCode),
+            score: score.score,
+            source: "student" as const,
+          }));
+
+  return {
+    offeringId: state.planningOfferingId,
+    priority: 1,
+    isPrimary: true,
+    bufferPoints:
+      selectedDraft?.bufferPoints ?? selectedGoal?.buffer.points ?? 30,
+    bufferSource: "student",
+    scores: preservedScores,
+  };
+}
+
+function shouldAbortPlanningPrimaryGoalSwitch(state: GoalsState) {
+  const primaryGoal = state.savedGoals.find((goal) => goal.priority === 1);
+  const primaryDraft = primaryGoal ? state.drafts[primaryGoal.id] : undefined;
+  const switchingPrimaryGoal =
+    primaryGoal && primaryGoal.offeringId !== state.planningOfferingId;
+
+  if (
+    !switchingPrimaryGoal ||
+    !hasStudentEnteredScores(primaryGoal, primaryDraft)
+  ) {
+    return false;
+  }
+
+  const confirmed = window.confirm(
+    "Cambiar esta meta puede borrar puntajes que ya ingresaste. ¿Quieres continuar?"
+  );
+
+  if (confirmed) {
+    return false;
+  }
+
+  state.setError(
+    "Mantuvimos tu meta actual para no perder puntajes ingresados."
+  );
+  return true;
+}
+
 export function useGoalSaveHandlers(state: GoalsState) {
   const router = useRouter();
   const persistGoals = useCallback(
@@ -262,20 +360,16 @@ export function useGoalSaveHandlers(state: GoalsState) {
         state.setError("Selecciona una carrera/universidad objetivo");
         return;
       }
+
+      if (shouldAbortPlanningPrimaryGoalSwitch(state)) {
+        return;
+      }
+
       state.setSaving(true);
       state.setError(null);
       state.setInfoMessage(null);
       try {
-        await persistGoals([
-          {
-            offeringId: state.planningOfferingId,
-            priority: 1,
-            isPrimary: true,
-            bufferPoints: 30,
-            bufferSource: "student",
-            scores: [],
-          },
-        ]);
+        await persistGoals([buildPlanningSavePayload(state)]);
 
         if (redirectToDiagnostic) {
           router.push("/diagnostico");

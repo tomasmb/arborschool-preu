@@ -44,6 +44,7 @@ export function usePortalGoals() {
     goals: state.goals,
     availableOptions: state.availableOptions,
     savedGoals: state.savedGoals,
+    journeyState: state.journeyState,
     selectedGoalId: state.selectedGoalId,
     selectedGoal: state.selectedGoal,
     selectedOption: state.selectedOption,

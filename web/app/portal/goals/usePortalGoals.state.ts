@@ -27,6 +27,9 @@ export function useGoalsState() {
   const [dataset, setDataset] = useState<StudentGoalsPayload["dataset"]>(null);
   const [options, setOptions] = useState<StudentGoalsPayload["options"]>([]);
   const [savedGoals, setSavedGoals] = useState<StudentGoal[]>([]);
+  const [journeyState, setJourneyState] = useState<
+    StudentGoalsPayload["journeyState"] | null
+  >(null);
   const [goals, setGoals] = useState<GoalRecord[]>([
     { offeringId: "", priority: 1 },
   ]);
@@ -82,6 +85,7 @@ export function useGoalsState() {
     dataset,
     options,
     savedGoals,
+    journeyState,
     goals,
     drafts,
     selectedGoalId,
@@ -103,6 +107,7 @@ export function useGoalsState() {
     setDataset,
     setOptions,
     setSavedGoals,
+    setJourneyState,
     setGoals,
     setDrafts,
     setSelectedGoalId,
@@ -120,6 +125,7 @@ export function applyGoalsPayload(
   state.setDataset(data.dataset);
   state.setOptions(data.options);
   state.setSavedGoals(orderedGoals);
+  state.setJourneyState(data.journeyState);
   state.setPlanningProfile({
     examDate: data.planningProfile?.examDate ?? "",
     weeklyMinutesTarget: String(
