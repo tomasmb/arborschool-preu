@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { trackStudentNextActionClicked } from "@/lib/analytics";
 import { InlineRecoveryPanel } from "./components";
+import { ReviewSuggestionBanner } from "./components/ReviewSuggestionBanner";
 import type {
   CompetitiveRoutePayload,
   NextActionPayload,
@@ -362,6 +363,7 @@ function LearningPathContent({ data }: { data: NextActionPayload }) {
   const reviewItems = data.reviewItems ?? [];
   const hasReviews = reviewItems.length > 0;
   const hasRouteFork = routes.length >= 2;
+  const reviewSuggested = data.reviewSuggested ?? false;
 
   const [selectedAxis, setSelectedAxis] = useState(
     routes[0]?.axis ?? action?.axis ?? ""
@@ -395,6 +397,10 @@ function LearningPathContent({ data }: { data: NextActionPayload }) {
         </h2>
         <ReviewBadge count={data.reviewDueCount ?? 0} />
       </div>
+
+      {reviewSuggested && (
+        <ReviewSuggestionBanner count={data.reviewDueCount ?? 0} />
+      )}
 
       {hasRouteFork ? (
         <RouteFork

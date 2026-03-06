@@ -267,6 +267,7 @@ function buildMissingDashboard(params: {
 function computeEffortMetrics(params: {
   currentScore: number;
   targetScore: number;
+  diagnosticMax: number;
   analysis: StudentLearningAnalysis;
 }) {
   const insights = buildNextActionInsights(params.analysis);
@@ -309,10 +310,19 @@ function computeEffortMetrics(params: {
         ? Math.round(gapPoints * minutesPerPointRaw)
         : null;
 
+  // Spec 9.3: scenario_score = min(effort_projection, diagnostic_prediction_max)
+  const ceiling = clampScore(params.diagnosticMax);
+
   return {
     prediction: {
-      min: clampScore(params.currentScore + improvement.minPoints),
-      max: clampScore(params.currentScore + improvement.maxPoints),
+      min: Math.min(
+        clampScore(params.currentScore + improvement.minPoints),
+        ceiling
+      ),
+      max: Math.min(
+        clampScore(params.currentScore + improvement.maxPoints),
+        ceiling
+      ),
     },
     gapPoints,
     estimatedMinutesToTarget,
@@ -339,6 +349,7 @@ function buildReadyDashboard(params: {
   const effortMetrics = computeEffortMetrics({
     currentScore: params.currentScore,
     targetScore: params.target.score,
+    diagnosticMax: params.maxScore,
     analysis: params.analysis,
   });
 

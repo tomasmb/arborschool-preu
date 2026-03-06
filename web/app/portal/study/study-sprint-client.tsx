@@ -3,9 +3,13 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
 import { AtomStudyView } from "./AtomStudyView";
+import { PrereqScanView } from "./PrereqScanView";
+import { ReviewSessionView } from "./ReviewSessionView";
 import { StudySprintView } from "./StudySprintView";
 import { sanitizeSprintId } from "./types";
 import { useAtomStudyController } from "./useAtomStudyController";
+import { usePrereqScanController } from "./usePrereqScanController";
+import { useReviewSessionController } from "./useReviewSessionController";
 import { useStudySprintController } from "./useStudySprintController";
 
 function resolveNextQuestionIndex(
@@ -26,6 +30,22 @@ function resolveNextQuestionIndex(
 function AtomStudyClient({ atomId }: { atomId: string }) {
   const ctrl = useAtomStudyController(atomId);
   return <AtomStudyView ctrl={ctrl} />;
+}
+
+/**
+ * Spaced-repetition review flow. Activated via `?mode=review`.
+ */
+function ReviewStudyClient() {
+  const ctrl = useReviewSessionController();
+  return <ReviewSessionView ctrl={ctrl} />;
+}
+
+/**
+ * Prerequisite scan flow. Activated via `?scan=SESSION_ID`.
+ */
+function ScanStudyClient({ scanSessionId }: { scanSessionId: string }) {
+  const ctrl = usePrereqScanController(scanSessionId);
+  return <PrereqScanView ctrl={ctrl} />;
 }
 
 /**
@@ -78,8 +98,18 @@ function SprintStudyClient({ sprintId }: { sprintId: string | null }) {
 
 export function StudySprintClient() {
   const searchParams = useSearchParams();
-  const atomIdFromUrl = searchParams.get("atom");
 
+  const mode = searchParams.get("mode");
+  if (mode === "review") {
+    return <ReviewStudyClient />;
+  }
+
+  const scanSessionId = searchParams.get("scan");
+  if (scanSessionId) {
+    return <ScanStudyClient scanSessionId={scanSessionId} />;
+  }
+
+  const atomIdFromUrl = searchParams.get("atom");
   if (atomIdFromUrl) {
     return <AtomStudyClient atomId={atomIdFromUrl} />;
   }

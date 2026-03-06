@@ -40,6 +40,8 @@ export type NextActionPayload = {
   competitiveRoutes?: CompetitiveRoutePayload[];
   reviewDueCount?: number;
   reviewItems?: ReviewItemPayload[];
+  /** SR balance rule: true when reviews should be done before new atoms */
+  reviewSuggested?: boolean;
   emptyState: {
     title: string;
     description: string;

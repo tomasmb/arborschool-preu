@@ -1,15 +1,22 @@
 "use client";
 
+const FLAME_PATH =
+  "M12 23c-3.866 0-7-3.134-7-7 0-3.037 2.068-5.492 " +
+  "3.678-7.283.593-.66 1.143-1.27 1.572-1.867.26-.362" +
+  ".686-.85 1.25-.85s.99.488 1.25.85c.429.597.979 " +
+  "1.207 1.572 1.867C15.932 10.508 18 12.963 18 16c0 " +
+  "3.866-3.134 7-7 7z";
+
 type StreakBadgeProps = {
-  /** Number of sessions completed this week */
+  /** Number of study sessions completed this week */
   sessionsThisWeek: number;
   /** Compact mode for inline use (e.g. nav bar) */
   compact?: boolean;
 };
 
 /**
- * Visual streak/momentum indicator based on weekly session count.
- * Uses a flame icon like Duolingo to reward consistency.
+ * Weekly session count indicator. Shows how many sessions the
+ * student has completed this week (NOT a consecutive-day streak).
  */
 export function StreakBadge({
   sessionsThisWeek,
@@ -21,18 +28,20 @@ export function StreakBadge({
     return (
       <span
         className={[
-          "inline-flex items-center gap-1 text-sm font-bold",
+          "inline-flex items-center gap-1 text-xs font-bold",
           isActive ? "text-amber-500" : "text-gray-300",
         ].join(" ")}
+        title={`${sessionsThisWeek} sesión${sessionsThisWeek !== 1 ? "es" : ""} esta semana`}
       >
         <svg
           className={`w-4 h-4 ${isActive ? "animate-bounce-subtle" : ""}`}
           viewBox="0 0 24 24"
           fill="currentColor"
         >
-          <path d="M12 23c-3.866 0-7-3.134-7-7 0-3.037 2.068-5.492 3.678-7.283.593-.66 1.143-1.27 1.572-1.867.26-.362.686-.85 1.25-.85s.99.488 1.25.85c.429.597.979 1.207 1.572 1.867C15.932 10.508 18 12.963 18 16c0 3.866-3.134 7-7 7z" />
+          <path d={FLAME_PATH} />
         </svg>
         {sessionsThisWeek}
+        <span className="font-medium text-[10px] opacity-70">sem</span>
       </span>
     );
   }
@@ -55,7 +64,7 @@ export function StreakBadge({
         viewBox="0 0 24 24"
         fill="currentColor"
       >
-        <path d="M12 23c-3.866 0-7-3.134-7-7 0-3.037 2.068-5.492 3.678-7.283.593-.66 1.143-1.27 1.572-1.867.26-.362.686-.85 1.25-.85s.99.488 1.25.85c.429.597.979 1.207 1.572 1.867C15.932 10.508 18 12.963 18 16c0 3.866-3.134 7-7 7z" />
+        <path d={FLAME_PATH} />
       </svg>
       <span>
         {sessionsThisWeek} sesión{sessionsThisWeek !== 1 ? "es" : ""} esta

@@ -11,6 +11,10 @@ import { ErrorStatePanel } from "../components";
 import { AtomLessonView } from "./AtomLessonView";
 import { AtomResultPanel } from "./AtomResultPanel";
 import { MasteryMeter } from "./MasteryMeter";
+import {
+  HabitGuardBanner,
+  type HabitGuardSuggestion,
+} from "./HabitGuardBanner";
 import type { useAtomStudyController } from "./useAtomStudyController";
 
 type Controller = ReturnType<typeof useAtomStudyController>;
@@ -348,6 +352,10 @@ export function AtomStudyView({ ctrl }: { ctrl: Controller }) {
             | undefined
         }
         cooldownApplied={ar?.cooldownApplied as boolean | undefined}
+        questionsUnlocked={ar?.questionsUnlocked as number | undefined}
+        nextAtom={
+          ar?.nextAtom as { id: string; title: string } | null | undefined
+        }
       />
     );
   }
@@ -407,6 +415,17 @@ export function AtomStudyView({ ctrl }: { ctrl: Controller }) {
           onViewSolution={ctrl.markExplanationViewed}
         />
       </div>
+
+      {/* Habit guard intervention (spec 13.3) */}
+      {(() => {
+        if (ctrl.phase !== "feedback") return null;
+        const ar = ctrl.answerResult as Record<string, unknown> | null;
+        const guard = ar?.habitGuard as
+          | { suggestion: HabitGuardSuggestion | null }
+          | undefined;
+        if (!guard?.suggestion) return null;
+        return <HabitGuardBanner suggestion={guard.suggestion} />;
+      })()}
     </div>
   );
 }

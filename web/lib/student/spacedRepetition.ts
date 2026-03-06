@@ -440,7 +440,11 @@ export async function incrementSessionCounters(userId: string) {
 
 /**
  * Implicit repetition: prereqs get partial review credit when an advanced
- * atom is mastered/reviewed. Direct = full credit, 2-hop = half credit.
+ * atom is mastered/reviewed.
+ *   1-hop (direct prereqs): full credit (reset to 0)
+ *   2-hop: half credit (reduce by 50%)
+ *   3-hop: quarter credit (reduce by 25%)
+ * Spec ref: Section 7.6
  */
 export async function applyImplicitRepetition(userId: string, atomId: string) {
   const [atom] = await db
@@ -449,30 +453,40 @@ export async function applyImplicitRepetition(userId: string, atomId: string) {
     .where(eq(atoms.id, atomId))
     .limit(1);
 
-  const prereqIds = (atom?.prerequisiteIds ?? []).filter(Boolean);
-  if (prereqIds.length === 0) return;
+  const hop1Ids = (atom?.prerequisiteIds ?? []).filter(Boolean);
+  if (hop1Ids.length === 0) return;
+
+  // 1-hop: full credit — reset sessions_since_last_review to 0
   await db
     .update(atomMastery)
     .set({ sessionsSinceLastReview: 0, updatedAt: new Date() })
     .where(
       and(
         eq(atomMastery.userId, userId),
-        inArray(atomMastery.atomId, prereqIds),
+        inArray(atomMastery.atomId, hop1Ids),
         eq(atomMastery.isMastered, true)
       )
     );
 
+  const visited = new Set<string>([atomId, ...hop1Ids]);
+
+  // 2-hop: collect prereqs of hop-1 atoms (excluding visited)
   const hop1Atoms = await db
     .select({ prerequisiteIds: atoms.prerequisiteIds })
     .from(atoms)
-    .where(inArray(atoms.id, prereqIds));
-  const hop2Set = new Set<string>();
+    .where(inArray(atoms.id, hop1Ids));
+  const hop2Ids: string[] = [];
   for (const a of hop1Atoms) {
     for (const id of (a.prerequisiteIds ?? []).filter(Boolean)) {
-      if (!prereqIds.includes(id) && id !== atomId) hop2Set.add(id);
+      if (!visited.has(id)) {
+        hop2Ids.push(id);
+        visited.add(id);
+      }
     }
   }
-  for (const hop2Id of Array.from(hop2Set)) {
+
+  // 2-hop: half credit — reduce by 50%
+  for (const hop2Id of hop2Ids) {
     await db.execute(sql`
       UPDATE atom_mastery
       SET sessions_since_last_review = GREATEST(0,
@@ -480,6 +494,34 @@ export async function applyImplicitRepetition(userId: string, atomId: string) {
           - GREATEST(1, sessions_since_last_review / 2))
       WHERE user_id = ${userId}
         AND atom_id = ${hop2Id} AND is_mastered = true
+    `);
+  }
+
+  // 3-hop: collect prereqs of hop-2 atoms (excluding visited)
+  if (hop2Ids.length === 0) return;
+  const hop2Atoms = await db
+    .select({ prerequisiteIds: atoms.prerequisiteIds })
+    .from(atoms)
+    .where(inArray(atoms.id, hop2Ids));
+  const hop3Ids: string[] = [];
+  for (const a of hop2Atoms) {
+    for (const id of (a.prerequisiteIds ?? []).filter(Boolean)) {
+      if (!visited.has(id)) {
+        hop3Ids.push(id);
+        visited.add(id);
+      }
+    }
+  }
+
+  // 3-hop: quarter credit — reduce by 25%
+  for (const hop3Id of hop3Ids) {
+    await db.execute(sql`
+      UPDATE atom_mastery
+      SET sessions_since_last_review = GREATEST(0,
+        sessions_since_last_review
+          - GREATEST(1, sessions_since_last_review / 4))
+      WHERE user_id = ${userId}
+        AND atom_id = ${hop3Id} AND is_mastered = true
     `);
   }
 }

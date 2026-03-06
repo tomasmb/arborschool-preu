@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { atomMastery, users } from "@/db/schema";
+import { atomMastery, atomStudySessions, users } from "@/db/schema";
 import {
   analyzeLearningPotential,
   type StudentLearningAnalysis,
@@ -63,6 +63,8 @@ export type StudentNextActionData = {
   competitiveRoutes?: CompetitiveRoute[];
   reviewDueCount: number;
   reviewItems: ReviewItemPreview[];
+  /** True when the SR balance rule suggests a review block before new atoms */
+  reviewSuggested: boolean;
   emptyState: NextActionEmptyState;
 };
 
@@ -231,6 +233,44 @@ async function getMasteryRows(userId: string): Promise<MasteryRow[]> {
     .where(eq(atomMastery.userId, userId));
 }
 
+/** Suggest review block after this many new masteries (spec 7.10). */
+const SR_BALANCE_THRESHOLD = 3;
+
+/**
+ * Counts mastery sessions completed since the user's last review session.
+ * Used by the balance rule to interleave reviews after 2-3 new masteries.
+ */
+async function getMasteriesSinceLastReview(userId: string): Promise<number> {
+  const [lastReview] = await db
+    .select({ completedAt: atomStudySessions.completedAt })
+    .from(atomStudySessions)
+    .where(
+      and(
+        eq(atomStudySessions.userId, userId),
+        eq(atomStudySessions.sessionType, "review"),
+        sql`${atomStudySessions.completedAt} IS NOT NULL`
+      )
+    )
+    .orderBy(desc(atomStudySessions.completedAt))
+    .limit(1);
+
+  const since = lastReview?.completedAt ?? new Date(0);
+
+  const [row] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(atomStudySessions)
+    .where(
+      and(
+        eq(atomStudySessions.userId, userId),
+        eq(atomStudySessions.sessionType, "mastery"),
+        eq(atomStudySessions.status, "mastered"),
+        sql`${atomStudySessions.completedAt} > ${since}`
+      )
+    );
+
+  return Number(row?.count ?? 0);
+}
+
 export async function getStudentNextAction(
   userId: string
 ): Promise<StudentNextActionData> {
@@ -250,6 +290,7 @@ export async function getStudentNextAction(
       queuePreview: [],
       reviewDueCount: 0,
       reviewItems: [],
+      reviewSuggested: false,
       emptyState: buildEmptyState("missing_diagnostic"),
     };
   }
@@ -261,13 +302,14 @@ export async function getStudentNextAction(
       queuePreview: [],
       reviewDueCount: 0,
       reviewItems: [],
+      reviewSuggested: false,
       emptyState: buildEmptyState("missing_mastery"),
     };
   }
 
   const currentScore = Math.round((minScore + maxScore) / 2);
 
-  const [analysis, reviewDueItems] = await Promise.all([
+  const [analysis, reviewDueItems, masteriesSinceReview] = await Promise.all([
     analyzeLearningPotential(
       masteryRows.map((row) => ({
         atomId: row.atomId,
@@ -276,9 +318,14 @@ export async function getStudentNextAction(
       { currentPaesScore: currentScore }
     ),
     getReviewDueItems(userId),
+    getMasteriesSinceLastReview(userId),
   ]);
 
   const insights = buildNextActionInsights(analysis);
+
+  // Spec 7.10: suggest review block after N newly mastered atoms
+  const reviewSuggested =
+    reviewDueItems.length > 0 && masteriesSinceReview >= SR_BALANCE_THRESHOLD;
 
   return {
     status: "ready",
@@ -290,6 +337,7 @@ export async function getStudentNextAction(
       atomId: r.atomId,
       title: r.atomTitle,
     })),
+    reviewSuggested,
     emptyState: null,
   };
 }

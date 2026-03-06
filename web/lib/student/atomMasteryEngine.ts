@@ -38,6 +38,13 @@ import {
 } from "./spacedRepetition";
 import { startPrereqScan, checkCooldownExpiry } from "./prerequisiteScan";
 import type { ScanStartResult } from "./prerequisiteScan";
+import type { HabitGuardSignal } from "./habitGuard";
+import {
+  syncAtomMasteryOnMastered,
+  countNewlyUnlockedQuestions,
+  getNextStudyAtom,
+  evaluateHabitGuard,
+} from "./masteryLifecycle";
 
 export type {
   AnswerResultPayload,
@@ -57,6 +64,9 @@ export type AnswerResultWithLifecycle = AnswerResultPayload & {
     status: "in_progress" | "no_prereqs";
   };
   cooldownApplied?: boolean;
+  questionsUnlocked?: number;
+  nextAtom?: { id: string; title: string } | null;
+  habitGuard?: HabitGuardSignal;
 };
 function normalizeAnswer(v: string): string {
   return v.trim().toUpperCase();
@@ -119,32 +129,6 @@ async function findQuestions(
     .where(and(...conds))
     .orderBy(desc(generatedQuestions.createdAt))
     .limit(limit);
-}
-async function syncAtomMasteryOnMastered(userId: string, atomId: string) {
-  const now = new Date();
-  const common = {
-    status: "mastered" as const,
-    isMastered: true,
-    masterySource: "study" as const,
-  };
-  await db
-    .insert(atomMastery)
-    .values({
-      userId,
-      atomId,
-      ...common,
-      firstMasteredAt: now,
-      lastDemonstratedAt: now,
-    })
-    .onConflictDoUpdate({
-      target: [atomMastery.userId, atomMastery.atomId],
-      set: {
-        ...common,
-        firstMasteredAt: sql`COALESCE(${atomMastery.firstMasteredAt}, NOW())`,
-        lastDemonstratedAt: now,
-        updatedAt: now,
-      },
-    });
 }
 /** Creates (or resumes) a mastery session for the given user + atom. */
 export async function createAtomSession(
@@ -442,6 +426,8 @@ export async function submitAnswer(params: {
 
   let scanResult: ScanStartResult | undefined;
   let cooldownApplied = false;
+  let questionsUnlocked: number | undefined;
+  let nextAtom: { id: string; title: string } | null | undefined;
 
   if (updated.status === "mastered") {
     await syncAtomMasteryOnMastered(params.userId, session.atomId);
@@ -455,6 +441,11 @@ export async function submitAnswer(params: {
     await applyImplicitRepetition(params.userId, session.atomId);
     await checkCooldownExpiry(params.userId, session.atomId);
     await incrementSessionCounters(params.userId);
+
+    [questionsUnlocked, nextAtom] = await Promise.all([
+      countNewlyUnlockedQuestions(params.userId, session.atomId),
+      getNextStudyAtom(params.userId, session.atomId),
+    ]);
   }
 
   if (updated.status === "failed") {
@@ -462,6 +453,10 @@ export async function submitAnswer(params: {
     cooldownApplied = scanResult.status === "no_prereqs";
     await incrementSessionCounters(params.userId);
   }
+
+  const habitGuard = isTerminal
+    ? undefined
+    : await evaluateHabitGuard(params.userId, updated.consecutiveIncorrect);
 
   const feedback = extractFeedbackFromQti(question.qtiXml);
   const selectedCf = feedback.choiceFeedbacks.find(
@@ -492,6 +487,9 @@ export async function submitAnswer(params: {
         }
       : undefined,
     cooldownApplied,
+    questionsUnlocked,
+    nextAtom,
+    habitGuard,
   };
 }
 

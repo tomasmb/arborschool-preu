@@ -11,14 +11,12 @@ import {
 } from "./components";
 import { formatMinutes, formatScore } from "./formatters";
 import { useAnimatedMount, useCountUp } from "./hooks";
-import type { DashboardPayload, RetestStatusPayload } from "./types";
+import type { DashboardPayload } from "./types";
 
 function DiagnosticSourceBanner({
   source,
-  retestStatus,
 }: {
   source: DashboardPayload["diagnosticSource"];
-  retestStatus: RetestStatusPayload | null;
 }) {
   if (source === "full_test") {
     return (
@@ -28,45 +26,14 @@ function DiagnosticSourceBanner({
     );
   }
 
-  const showRetestCta = retestStatus?.eligible || retestStatus?.recommended;
-
   return (
     <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2 space-y-1">
       <p className="text-xs text-amber-700">
-        Estimado desde diagnóstico corto (16 preguntas). Para una predicción más
-        precisa, realiza un test completo cronometrado.
+        Estimado desde diagnóstico corto (16 preguntas).
       </p>
-      {retestStatus?.recommended && (
-        <p className="text-xs font-semibold text-amber-800">
-          Has dominado {retestStatus.atomsMasteredSinceLastTest} conceptos
-          nuevos — te recomendamos hacer un test completo.
-        </p>
-      )}
-      {showRetestCta && (
-        <Link
-          href="/diagnostico?mode=full"
-          className="inline-flex items-center gap-1.5 text-xs font-medium
-            text-primary hover:text-primary/80 transition-colors"
-        >
-          Hacer test completo
-          <svg
-            className="w-3 h-3"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
-        </Link>
-      )}
-      {retestStatus && !retestStatus.eligible && retestStatus.blockedReason && (
-        <p className="text-xs text-gray-500">{retestStatus.blockedReason}</p>
-      )}
+      <p className="text-xs text-amber-600">
+        Pronto podrás tomar un test completo para mejorar tu estimación.
+      </p>
     </div>
   );
 }
@@ -175,10 +142,7 @@ export function DashboardHeroSection({ data }: HeroSectionProps) {
           </p>
         ) : null}
 
-        <DiagnosticSourceBanner
-          source={data.diagnosticSource}
-          retestStatus={data.retestStatus}
-        />
+        <DiagnosticSourceBanner source={data.diagnosticSource} />
       </div>
     </section>
   );

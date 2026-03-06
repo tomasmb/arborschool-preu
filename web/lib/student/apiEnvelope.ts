@@ -25,6 +25,8 @@ export type StudentApiErrorCode =
   | "REVIEW_SESSION_FAILED"
   | "REVIEW_ANSWER_FAILED"
   | "REVIEW_COMPLETE_FAILED"
+  | "SCAN_NEXT_FAILED"
+  | "SCAN_ANSWER_FAILED"
   | "UNKNOWN";
 
 type ErrorDetails = Record<string, unknown> | undefined;
