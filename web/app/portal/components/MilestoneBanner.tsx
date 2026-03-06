@@ -7,9 +7,10 @@ type MilestoneType =
   | "streak_3"
   | "streak_7"
   | "mission_complete"
-  | "mastery_10"
-  | "mastery_25"
-  | "mastery_50"
+  | "mastery_pct_25"
+  | "mastery_pct_50"
+  | "mastery_pct_75"
+  | "mastery_pct_90"
   | null;
 
 type MilestoneBannerProps = {
@@ -19,8 +20,42 @@ type MilestoneBannerProps = {
   totalAtoms: number;
 };
 
-const MILESTONE_MESSAGES: Record<
-  Exclude<MilestoneType, null>,
+function getMasteryMilestone(
+  masteredAtoms: number,
+  totalAtoms: number
+): { type: MilestoneType; title: string; subtitle: string } | null {
+  if (totalAtoms === 0) return null;
+  const pct = (masteredAtoms / totalAtoms) * 100;
+
+  if (pct >= 90)
+    return {
+      type: "mastery_pct_90",
+      title: `${masteredAtoms} conceptos dominados`,
+      subtitle: "Dominio casi completo. La PAES es tuya.",
+    };
+  if (pct >= 75)
+    return {
+      type: "mastery_pct_75",
+      title: `${masteredAtoms} conceptos dominados`,
+      subtitle: "Tres cuartos del camino recorrido. Vas con todo.",
+    };
+  if (pct >= 50)
+    return {
+      type: "mastery_pct_50",
+      title: `${masteredAtoms} conceptos dominados`,
+      subtitle: "Más de la mitad del contenido dominado. La PAES no te asusta.",
+    };
+  if (pct >= 25)
+    return {
+      type: "mastery_pct_25",
+      title: `${masteredAtoms} conceptos dominados`,
+      subtitle: "Tu base de conocimiento crece. Cada concepto suma.",
+    };
+  return null;
+}
+
+const STREAK_MESSAGES: Record<
+  "first_sprint" | "streak_3" | "streak_7" | "mission_complete",
   { emoji: string; title: string; subtitle: string }
 > = {
   first_sprint: {
@@ -44,58 +79,74 @@ const MILESTONE_MESSAGES: Record<
     title: "Misión semanal completada",
     subtitle: "Cumpliste tu objetivo semanal. Ahora puedes seguir o descansar.",
   },
-  mastery_10: {
-    emoji: "📚",
-    title: "10 conceptos dominados",
-    subtitle:
-      "Tu base de conocimiento crece. Cada concepto te acerca a tu meta.",
-  },
-  mastery_25: {
-    emoji: "🧠",
-    title: "25 conceptos dominados",
-    subtitle: "Un cuarto del camino recorrido. Vas con todo.",
-  },
-  mastery_50: {
-    emoji: "🏆",
-    title: "50 conceptos dominados",
-    subtitle: "Más de la mitad del contenido dominado. La PAES no te asusta.",
-  },
 };
 
-function detectMilestone({
-  completedSessions,
-  targetSessions,
-  masteredAtoms,
-}: MilestoneBannerProps): MilestoneType {
-  if (completedSessions >= targetSessions && targetSessions > 0)
-    return "mission_complete";
-  if (completedSessions >= 7) return "streak_7";
-  if (completedSessions >= 3) return "streak_3";
-  if (masteredAtoms >= 50) return "mastery_50";
-  if (masteredAtoms >= 25) return "mastery_25";
-  if (masteredAtoms >= 10) return "mastery_10";
-  if (completedSessions === 1) return "first_sprint";
+type ResolvedMilestone = {
+  type: Exclude<MilestoneType, null>;
+  emoji: string;
+  title: string;
+  subtitle: string;
+};
+
+function detectMilestone(
+  props: MilestoneBannerProps
+): ResolvedMilestone | null {
+  const { completedSessions, targetSessions, masteredAtoms, totalAtoms } =
+    props;
+
+  if (completedSessions >= targetSessions && targetSessions > 0) {
+    const m = STREAK_MESSAGES.mission_complete;
+    return { type: "mission_complete", ...m };
+  }
+  if (completedSessions >= 7) {
+    const m = STREAK_MESSAGES.streak_7;
+    return { type: "streak_7", ...m };
+  }
+  if (completedSessions >= 3) {
+    const m = STREAK_MESSAGES.streak_3;
+    return { type: "streak_3", ...m };
+  }
+
+  const mastery = getMasteryMilestone(masteredAtoms, totalAtoms);
+  if (mastery) {
+    const emojiMap: Record<string, string> = {
+      mastery_pct_25: "📚",
+      mastery_pct_50: "🏆",
+      mastery_pct_75: "🧠",
+      mastery_pct_90: "🌟",
+    };
+    return {
+      type: mastery.type!,
+      emoji: emojiMap[mastery.type!] ?? "📚",
+      title: mastery.title,
+      subtitle: mastery.subtitle,
+    };
+  }
+
+  if (completedSessions === 1) {
+    const m = STREAK_MESSAGES.first_sprint;
+    return { type: "first_sprint", ...m };
+  }
+
   return null;
 }
 
 const STORAGE_KEY = "arbor_dismissed_milestone";
 
 export function MilestoneBanner(props: MilestoneBannerProps) {
-  const milestone = detectMilestone(props);
+  const resolved = detectMilestone(props);
   const [dismissed, setDismissed] = useState(true);
 
   useEffect(() => {
-    if (!milestone) return;
+    if (!resolved) return;
     const stored = sessionStorage.getItem(STORAGE_KEY);
-    setDismissed(stored === milestone);
-  }, [milestone]);
+    setDismissed(stored === resolved.type);
+  }, [resolved]);
 
-  if (!milestone || dismissed) return null;
-
-  const msg = MILESTONE_MESSAGES[milestone];
+  if (!resolved || dismissed) return null;
 
   function handleDismiss() {
-    sessionStorage.setItem(STORAGE_KEY, milestone!);
+    sessionStorage.setItem(STORAGE_KEY, resolved!.type);
     setDismissed(true);
   }
 
@@ -105,10 +156,10 @@ export function MilestoneBanner(props: MilestoneBannerProps) {
         from-amber-50 to-orange-50 p-4 sm:p-5
         flex items-center gap-4 animate-fade-in-up"
     >
-      <span className="text-3xl">{msg.emoji}</span>
+      <span className="text-3xl">{resolved.emoji}</span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-amber-900">{msg.title}</p>
-        <p className="text-xs text-amber-700 mt-0.5">{msg.subtitle}</p>
+        <p className="text-sm font-semibold text-amber-900">{resolved.title}</p>
+        <p className="text-xs text-amber-700 mt-0.5">{resolved.subtitle}</p>
       </div>
       <button
         type="button"

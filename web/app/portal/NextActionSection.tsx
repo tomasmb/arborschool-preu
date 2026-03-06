@@ -95,7 +95,8 @@ function NextActionErrorState({ message }: { message: string }) {
 function PrimaryCTA({ data }: { data: NextActionPayload }) {
   const action = data.nextAction;
   const href = data.sprintHint.ctaHref || "/portal/study";
-  const minutes = action?.studyMinutes ?? data.sprintHint.estimatedMinutes;
+  const SESSION_MINUTES = 25;
+  const minutes = SESSION_MINUTES;
   const topic = action?.firstAtom?.title ?? action?.axis;
 
   return (

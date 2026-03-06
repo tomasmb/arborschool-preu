@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { trackStudentNextActionClicked } from "@/lib/analytics";
 import { InlineRecoveryPanel } from "./components";
 import type {
@@ -9,10 +10,6 @@ import type {
   ReviewItemPayload,
 } from "./NextActionSection";
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 type LearningPathSectionProps = {
   loading: boolean;
   error: string | null;
@@ -20,10 +17,6 @@ type LearningPathSectionProps = {
 };
 
 type PathAtom = { atomId: string; title: string };
-
-// ---------------------------------------------------------------------------
-// Axis colour mapping
-// ---------------------------------------------------------------------------
 
 type AxisStyle = { bg: string; text: string; dot: string; ring: string };
 
@@ -65,10 +58,6 @@ function axisStyle(code: string): AxisStyle {
   return AXIS_STYLES[code] ?? DEFAULT_STYLE;
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 function formatMinutes(value: number | null): string {
   if (value === null) return "-";
   if (value === 0) return "0 min";
@@ -81,10 +70,6 @@ function formatMinutes(value: number | null): string {
 function studyHref(atomId: string): string {
   return `/portal/study?atom=${encodeURIComponent(atomId)}`;
 }
-
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
 
 function LoadingSkeleton() {
   return (
@@ -153,10 +138,6 @@ function ReviewBadge({ count }: { count: number }) {
     </Link>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Timeline nodes
-// ---------------------------------------------------------------------------
 
 function CurrentNode({
   atom,
@@ -286,39 +267,58 @@ function ReviewNode({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Route fork
-// ---------------------------------------------------------------------------
-
-function RouteFork({ routes }: { routes: CompetitiveRoutePayload[] }) {
+function RouteFork({
+  routes,
+  selectedAxis,
+  onSelect,
+}: {
+  routes: CompetitiveRoutePayload[];
+  selectedAxis: string;
+  onSelect: (axis: string) => void;
+}) {
   if (routes.length < 2) return null;
 
   return (
     <div
-      className="mt-4 pt-4 border-t border-gray-100
-        animate-fade-in-up"
+      className="mt-4 pt-4 border-t border-gray-100 animate-fade-in-up"
       style={{ animationDelay: "300ms" }}
     >
       <p className="text-sm font-medium text-gray-700 mb-3">Elige tu camino</p>
       <div className="grid grid-cols-2 gap-3">
         {routes.map((route) => (
-          <RouteCard key={route.axis} route={route} />
+          <RouteToggle
+            key={route.axis}
+            route={route}
+            isSelected={route.axis === selectedAxis}
+            onSelect={() => onSelect(route.axis)}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-function RouteCard({ route }: { route: CompetitiveRoutePayload }) {
+function RouteToggle({
+  route,
+  isSelected,
+  onSelect,
+}: {
+  route: CompetitiveRoutePayload;
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
   const s = axisStyle(route.axis);
-  const firstAtom = route.atoms[0];
-  if (!firstAtom) return null;
 
   return (
-    <Link
-      href={studyHref(firstAtom.atomId)}
-      className="group rounded-xl border border-gray-200 p-3
-        hover:border-gray-400 hover:shadow-sm transition-all"
+    <button
+      type="button"
+      onClick={onSelect}
+      className={[
+        "rounded-xl border p-3 text-left transition-all w-full",
+        isSelected
+          ? `border-2 ${s.bg} shadow-sm`
+          : "border-gray-200 hover:border-gray-400 hover:shadow-sm",
+      ].join(" ")}
     >
       <span
         className={`inline-block text-[11px] font-semibold uppercase
@@ -327,20 +327,16 @@ function RouteCard({ route }: { route: CompetitiveRoutePayload }) {
         {route.axisDisplayName}
       </span>
       <p className="text-sm font-medium text-gray-900 leading-snug">
-        {firstAtom.title}
+        {route.atoms[0]?.title ?? route.axisDisplayName}
       </p>
       {route.estimatedPointsGain > 0 ? (
         <span className="mt-1.5 inline-block text-xs text-emerald-600">
           +{route.estimatedPointsGain} pts estimados
         </span>
       ) : null}
-    </Link>
+    </button>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Icons
-// ---------------------------------------------------------------------------
 
 function ArrowIcon() {
   return (
@@ -360,33 +356,35 @@ function ArrowIcon() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Main learning path content
-// ---------------------------------------------------------------------------
-
 function LearningPathContent({ data }: { data: NextActionPayload }) {
   const routes = data.competitiveRoutes ?? [];
-  const topRoute = routes[0] ?? null;
   const action = data.nextAction;
   const reviewItems = data.reviewItems ?? [];
   const hasReviews = reviewItems.length > 0;
+  const hasRouteFork = routes.length >= 2;
 
-  const pathAtoms: PathAtom[] = topRoute
-    ? topRoute.atoms
+  const [selectedAxis, setSelectedAxis] = useState(
+    routes[0]?.axis ?? action?.axis ?? ""
+  );
+
+  const activeRoute =
+    routes.find((r) => r.axis === selectedAxis) ?? routes[0] ?? null;
+
+  const pathAtoms: PathAtom[] = activeRoute
+    ? activeRoute.atoms
     : action?.firstAtom
       ? [action.firstAtom]
       : [];
 
   if (pathAtoms.length === 0 && !hasReviews) return null;
 
-  const axisLabel = topRoute?.axisDisplayName ?? action?.axis ?? "";
-  const axisCode = topRoute?.axis;
-  const studyMinutes = action?.studyMinutes ?? null;
-  const pointsGain = action?.pointsGain ?? null;
+  const axisLabel = activeRoute?.axisDisplayName ?? action?.axis ?? "";
+  const axisCode = activeRoute?.axis;
+  const pointsGain =
+    activeRoute?.estimatedPointsGain ?? action?.pointsGain ?? null;
 
   const currentAtom = pathAtoms[0] ?? null;
   const upcomingAtoms = pathAtoms.slice(1);
-  const hasRouteFork = routes.length >= 2;
   const hasUpcoming = upcomingAtoms.length > 0 || currentAtom !== null;
 
   return (
@@ -398,8 +396,15 @@ function LearningPathContent({ data }: { data: NextActionPayload }) {
         <ReviewBadge count={data.reviewDueCount ?? 0} />
       </div>
 
-      <div>
-        {/* Review nodes appear before the main study path */}
+      {hasRouteFork ? (
+        <RouteFork
+          routes={routes}
+          selectedAxis={selectedAxis}
+          onSelect={setSelectedAxis}
+        />
+      ) : null}
+
+      <div className={hasRouteFork ? "mt-5" : ""}>
         {reviewItems.map((item, i) => (
           <ReviewNode
             key={item.atomId}
@@ -409,13 +414,13 @@ function LearningPathContent({ data }: { data: NextActionPayload }) {
           />
         ))}
 
-        {/* Main study path */}
         {currentAtom ? (
           <CurrentNode
+            key={`${axisCode}-${currentAtom.atomId}`}
             atom={currentAtom}
             axisLabel={axisLabel}
             axisCode={axisCode}
-            studyMinutes={studyMinutes}
+            studyMinutes={25}
             pointsGain={pointsGain}
           />
         ) : null}
@@ -431,15 +436,9 @@ function LearningPathContent({ data }: { data: NextActionPayload }) {
           />
         ))}
       </div>
-
-      {hasRouteFork ? <RouteFork routes={routes} /> : null}
     </section>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Exported section (mirrors NextActionSection API)
-// ---------------------------------------------------------------------------
 
 export function LearningPathSection({
   loading,

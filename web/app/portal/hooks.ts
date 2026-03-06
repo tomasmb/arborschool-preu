@@ -3,15 +3,23 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
- * Animates a number from 0 to `target` over `duration` ms using rAF.
- * Returns the current display value (rounded integer).
+ * Animates a number to `target` over `duration` ms using rAF.
+ * On first mount, displays the target instantly (no 0-flash).
+ * Subsequent target changes animate from old value to new.
  */
 export function useCountUp(target: number | null, duration = 900): number {
-  const [value, setValue] = useState(0);
-  const prevTarget = useRef<number | null>(null);
+  const [value, setValue] = useState(target ?? 0);
+  const prevTarget = useRef<number | null>(target);
+  const isFirstRender = useRef(true);
 
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      if (target !== null) setValue(target);
+      return;
+    }
     if (target === null || target === prevTarget.current) return;
+    const from = prevTarget.current ?? 0;
     prevTarget.current = target;
 
     const start = performance.now();
@@ -21,7 +29,7 @@ export function useCountUp(target: number | null, duration = 900): number {
       const elapsed = now - start;
       const progress = Math.min(elapsed / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
-      setValue(Math.round(eased * target));
+      setValue(Math.round(from + eased * (target - from)));
       if (progress < 1) raf = requestAnimationFrame(tick);
     };
 

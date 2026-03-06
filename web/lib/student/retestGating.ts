@@ -27,7 +27,8 @@ export type RetestStatus = {
 
 /**
  * Returns the timestamp of the student's last completed full test.
- * Only considers test attempts that are completed (not abandoned).
+ * Excludes short diagnostics (identified by test_id IS NULL, i.e. no
+ * reference to an actual test entity). Only real full-length tests count.
  */
 async function getLastFullTestDate(userId: string): Promise<Date | null> {
   const [row] = await db
@@ -36,7 +37,8 @@ async function getLastFullTestDate(userId: string): Promise<Date | null> {
     .where(
       and(
         eq(testAttempts.userId, userId),
-        sql`${testAttempts.completedAt} IS NOT NULL`
+        sql`${testAttempts.completedAt} IS NOT NULL`,
+        sql`${testAttempts.testId} IS NOT NULL`
       )
     )
     .orderBy(desc(testAttempts.completedAt))
@@ -45,16 +47,27 @@ async function getLastFullTestDate(userId: string): Promise<Date | null> {
 }
 
 /**
- * Counts atoms mastered since the given date (or all time if null).
- * Includes atoms mastered via study sessions (mastery_source = 'study').
+ * Whether the student has ever completed a full timed test (not just a
+ * short diagnostic). Used to determine the diagnostic source label.
  */
-async function countAtomsMasteredSince(
+export async function hasCompletedFullTest(userId: string): Promise<boolean> {
+  const date = await getLastFullTestDate(userId);
+  return date !== null;
+}
+
+/**
+ * Counts atoms mastered via study since the given date.
+ * Only study-mastered atoms count toward retest thresholds (diagnostic
+ * mastery is the baseline, not progress).
+ */
+async function countAtomsMasteredSinceViaStudy(
   userId: string,
   since: Date | null
 ): Promise<number> {
   const conds = [
     eq(atomMastery.userId, userId),
     eq(atomMastery.isMastered, true),
+    eq(atomMastery.masterySource, "study"),
   ];
   if (since) {
     conds.push(gte(atomMastery.updatedAt, since));
@@ -67,9 +80,9 @@ async function countAtomsMasteredSince(
 }
 
 /**
- * Counts full tests completed in the last 30 days.
+ * Counts full tests (not diagnostics) completed in the last 30 days.
  */
-async function countTestsInLastMonth(userId: string): Promise<number> {
+async function countFullTestsInLastMonth(userId: string): Promise<number> {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const [row] = await db
     .select({ count: sql<number>`count(*)` })
@@ -77,7 +90,8 @@ async function countTestsInLastMonth(userId: string): Promise<number> {
     .where(
       and(
         eq(testAttempts.userId, userId),
-        gte(testAttempts.completedAt, thirtyDaysAgo)
+        gte(testAttempts.completedAt, thirtyDaysAgo),
+        sql`${testAttempts.testId} IS NOT NULL`
       )
     );
   return Number(row?.count ?? 0);
@@ -89,7 +103,10 @@ async function countTestsInLastMonth(userId: string): Promise<number> {
  */
 export async function getRetestStatus(userId: string): Promise<RetestStatus> {
   const lastTestDate = await getLastFullTestDate(userId);
-  const atomsMastered = await countAtomsMasteredSince(userId, lastTestDate);
+  const atomsMastered = await countAtomsMasteredSinceViaStudy(
+    userId,
+    lastTestDate
+  );
 
   let daysSinceLastTest: number | null = null;
   if (lastTestDate) {
@@ -118,7 +135,7 @@ export async function getRetestStatus(userId: string): Promise<RetestStatus> {
     };
   }
 
-  const testsThisMonth = await countTestsInLastMonth(userId);
+  const testsThisMonth = await countFullTestsInLastMonth(userId);
   if (testsThisMonth >= MAX_TESTS_PER_MONTH) {
     return {
       atomsMasteredSinceLastTest: atomsMastered,

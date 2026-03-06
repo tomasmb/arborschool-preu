@@ -9,7 +9,7 @@
 
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { atomMastery, questionAtoms, questions, atoms } from "@/db/schema";
+import { atomMastery, questions } from "@/db/schema";
 
 export type StudentMetrics = {
   masteredAtoms: number;
@@ -20,12 +20,39 @@ export type StudentMetrics = {
 };
 
 /**
+ * Counts atoms relevant to official PAES questions.
+ * An atom is relevant if it is directly linked to an official question
+ * OR is a direct prerequisite of such an atom (~205 atoms).
+ */
+const RELEVANT_ATOMS_SQL = sql`
+  WITH directly_linked AS (
+    SELECT DISTINCT qa.atom_id AS id
+    FROM question_atoms qa
+    JOIN questions q ON q.id = qa.question_id
+    WHERE q.source = 'official'
+  ),
+  prereqs AS (
+    SELECT DISTINCT unnest(a.prerequisite_ids) AS id
+    FROM atoms a
+    WHERE a.id IN (SELECT id FROM directly_linked)
+      AND a.prerequisite_ids IS NOT NULL
+  ),
+  combined AS (
+    SELECT id FROM directly_linked
+    UNION
+    SELECT id FROM prereqs
+  )
+  SELECT count(*) AS count
+  FROM combined c
+  JOIN atoms a ON a.id = c.id
+`;
+
+/**
  * Computes core student metrics scoped to goal-relevant atoms.
  *
- * "Relevant atoms" = atoms that are directly or transitively linked to
- * official PAES questions. This avoids showing artificially low percentages
- * by counting all 229 atoms when many are not relevant to the student's
- * current goals.
+ * "Relevant atoms" = atoms directly linked to official PAES questions
+ * PLUS their direct prerequisites (~205). This matches the canonical
+ * set of M1 concepts a student may need to master.
  */
 export async function getStudentMetrics(
   userId: string
@@ -38,12 +65,7 @@ export async function getStudentMetrics(
         .where(
           and(eq(atomMastery.userId, userId), eq(atomMastery.isMastered, true))
         ),
-      db
-        .select({ count: sql<number>`count(DISTINCT ${questionAtoms.atomId})` })
-        .from(questionAtoms)
-        .innerJoin(questions, eq(questions.id, questionAtoms.questionId))
-        .innerJoin(atoms, eq(atoms.id, questionAtoms.atomId))
-        .where(eq(questions.source, "official")),
+      db.execute(RELEVANT_ATOMS_SQL),
       db.execute(sql`
         SELECT count(DISTINCT q.id) as count
         FROM questions q
@@ -69,7 +91,9 @@ export async function getStudentMetrics(
     ]);
 
   const masteredAtoms = Number(masteredRows[0]?.count ?? 0);
-  const totalRelevantAtoms = Number(relevantAtomRows[0]?.count ?? 0);
+  const totalRelevantAtoms = Number(
+    (relevantAtomRows as unknown as Array<{ count: number }>)[0]?.count ?? 0
+  );
   const questionsUnlocked = Number(
     (unlockedRows as unknown as Array<{ count: number }>)[0]?.count ?? 0
   );

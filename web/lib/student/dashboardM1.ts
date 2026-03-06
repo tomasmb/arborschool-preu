@@ -15,7 +15,12 @@ import {
   type StudentLearningAnalysis,
 } from "@/lib/diagnostic/questionUnlock";
 import { buildNextActionInsights } from "@/lib/student/nextAction";
-import { getRetestStatus, type RetestStatus } from "@/lib/student/retestGating";
+import {
+  getRetestStatus,
+  hasCompletedFullTest,
+  type RetestStatus,
+} from "@/lib/student/retestGating";
+import { getStudentMetrics } from "@/lib/student/metricsService";
 
 const DEFAULT_FORECAST_WEEKS = 8;
 const DEFAULT_WEEKLY_MINUTES = 360;
@@ -323,6 +328,11 @@ function buildReadyDashboard(params: {
   maxScore: number;
   target: StudentM1Target;
   analysis: StudentLearningAnalysis;
+  metrics: {
+    masteredAtoms: number;
+    totalRelevantAtoms: number;
+    masteryPercentage: number;
+  };
   diagnosticSource: DiagnosticSource;
   retestStatus: RetestStatus | null;
 }): M1DashboardData {
@@ -333,9 +343,8 @@ function buildReadyDashboard(params: {
   });
 
   const masteryRatio =
-    params.analysis.summary.totalAtoms > 0
-      ? params.analysis.summary.masteredAtoms /
-        params.analysis.summary.totalAtoms
+    params.metrics.totalRelevantAtoms > 0
+      ? params.metrics.masteredAtoms / params.metrics.totalRelevantAtoms
       : 0;
 
   const confidence = computeConfidence({
@@ -360,9 +369,9 @@ function buildReadyDashboard(params: {
       level: confidence.level,
       score: confidence.score,
       bandWidth: params.maxScore - params.minScore,
-      masteredAtoms: params.analysis.summary.masteredAtoms,
-      totalAtoms: params.analysis.summary.totalAtoms,
-      masteryPercentage: Math.round(masteryRatio * 100),
+      masteredAtoms: params.metrics.masteredAtoms,
+      totalAtoms: params.metrics.totalRelevantAtoms,
+      masteryPercentage: params.metrics.masteryPercentage,
     },
     effort: {
       estimatedMinutesToTarget: effortMetrics.estimatedMinutesToTarget,
@@ -426,7 +435,7 @@ export async function getM1Dashboard(userId: string): Promise<M1DashboardData> {
     });
   }
 
-  const [analysis, retestStatus] = await Promise.all([
+  const [analysis, retestStatus, metrics, hasFullTest] = await Promise.all([
     analyzeLearningPotential(
       masteryRows.map((row) => ({
         atomId: row.atomId,
@@ -435,10 +444,13 @@ export async function getM1Dashboard(userId: string): Promise<M1DashboardData> {
       { currentPaesScore: currentScore }
     ),
     getRetestStatus(userId),
+    getStudentMetrics(userId),
+    hasCompletedFullTest(userId),
   ]);
 
-  const diagnosticSource: DiagnosticSource =
-    retestStatus.daysSinceLastTest !== null ? "full_test" : "short_diagnostic";
+  const diagnosticSource: DiagnosticSource = hasFullTest
+    ? "full_test"
+    : "short_diagnostic";
 
   return buildReadyDashboard({
     currentScore,
@@ -446,6 +458,7 @@ export async function getM1Dashboard(userId: string): Promise<M1DashboardData> {
     maxScore,
     target,
     analysis,
+    metrics,
     diagnosticSource,
     retestStatus,
   });
