@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, gt, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { atomMastery, atomStudySessions, users } from "@/db/schema";
 import {
@@ -264,7 +264,7 @@ async function getMasteriesSinceLastReview(userId: string): Promise<number> {
         eq(atomStudySessions.userId, userId),
         eq(atomStudySessions.sessionType, "mastery"),
         eq(atomStudySessions.status, "mastered"),
-        sql`${atomStudySessions.completedAt} > ${since}`
+        gt(atomStudySessions.completedAt, since)
       )
     );
 
