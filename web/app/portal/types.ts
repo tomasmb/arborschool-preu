@@ -90,9 +90,6 @@ export type DashboardViewModel = {
   loading: boolean;
   error: string | null;
   data: DashboardPayload | null;
-  weeklyMinutes: number;
-  setWeeklyMinutes: (value: number) => void;
-  projectedScore: number | null;
   nextActionLoading: boolean;
   nextActionError: string | null;
   nextActionData: NextActionPayload | null;

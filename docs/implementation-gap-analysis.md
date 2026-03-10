@@ -32,7 +32,7 @@
 | SR review flow (`?mode=review`) | Done | Done | Done | **Working** |
 | Prereq scan flow (`?scan=`) | Done | Done | Done | **Working** |
 | Cooldown after failure | Done | Done | Done | **Working** |
-| Full timed test / retest | **Missing** | **Missing** | **Missing** | **Not built** |
+| Full timed test / retest | Done | Done | Done | **Working** |
 | Real daily streak tracking | Done | Done | Done | **Working** |
 | Error handling on 3 API routes | — | Done | — | **Working** |
 | Scoped mastery metrics (spec 10.3) | Done | Done | Done | **Working** |
@@ -63,38 +63,35 @@ filtering, next-study-atom filtering, dynamic UI count. Files:
 
 ---
 
-## Priority 3 — Missing Features (3B resolved, 3A remaining)
+## ~~Priority 3 — Missing Features~~ RESOLVED
 
-### 3A. Full Timed Test (Retest)
+### 3A. Full Timed Test (Retest) — FIXED (March 10, 2026)
 
 **Spec ref:** Section 8 — Retest Gating
 
-**What's built:**
-- `retestGating.ts` — complete gating logic: eligibility (18 atoms
-  mastered), recommendation (30 atoms), 7-day spacing, 3 tests/month cap
-- `retestStatus` payload computed in `dashboardM1.ts`
-- `DiagnosticSourceBanner` shows "Pronto podrás tomar un test completo"
+Full implementation across three passes:
 
-**What's missing:**
-- No full test page or route (`/diagnostico?mode=full` does nothing)
-- No test creation flow — `POST /api/diagnostic/start` never sets
-  `testId`; all attempts have `test_id IS NULL`
-- No `tests` table row for a full PAES mock test (50+ questions, 2h 30m)
-- No score recalibration flow after a full test (updating
-  `paesScoreMin`/`paesScoreMax` with higher confidence)
-- `retestStatus` is never surfaced as an actionable CTA in the UI
+**Pass 1 (Backend):** Schema change (`paesScoreMin`/`paesScoreMax` on
+`testAttempts`), `fullTest.ts` (test selection, question resolution with
+alternate-first logic, score recalibration + atom mastery upsert),
+`scoreHistory.ts` (score history query, projection curve with governance
+cap). Four API routes: `POST /api/student/full-test/start`,
+`POST /api/student/full-test/answer`, `POST /api/student/full-test/complete`,
+`GET /api/student/progress`.
 
-**This is a large feature.** The short diagnostic (16 questions) works and
-honestly labels itself. The banner copy says "Pronto podrás..." which is
-fine for launch. Build the full test as a follow-up project.
+**Pass 2 (Test UI):** `/portal/test` page with `FullTestClient` state
+machine (pre-test → in-progress → submitting → time-up → results),
+`useFullTestFlow` hook with localStorage crash recovery and batch answer
+saving, `useFullTestTimer` hook with urgency levels. Question navigator,
+QTI rendering with MathJax, confirm dialog, time-up modal, and results
+screen with per-axis breakdown.
 
-**Work needed (when ready):**
-1. Design the full test question set (50+ questions across all axes)
-2. Build a timed test UI with progress tracking and auto-submit
-3. Add `?mode=full` handling in the diagnostic page
-4. Create test sessions with `testId` set for proper gating
-5. Score recalibration on completion (higher confidence bounds)
-6. Surface `retestStatus` CTA in the dashboard when eligible
+**Pass 3 (Progress + Dashboard):** `/portal/progress` page with score
+history SVG chart, projection curve with atoms-per-week selector,
+retest CTA section, and test history table. Dashboard updated: removed
+effort slider and details section, added progress link card. Updated
+`DiagnosticSourceBanner` to show actionable retest CTAs based on
+`retestStatus`. Added "Progreso" to portal navigation.
 
 ---
 
@@ -356,6 +353,12 @@ immediately assigned it to `minutes`, adding indirection with no value.
 
 ## Previously Completed
 
+### Sprint 8 — March 10, 2026
+
+- Full timed test implementation (3A) — backend, test UI, progress
+  page, dashboard updates, navigation. Three passes: schema + APIs,
+  timed test UI with state machine, progress page + dashboard cleanup.
+
 ### Sprint 7 — March 10, 2026
 
 - ✅ **Data coverage verification** (5A–5D) — all 205 relevant atoms
@@ -404,6 +407,4 @@ immediately assigned it to `minutes`, adding indirection with no value.
 
 ## Remaining Work
 
-1. **Full timed test** (3A) — large feature: test data, creation API,
-   timed UI, score recalibration, retest CTA. Banner copy is honest;
-   ship without it.
+No remaining implementation gaps. All features from the spec are built.

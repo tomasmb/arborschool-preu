@@ -1,28 +1,72 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import {
-  ConfidenceBadge,
-  HeroMetricCard,
-  MissionCard,
-  ProgressRail,
-  StreakBadge,
-} from "./components";
-import { formatMinutes, formatScore } from "./formatters";
+import { ConfidenceBadge, StreakBadge } from "./components";
+import { formatScore } from "./formatters";
 import { useAnimatedMount, useCountUp } from "./hooks";
 import type { DashboardPayload } from "./types";
 
 function DiagnosticSourceBanner({
   source,
+  retestStatus,
 }: {
   source: DashboardPayload["diagnosticSource"];
+  retestStatus: DashboardPayload["retestStatus"];
 }) {
   if (source === "full_test") {
     return (
       <p className="text-xs text-emerald-600 font-medium">
         Basado en test completo
       </p>
+    );
+  }
+
+  if (retestStatus?.eligible && retestStatus.recommended) {
+    return (
+      <Link
+        href="/portal/test"
+        className="block rounded-lg border border-emerald-200 bg-emerald-50/60 px-3 py-2
+          hover:bg-emerald-50 transition space-y-1"
+      >
+        <p className="text-xs font-medium text-emerald-700">
+          Te recomendamos un test completo
+        </p>
+        <p className="text-xs text-emerald-600">
+          Has dominado {retestStatus.atomsMasteredSinceLastTest} conceptos
+          nuevos desde tu último diagnóstico.
+        </p>
+      </Link>
+    );
+  }
+
+  if (retestStatus?.eligible) {
+    return (
+      <Link
+        href="/portal/test"
+        className="block rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2
+          hover:bg-amber-50 transition space-y-1"
+      >
+        <p className="text-xs font-medium text-amber-700">
+          Ya puedes tomar un test completo
+        </p>
+        <p className="text-xs text-amber-600">
+          Mejora tu estimación con un test de 60 preguntas.
+        </p>
+      </Link>
+    );
+  }
+
+  if (retestStatus && !retestStatus.eligible) {
+    return (
+      <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2 space-y-1">
+        <p className="text-xs text-amber-700">
+          Estimado desde diagnóstico corto (16 preguntas).
+        </p>
+        <p className="text-xs text-amber-600">
+          {retestStatus.atomsMasteredSinceLastTest}/18 conceptos para
+          desbloquear test completo.
+        </p>
+      </div>
     );
   }
 
@@ -143,7 +187,10 @@ export function DashboardHeroSection({ data }: HeroSectionProps) {
           </p>
         ) : null}
 
-        <DiagnosticSourceBanner source={data.diagnosticSource} />
+        <DiagnosticSourceBanner
+          source={data.diagnosticSource}
+          retestStatus={data.retestStatus}
+        />
       </div>
     </section>
   );
@@ -224,58 +271,6 @@ export function DashboardMissionSection({ data }: MissionRingSectionProps) {
   );
 }
 
-type EffortSectionProps = {
-  data: DashboardPayload;
-  weeklyMinutes: number;
-  projectedScore: number | null;
-  onChangeWeeklyMinutes: (value: number) => void;
-};
-
-export function DashboardEffortSection({
-  data,
-  weeklyMinutes,
-  projectedScore,
-  onChangeWeeklyMinutes,
-}: EffortSectionProps) {
-  return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 space-y-4">
-      <h2 className="text-lg font-serif font-semibold text-primary">
-        Escenario de esfuerzo
-      </h2>
-
-      <div className="space-y-3">
-        <label className="block text-sm text-gray-700">
-          Minutos por semana:{" "}
-          <span className="font-semibold">{weeklyMinutes} min</span>
-        </label>
-        <input
-          type="range"
-          min={120}
-          max={1200}
-          step={30}
-          value={weeklyMinutes}
-          onChange={(e) => onChangeWeeklyMinutes(Number(e.target.value))}
-          className="w-full accent-primary"
-        />
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        <HeroMetricCard
-          label="Proyección M1"
-          value={formatScore(projectedScore)}
-          hint={`Proyectado a ${data.effort.model.forecastWeeks} semanas`}
-        />
-        <HeroMetricCard
-          label="Tiempo estimado a meta"
-          value={formatMinutes(data.effort.estimatedMinutesToTarget)}
-          hint="Para cerrar la distancia a tu meta"
-          accent="success"
-        />
-      </div>
-    </section>
-  );
-}
-
 type ProgressSectionProps = {
   data: DashboardPayload;
 };
@@ -343,62 +338,34 @@ export function DashboardProgressSection({ data }: ProgressSectionProps) {
   );
 }
 
-type DetailsSectionProps = {
-  data: DashboardPayload;
-  weeklyMinutes: number;
-  projectedScore: number | null;
-  onChangeWeeklyMinutes: (value: number) => void;
-};
-
-export function DashboardDetailsSection({
-  data,
-  weeklyMinutes,
-  projectedScore,
-  onChangeWeeklyMinutes,
-}: DetailsSectionProps) {
-  const [open, setOpen] = useState(false);
-
+export function DashboardProgressLink() {
   return (
-    <div>
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 text-sm font-medium
-          text-gray-500 hover:text-gray-700 transition-all py-2 px-4
-          rounded-full border border-gray-200 hover:border-gray-300
-          hover:bg-gray-50"
+    <Link
+      href="/portal/progress"
+      className="rounded-2xl border border-gray-200 bg-white p-4
+        flex items-center justify-between hover:bg-gray-50 transition"
+    >
+      <div>
+        <p className="text-sm font-medium text-gray-800">
+          Proyección y progreso
+        </p>
+        <p className="text-xs text-gray-500">
+          Ve tu historial de puntajes y proyección de mejora
+        </p>
+      </div>
+      <svg
+        className="w-5 h-5 text-gray-400 shrink-0"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        viewBox="0 0 24 24"
       >
-        <svg
-          className={[
-            "w-4 h-4 transition-transform duration-200",
-            open ? "rotate-90" : "",
-          ].join(" ")}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-        </svg>
-        {open ? "Ocultar detalle" : "Ver detalle y escenarios"}
-      </button>
-
-      {open ? (
-        <div className="space-y-4 mt-2 animate-fade-in-up">
-          <DashboardEffortSection
-            data={data}
-            weeklyMinutes={weeklyMinutes}
-            projectedScore={projectedScore}
-            onChangeWeeklyMinutes={onChangeWeeklyMinutes}
-          />
-
-          <section className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
-            <Link href="/portal/goals" className="btn-primary text-sm">
-              Ajustar metas y simulador
-            </Link>
-          </section>
-        </div>
-      ) : null}
-    </div>
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M8.25 4.5l7.5 7.5-7.5 7.5"
+        />
+      </svg>
+    </Link>
   );
 }

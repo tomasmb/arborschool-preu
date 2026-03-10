@@ -2,9 +2,9 @@
 
 import { LearningPathSection } from "./LearningPathSection";
 import {
-  DashboardDetailsSection,
   DashboardHeroSection,
   DashboardMissionSection,
+  DashboardProgressLink,
   DashboardProgressSection,
 } from "./DashboardSections";
 import {
@@ -61,9 +61,6 @@ export function M1DashboardClient({ contextBanner }: M1DashboardClientProps) {
     loading,
     error,
     data,
-    weeklyMinutes,
-    setWeeklyMinutes,
-    projectedScore,
     nextActionLoading,
     nextActionError,
     nextActionData,
@@ -109,12 +106,7 @@ export function M1DashboardClient({ contextBanner }: M1DashboardClientProps) {
       />
       <DashboardMissionSection data={data} />
       <DashboardProgressSection data={data} />
-      <DashboardDetailsSection
-        data={data}
-        weeklyMinutes={weeklyMinutes}
-        projectedScore={projectedScore}
-        onChangeWeeklyMinutes={setWeeklyMinutes}
-      />
+      <DashboardProgressLink />
     </div>
   );
 }

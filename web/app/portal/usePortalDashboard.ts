@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   trackAuthSuccessOnce,
   trackStudentDashboardViewed,
@@ -18,7 +18,6 @@ function useDashboardPayload() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<DashboardPayload | null>(null);
-  const [weeklyMinutes, setWeeklyMinutes] = useState(360);
 
   useEffect(() => {
     let isMounted = true;
@@ -45,7 +44,6 @@ function useDashboardPayload() {
         }
 
         setData(payload.data);
-        setWeeklyMinutes(payload.data.effort.model.recommendedWeeklyMinutes);
         trackAuthSuccessOnce({
           source: "dashboard",
           entryPoint: "/portal",
@@ -70,7 +68,7 @@ function useDashboardPayload() {
     };
   }, []);
 
-  return { loading, error, data, weeklyMinutes, setWeeklyMinutes };
+  return { loading, error, data };
 }
 
 function useNextActionPayload() {
@@ -126,46 +124,15 @@ function useNextActionPayload() {
   return { nextActionLoading, nextActionError, nextActionData };
 }
 
-function useProjectedScore(
-  data: DashboardPayload | null,
-  weeklyMinutes: number
-) {
-  return useMemo(() => {
-    if (!data || data.current.score === null) {
-      return null;
-    }
-    const minutesPerPoint = data.effort.model.minutesPerPoint;
-    if (minutesPerPoint === null || minutesPerPoint <= 0) {
-      return null;
-    }
-
-    const totalMinutes = weeklyMinutes * data.effort.model.forecastWeeks;
-    const projectedDelta = totalMinutes / minutesPerPoint;
-    const projectedRaw = Math.round(data.current.score + projectedDelta);
-    const cappedScore = Math.max(100, Math.min(1000, projectedRaw));
-
-    if (data.prediction.max !== null) {
-      return Math.min(cappedScore, data.prediction.max);
-    }
-
-    return cappedScore;
-  }, [data, weeklyMinutes]);
-}
-
 export function usePortalDashboard(): DashboardViewModel {
-  const { loading, error, data, weeklyMinutes, setWeeklyMinutes } =
-    useDashboardPayload();
+  const { loading, error, data } = useDashboardPayload();
   const { nextActionLoading, nextActionError, nextActionData } =
     useNextActionPayload();
-  const projectedScore = useProjectedScore(data, weeklyMinutes);
 
   return {
     loading,
     error,
     data,
-    weeklyMinutes,
-    setWeeklyMinutes,
-    projectedScore,
     nextActionLoading,
     nextActionError,
     nextActionData,

@@ -99,6 +99,13 @@
       "when": 1773152574543,
       "tag": "0013_add_daily_streak_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1773164646749,
+      "tag": "0014_add-paes-scores-to-test-attempts",
+      "breakpoints": true
     }
   ]
 }
