@@ -2,36 +2,10 @@
 
 import Link from "next/link";
 import { MathContent } from "@/lib/qti/MathRenderer";
-import { ErrorStatePanel } from "../components";
+import { ErrorStatePanel, QuestionSkeleton } from "../components";
 import type { usePrereqScanController } from "./usePrereqScanController";
 
 type Controller = ReturnType<typeof usePrereqScanController>;
-
-function ScanSkeleton() {
-  return (
-    <div className="space-y-4">
-      <div
-        className="rounded-2xl border border-gray-200 bg-white
-          p-5 animate-pulse"
-      >
-        <div className="h-5 w-48 bg-gray-200 rounded mb-4" />
-        <div className="h-3 w-32 bg-gray-100 rounded" />
-      </div>
-      <div
-        className="rounded-2xl border border-gray-200 bg-white
-          p-5 animate-pulse space-y-4"
-      >
-        <div className="h-20 w-full bg-gray-100 rounded-lg" />
-        <div className="space-y-2">
-          <div className="h-12 w-full bg-gray-100 rounded-xl" />
-          <div className="h-12 w-full bg-gray-100 rounded-xl" />
-          <div className="h-12 w-full bg-gray-100 rounded-xl" />
-          <div className="h-12 w-full bg-gray-100 rounded-xl" />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function ScanQuestionCard({ ctrl }: { ctrl: Controller }) {
   const q = ctrl.question;
@@ -306,7 +280,7 @@ function AllClearPanel({ ctrl }: { ctrl: Controller }) {
 }
 
 export function PrereqScanView({ ctrl }: { ctrl: Controller }) {
-  if (ctrl.phase === "loading") return <ScanSkeleton />;
+  if (ctrl.phase === "loading") return <QuestionSkeleton />;
   if (ctrl.phase === "error") {
     return (
       <ErrorStatePanel

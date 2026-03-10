@@ -5,7 +5,7 @@ import type {
   SprintCreateData,
   SprintData,
 } from "./types";
-import { resolveErrorMessage } from "./types";
+import { resolveApiErrorMessage } from "./types";
 
 export async function createStudySprint(itemCount = 5) {
   const response = await fetch("/api/student/study-sprints", {
@@ -18,7 +18,7 @@ export async function createStudySprint(itemCount = 5) {
   const payload = (await response.json()) as ApiEnvelope<SprintCreateData>;
   if (!response.ok || !payload.success) {
     throw new Error(
-      resolveErrorMessage(payload, "No pudimos crear la mini-clase")
+      resolveApiErrorMessage(payload, "No pudimos crear la mini-clase")
     );
   }
 
@@ -34,7 +34,7 @@ export async function fetchStudySprint(sprintId: string) {
   const payload = (await response.json()) as ApiEnvelope<SprintData>;
   if (!response.ok || !payload.success) {
     throw new Error(
-      resolveErrorMessage(payload, "No pudimos cargar la mini-clase")
+      resolveApiErrorMessage(payload, "No pudimos cargar la mini-clase")
     );
   }
 
@@ -62,7 +62,7 @@ export async function submitStudySprintAnswer(params: {
   const payload = (await response.json()) as ApiEnvelope<AnswerResponse>;
   if (!response.ok || !payload.success) {
     throw new Error(
-      resolveErrorMessage(payload, "No pudimos guardar tu respuesta")
+      resolveApiErrorMessage(payload, "No pudimos guardar tu respuesta")
     );
   }
 
@@ -81,7 +81,7 @@ export async function completeStudySprint(sprintId: string) {
   const payload = (await response.json()) as ApiEnvelope<CompletionResponse>;
   if (!response.ok || !payload.success) {
     throw new Error(
-      resolveErrorMessage(payload, "No pudimos completar la mini-clase")
+      resolveApiErrorMessage(payload, "No pudimos completar la mini-clase")
     );
   }
 

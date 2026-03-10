@@ -5,6 +5,7 @@ import { useState } from "react";
 import { trackStudentNextActionClicked } from "@/lib/analytics";
 import { InlineRecoveryPanel } from "./components";
 import { ReviewSuggestionBanner } from "./components/ReviewSuggestionBanner";
+import { formatMinutes } from "./formatters";
 import type {
   CompetitiveRoutePayload,
   NextActionPayload,
@@ -57,15 +58,6 @@ const DEFAULT_STYLE: AxisStyle = {
 
 function axisStyle(code: string): AxisStyle {
   return AXIS_STYLES[code] ?? DEFAULT_STYLE;
-}
-
-function formatMinutes(value: number | null): string {
-  if (value === null) return "-";
-  if (value === 0) return "0 min";
-  if (value < 60) return `${value} min`;
-  const h = Math.floor(value / 60);
-  const m = value % 60;
-  return m === 0 ? `${h} h` : `${h} h ${m} min`;
 }
 
 function studyHref(atomId: string): string {

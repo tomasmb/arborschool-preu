@@ -1,3 +1,4 @@
+import { currentWeekStartDate } from "@/lib/shared/dateHelpers";
 import type { JourneyStateAnalytics } from "./types";
 
 export const CANONICAL_FUNNEL_MILESTONES = [
@@ -61,20 +62,6 @@ type CanonicalMilestoneEvent = {
   timestamp: Date;
   segment: SegmentKey;
 };
-
-function currentWeekStartDate(reference = new Date()): string {
-  const utc = new Date(
-    Date.UTC(
-      reference.getUTCFullYear(),
-      reference.getUTCMonth(),
-      reference.getUTCDate()
-    )
-  );
-  const day = utc.getUTCDay();
-  const daysFromMonday = (day + 6) % 7;
-  utc.setUTCDate(utc.getUTCDate() - daysFromMonday);
-  return utc.toISOString().slice(0, 10);
-}
 
 function parseIsoDateAtUtcStart(value: string): Date {
   return new Date(`${value}T00:00:00.000Z`);

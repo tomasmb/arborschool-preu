@@ -1,4 +1,7 @@
+import type { ApiEnvelope } from "@/lib/student/apiClientEnvelope";
 import type { NextActionPayload } from "./NextActionSection";
+
+export type { ApiEnvelope };
 
 export type RetestStatusPayload = {
   atomsMasteredSinceLastTest: number;
@@ -82,23 +85,6 @@ export type DashboardPayload = {
     ctaHref: string;
   } | null;
 };
-
-type ApiErrorEnvelope = {
-  success: false;
-  error:
-    | string
-    | {
-        code: string;
-        message: string;
-      };
-};
-
-type ApiSuccessEnvelope<T> = {
-  success: true;
-  data: T;
-};
-
-export type ApiEnvelope<T> = ApiSuccessEnvelope<T> | ApiErrorEnvelope;
 
 export type DashboardViewModel = {
   loading: boolean;

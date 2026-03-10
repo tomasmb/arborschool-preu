@@ -2,8 +2,7 @@ export type {
   ApiEnvelope,
   ApiErrorPayload,
 } from "@/lib/student/apiClientEnvelope";
-import type { ApiEnvelope } from "@/lib/student/apiClientEnvelope";
-import { resolveApiErrorMessage } from "@/lib/student/apiClientEnvelope";
+export { resolveApiErrorMessage } from "@/lib/student/apiClientEnvelope";
 import type {
   StudySprintAnswerPayload,
   StudySprintCompletionPayload,
@@ -17,13 +16,6 @@ export type SprintItem = StudySprintItemPayload;
 export type SprintData = StudySprintPayload;
 export type AnswerResponse = StudySprintAnswerPayload;
 export type CompletionResponse = StudySprintCompletionPayload;
-
-export function resolveErrorMessage(
-  payload: ApiEnvelope<unknown>,
-  fallback: string
-) {
-  return resolveApiErrorMessage(payload, fallback);
-}
 
 export function sanitizeSprintId(value: string): string | null {
   if (!value) {

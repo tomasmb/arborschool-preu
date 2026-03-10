@@ -1,6 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { studentWeeklyMissions } from "@/db/schema";
+import { getCurrentWeekRange } from "@/lib/shared/dateHelpers";
 
 export type StudentMission = {
   id: string;
@@ -10,37 +11,6 @@ export type StudentMission = {
   completedSessions: number;
   status: string;
 };
-
-function toDateOnly(value: Date): string {
-  return value.toISOString().slice(0, 10);
-}
-
-function getCurrentWeekRange(reference = new Date()): {
-  weekStartDate: string;
-  weekEndDate: string;
-} {
-  const utc = new Date(
-    Date.UTC(
-      reference.getUTCFullYear(),
-      reference.getUTCMonth(),
-      reference.getUTCDate()
-    )
-  );
-
-  const day = utc.getUTCDay();
-  const daysFromMonday = (day + 6) % 7;
-
-  const start = new Date(utc);
-  start.setUTCDate(start.getUTCDate() - daysFromMonday);
-
-  const end = new Date(start);
-  end.setUTCDate(end.getUTCDate() + 6);
-
-  return {
-    weekStartDate: toDateOnly(start),
-    weekEndDate: toDateOnly(end),
-  };
-}
 
 function mapMissionRow(row: {
   id: string;

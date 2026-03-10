@@ -8,4 +8,5 @@ export { MissionCard } from "./MissionCard";
 export { PageShell } from "./PageShell";
 export { PortalTopNav, PortalBottomNav } from "./PortalNav";
 export { ProgressRail } from "./ProgressRail";
+export { QuestionSkeleton } from "./QuestionSkeleton";
 export { StreakBadge } from "./StreakBadge";

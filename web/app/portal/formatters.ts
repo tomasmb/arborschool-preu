@@ -1,4 +1,4 @@
-import type { ApiEnvelope } from "./types";
+export { resolveApiErrorMessage as getErrorMessage } from "@/lib/student/apiClientEnvelope";
 
 export function formatScore(value: number | null): string {
   if (value === null) {
@@ -25,17 +25,4 @@ export function formatMinutes(value: number | null): string {
   }
 
   return `${hours.toLocaleString("es-CL")} h ${minutes.toLocaleString("es-CL")} min`;
-}
-
-export function getErrorMessage(
-  payload: ApiEnvelope<unknown>,
-  fallback: string
-) {
-  if (payload.success) {
-    return fallback;
-  }
-  if (typeof payload.error === "string") {
-    return payload.error;
-  }
-  return payload.error.message;
 }

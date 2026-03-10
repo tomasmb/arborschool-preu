@@ -5,7 +5,7 @@
 >
 > Use this document to plan and prioritize implementation work.
 
-**Audited:** March 10, 2026 (fifth pass — DRY refactor, bug fixes, dashboard metrics)
+**Audited:** March 10, 2026 (sixth pass — deep DRY/SOLID cleanup)
 
 ---
 
@@ -38,62 +38,27 @@
 | Scoped mastery metrics (spec 10.3) | Done | Done | Done | **Working** |
 | Dashboard questionsUnlocked (spec 10.2) | Done | Done | Done | **Working** |
 | DRY shared modules (SOLID) | Done | — | — | **Working** |
+| DRY deep cleanup (formatters, types, dates, skeletons) | Done | — | — | **Working** |
 
 ---
 
 ## ~~Priority 1 — Runtime Crashes~~ RESOLVED
 
-### 1A. Foreign Key Mismatch in Review + Prereq Scan — FIXED (March 10, 2026)
+### 1A. FK Mismatch in Review + Prereq Scan — FIXED (March 10)
 
-**Resolution:** Option A — switched both flows to `generated_questions`.
-
-A shared `questionQueries.ts` helper was created with `findGeneratedQuestions`,
-`getQuestionAtomId`, and `getQuestionContent` to eliminate duplication across
-the mastery engine, spaced repetition, and prereq scan flows.
-
-**Files changed:**
-- `web/lib/student/questionQueries.ts` — **new** shared query helpers
-- `web/lib/student/spacedRepetition.ts` — `findReviewQuestion()`,
-  `submitReviewAnswer()`, `completeReviewSession()` now use
-  `generatedQuestions` instead of `questions` + `questionAtoms`
-- `web/lib/student/prerequisiteScan.ts` — `findHardQuestion()`,
-  `submitScanAnswer()`, `getTestedPrereqs()` now use `generatedQuestions`
-
-**Important:** Verify data coverage item 5D (below) to ensure atoms reachable
-via review/scan have high-difficulty generated questions.
+Switched both flows to `generated_questions`. Shared `questionQueries.ts`
+helper created. **Verify 5D** (below) for data coverage.
 
 ---
 
 ## ~~Priority 2 — Logic Bugs~~ RESOLVED
 
-### 2A. Cooldown Not Enforced After Failure — FIXED (March 10, 2026)
+### 2A. Cooldown Not Enforced After Failure — FIXED (March 10)
 
-**Resolution:** Cooldown is now enforced at 4 levels:
-
-1. **Session creation blocked** — `createAtomSession()` queries
-   `atom_mastery.cooldownUntilMasteryCount` and throws a user-facing
-   error with the remaining count if > 0.
-2. **Next-action filtering** — `getMasteryRows()` in `nextAction.ts` now
-   includes `cooldownUntilMasteryCount`; atoms in cooldown are excluded
-   before passing to `analyzeLearningPotential()`.
-3. **Next-study-atom filtering** — `getNextStudyAtom()` in
-   `masteryLifecycle.ts` excludes atoms with active cooldowns from the
-   "next atom in subject" suggestion.
-4. **Dynamic UI count** — `FailureWithCooldown` in `AtomResultPanel.tsx`
-   now accepts `cooldownRemaining` and displays the actual remaining
-   count instead of hardcoding 3. The pipeline flows through
-   `AnswerResultWithLifecycle` → API → `AtomStudyView` → `AtomResultPanel`.
-
-**Files changed:**
-- `web/lib/student/atomMasteryEngine.ts` — cooldown check in
-  `createAtomSession()`, `cooldownRemaining` in answer result type
-- `web/lib/student/nextAction.ts` — `getMasteryRows()` includes
-  cooldown; filtering before analysis
-- `web/lib/student/masteryLifecycle.ts` — `getNextStudyAtom()` excludes
-  cooldown atoms
-- `web/lib/student/prerequisiteScan.ts` — exported `COOLDOWN_MASTERY_COUNT`
-- `web/app/portal/study/AtomResultPanel.tsx` — dynamic `cooldownRemaining`
-- `web/app/portal/study/AtomStudyView.tsx` — passes `cooldownRemaining`
+Cooldown enforced at 4 levels: session creation blocked, next-action
+filtering, next-study-atom filtering, dynamic UI count. Files:
+`atomMasteryEngine`, `nextAction`, `masteryLifecycle`,
+`prerequisiteScan`, `AtomResultPanel`, `AtomStudyView`.
 
 ---
 
@@ -132,55 +97,20 @@ fine for launch. Build the full test as a follow-up project.
 
 ---
 
-### 3B. Real Daily Streak Tracking — FIXED (March 10, 2026)
+### 3B. Real Daily Streak Tracking — FIXED (March 10)
 
-**Spec ref:** Section 13.1 — Habit Policy
-
-**Resolution:** Full daily streak tracking with schema + backend + frontend.
-
-Schema: `current_streak`, `max_streak`, `last_streak_date` columns added
-to `users` table. Streak logic lives in a shared `streakTracker.ts` module
-with `updateDailyStreak()` (called on mastery) and `getDailyStreak()`
-(read-only, accounts for broken streaks). `StreakBadge` now shows daily
-streak with max-streak on hover. Streak data is served via the dashboard
-API and the sprint completion response.
-
-**Files changed:**
-- `web/db/schema/users.ts` — added `currentStreak`, `maxStreak`,
-  `lastStreakDate` columns
-- `web/lib/student/streakTracker.ts` — **new** `updateDailyStreak()` +
-  `getDailyStreak()` helpers
-- `web/lib/student/atomMasteryEngine.ts` — calls `updateDailyStreak()`
-  on mastery completion
-- `web/lib/student/studySprints.ts` — sprint completion returns streak
-- `web/lib/student/studySprint.types.ts` — `StudySprintStreakPayload` +
-  `streak` field on completion payload
-- `web/app/api/student/dashboard/m1/route.ts` — serves `streak` data
-- `web/app/portal/types.ts` — `StreakPayload` + `streak` field on
-  `DashboardPayload`
-- `web/app/portal/components/StreakBadge.tsx` — daily streak display
-  with max-streak on hover
-- `web/app/portal/DashboardSections.tsx` — updated to use streak data
-- `web/app/portal/study/SprintCompletionPanel.tsx` — updated to use
-  streak data
-
-**Note:** Streak freeze (1 per week) is not implemented — spec marks it
-as optional. Can be added later as an enhancement.
+Schema columns on `users` + `streakTracker.ts` module + `StreakBadge`
+component. Hooked into mastery engine and sprint completion. Streak
+freeze (1/week) not implemented — spec marks it as optional.
 
 ---
 
 ## ~~Priority 4 — API Hardening~~ RESOLVED
 
-### 4A. Missing Error Handling on 3 Routes — FIXED (March 10, 2026)
+### 4A. Missing Error Handling on 3 Routes — FIXED (March 10)
 
-**Resolution:** All three GET handlers now have try/catch with
-`studentApiError()` responses:
-
-1. `goals/route.ts` — `GOALS_LOAD_FAILED` (500)
-2. `me/route.ts` — `PROFILE_LOAD_FAILED` (500)
-3. `simulator/route.ts` — `SIMULATION_LOAD_FAILED` (500); also migrated
-   from raw `NextResponse.json` to `studentApiSuccess`/`studentApiError`
-   for consistency with all other student API routes.
+try/catch + `studentApiError()` on goals, me, simulator routes.
+Simulator also migrated to `studentApiSuccess`/`studentApiError`.
 
 ---
 
@@ -362,7 +292,133 @@ violating DRY and SOLID principles.
 
 ---
 
+## ~~Priority 7 — Deep DRY/SOLID Cleanup~~ RESOLVED
+
+### 7A. `formatMinutes` Duplicated 3× — FIXED (March 10, 2026)
+
+**Problem:** `formatMinutes()` was copy-pasted in `NextActionSection.tsx`,
+`LearningPathSection.tsx`, and `formatters.ts`. The canonical version in
+`formatters.ts` uses `toLocaleString("es-CL")` for proper Spanish
+formatting; the copies did not.
+
+**Resolution:** Deleted local copies. Both components now import
+`formatMinutes` from `formatters.ts`.
+
+**Files changed:**
+- `web/app/portal/NextActionSection.tsx` — removed local function,
+  added import from `formatters.ts`
+- `web/app/portal/LearningPathSection.tsx` — removed local function,
+  added import from `formatters.ts`
+
+---
+
+### 7B. `ApiEnvelope` Type Duplicated — FIXED (March 10, 2026)
+
+**Problem:** `portal/types.ts` defined its own `ApiEnvelope<T>` type
+(without the `details?` field), while `apiClientEnvelope.ts` had the
+canonical version. Two definitions → drift risk.
+
+**Resolution:** Replaced local definition in `portal/types.ts` with a
+re-export from `apiClientEnvelope.ts`. All downstream imports unchanged.
+
+**Files changed:**
+- `web/app/portal/types.ts` — removed local `ApiEnvelope` + helper
+  types; re-exports from `apiClientEnvelope.ts`
+
+---
+
+### 7C. Error Message Extraction Duplicated 3× — FIXED (March 10, 2026)
+
+**Problem:** Three implementations of the same error-message extraction:
+- `apiClientEnvelope.ts` → `resolveApiErrorMessage()` (canonical)
+- `formatters.ts` → `getErrorMessage()` (identical logic)
+- `study/types.ts` → `resolveErrorMessage()` (thin wrapper)
+
+**Resolution:**
+- `formatters.ts` now re-exports `resolveApiErrorMessage` as
+  `getErrorMessage` (preserves call-site compatibility)
+- `study/types.ts` now re-exports `resolveApiErrorMessage` directly
+  (removed wrapper function)
+- `study/api.ts` updated to import `resolveApiErrorMessage` from types
+
+**Files changed:**
+- `web/app/portal/formatters.ts` — replaced function body with re-export
+- `web/app/portal/study/types.ts` — removed `resolveErrorMessage`
+  wrapper; added direct re-export of `resolveApiErrorMessage`
+- `web/app/portal/study/api.ts` — updated 4 call sites from
+  `resolveErrorMessage` → `resolveApiErrorMessage`
+
+---
+
+### 7D. Date/Week Helpers Duplicated 3× — FIXED (March 10, 2026)
+
+**Problem:** `toDateOnly()`, `currentWeekStartDate()`, and
+`getCurrentWeekRange()` were each implemented independently in
+`journeyState.ts`, `missions.ts`, and `funnelReport.ts`. All three
+computed the same ISO Monday-start week.
+
+**Resolution:** Created `web/lib/shared/dateHelpers.ts` with all three
+functions. Updated the three consumers to import from it.
+
+**New shared module:**
+- `web/lib/shared/dateHelpers.ts` — `toDateOnly()`,
+  `currentWeekStartDate()`, `getCurrentWeekRange()`
+
+**Files updated (imports consolidated):**
+- `web/lib/student/journeyState.ts`
+- `web/lib/student/missions.ts`
+- `web/lib/analytics/funnelReport.ts`
+
+---
+
+### 7E. Skeleton Components Duplicated — FIXED (March 10, 2026)
+
+**Problem:** `PrereqScanView.tsx` and `ReviewSessionView.tsx` each had
+identical `ScanSkeleton` / `ReviewSkeleton` components (same markup,
+same structure).
+
+**Resolution:** Extracted `QuestionSkeleton` to the shared components
+barrel. Both views now import from `../components`.
+
+**New shared component:**
+- `web/app/portal/components/QuestionSkeleton.tsx`
+
+**Files updated:**
+- `web/app/portal/study/PrereqScanView.tsx` — replaced `ScanSkeleton`
+- `web/app/portal/study/ReviewSessionView.tsx` — replaced
+  `ReviewSkeleton`
+- `web/app/portal/components/index.ts` — added barrel export
+
+---
+
+### 7F. Unused `SESSION_MINUTES` Constant — FIXED (March 10, 2026)
+
+**Problem:** `NextActionSection.tsx` declared `SESSION_MINUTES = 25` and
+immediately assigned it to `minutes`, adding indirection with no value.
+
+**Resolution:** Replaced with inline literal `const minutes = 25`.
+
+**Files changed:**
+- `web/app/portal/NextActionSection.tsx`
+
+---
+
 ## Previously Completed
+
+### Sprint 6 — March 10, 2026
+
+- ✅ **`formatMinutes` dedup** (7A) — removed 2 local copies; both
+  sections now import from `formatters.ts`
+- ✅ **`ApiEnvelope` type dedup** (7B) — `portal/types.ts` re-exports
+  from `apiClientEnvelope.ts`; removed 16 lines of redundant type defs
+- ✅ **Error extraction dedup** (7C) — eliminated 2 duplicate
+  implementations; single canonical `resolveApiErrorMessage`
+- ✅ **Date helper dedup** (7D) — new `lib/shared/dateHelpers.ts`;
+  removed 3 independent implementations across 3 files
+- ✅ **Skeleton dedup** (7E) — new `QuestionSkeleton` shared component;
+  removed 2 identical skeleton components
+- ✅ **Unused constant cleanup** (7F) — removed `SESSION_MINUTES`
+  indirection in `NextActionSection`
 
 ### Sprint 5 — March 10, 2026
 
@@ -377,36 +433,14 @@ violating DRY and SOLID principles.
   Ownership`, `getUserDiagnosticSnapshot`, `getMasteryRows` to shared
   modules; eliminated 9 function duplicates across 6 files
 
-### Sprint 4 — March 10, 2026
+### Sprint 2–4 — March 6–10, 2026
 
-- ✅ **Daily streak tracking** (3B) — `currentStreak`, `maxStreak`,
-  `lastStreakDate` on `users`; `streakTracker.ts` with update + read
-  helpers; hooked into mastery engine; served via dashboard + sprint
-  completion APIs; `StreakBadge` updated to show daily streak
-
-### Sprint 3 — March 10, 2026
-
-- ✅ **FK mismatch fix** (1A) — review + prereq scan switched to
-  `generated_questions`; shared `questionQueries.ts` helper created
-- ✅ **Cooldown enforcement** (2A) — blocked in `createAtomSession`,
-  filtered in next-action + next-study-atom, dynamic UI count
-- ✅ **API error handling** (4A) — try/catch on goals, me, simulator
-  routes; simulator migrated to `studentApiSuccess`/`studentApiError`
-
-### Sprint 2 — March 6, 2026
-
-- ✅ SR review flow frontend (`?mode=review` routing, ReviewSessionView,
-  useReviewSessionController)
-- ✅ Prereq scan flow frontend (`?scan=` routing, PrereqScanView,
-  usePrereqScanController, API routes)
-- ✅ Diagnostic banner — removed dead retest CTA, honest copy
-- ✅ Streak badge — relabeled (later upgraded to daily streak in Sprint 4)
-- ✅ Rich feedback props — wired questionsUnlocked + nextAtom through
-  engine → API → UI
-- ✅ Score prediction governance — diagnostic ceiling cap
-- ✅ 3-hop implicit SR credit — 1-hop full, 2-hop 50%, 3-hop 25%
-- ✅ SR balance rule — suggest review after 3 consecutive masteries
-- ✅ Habit quality guard — fatigue detection + intervention banners
+- ✅ Sprint 4: Daily streak tracking (3B) — schema + backend + frontend
+- ✅ Sprint 3: FK mismatch fix (1A), cooldown enforcement (2A), API
+  error handling (4A)
+- ✅ Sprint 2: SR review flow, prereq scan flow, diagnostic banner,
+  streak badge, rich feedback, score governance, 3-hop implicit SR,
+  SR balance rule, habit quality guard
 
 ---
 

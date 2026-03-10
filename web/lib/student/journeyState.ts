@@ -7,6 +7,7 @@ import {
   testAttempts,
   users,
 } from "@/db/schema";
+import { currentWeekStartDate } from "@/lib/shared/dateHelpers";
 
 export type StudentJourneyState =
   | "planning_required"
@@ -20,24 +21,6 @@ export type StudentJourneySnapshot = {
   hasDiagnosticSnapshot: boolean;
   hasActiveMission: boolean;
 };
-
-function toDateOnly(value: Date): string {
-  return value.toISOString().slice(0, 10);
-}
-
-function currentWeekStartDate(reference = new Date()) {
-  const utc = new Date(
-    Date.UTC(
-      reference.getUTCFullYear(),
-      reference.getUTCMonth(),
-      reference.getUTCDate()
-    )
-  );
-  const day = utc.getUTCDay();
-  const daysFromMonday = (day + 6) % 7;
-  utc.setUTCDate(utc.getUTCDate() - daysFromMonday);
-  return toDateOnly(utc);
-}
 
 export async function getStudentJourneySnapshot(
   userId: string
