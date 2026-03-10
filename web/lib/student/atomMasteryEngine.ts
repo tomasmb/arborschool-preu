@@ -36,7 +36,11 @@ import {
   applyImplicitRepetition,
   applyInactivityDecay,
 } from "./spacedRepetition";
-import { startPrereqScan, checkCooldownExpiry } from "./prerequisiteScan";
+import {
+  startPrereqScan,
+  checkCooldownExpiry,
+  COOLDOWN_MASTERY_COUNT,
+} from "./prerequisiteScan";
 import type { ScanStartResult } from "./prerequisiteScan";
 import type { HabitGuardSignal } from "./habitGuard";
 import {
@@ -64,6 +68,7 @@ export type AnswerResultWithLifecycle = AnswerResultPayload & {
     status: "in_progress" | "no_prereqs";
   };
   cooldownApplied?: boolean;
+  cooldownRemaining?: number;
   questionsUnlocked?: number;
   nextAtom?: { id: string; title: string } | null;
   habitGuard?: HabitGuardSignal;
@@ -176,6 +181,19 @@ export async function createAtomSession(
       status: active.status as SessionStatus,
       attemptNumber: active.attemptNumber,
     };
+  }
+
+  // Enforce cooldown: student must master N other atoms before retrying
+  const [masteryRow] = await db
+    .select({ cooldown: atomMastery.cooldownUntilMasteryCount })
+    .from(atomMastery)
+    .where(and(eq(atomMastery.userId, userId), eq(atomMastery.atomId, atomId)))
+    .limit(1);
+  if (masteryRow?.cooldown && masteryRow.cooldown > 0) {
+    throw new Error(
+      `Este concepto está en pausa — domina ${masteryRow.cooldown}` +
+        ` concepto(s) más antes de reintentar`
+    );
   }
 
   const [countRow] = await db
@@ -487,6 +505,7 @@ export async function submitAnswer(params: {
         }
       : undefined,
     cooldownApplied,
+    cooldownRemaining: cooldownApplied ? COOLDOWN_MASTERY_COUNT : undefined,
     questionsUnlocked,
     nextAtom,
     habitGuard,

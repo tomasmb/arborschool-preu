@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getAuthenticatedUserById } from "@/lib/auth/users";
 import { getStudentGoalSimulation } from "@/lib/student/simulator";
+import { studentApiError, studentApiSuccess } from "@/lib/student/apiEnvelope";
 
 const MIN_SCORE = 100;
 const MAX_SCORE = 1000;
@@ -74,35 +74,29 @@ function parseSimulatorQuery(url: URL): ParsedSimulatorQuery | string {
 export async function GET(request: Request) {
   const userId = await getAuthenticatedUserId();
   if (!userId) {
-    return NextResponse.json(
-      { success: false, error: "Unauthorized" },
-      { status: 401 }
-    );
+    return studentApiError("UNAUTHORIZED", "Unauthorized", 401);
   }
 
   const url = new URL(request.url);
   const parsed = parseSimulatorQuery(url);
   if (typeof parsed === "string") {
-    return NextResponse.json(
-      { success: false, error: parsed },
-      { status: 400 }
-    );
+    return studentApiError("INVALID_PARAMS", parsed, 400);
   }
 
-  const simulation = await getStudentGoalSimulation(userId, parsed.goalId, {
-    scoreOverrides: parsed.scoreOverrides,
-    bufferPointsOverride: parsed.bufferPointsOverride,
-  });
+  try {
+    const simulation = await getStudentGoalSimulation(userId, parsed.goalId, {
+      scoreOverrides: parsed.scoreOverrides,
+      bufferPointsOverride: parsed.bufferPointsOverride,
+    });
 
-  if (!simulation) {
-    return NextResponse.json(
-      { success: false, error: "Goal not found" },
-      { status: 404 }
-    );
+    if (!simulation) {
+      return studentApiError("GOAL_NOT_FOUND", "Goal not found", 404);
+    }
+
+    return studentApiSuccess(simulation);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to load simulation";
+    return studentApiError("SIMULATION_LOAD_FAILED", message, 500);
   }
-
-  return NextResponse.json({
-    success: true,
-    data: simulation,
-  });
 }

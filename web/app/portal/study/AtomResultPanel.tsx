@@ -19,6 +19,7 @@ type AtomResultPanelProps = {
   attemptNumber: number;
   prereqScan?: PrereqScanInfo;
   cooldownApplied?: boolean;
+  cooldownRemaining?: number;
   questionsUnlocked?: number;
   nextAtom?: { id: string; title: string } | null;
 };
@@ -337,11 +338,13 @@ function FailureWithCooldown({
   totalAnswered,
   totalCorrect,
   attemptNumber,
+  cooldownRemaining = 3,
 }: {
   atomTitle: string;
   totalAnswered: number;
   totalCorrect: number;
   attemptNumber: number;
+  cooldownRemaining?: number;
 }) {
   const accuracy =
     totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
@@ -370,7 +373,7 @@ function FailureWithCooldown({
         </h2>
         <p className="text-sm text-gray-600 max-w-md mx-auto">
           {attemptNumber < 3
-            ? "Tus bases están sólidas. Este concepto queda en pausa — domina 3 conceptos más y lo intentaremos de nuevo con ojos frescos."
+            ? `Tus bases están sólidas. Este concepto queda en pausa — domina ${cooldownRemaining} concepto(s) más y lo intentaremos de nuevo con ojos frescos.`
             : "Has usado todos los intentos por ahora. Avanza con otros conceptos y volveremos a este después."}
         </p>
       </div>
@@ -389,7 +392,9 @@ function FailureWithCooldown({
       <div className="rounded-xl bg-blue-50 border border-blue-200 p-4 text-center">
         <p className="text-sm text-blue-700">
           Volveremos a este concepto después de dominar{" "}
-          <span className="font-semibold">3 conceptos más</span>
+          <span className="font-semibold">
+            {cooldownRemaining} concepto(s) más
+          </span>
         </p>
       </div>
 
@@ -410,6 +415,7 @@ export function AtomResultPanel({
   attemptNumber,
   prereqScan,
   cooldownApplied,
+  cooldownRemaining,
   questionsUnlocked,
   nextAtom,
 }: AtomResultPanelProps) {
@@ -469,6 +475,7 @@ export function AtomResultPanel({
             totalAnswered={totalAnswered}
             totalCorrect={totalCorrect}
             attemptNumber={attemptNumber}
+            cooldownRemaining={cooldownRemaining}
           />
         )}
       </section>

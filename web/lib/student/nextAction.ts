@@ -71,6 +71,7 @@ export type StudentNextActionData = {
 type MasteryRow = {
   atomId: string;
   isMastered: boolean;
+  cooldown: number | null;
 };
 
 function byRoutePriority(
@@ -228,6 +229,7 @@ async function getMasteryRows(userId: string): Promise<MasteryRow[]> {
     .select({
       atomId: atomMastery.atomId,
       isMastered: atomMastery.isMastered,
+      cooldown: atomMastery.cooldownUntilMasteryCount,
     })
     .from(atomMastery)
     .where(eq(atomMastery.userId, userId));
@@ -309,9 +311,14 @@ export async function getStudentNextAction(
 
   const currentScore = Math.round((minScore + maxScore) / 2);
 
+  // Exclude atoms in cooldown from route analysis so they aren't suggested
+  const eligibleRows = masteryRows.filter(
+    (r) => !(r.cooldown && r.cooldown > 0)
+  );
+
   const [analysis, reviewDueItems, masteriesSinceReview] = await Promise.all([
     analyzeLearningPotential(
-      masteryRows.map((row) => ({
+      eligibleRows.map((row) => ({
         atomId: row.atomId,
         mastered: row.isMastered,
       })),

@@ -27,6 +27,11 @@ export type StudentApiErrorCode =
   | "REVIEW_COMPLETE_FAILED"
   | "SCAN_NEXT_FAILED"
   | "SCAN_ANSWER_FAILED"
+  | "GOALS_LOAD_FAILED"
+  | "PROFILE_LOAD_FAILED"
+  | "INVALID_PARAMS"
+  | "GOAL_NOT_FOUND"
+  | "SIMULATION_LOAD_FAILED"
   | "UNKNOWN";
 
 type ErrorDetails = Record<string, unknown> | undefined;

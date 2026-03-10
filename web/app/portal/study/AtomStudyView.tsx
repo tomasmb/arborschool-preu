@@ -352,6 +352,7 @@ export function AtomStudyView({ ctrl }: { ctrl: Controller }) {
             | undefined
         }
         cooldownApplied={ar?.cooldownApplied as boolean | undefined}
+        cooldownRemaining={ar?.cooldownRemaining as number | undefined}
         questionsUnlocked={ar?.questionsUnlocked as number | undefined}
         nextAtom={
           ar?.nextAtom as { id: string; title: string } | null | undefined

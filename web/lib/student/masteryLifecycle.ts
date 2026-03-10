@@ -56,13 +56,21 @@ export async function getNextStudyAtom(
 
   if (!current?.subjectId) return null;
 
-  const masteredIds = await db
-    .select({ atomId: atomMastery.atomId })
+  const masteryRows = await db
+    .select({
+      atomId: atomMastery.atomId,
+      isMastered: atomMastery.isMastered,
+      cooldown: atomMastery.cooldownUntilMasteryCount,
+    })
     .from(atomMastery)
-    .where(
-      and(eq(atomMastery.userId, userId), eq(atomMastery.isMastered, true))
-    );
-  const masteredSet = new Set(masteredIds.map((r) => r.atomId));
+    .where(eq(atomMastery.userId, userId));
+
+  const masteredSet = new Set(
+    masteryRows.filter((r) => r.isMastered).map((r) => r.atomId)
+  );
+  const cooldownSet = new Set(
+    masteryRows.filter((r) => r.cooldown && r.cooldown > 0).map((r) => r.atomId)
+  );
 
   const candidates = await db
     .select({ id: atoms.id, title: atoms.title })
@@ -70,7 +78,9 @@ export async function getNextStudyAtom(
     .where(eq(atoms.subjectId, current.subjectId))
     .limit(50);
 
-  const next = candidates.find((a) => !masteredSet.has(a.id));
+  const next = candidates.find(
+    (a) => !masteredSet.has(a.id) && !cooldownSet.has(a.id)
+  );
   return next ?? null;
 }
 

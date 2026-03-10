@@ -3,18 +3,22 @@
  * not calendar days. Intervals grow on success and shrink on failure.
  */
 
-import { and, desc, eq, gte, inArray, notInArray, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   atomMastery,
   atomStudyResponses,
   atomStudySessions,
   atoms,
-  questionAtoms,
-  questions,
+  generatedQuestions,
 } from "@/db/schema";
 import { parseQtiXml } from "@/lib/qti/serverParser";
 import { startPrereqScan } from "./prerequisiteScan";
+import {
+  findGeneratedQuestions,
+  getQuestionAtomId,
+  getQuestionContent,
+} from "./questionQueries";
 
 // --- Types ------------------------------------------------------------------
 
@@ -88,30 +92,15 @@ function normalizeAnswer(v: string): string {
 
 // --- DB helpers -------------------------------------------------------------
 
-/** Finds one hard question for an atom, preferring alternate-source */
+/** Finds one hard generated question for an atom */
 async function findReviewQuestion(atomId: string, excludeIds: string[]) {
-  const baseConds = [
-    eq(questionAtoms.atomId, atomId),
-    eq(questions.difficultyLevel, "high"),
-  ];
-  if (excludeIds.length > 0) {
-    baseConds.push(notInArray(questions.id, excludeIds));
-  }
-  const query = () =>
-    db
-      .select({ id: questions.id, qtiXml: questions.qtiXml })
-      .from(questionAtoms)
-      .innerJoin(questions, eq(questions.id, questionAtoms.questionId));
-
-  const alternates = await query()
-    .where(and(...baseConds, eq(questions.source, "alternate")))
-    .limit(1);
-  if (alternates.length > 0) return alternates[0];
-
-  const fallback = await query()
-    .where(and(...baseConds))
-    .limit(1);
-  return fallback[0] ?? null;
+  const rows = await findGeneratedQuestions({
+    atomId,
+    difficulty: "high",
+    excludeIds,
+    limit: 1,
+  });
+  return rows[0] ?? null;
 }
 
 /** Builds a WHERE clause targeting a user+atom in atomMastery */
@@ -272,11 +261,7 @@ export async function submitReviewAnswer(params: {
     .limit(1);
   if (!resp) throw new Error("Response not found");
 
-  const [question] = await db
-    .select({ qtiXml: questions.qtiXml })
-    .from(questions)
-    .where(eq(questions.id, resp.questionId))
-    .limit(1);
+  const question = await getQuestionContent(resp.questionId);
   if (!question) throw new Error("Question not found");
 
   const parsed = parseQtiXml(question.qtiXml);
@@ -292,13 +277,8 @@ export async function submitReviewAnswer(params: {
     .set({ selectedAnswer: normalized, isCorrect, answeredAt: new Date() })
     .where(eq(atomStudyResponses.id, resp.id));
 
-  const [link] = await db
-    .select({ atomId: questionAtoms.atomId })
-    .from(questionAtoms)
-    .where(eq(questionAtoms.questionId, resp.questionId))
-    .limit(1);
-  if (!link?.atomId) throw new Error("Question not linked to an atom");
-  const { atomId } = link;
+  const atomId = await getQuestionAtomId(resp.questionId);
+  if (!atomId) throw new Error("Question not linked to an atom");
   const where = masteryWhere(params.userId, atomId);
 
   const [mastery] = await db
@@ -356,12 +336,12 @@ export async function completeReviewSession(
   const responses = await db
     .select({
       isCorrect: atomStudyResponses.isCorrect,
-      atomId: questionAtoms.atomId,
+      atomId: generatedQuestions.atomId,
     })
     .from(atomStudyResponses)
     .innerJoin(
-      questionAtoms,
-      eq(questionAtoms.questionId, atomStudyResponses.questionId)
+      generatedQuestions,
+      eq(generatedQuestions.id, atomStudyResponses.questionId)
     )
     .where(
       and(

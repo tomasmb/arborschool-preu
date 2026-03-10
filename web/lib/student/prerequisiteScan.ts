@@ -6,17 +6,21 @@
  * are solid, a cooldown counter is applied to the failed atom.
  */
 
-import { and, asc, eq, inArray, notInArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   atomMastery,
   atomStudyResponses,
   atomStudySessions,
   atoms,
-  questionAtoms,
-  questions,
+  generatedQuestions,
 } from "@/db/schema";
 import { parseQtiXml } from "@/lib/qti/serverParser";
+import {
+  findGeneratedQuestions,
+  getQuestionAtomId,
+  getQuestionContent,
+} from "./questionQueries";
 
 // ============================================================================
 // TYPES
@@ -56,7 +60,7 @@ export type ScanAnswerResult = {
 };
 
 /** Student must master N more atoms before retrying the failed atom */
-const COOLDOWN_MASTERY_COUNT = 3;
+export const COOLDOWN_MASTERY_COUNT = 3;
 
 // ============================================================================
 // HELPERS
@@ -91,8 +95,8 @@ async function getPrereqIds(atomId: string): Promise<string[]> {
 }
 
 /**
- * Maps answered scan responses → their prereq atoms via question_atoms join.
- * Only includes responses that have been answered (answeredAt IS NOT NULL).
+ * Maps answered scan responses to their prereq atoms via
+ * generated_questions join. Only includes answered responses.
  */
 async function getTestedPrereqs(
   sessionId: string,
@@ -101,18 +105,18 @@ async function getTestedPrereqs(
   if (prereqIds.length === 0) return [];
   const rows = await db
     .select({
-      atomId: questionAtoms.atomId,
+      atomId: generatedQuestions.atomId,
       isCorrect: atomStudyResponses.isCorrect,
     })
     .from(atomStudyResponses)
     .innerJoin(
-      questionAtoms,
-      eq(questionAtoms.questionId, atomStudyResponses.questionId)
+      generatedQuestions,
+      eq(generatedQuestions.id, atomStudyResponses.questionId)
     )
     .where(
       and(
         eq(atomStudyResponses.sessionId, sessionId),
-        inArray(questionAtoms.atomId, prereqIds),
+        inArray(generatedQuestions.atomId, prereqIds),
         sql`${atomStudyResponses.answeredAt} IS NOT NULL`
       )
     )
@@ -128,21 +132,14 @@ async function getTestedPrereqs(
   }, []);
 }
 
-/** Finds one hard question for a prereq atom, excluding already-used IDs */
+/** Finds one hard generated question for a prereq atom */
 async function findHardQuestion(prereqAtomId: string, excludeIds: string[]) {
-  const conds = [
-    eq(questionAtoms.atomId, prereqAtomId),
-    eq(questions.difficultyLevel, "high"),
-  ];
-  if (excludeIds.length > 0) {
-    conds.push(notInArray(questions.id, excludeIds));
-  }
-  const rows = await db
-    .select({ id: questions.id, qtiXml: questions.qtiXml })
-    .from(questionAtoms)
-    .innerJoin(questions, eq(questions.id, questionAtoms.questionId))
-    .where(and(...conds))
-    .limit(1);
+  const rows = await findGeneratedQuestions({
+    atomId: prereqAtomId,
+    difficulty: "high",
+    excludeIds,
+    limit: 1,
+  });
   return rows[0] ?? null;
 }
 
@@ -333,11 +330,7 @@ export async function submitScanAnswer(params: {
     .limit(1);
   if (!resp) throw new Error("Response not found");
 
-  const [question] = await db
-    .select({ qtiXml: questions.qtiXml })
-    .from(questions)
-    .where(eq(questions.id, resp.questionId))
-    .limit(1);
+  const question = await getQuestionContent(resp.questionId);
   if (!question) throw new Error("Question not found");
 
   const parsed = parseQtiXml(question.qtiXml);
@@ -358,17 +351,11 @@ export async function submitScanAnswer(params: {
   const scannedPrereqs = await getTestedPrereqs(params.sessionId, prereqIds);
 
   if (!isCorrect) {
-    const [link] = await db
-      .select({ atomId: questionAtoms.atomId })
-      .from(questionAtoms)
-      .where(
-        and(
-          eq(questionAtoms.questionId, resp.questionId),
-          inArray(questionAtoms.atomId, prereqIds)
-        )
-      )
-      .limit(1);
-    const gapAtomId = link?.atomId ?? null;
+    const questionAtomId = await getQuestionAtomId(resp.questionId);
+    const gapAtomId =
+      questionAtomId && prereqIds.includes(questionAtomId)
+        ? questionAtomId
+        : null;
 
     if (gapAtomId) {
       await db

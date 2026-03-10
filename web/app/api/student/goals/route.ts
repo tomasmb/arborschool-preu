@@ -20,14 +20,20 @@ export async function GET() {
     return studentApiError("UNAUTHORIZED", "Unauthorized", 401);
   }
 
-  const [view, journey] = await Promise.all([
-    getStudentGoalsView(userId),
-    getStudentJourneySnapshot(userId),
-  ]);
-  return studentApiSuccess({
-    ...view,
-    journeyState: journey.journeyState,
-  });
+  try {
+    const [view, journey] = await Promise.all([
+      getStudentGoalsView(userId),
+      getStudentJourneySnapshot(userId),
+    ]);
+    return studentApiSuccess({
+      ...view,
+      journeyState: journey.journeyState,
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to load goals";
+    return studentApiError("GOALS_LOAD_FAILED", message, 500);
+  }
 }
 
 export async function POST(request: Request) {

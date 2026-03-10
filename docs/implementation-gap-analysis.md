@@ -5,7 +5,7 @@
 >
 > Use this document to plan and prioritize implementation work.
 
-**Audited:** March 6, 2026
+**Audited:** March 10, 2026 (third pass — post-P1/P2/P4 fixes)
 
 ---
 
@@ -13,271 +13,279 @@
 
 | Feature | Backend | API | Frontend | E2E Status |
 |---|---|---|---|---|
-| Mini-clase mastery | Done | Done | Done | **Working** |
-| Cooldown after failure | Done | Done | Done | **Working** |
+| Short diagnostic (16 questions) | Done | Done | Done | **Working** |
+| Mini-clase mastery (`?atom=`) | Done | Done | Done | **Working** |
+| Mastery algorithm (streaks, difficulty ladder) | Done | — | — | **Working** |
+| Score prediction (dynamic recomputation) | Done | Done | Done | **Working** |
+| Score prediction governance (diagnostic cap) | Done | — | — | **Working** |
+| Diagnostic source banner (honest copy) | Done | Done | Done | **Working** |
+| Streak badge (relabeled as weekly sessions) | Done | Done | Done | **Working** |
+| Rich feedback (questionsUnlocked, nextAtom) | Done | Done | Done | **Working** |
 | Misión semanal | Done | Done | Done | **Working** |
-| Score prediction display | Done | Done | Done | **Working** |
-| Diagnostic source banner | Done | Done | Done | **Working** |
 | Milestone banners | Done | Done | Done | **Working** |
-| Prereq scan flow | Done | **Missing** | **Missing** | **Dead link** |
-| Spaced repetition reviews | Done | Done | **Missing** | **Dead link** |
-| Full timed test | **Missing** | **Missing** | **Missing** | **Not built** |
-| Score prediction governance | **Missing** | — | — | **Not enforced** |
-| Daily streak tracking | **Missing** | — | Misleading | **Not built** |
-| Habit quality guard | **Missing** | **Missing** | **Missing** | **Not built** |
-| 3-hop implicit SR credit | **Missing** | — | — | **Not built** |
-| SR balance rule | **Missing** | — | — | **Not built** |
+| Habit quality guard (fatigue, diminishing returns) | Done | Done | Done | **Working** |
+| 3-hop implicit SR credit | Done | — | — | **Working** |
+| SR balance rule (review after N masteries) | Done | Done | Done | **Working** |
+| Learning path + competitive route fork | Done | Done | Done | **Working** |
+| Goals / planning page | Done | Done | Done | **Working** |
+| Auth middleware (portal + API protection) | Done | — | — | **Working** |
+| SR review flow (`?mode=review`) | Done | Done | Done | **Working** |
+| Prereq scan flow (`?scan=`) | Done | Done | Done | **Working** |
+| Cooldown after failure | Done | Done | Done | **Working** |
+| Full timed test / retest | **Missing** | **Missing** | **Missing** | **Not built** |
+| Real daily streak tracking | **Missing** | **Missing** | — | **Not built** |
+| Error handling on 3 API routes | — | Done | — | **Working** |
 
 ---
 
-## Priority 1 — Dead Links (students hit a wall)
+## ~~Priority 1 — Runtime Crashes~~ RESOLVED
 
-### 1A. Spaced Repetition Review Flow
+### 1A. Foreign Key Mismatch in Review + Prereq Scan — FIXED (March 10, 2026)
 
-**Spec ref:** Section 7 — Spaced Repetition (Activity-Based)
+**Resolution:** Option A — switched both flows to `generated_questions`.
 
-**What's built:**
-- `spacedRepetition.ts` — full backend: scheduling, budgets, due items,
-  create/answer/complete session, implicit repetition, inactivity decay
-- API route at `api/student/atom-sessions/review/route.ts` — wired
-- Dashboard shows `ReviewBadge` with pending count, links to
-  `/portal/study?mode=review`
+A shared `questionQueries.ts` helper was created with `findGeneratedQuestions`,
+`getQuestionAtomId`, and `getQuestionContent` to eliminate duplication across
+the mastery engine, spaced repetition, and prereq scan flows.
 
-**What's missing:**
-- `study-sprint-client.tsx` does NOT handle `?mode=review`. It only
-  handles `?atom=` and `?sprintId=`. The link is a dead end.
-- No dedicated `ReviewSessionView` component exists.
+**Files changed:**
+- `web/lib/student/questionQueries.ts` — **new** shared query helpers
+- `web/lib/student/spacedRepetition.ts` — `findReviewQuestion()`,
+  `submitReviewAnswer()`, `completeReviewSession()` now use
+  `generatedQuestions` instead of `questions` + `questionAtoms`
+- `web/lib/student/prerequisiteScan.ts` — `findHardQuestion()`,
+  `submitScanAnswer()`, `getTestedPrereqs()` now use `generatedQuestions`
 
-**Work needed:**
-1. Add `?mode=review` URL param handling in `study-sprint-client.tsx`
-2. Build a review session UI (question-by-question, multi-atom)
-3. Wire to the existing `api/student/atom-sessions/review` endpoint
-4. Handle review failure → prereq scan or halved interval (spec 7.9)
-
-**Estimated scope:** Medium — backend/API done, need frontend routing + UI.
+**Important:** Verify data coverage item 5D (below) to ensure atoms reachable
+via review/scan have high-difficulty generated questions.
 
 ---
 
-### 1B. Prerequisite Scan Flow
+## ~~Priority 2 — Logic Bugs~~ RESOLVED
 
-**Spec ref:** Section 5 — Prerequisite Scan Protocol
+### 2A. Cooldown Not Enforced After Failure — FIXED (March 10, 2026)
 
-**What's built:**
-- `prerequisiteScan.ts` — full backend: `startPrereqScan`,
-  `getNextScanQuestion`, `submitScanAnswer`, `checkCooldownExpiry`
-- `atomMasteryEngine.ts` — correctly calls `startPrereqScan` on failure,
-  returns scan info in the response payload
-- `AtomResultPanel.tsx` — renders scan CTA linking to
-  `/portal/study?scan={sessionId}`
+**Resolution:** Cooldown is now enforced at 4 levels:
 
-**What's missing:**
-- No API routes for `getNextScanQuestion` or `submitScanAnswer`
-- `study-sprint-client.tsx` does NOT handle `?scan=` URL parameter
-- No `PrereqScanView` component exists
-- Gap detection feedback UI (spec 11.3 — "Detectamos un vacío en
-  [prereq name]") is not built
+1. **Session creation blocked** — `createAtomSession()` queries
+   `atom_mastery.cooldownUntilMasteryCount` and throws a user-facing
+   error with the remaining count if > 0.
+2. **Next-action filtering** — `getMasteryRows()` in `nextAction.ts` now
+   includes `cooldownUntilMasteryCount`; atoms in cooldown are excluded
+   before passing to `analyzeLearningPotential()`.
+3. **Next-study-atom filtering** — `getNextStudyAtom()` in
+   `masteryLifecycle.ts` excludes atoms with active cooldowns from the
+   "next atom in subject" suggestion.
+4. **Dynamic UI count** — `FailureWithCooldown` in `AtomResultPanel.tsx`
+   now accepts `cooldownRemaining` and displays the actual remaining
+   count instead of hardcoding 3. The pipeline flows through
+   `AnswerResultWithLifecycle` → API → `AtomStudyView` → `AtomResultPanel`.
 
-**Work needed:**
-1. Create API routes: `GET /api/student/prereq-scan/[sessionId]/next`,
-   `POST /api/student/prereq-scan/[sessionId]/answer`
-2. Add `?scan=` URL param handling in `study-sprint-client.tsx`
-3. Build `PrereqScanView` (1 question at a time, show which prereq
-   is being tested, progress indicator)
-4. Build gap detection result screen
-5. On gap found: mark prereq as not mastered, trigger learning path
-   recalculation
-
-**Estimated scope:** Medium-Large — backend done, need API routes +
-frontend flow + gap detection UX.
+**Files changed:**
+- `web/lib/student/atomMasteryEngine.ts` — cooldown check in
+  `createAtomSession()`, `cooldownRemaining` in answer result type
+- `web/lib/student/nextAction.ts` — `getMasteryRows()` includes
+  cooldown; filtering before analysis
+- `web/lib/student/masteryLifecycle.ts` — `getNextStudyAtom()` excludes
+  cooldown atoms
+- `web/lib/student/prerequisiteScan.ts` — exported `COOLDOWN_MASTERY_COUNT`
+- `web/app/portal/study/AtomResultPanel.tsx` — dynamic `cooldownRemaining`
+- `web/app/portal/study/AtomStudyView.tsx` — passes `cooldownRemaining`
 
 ---
 
-## Priority 2 — Misleading or Broken UX
+## Priority 3 — Missing Features
 
-### 2A. Diagnostic Banner + Retest CTA
+### 3A. Full Timed Test (Retest)
 
 **Spec ref:** Section 8 — Retest Gating
 
-**Current behavior:**
-- Banner says "Estimado desde diagnóstico corto (16 preguntas). Para una
-  predicción más precisa, realiza un test completo cronometrado."
-- Below it: "Necesitas dominar 17 conceptos más" (from retest gating:
-  `UNLOCK_THRESHOLD=18 - atomsMasteredViaStudy=1 = 17`)
-- The implicit promise is that a full test exists and will unlock after
-  18 atoms. **It doesn't exist.**
-
 **What's built:**
-- `retestGating.ts` — complete gating logic (thresholds, spacing, cap)
-- CTA links to `/diagnostico?mode=full` — **dead link**
+- `retestGating.ts` — complete gating logic: eligibility (18 atoms
+  mastered), recommendation (30 atoms), 7-day spacing, 3 tests/month cap
+- `retestStatus` payload computed in `dashboardM1.ts`
+- `DiagnosticSourceBanner` shows "Pronto podrás tomar un test completo"
 
 **What's missing:**
-- Full timed test UI (50+ questions, timer, scoring)
-- `/diagnostico?mode=full` handler
-- Score recalibration after full test
+- No full test page or route (`/diagnostico?mode=full` does nothing)
+- No test creation flow — `POST /api/diagnostic/start` never sets
+  `testId`; all attempts have `test_id IS NULL`
+- No `tests` table row for a full PAES mock test (50+ questions, 2h 30m)
+- No score recalibration flow after a full test (updating
+  `paesScoreMin`/`paesScoreMax` with higher confidence)
+- `retestStatus` is never surfaced as an actionable CTA in the UI
 
-**Immediate fix (honest UX while full test isn't built):**
-1. Remove the "Necesitas dominar X conceptos más" text — it promises
-   something that doesn't exist yet
-2. Keep the diagnostic source label ("Estimado desde diagnóstico corto")
-3. Replace the retest CTA with softer copy: "Pronto podrás tomar un
-   test completo para mejorar tu estimación" or remove entirely
+**This is a large feature.** The short diagnostic (16 questions) works and
+honestly labels itself. The banner copy says "Pronto podrás..." which is
+fine for launch. Build the full test as a follow-up project.
 
-**Full implementation (later):**
-1. Build full timed test flow (separate project)
-2. Wire retest gating CTA to real test
-3. Score recalibration on test completion
+**Work needed (when ready):**
+1. Design the full test question set (50+ questions across all axes)
+2. Build a timed test UI with progress tracking and auto-submit
+3. Add `?mode=full` handling in the diagnostic page
+4. Create test sessions with `testId` set for proper gating
+5. Score recalibration on completion (higher confidence bounds)
+6. Surface `retestStatus` CTA in the dashboard when eligible
 
 ---
 
-### 2B. Streak Badge Misrepresentation
+### 3B. Real Daily Streak Tracking
 
 **Spec ref:** Section 13.1 — Habit Policy
 
-**Current behavior:**
-- Fire icon + number next to the score (e.g. "🔥 2")
-- Displays `completedSessions` from `student_weekly_missions`
-- This is **sessions this week**, NOT a consecutive-days streak
+**Current state:**
+- `StreakBadge` honestly displays "X sesión(es) esta semana" (weekly
+  session count from `student_weekly_missions`)
+- No consecutive-day streak logic exists
 
 **What the spec says:**
 - Daily streak: ≥1 mastered atom per day → streak increments
-- No backend logic exists for daily streak tracking
-- `users` table has no `current_streak` column
-
-**Options:**
-1. **Relabel honestly:** Change badge to show "2 esta semana" instead
-   of implying a streak
-2. **Build real streaks (later):** Add `current_streak` + `max_streak`
-   to user profile, track daily activity, reset on missed days
-
----
-
-### 2C. Rich Feedback — Unwired Props
-
-**Spec ref:** Section 11 — Student Feedback UX
-
-**Current behavior:**
-- `AtomResultPanel.tsx` accepts `questionsUnlocked` and `nextAtom` props
-- `useAtomStudyController` never passes these — always `undefined`
-- The mastery result panel's "questions unlocked" stat and "next atom"
-  preview are silently empty
+- Missed day → streak resets to 0
+- Show current streak + max streak
 
 **Work needed:**
-1. After mastery, compute how many questions the student just unlocked
-   (query `question_atoms` for questions where all primary atoms are
-   now mastered)
-2. Determine the next atom in the learning path
-3. Pass both to the result panel
+1. Add `current_streak` and `max_streak` columns to `users` table
+2. Track daily activity: on each mastery, check if the student had a
+   mastery yesterday — if yes, increment; if gap, reset to 1
+3. Update `StreakBadge` to show actual daily streak
+4. Optional: streak freeze (1 per week), streak milestone badges
 
 ---
 
-## Priority 3 — Missing Backend Logic
+## ~~Priority 4 — API Hardening~~ RESOLVED
 
-### 3A. Score Prediction Governance
+### 4A. Missing Error Handling on 3 Routes — FIXED (March 10, 2026)
 
-**Spec ref:** Section 9.3
+**Resolution:** All three GET handlers now have try/catch with
+`studentApiError()` responses:
 
-**What the spec says:**
-- `scenario_score = min(effort_projection, diagnostic_prediction_max)`
-- Effort slider projections should be capped by the diagnostic ceiling
-- Prediction authority stays with the diagnostic model
-
-**Current behavior:**
-- Effort metrics computed in `dashboardM1.ts` are not capped
-- The atom model projects scores independently of diagnostic bounds
-
-**Work needed:**
-1. Apply cap formula in `computeEffortMetrics` or `buildReadyDashboard`
-2. Ensure displayed scenarios never exceed `prediction.max`
+1. `goals/route.ts` — `GOALS_LOAD_FAILED` (500)
+2. `me/route.ts` — `PROFILE_LOAD_FAILED` (500)
+3. `simulator/route.ts` — `SIMULATION_LOAD_FAILED` (500); also migrated
+   from raw `NextResponse.json` to `studentApiSuccess`/`studentApiError`
+   for consistency with all other student API routes.
 
 ---
 
-### 3B. 3-Hop Implicit Repetition
+## Priority 5 — Data Verification (Pre-Launch Checklist)
 
-**Spec ref:** Section 7.6
+These are not code changes but must be confirmed before production.
 
-**What the spec says:**
-- 1-hop prerequisites get full SR reset
-- 2-hop get half credit
-- 3-hop get 0.25 credit
+### 5A. Generated Questions Coverage
 
-**Current behavior:**
-- `applyImplicitRepetition` in `spacedRepetition.ts` only does 1-hop
-  (full) and 2-hop (half). 3-hop is not implemented.
+The atom study flow (`?atom=`) queries `generated_questions` filtered by
+`atomId` + `difficultyLevel`. If an atom has no generated questions, the
+student hits `"No questions available for this atom"`.
 
-**Work needed:**
-1. Add 3-hop traversal to `applyImplicitRepetition`
-2. Apply 0.25 credit factor
+**Verify:**
+- Every atom suggested by the learning path has rows in
+  `generated_questions`
+- Minimum 3 questions per difficulty level (easy/medium/hard) = 9+ total
+  per atom
+- QTI XML is valid and parseable
+
+```sql
+SELECT a.id, a.title,
+  COUNT(*) FILTER (WHERE gq.difficulty_level = 'easy') AS easy,
+  COUNT(*) FILTER (WHERE gq.difficulty_level = 'medium') AS medium,
+  COUNT(*) FILTER (WHERE gq.difficulty_level = 'high') AS hard
+FROM atoms a
+LEFT JOIN generated_questions gq ON gq.atom_id = a.id
+GROUP BY a.id, a.title
+HAVING COUNT(*) < 9 OR
+  COUNT(*) FILTER (WHERE gq.difficulty_level = 'easy') = 0 OR
+  COUNT(*) FILTER (WHERE gq.difficulty_level = 'medium') = 0 OR
+  COUNT(*) FILTER (WHERE gq.difficulty_level = 'high') = 0
+ORDER BY COUNT(*);
+```
+
+### 5B. Prerequisite IDs Populated
+
+The learning path, implicit repetition, prereq scan, and cooldown flows
+all depend on `atoms.prerequisite_ids` being populated.
+
+**Verify:**
+- Atoms that should have prerequisites actually have the array filled
+- Referenced prerequisite atom IDs exist in the `atoms` table
+
+```sql
+SELECT a.id, a.title, a.prerequisite_ids
+FROM atoms a
+WHERE a.prerequisite_ids IS NOT NULL
+  AND array_length(a.prerequisite_ids, 1) > 0
+  AND EXISTS (
+    SELECT 1 FROM unnest(a.prerequisite_ids) AS pid
+    WHERE pid NOT IN (SELECT id FROM atoms)
+  );
+```
+
+### 5C. Lessons Coverage
+
+The atom study flow checks for a lesson before questions. Missing lessons
+are fine (the flow skips to questions), but important atoms should have
+lesson content.
+
+**Verify:**
+- Key atoms in the recommended learning path have lesson content
+- `lessons.lesson_html` is non-null and non-empty
+
+### 5D. Review/Scan Question Coverage (After FK Fix)
+
+After fixing Priority 1A, review and prereq scan will use
+`generated_questions` (if Option A). Verify that atoms reachable via
+review or prereq scan have high-difficulty generated questions.
+
+```sql
+SELECT a.id, a.title,
+  COUNT(*) FILTER (WHERE gq.difficulty_level = 'high') AS hard_questions
+FROM atoms a
+LEFT JOIN generated_questions gq ON gq.atom_id = a.id
+WHERE a.id IN (
+  SELECT atom_id FROM atom_mastery WHERE is_mastered = true
+)
+GROUP BY a.id, a.title
+HAVING COUNT(*) FILTER (WHERE gq.difficulty_level = 'high') = 0;
+```
 
 ---
 
-### 3C. SR Balance Rule
+## Previously Completed
 
-**Spec ref:** Section 7.10
+### Sprint 3 — March 10, 2026
 
-**What the spec says:**
-- Interleave SR review blocks after every 2-3 newly mastered atoms
-- Prevents long streaks of new learning without reinforcement
+- ✅ **FK mismatch fix** (1A) — review + prereq scan switched to
+  `generated_questions`; shared `questionQueries.ts` helper created
+- ✅ **Cooldown enforcement** (2A) — blocked in `createAtomSession`,
+  filtered in next-action + next-study-atom, dynamic UI count
+- ✅ **API error handling** (4A) — try/catch on goals, me, simulator
+  routes; simulator migrated to `studentApiSuccess`/`studentApiError`
 
-**Current behavior:**
-- No interleaving logic. Reviews show up in the dashboard as a count,
-  but the study flow doesn't enforce alternation.
+### Sprint 2 — March 6, 2026
 
-**Work needed:**
-1. Track atoms mastered since last review block
-2. After 2-3 new masteries, insert a review block before next new atom
-3. Enforce in the study sprint flow
-
----
-
-### 3D. Habit & Workload Quality Guard
-
-**Spec ref:** Section 13.3
-
-**What the spec says:**
-- If within-session accuracy drops or repeated failures appear, suggest
-  switching to SR/review or taking a break
-- Diminishing returns for 4-5+ atoms/day
-
-**Current behavior:**
-- Nothing exists for this.
-
-**Work needed:**
-1. Track within-session accuracy
-2. Detect failure patterns (3+ consecutive failures)
-3. Show intervention UI suggesting review or break
-4. Implement diminishing reward shaping for high-volume days
+- ✅ SR review flow frontend (`?mode=review` routing, ReviewSessionView,
+  useReviewSessionController)
+- ✅ Prereq scan flow frontend (`?scan=` routing, PrereqScanView,
+  usePrereqScanController, API routes)
+- ✅ Diagnostic banner — removed dead retest CTA, honest copy
+- ✅ Streak badge — relabeled from streak to weekly sessions
+- ✅ Rich feedback props — wired questionsUnlocked + nextAtom through
+  engine → API → UI
+- ✅ Score prediction governance — diagnostic ceiling cap
+- ✅ 3-hop implicit SR credit — 1-hop full, 2-hop 50%, 3-hop 25%
+- ✅ SR balance rule — suggest review after 3 consecutive masteries
+- ✅ Habit quality guard — fatigue detection + intervention banners
 
 ---
 
-## Data Integrity Notes
+## Remaining Work — Recommended Execution Order
 
-These items were fixed during this audit and are now working correctly:
-
-- ✅ **Atom count:** 123/205 (was showing 123/206, then 123/140, then
-  1/238 at various points)
-- ✅ **Score display:** 878 (was flashing "0" due to `useCountUp` init)
-- ✅ **Diagnostic source:** Shows "diagnóstico corto" (was showing
-  "test completo" incorrectly)
-- ✅ **Milestone banner:** Shows actual count "123 conceptos dominados"
-  (was showing fixed "50 conceptos dominados")
-- ✅ **CTA time:** Shows "~25 min" per session (was showing full route
-  time "4h 20 min")
-- ✅ **Route cards:** Toggle behavior instead of direct navigation
-- ✅ **Diagnostic mastery backfill:** Script ran to fix missing
-  diagnostic-sourced `atom_mastery` records
-- ✅ **Misión semanal:** Confirmed real data from
-  `student_weekly_missions` table
-
----
-
-## Recommended Execution Order
-
-1. **Fix misleading UX now** (2A diagnostic banner, 2B streak badge) —
-   small changes, high trust impact
-2. **Wire SR review flow** (1A) — backend is done, biggest student value
-3. **Wire prereq scan flow** (1B) — backend is done, critical for
-   learning quality
-4. **Rich feedback props** (2C) — small win, better mastery experience
-5. **Score governance** (3A) — correctness matter
-6. **Backend polish** (3B, 3C, 3D) — diminishing returns, do when
-   capacity allows
+1. **Verify data coverage** (5A-5D) — run the SQL queries before any
+   real students use the system. Especially important now that review
+   and prereq scan use `generated_questions` (need high-difficulty
+   questions for all atoms).
+2. **Real daily streaks** (3B) — needs schema change (`current_streak`,
+   `max_streak` on `users`), streak update logic on mastery, StreakBadge
+   update. Current weekly label is honest; not urgent.
+3. **Full timed test** (3A) — large feature: test data, creation API,
+   timed UI, score recalibration, retest CTA. Banner copy is honest;
+   ship without it.
