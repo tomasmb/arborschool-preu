@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useFullTestFlow } from "./useFullTestFlow";
 import { useFullTestTimer, formatTime } from "./useFullTestTimer";
 import {
@@ -14,10 +14,17 @@ import { parseQtiXmlForReview } from "@/lib/qti/clientParser";
 import { MathContent } from "@/lib/qti/MathRenderer";
 import { PAES_TOTAL_QUESTIONS } from "@/lib/diagnostic/paesScoreTable";
 import type { ResolvedQuestion } from "@/lib/student/fullTest";
+import type { ApiEnvelope } from "@/lib/student/apiClientEnvelope";
 
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
+
+type TestInfo = {
+  testName: string | null;
+  questionCount: number;
+  timeLimitMinutes: number;
+};
 
 export function FullTestClient() {
   const flow = useFullTestFlow();
@@ -26,6 +33,16 @@ export function FullTestClient() {
     onTimeUp: flow.handleTimeUp,
     enabled: flow.screen === "in-progress",
   });
+  const [testInfo, setTestInfo] = useState<TestInfo | null>(null);
+
+  useEffect(() => {
+    fetch("/api/student/full-test/info", { credentials: "include" })
+      .then((r) => r.json())
+      .then((payload: ApiEnvelope<TestInfo>) => {
+        if (payload.success) setTestInfo(payload.data);
+      })
+      .catch(() => {});
+  }, []);
 
   switch (flow.screen) {
     case "pre-test":
@@ -34,6 +51,7 @@ export function FullTestClient() {
           loading={flow.loading}
           error={flow.error}
           onStart={flow.startTest}
+          questionCount={testInfo?.questionCount ?? PAES_TOTAL_QUESTIONS}
         />
       );
     case "in-progress":
@@ -57,10 +75,12 @@ function PreTestScreen({
   loading,
   error,
   onStart,
+  questionCount,
 }: {
   loading: boolean;
   error: string | null;
   onStart: () => void;
+  questionCount: number;
 }) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-cream via-white to-off-white flex items-center justify-center px-4">
@@ -70,8 +90,7 @@ function PreTestScreen({
             Test Completo PAES M1
           </h1>
           <p className="text-gray-600">
-            Evalúa tu nivel con un test completo de {PAES_TOTAL_QUESTIONS}{" "}
-            preguntas
+            Evalúa tu nivel con un test completo de {questionCount} preguntas
           </p>
         </div>
 
@@ -94,7 +113,7 @@ function PreTestScreen({
             </li>
             <li className="flex gap-2">
               <span className="shrink-0 text-primary">•</span>
-              {PAES_TOTAL_QUESTIONS} preguntas de opción múltiple
+              {questionCount} preguntas de opción múltiple
             </li>
           </ul>
         </div>

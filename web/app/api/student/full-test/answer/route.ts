@@ -50,6 +50,14 @@ export async function POST(request: NextRequest) {
         questionIndex,
         answeredAt: new Date(),
       })
+      .onConflictDoUpdate({
+        target: [studentResponses.testAttemptId, studentResponses.questionId],
+        set: {
+          selectedAnswer,
+          isCorrect,
+          answeredAt: new Date(),
+        },
+      })
       .returning({ id: studentResponses.id });
 
     return NextResponse.json({

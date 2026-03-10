@@ -15,6 +15,9 @@ import {
   inArray,
 } from "drizzle-orm";
 import { db } from "@/db";
+
+/** Transaction-compatible client type for helper functions */
+type TxClient = Parameters<Parameters<typeof db.transaction>[0]>[0];
 import {
   tests,
   testQuestions,
@@ -311,21 +314,22 @@ export async function recalibrateScore(
       ? ((correctAnswers / totalQuestions) * 100).toFixed(2)
       : "0";
 
-  await Promise.all([
-    updateTestAttempt(attemptId, userId, {
+  await db.transaction(async (tx) => {
+    await updateTestAttempt(tx, attemptId, userId, {
       correctAnswers,
       scorePercentage,
       paesScoreMin,
       paesScoreMax,
-    }),
-    updateUserScores(userId, paesScoreMin, paesScoreMax),
-    upsertMasteryFromCorrectAnswers(userId, answeredQuestions),
-  ]);
+    });
+    await updateUserScores(tx, userId, paesScoreMin, paesScoreMax);
+    await upsertMasteryFromCorrectAnswers(tx, userId, answeredQuestions);
+  });
 
   return { paesScore, paesScoreMin, paesScoreMax, level };
 }
 
 async function updateTestAttempt(
+  tx: TxClient,
   attemptId: string,
   userId: string,
   data: {
@@ -335,7 +339,7 @@ async function updateTestAttempt(
     paesScoreMax: number;
   }
 ) {
-  await db
+  await tx
     .update(testAttempts)
     .set({
       correctAnswers: data.correctAnswers,
@@ -350,11 +354,12 @@ async function updateTestAttempt(
 }
 
 async function updateUserScores(
+  tx: TxClient,
   userId: string,
   paesScoreMin: number,
   paesScoreMax: number
 ) {
-  await db
+  await tx
     .update(users)
     .set({ paesScoreMin, paesScoreMax })
     .where(eq(users.id, userId));
@@ -365,6 +370,7 @@ async function updateUserScores(
  * Only marks as mastered if not already mastered.
  */
 async function upsertMasteryFromCorrectAnswers(
+  tx: TxClient,
   userId: string,
   answeredQuestions: RecalibrateParams["answeredQuestions"]
 ) {
@@ -374,7 +380,7 @@ async function upsertMasteryFromCorrectAnswers(
 
   if (correctOriginals.length === 0) return;
 
-  const primaryAtoms = await db
+  const primaryAtoms = await tx
     .select({
       questionId: questionAtoms.questionId,
       atomId: questionAtoms.atomId,
@@ -390,7 +396,7 @@ async function upsertMasteryFromCorrectAnswers(
   const now = new Date();
   const nowIso = now.toISOString();
   for (const { atomId } of primaryAtoms) {
-    await db
+    await tx
       .insert(atomMastery)
       .values({
         userId,

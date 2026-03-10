@@ -103,8 +103,6 @@ function clearProgress(attemptId: string) {
 // API HELPERS
 // ============================================================================
 
-const SAVE_BATCH_SIZE = 5;
-
 async function apiStartTest(): Promise<StartPayload> {
   const res = await fetch("/api/student/full-test/start", {
     method: "POST",
@@ -138,7 +136,10 @@ async function apiCompleteTest(body: {
   attemptId: string;
   correctAnswers: number;
   totalQuestions: number;
-  answeredQuestions: { originalQuestionId: string; isCorrect: boolean }[];
+  answeredQuestions: {
+    originalQuestionId: string;
+    isCorrect: boolean;
+  }[];
 }): Promise<FullTestResults> {
   const res = await fetch("/api/student/full-test/complete", {
     method: "POST",
@@ -173,8 +174,8 @@ export function useFullTestFlow() {
     loading: false,
   });
 
-  const unsavedCountRef = useRef(0);
-  const savingRef = useRef(false);
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
   // ── Persist on answer changes ──────────────────────────────────────
   useEffect(() => {
@@ -183,6 +184,18 @@ export function useFullTestFlow() {
     }
   }, [state.attemptId, state.answers, state.currentPosition]);
 
+  // ── Navigation guard (beforeunload) ────────────────────────────────
+  useEffect(() => {
+    if (state.screen !== "in-progress") return;
+
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [state.screen]);
+
   // ── Start test ─────────────────────────────────────────────────────
   const startTest = useCallback(async () => {
     setState((s) => ({ ...s, loading: true, error: null }));
@@ -190,7 +203,6 @@ export function useFullTestFlow() {
       const data = await apiStartTest();
       const saved = loadProgress(data.attemptId);
 
-      // If resumed but time already expired, go straight to time-up
       if (data.resumed && data.expired) {
         setState((s) => ({
           ...s,
@@ -224,42 +236,30 @@ export function useFullTestFlow() {
     }
   }, []);
 
-  // ── Select answer ──────────────────────────────────────────────────
-  const selectAnswer = useCallback(
-    (position: number, answer: string) => {
-      setState((s) => {
-        const next = new Map(s.answers);
-        next.set(position, answer);
-        return { ...s, answers: next };
-      });
+  // ── Select answer (saves to DB immediately) ────────────────────────
+  const selectAnswer = useCallback((position: number, answer: string) => {
+    setState((s) => {
+      const next = new Map(s.answers);
+      next.set(position, answer);
+      return { ...s, answers: next };
+    });
 
-      unsavedCountRef.current += 1;
+    const { attemptId, questions } = stateRef.current;
+    if (!attemptId) return;
 
-      // Batch-save answers to server periodically
-      if (
-        unsavedCountRef.current >= SAVE_BATCH_SIZE &&
-        !savingRef.current &&
-        state.attemptId
-      ) {
-        savingRef.current = true;
-        unsavedCountRef.current = 0;
+    const question = questions.find((q) => q.position === position);
+    if (!question) return;
 
-        const question = state.questions.find((q) => q.position === position);
-        if (question) {
-          apiSaveAnswer({
-            attemptId: state.attemptId,
-            questionId: question.resolvedQuestionId,
-            selectedAnswer: answer,
-            isCorrect: answer === question.correctAnswer,
-            questionIndex: position - 1,
-          }).finally(() => {
-            savingRef.current = false;
-          });
-        }
-      }
-    },
-    [state.attemptId, state.questions]
-  );
+    apiSaveAnswer({
+      attemptId,
+      questionId: question.resolvedQuestionId,
+      selectedAnswer: answer,
+      isCorrect: answer === question.correctAnswer,
+      questionIndex: position - 1,
+    }).catch(() => {
+      /* localStorage is the fallback; submit will retry */
+    });
+  }, []);
 
   // ── Navigation ─────────────────────────────────────────────────────
   const goToQuestion = useCallback((position: number) => {
@@ -286,24 +286,6 @@ export function useFullTestFlow() {
     setState((s) => ({ ...s, screen: "submitting" }));
 
     try {
-      // First, save all unsaved answers to server
-      const savePromises = state.questions
-        .map((q) => {
-          const answer = state.answers.get(q.position);
-          if (!answer) return null;
-          return apiSaveAnswer({
-            attemptId: state.attemptId!,
-            questionId: q.resolvedQuestionId,
-            selectedAnswer: answer,
-            isCorrect: answer === q.correctAnswer,
-            questionIndex: q.position - 1,
-          });
-        })
-        .filter(Boolean);
-
-      await Promise.allSettled(savePromises);
-
-      // Build completion payload
       const answeredQuestions = state.questions.map((q) => {
         const answer = state.answers.get(q.position);
         return {

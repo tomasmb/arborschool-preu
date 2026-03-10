@@ -152,6 +152,35 @@ function RetestCTASection({ retestStatus }: { retestStatus: RetestStatus }) {
     );
   }
 
+  // Atoms threshold met but blocked by spacing or monthly cap
+  if (retestStatus.atomsMasteredSinceLastTest >= 18) {
+    return (
+      <section className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 space-y-3">
+        <div className="flex items-center gap-2">
+          <svg
+            className="w-5 h-5 text-amber-500 shrink-0"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.5}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <h2 className="text-base font-semibold text-gray-800">
+            Test completo desbloqueado
+          </h2>
+        </div>
+        {retestStatus.blockedReason ? (
+          <p className="text-sm text-amber-700">{retestStatus.blockedReason}</p>
+        ) : null}
+      </section>
+    );
+  }
+
   const progress = Math.min(
     100,
     Math.round((retestStatus.atomsMasteredSinceLastTest / 18) * 100)

@@ -1,5 +1,19 @@
 "use client";
 
+import {
+  ResponsiveContainer,
+  ComposedChart,
+  Line,
+  Area,
+  Scatter,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ReferenceLine,
+  ErrorBar,
+  Legend,
+} from "recharts";
 import { MINUTES_PER_ATOM } from "@/lib/diagnostic/scoringConstants";
 import type {
   ProjectionPoint,
@@ -8,14 +22,18 @@ import type {
 } from "./types";
 
 // ============================================================================
-// CHART CONSTANTS
+// CONSTANTS
 // ============================================================================
 
-const CHART_W = 600;
-const CHART_H = 280;
-const PAD = { top: 20, right: 20, bottom: 40, left: 50 };
-
 const ATOMS_STEPS = [2, 5, 10, 15, 20];
+
+const COLOR = {
+  primary: "#0b3a5b",
+  amber: "#d97706",
+  emerald: "#059669",
+  grid: "#e5e7eb",
+  band: "rgba(11, 58, 91, 0.08)",
+};
 
 // ============================================================================
 // SCORE HISTORY CHART
@@ -45,19 +63,41 @@ export function ScoreHistorySection({
   }
 
   const points = history.length > 0 ? history : [];
+
+  const diagPoints = points
+    .map((p, i) => ({
+      idx: i,
+      date: formatDate(p.date),
+      mid: p.type === "short_diagnostic" ? p.paesScoreMid : null,
+      errorY:
+        p.type === "short_diagnostic"
+          ? [p.paesScoreMid - p.paesScoreMin, p.paesScoreMax - p.paesScoreMid]
+          : [0, 0],
+    }))
+    .filter((p) => p.mid !== null);
+
+  const testPoints = points
+    .map((p, i) => ({
+      idx: i,
+      date: formatDate(p.date),
+      mid: p.type === "full_test" ? p.paesScoreMid : null,
+      errorY:
+        p.type === "full_test"
+          ? [p.paesScoreMid - p.paesScoreMin, p.paesScoreMax - p.paesScoreMid]
+          : [0, 0],
+    }))
+    .filter((p) => p.mid !== null);
+
+  const lineData = points.map((p, i) => ({
+    idx: i,
+    date: formatDate(p.date),
+    mid: p.paesScoreMid,
+  }));
+
   const allScores = points.flatMap((p) => [p.paesScoreMin, p.paesScoreMax]);
   if (targetScore) allScores.push(targetScore);
   const yMin = Math.max(100, Math.min(...allScores) - 50);
   const yMax = Math.min(1000, Math.max(...allScores) + 50);
-
-  const plotW = CHART_W - PAD.left - PAD.right;
-  const plotH = CHART_H - PAD.top - PAD.bottom;
-
-  const xScale = (i: number) =>
-    PAD.left +
-    (points.length > 1 ? (i / (points.length - 1)) * plotW : plotW / 2);
-  const yScale = (v: number) =>
-    PAD.top + plotH - ((v - yMin) / (yMax - yMin)) * plotH;
 
   return (
     <section className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
@@ -65,40 +105,129 @@ export function ScoreHistorySection({
         Historial de puntajes
       </h2>
 
-      <div className="overflow-x-auto">
-        <svg
-          viewBox={`0 0 ${CHART_W} ${CHART_H}`}
-          className="w-full max-w-[600px] mx-auto"
-          aria-label="Gráfico de historial de puntajes"
-        >
-          <GridLines yScale={yScale} yMin={yMin} yMax={yMax} />
-          {targetScore ? <TargetLine y={yScale(targetScore)} /> : null}
-
-          {points.map((p, i) => (
-            <DataPoint
-              key={`${p.date}-${i}`}
-              cx={xScale(i)}
-              yScale={yScale}
-              point={p}
-              dateLabel={formatDate(p.date)}
+      <div className="w-full" style={{ height: 300 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart margin={{ top: 10, right: 45, left: 0, bottom: 10 }}>
+            <CartesianGrid
+              strokeDasharray="3 6"
+              stroke={COLOR.grid}
+              vertical={false}
             />
-          ))}
-
-          {points.length > 1 ? (
-            <polyline
-              fill="none"
-              stroke="#0b3a5b"
-              strokeWidth={1.5}
-              points={points
-                .map((p, i) => `${xScale(i)},${yScale(p.paesScoreMid)}`)
-                .join(" ")}
+            <XAxis
+              dataKey="date"
+              type="category"
+              allowDuplicatedCategory={false}
+              tick={{ fontSize: 11, fill: "#9ca3af" }}
+              axisLine={{ stroke: COLOR.grid }}
+              tickLine={false}
             />
-          ) : null}
-        </svg>
+            <YAxis
+              domain={[yMin, yMax]}
+              tick={{ fontSize: 11, fill: "#9ca3af" }}
+              axisLine={false}
+              tickLine={false}
+              width={45}
+            />
+            <Tooltip content={<HistoryTooltip />} />
+
+            {targetScore ? (
+              <ReferenceLine
+                y={targetScore}
+                stroke={COLOR.emerald}
+                strokeDasharray="6 4"
+                strokeWidth={1.5}
+                label={{
+                  value: "Meta",
+                  position: "right",
+                  fill: COLOR.emerald,
+                  fontSize: 11,
+                  fontWeight: 600,
+                }}
+              />
+            ) : null}
+
+            <Line
+              data={lineData}
+              dataKey="mid"
+              stroke={COLOR.primary}
+              strokeWidth={2}
+              dot={false}
+              connectNulls
+              isAnimationActive={false}
+              legendType="none"
+            />
+
+            <Scatter
+              data={diagPoints}
+              dataKey="mid"
+              fill={COLOR.amber}
+              shape="circle"
+              legendType="circle"
+              name="Diagnóstico corto"
+            >
+              <ErrorBar
+                dataKey="errorY"
+                direction="y"
+                stroke={COLOR.amber}
+                strokeWidth={1.5}
+                width={6}
+              />
+            </Scatter>
+
+            <Scatter
+              data={testPoints}
+              dataKey="mid"
+              fill={COLOR.emerald}
+              shape="diamond"
+              legendType="diamond"
+              name="Test completo"
+            >
+              <ErrorBar
+                dataKey="errorY"
+                direction="y"
+                stroke={COLOR.emerald}
+                strokeWidth={1.5}
+                width={6}
+              />
+            </Scatter>
+
+            <Legend
+              iconSize={10}
+              wrapperStyle={{ fontSize: 12, color: "#6b7280" }}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
       </div>
-
-      <ChartLegend showTarget={!!targetScore} />
     </section>
+  );
+}
+
+function HistoryTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload: Record<string, unknown> }>;
+}) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
+  const mid = d.mid as number | null;
+  if (mid == null) return null;
+
+  const errorY = d.errorY as [number, number] | undefined;
+  const min = errorY ? mid - errorY[0] : mid;
+  const max = errorY ? mid + errorY[1] : mid;
+
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-md text-xs">
+      <p className="font-medium text-gray-800">{d.date as string}</p>
+      <p className="text-gray-600">
+        Puntaje: <span className="font-semibold">{mid}</span>
+      </p>
+      <p className="text-gray-500">
+        Banda: {min} – {max}
+      </p>
+    </div>
   );
 }
 
@@ -119,6 +248,7 @@ export function ProjectionSection({
 }) {
   const minutesPerWeek = atomsPerWeek * MINUTES_PER_ATOM;
   const pts = projection.points;
+  const n = projection.weeksToTarget;
 
   return (
     <section className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 space-y-4">
@@ -165,9 +295,9 @@ export function ProjectionSection({
         </p>
       )}
 
-      {projection.weeksToTarget ? (
+      {n ? (
         <p className="text-sm text-emerald-700 font-medium">
-          Alcanzas tu meta en ~{projection.weeksToTarget} semanas
+          Alcanzas tu meta en ~{n} {n === 1 ? "semana" : "semanas"}
         </p>
       ) : null}
 
@@ -180,7 +310,7 @@ export function ProjectionSection({
 }
 
 // ============================================================================
-// PROJECTION CHART (SVG)
+// PROJECTION CHART
 // ============================================================================
 
 function ProjectionChart({
@@ -200,209 +330,105 @@ function ProjectionChart({
   const yMin = Math.max(100, Math.min(...allVals) - 30);
   const yMax = Math.min(1000, Math.max(...allVals) + 30);
 
-  const plotW = CHART_W - PAD.left - PAD.right;
-  const plotH = CHART_H - PAD.top - PAD.bottom;
-
-  const xScale = (week: number) =>
-    PAD.left + ((week - 1) / Math.max(1, points.length - 1)) * plotW;
-  const yScale = (v: number) =>
-    PAD.top + plotH - ((v - yMin) / (yMax - yMin)) * plotH;
-
-  const topLine = points
-    .map((p) => `${xScale(p.week)},${yScale(p.projectedScoreMax)}`)
-    .join(" ");
-  const bottomLineRev = [...points]
-    .reverse()
-    .map((p) => `${xScale(p.week)},${yScale(p.projectedScoreMin)}`)
-    .join(" ");
+  const chartData = points.map((p) => ({
+    week: p.week,
+    label: `Sem ${p.week}`,
+    mid: p.projectedScoreMid,
+    min: p.projectedScoreMin,
+    max: p.projectedScoreMax,
+    range: [p.projectedScoreMin, p.projectedScoreMax] as [number, number],
+  }));
 
   return (
-    <div className="overflow-x-auto">
-      <svg
-        viewBox={`0 0 ${CHART_W} ${CHART_H}`}
-        className="w-full max-w-[600px] mx-auto"
-        aria-label="Gráfico de proyección"
-      >
-        <GridLines yScale={yScale} yMin={yMin} yMax={yMax} />
-        {targetScore ? <TargetLine y={yScale(targetScore)} /> : null}
+    <div className="w-full" style={{ height: 280 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <ComposedChart
+          data={chartData}
+          margin={{ top: 10, right: 45, left: 0, bottom: 10 }}
+        >
+          <CartesianGrid
+            strokeDasharray="3 6"
+            stroke={COLOR.grid}
+            vertical={false}
+          />
+          <XAxis
+            dataKey="label"
+            tick={{ fontSize: 11, fill: "#9ca3af" }}
+            axisLine={{ stroke: COLOR.grid }}
+            tickLine={false}
+            interval="preserveStartEnd"
+          />
+          <YAxis
+            domain={[yMin, yMax]}
+            tick={{ fontSize: 11, fill: "#9ca3af" }}
+            axisLine={false}
+            tickLine={false}
+            width={45}
+          />
+          <Tooltip content={<ProjectionTooltip />} />
 
-        <polygon
-          points={`${topLine} ${bottomLineRev}`}
-          fill="#0b3a5b"
-          fillOpacity={0.1}
-        />
-        <polyline
-          fill="none"
-          stroke="#0b3a5b"
-          strokeWidth={2}
-          points={points
-            .map((p) => `${xScale(p.week)},${yScale(p.projectedScoreMid)}`)
-            .join(" ")}
-        />
-
-        {weeksToTarget ? (
-          <g>
-            <line
-              x1={xScale(weeksToTarget)}
-              y1={PAD.top}
-              x2={xScale(weeksToTarget)}
-              y2={CHART_H - PAD.bottom}
-              stroke="#059669"
-              strokeDasharray="3,3"
+          {targetScore ? (
+            <ReferenceLine
+              y={targetScore}
+              stroke={COLOR.emerald}
+              strokeDasharray="6 4"
+              strokeWidth={1.5}
+              label={{
+                value: "Meta",
+                position: "right",
+                fill: COLOR.emerald,
+                fontSize: 11,
+                fontWeight: 600,
+              }}
             />
-            <circle
-              cx={xScale(weeksToTarget)}
-              cy={yScale(
-                points.find((p) => p.week === weeksToTarget)
-                  ?.projectedScoreMid ?? 0
-              )}
-              r={5}
-              fill="#059669"
-            />
-          </g>
-        ) : null}
+          ) : null}
 
-        {points
-          .filter((p) => p.week === 1 || p.week % 4 === 0)
-          .map((p) => (
-            <text
-              key={p.week}
-              x={xScale(p.week)}
-              y={CHART_H - 8}
-              textAnchor="middle"
-              className="fill-gray-400 text-[10px]"
-            >
-              Sem {p.week}
-            </text>
-          ))}
-      </svg>
+          {weeksToTarget ? (
+            <ReferenceLine
+              x={`Sem ${weeksToTarget}`}
+              stroke={COLOR.emerald}
+              strokeDasharray="3 3"
+            />
+          ) : null}
+
+          <Area
+            dataKey="range"
+            fill={COLOR.band}
+            stroke="none"
+            isAnimationActive={false}
+          />
+          <Line
+            dataKey="mid"
+            stroke={COLOR.primary}
+            strokeWidth={2}
+            dot={{ r: 3, fill: COLOR.primary }}
+            activeDot={{ r: 5, fill: COLOR.primary }}
+            isAnimationActive={false}
+          />
+        </ComposedChart>
+      </ResponsiveContainer>
     </div>
   );
 }
 
-// ============================================================================
-// SHARED SVG HELPERS
-// ============================================================================
-
-function GridLines({
-  yScale,
-  yMin,
-  yMax,
+function ProjectionTooltip({
+  active,
+  payload,
 }: {
-  yScale: (v: number) => number;
-  yMin: number;
-  yMax: number;
+  active?: boolean;
+  payload?: Array<{ payload: Record<string, unknown> }>;
 }) {
-  const ticks = [yMin, Math.round((yMin + yMax) / 2), yMax];
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
   return (
-    <>
-      {ticks.map((v) => (
-        <g key={v}>
-          <line
-            x1={PAD.left}
-            y1={yScale(v)}
-            x2={CHART_W - PAD.right}
-            y2={yScale(v)}
-            stroke="#e5e7eb"
-            strokeDasharray="4,4"
-          />
-          <text
-            x={PAD.left - 8}
-            y={yScale(v) + 4}
-            textAnchor="end"
-            className="fill-gray-400 text-[11px]"
-          >
-            {v}
-          </text>
-        </g>
-      ))}
-    </>
-  );
-}
-
-function TargetLine({ y }: { y: number }) {
-  return (
-    <g>
-      <line
-        x1={PAD.left}
-        y1={y}
-        x2={CHART_W - PAD.right}
-        y2={y}
-        stroke="#059669"
-        strokeDasharray="6,4"
-        strokeWidth={1.5}
-      />
-      <text
-        x={CHART_W - PAD.right + 4}
-        y={y + 4}
-        className="fill-emerald-600 text-[10px] font-medium"
-      >
-        Meta
-      </text>
-    </g>
-  );
-}
-
-function DataPoint({
-  cx,
-  yScale,
-  point,
-  dateLabel,
-}: {
-  cx: number;
-  yScale: (v: number) => number;
-  point: ScoreDataPoint;
-  dateLabel: string;
-}) {
-  const isDiag = point.type === "short_diagnostic";
-  return (
-    <g>
-      <line
-        x1={cx}
-        y1={yScale(point.paesScoreMin)}
-        x2={cx}
-        y2={yScale(point.paesScoreMax)}
-        stroke={isDiag ? "#d97706" : "#059669"}
-        strokeWidth={2}
-        strokeLinecap="round"
-      />
-      {isDiag ? (
-        <circle cx={cx} cy={yScale(point.paesScoreMid)} r={5} fill="#d97706" />
-      ) : (
-        <polygon
-          points={`${cx},${yScale(point.paesScoreMid) - 6} ${cx + 6},${yScale(point.paesScoreMid)} ${cx},${yScale(point.paesScoreMid) + 6} ${cx - 6},${yScale(point.paesScoreMid)}`}
-          fill="#059669"
-        />
-      )}
-      <text
-        x={cx}
-        y={CHART_H - 8}
-        textAnchor="middle"
-        className="fill-gray-400 text-[10px]"
-      >
-        {dateLabel}
-      </text>
-    </g>
-  );
-}
-
-function ChartLegend({ showTarget }: { showTarget: boolean }) {
-  return (
-    <div className="flex flex-wrap gap-4 mt-3 text-xs text-gray-500">
-      <span className="flex items-center gap-1.5">
-        <span className="w-3 h-3 rounded-full bg-amber-500 inline-block" />
-        Diagnóstico corto
-      </span>
-      <span className="flex items-center gap-1.5">
-        <span className="w-3 h-3 bg-emerald-500 inline-block rotate-45" />
-        Test completo
-      </span>
-      {showTarget ? (
-        <span className="flex items-center gap-1.5">
-          <span className="w-4 border-t-2 border-dashed border-emerald-600 inline-block" />
-          Meta
-        </span>
-      ) : null}
+    <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-md text-xs">
+      <p className="font-medium text-gray-800">{d.label as string}</p>
+      <p className="text-gray-600">
+        Proyectado: <span className="font-semibold">{d.mid as number}</span>
+      </p>
+      <p className="text-gray-500">
+        Banda: {d.min as number} – {d.max as number}
+      </p>
     </div>
   );
 }
@@ -413,5 +439,8 @@ function ChartLegend({ showTarget }: { showTarget: boolean }) {
 
 function formatDate(isoDate: string): string {
   const d = new Date(isoDate);
-  return d.toLocaleDateString("es-CL", { month: "short", day: "numeric" });
+  return d.toLocaleDateString("es-CL", {
+    month: "short",
+    day: "numeric",
+  });
 }

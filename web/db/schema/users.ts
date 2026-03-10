@@ -10,6 +10,7 @@ import {
   decimal,
   primaryKey,
   index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import {
   userRoleEnum,
@@ -178,5 +179,9 @@ export const studentResponses = pgTable(
   (table) => [
     index("idx_student_responses_user").on(table.userId),
     index("idx_student_responses_attempt").on(table.testAttemptId),
+    uniqueIndex("uq_student_responses_attempt_question").on(
+      table.testAttemptId,
+      table.questionId
+    ),
   ]
 );
