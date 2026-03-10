@@ -222,7 +222,7 @@ export async function resolveTestQuestions(
  */
 async function resolveQuestionRows(testId: string) {
   return db.execute(sql`
-    SELECT
+    SELECT DISTINCT ON (tq.position)
       tq.position,
       q.id AS original_id,
       COALESCE(alt.id, q.id) AS resolved_id,
@@ -233,7 +233,7 @@ async function resolveQuestionRows(testId: string) {
       ON alt.parent_question_id = q.id
       AND alt.source = 'alternate'
     WHERE tq.test_id = ${testId}
-    ORDER BY tq.position
+    ORDER BY tq.position, alt.id NULLS LAST
   `) as unknown as {
     position: number;
     original_id: string;
@@ -388,6 +388,7 @@ async function upsertMasteryFromCorrectAnswers(
     );
 
   const now = new Date();
+  const nowIso = now.toISOString();
   for (const { atomId } of primaryAtoms) {
     await db
       .insert(atomMastery)
@@ -410,7 +411,8 @@ async function upsertMasteryFromCorrectAnswers(
             ELSE 'practice_test'
           END`,
           firstMasteredAt: sql`COALESCE(
-            ${atomMastery.firstMasteredAt}, ${now}
+            ${atomMastery.firstMasteredAt},
+            ${nowIso}::timestamptz
           )`,
           status: "mastered",
           updatedAt: now,

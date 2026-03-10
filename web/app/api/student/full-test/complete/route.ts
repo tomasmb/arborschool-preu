@@ -84,6 +84,13 @@ export async function POST(request: NextRequest) {
   }
 }
 
+const DB_AXIS_TO_CODE: Record<string, Axis> = {
+  algebra_y_funciones: "ALG",
+  numeros: "NUM",
+  geometria: "GEO",
+  probabilidad_y_estadistica: "PROB",
+};
+
 /**
  * Derives axis performance from answered questions by looking up
  * each question's primary atom axis.
@@ -96,7 +103,6 @@ async function buildAxisPerformance(
     return calculateAxisPerformance([]);
   }
 
-  // Get the primary atom's axis for each question
   const axisRows = await db
     .select({
       questionId: questionAtoms.questionId,
@@ -111,17 +117,18 @@ async function buildAxisPerformance(
       )
     );
 
-  const axisByQuestion = new Map<string, string>();
+  const axisByQuestion = new Map<string, Axis>();
   for (const row of axisRows) {
     if (!axisByQuestion.has(row.questionId)) {
-      axisByQuestion.set(row.questionId, row.axis);
+      const code = DB_AXIS_TO_CODE[row.axis];
+      if (code) axisByQuestion.set(row.questionId, code);
     }
   }
 
   const responses = answeredQuestions
     .filter((q) => axisByQuestion.has(q.originalQuestionId))
     .map((q) => ({
-      axis: axisByQuestion.get(q.originalQuestionId)! as Axis,
+      axis: axisByQuestion.get(q.originalQuestionId)!,
       correct: q.isCorrect,
     }));
 
