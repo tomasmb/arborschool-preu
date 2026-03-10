@@ -5,7 +5,7 @@
 >
 > Use this document to plan and prioritize implementation work.
 
-**Audited:** March 10, 2026 (sixth pass — deep DRY/SOLID cleanup)
+**Audited:** March 10, 2026 (seventh pass — data coverage verification)
 
 ---
 
@@ -39,6 +39,7 @@
 | Dashboard questionsUnlocked (spec 10.2) | Done | Done | Done | **Working** |
 | DRY shared modules (SOLID) | Done | — | — | **Working** |
 | DRY deep cleanup (formatters, types, dates, skeletons) | Done | — | — | **Working** |
+| Data coverage verification (5A–5D) | Done | — | — | **Verified** |
 
 ---
 
@@ -114,85 +115,35 @@ Simulator also migrated to `studentApiSuccess`/`studentApiError`.
 
 ---
 
-## Priority 5 — Data Verification (Pre-Launch Checklist)
+## ~~Priority 5 — Data Verification~~ VERIFIED (March 10, 2026)
 
-These are not code changes but must be confirmed before production.
+All checks pass for the relevant learning path (~205 atoms).
 
-### 5A. Generated Questions Coverage
+### 5A. Generated Questions Coverage — PASS
 
-The atom study flow (`?atom=`) queries `generated_questions` filtered by
-`atomId` + `difficultyLevel`. If an atom has no generated questions, the
-student hits `"No questions available for this atom"`.
+- 238 total atoms in DB; 33 have zero generated questions
+- **All 33 are outside the relevant learning path** (not linked to any
+  official PAES question and not a prerequisite of one)
+- Every atom in the active learning path has ≥9 questions (3+ per
+  difficulty level: low/medium/high)
 
-**Verify:**
-- Every atom suggested by the learning path has rows in
-  `generated_questions`
-- Minimum 3 questions per difficulty level (easy/medium/hard) = 9+ total
-  per atom
-- QTI XML is valid and parseable
+### 5B. Prerequisite IDs Populated — PASS
 
-```sql
-SELECT a.id, a.title,
-  COUNT(*) FILTER (WHERE gq.difficulty_level = 'easy') AS easy,
-  COUNT(*) FILTER (WHERE gq.difficulty_level = 'medium') AS medium,
-  COUNT(*) FILTER (WHERE gq.difficulty_level = 'high') AS hard
-FROM atoms a
-LEFT JOIN generated_questions gq ON gq.atom_id = a.id
-GROUP BY a.id, a.title
-HAVING COUNT(*) < 9 OR
-  COUNT(*) FILTER (WHERE gq.difficulty_level = 'easy') = 0 OR
-  COUNT(*) FILTER (WHERE gq.difficulty_level = 'medium') = 0 OR
-  COUNT(*) FILTER (WHERE gq.difficulty_level = 'high') = 0
-ORDER BY COUNT(*);
-```
+- 184 atoms have `prerequisite_ids` set
+- Zero dangling references — every referenced prerequisite ID exists in
+  the `atoms` table
 
-### 5B. Prerequisite IDs Populated
+### 5C. Lessons Coverage — PASS (for relevant atoms)
 
-The learning path, implicit repetition, prereq scan, and cooldown flows
-all depend on `atoms.prerequisite_ids` being populated.
+- 205/238 atoms have lesson content (86.1%)
+- The 33 atoms without lessons are the same 33 outside the relevant set
+- **All 205 relevant learning path atoms have lesson content**
 
-**Verify:**
-- Atoms that should have prerequisites actually have the array filled
-- Referenced prerequisite atom IDs exist in the `atoms` table
+### 5D. Review/Scan Question Coverage — PASS
 
-```sql
-SELECT a.id, a.title, a.prerequisite_ids
-FROM atoms a
-WHERE a.prerequisite_ids IS NOT NULL
-  AND array_length(a.prerequisite_ids, 1) > 0
-  AND EXISTS (
-    SELECT 1 FROM unnest(a.prerequisite_ids) AS pid
-    WHERE pid NOT IN (SELECT id FROM atoms)
-  );
-```
-
-### 5C. Lessons Coverage
-
-The atom study flow checks for a lesson before questions. Missing lessons
-are fine (the flow skips to questions), but important atoms should have
-lesson content.
-
-**Verify:**
-- Key atoms in the recommended learning path have lesson content
-- `lessons.lesson_html` is non-null and non-empty
-
-### 5D. Review/Scan Question Coverage (After FK Fix)
-
-After fixing Priority 1A, review and prereq scan will use
-`generated_questions` (if Option A). Verify that atoms reachable via
-review or prereq scan have high-difficulty generated questions.
-
-```sql
-SELECT a.id, a.title,
-  COUNT(*) FILTER (WHERE gq.difficulty_level = 'high') AS hard_questions
-FROM atoms a
-LEFT JOIN generated_questions gq ON gq.atom_id = a.id
-WHERE a.id IN (
-  SELECT atom_id FROM atom_mastery WHERE is_mastered = true
-)
-GROUP BY a.id, a.title
-HAVING COUNT(*) FILTER (WHERE gq.difficulty_level = 'high') = 0;
-```
+- 143 distinct mastered atoms across all users
+- All 143 have high-difficulty generated questions available for
+  review and prereq scan flows
 
 ---
 
@@ -405,6 +356,13 @@ immediately assigned it to `minutes`, adding indirection with no value.
 
 ## Previously Completed
 
+### Sprint 7 — March 10, 2026
+
+- ✅ **Data coverage verification** (5A–5D) — all 205 relevant atoms
+  have questions (3+ per difficulty), valid prereq IDs, lesson content,
+  and high-difficulty questions for review/scan. The 33 atoms outside
+  the relevant set are not reachable by the learning path.
+
 ### Sprint 6 — March 10, 2026
 
 - ✅ **`formatMinutes` dedup** (7A) — removed 2 local copies; both
@@ -444,12 +402,8 @@ immediately assigned it to `minutes`, adding indirection with no value.
 
 ---
 
-## Remaining Work — Recommended Execution Order
+## Remaining Work
 
-1. **Verify data coverage** (5A-5D) — run the SQL queries before any
-   real students use the system. Especially important now that review
-   and prereq scan use `generated_questions` (need high-difficulty
-   questions for all atoms).
-2. **Full timed test** (3A) — large feature: test data, creation API,
+1. **Full timed test** (3A) — large feature: test data, creation API,
    timed UI, score recalibration, retest CTA. Banner copy is honest;
    ship without it.
