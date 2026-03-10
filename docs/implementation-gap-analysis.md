@@ -5,7 +5,7 @@
 >
 > Use this document to plan and prioritize implementation work.
 
-**Audited:** March 10, 2026 (third pass — post-P1/P2/P4 fixes)
+**Audited:** March 10, 2026 (fourth pass — post-P1/P2/P4 fixes + daily streaks)
 
 ---
 
@@ -19,7 +19,7 @@
 | Score prediction (dynamic recomputation) | Done | Done | Done | **Working** |
 | Score prediction governance (diagnostic cap) | Done | — | — | **Working** |
 | Diagnostic source banner (honest copy) | Done | Done | Done | **Working** |
-| Streak badge (relabeled as weekly sessions) | Done | Done | Done | **Working** |
+| Streak badge (daily streak + max streak) | Done | Done | Done | **Working** |
 | Rich feedback (questionsUnlocked, nextAtom) | Done | Done | Done | **Working** |
 | Misión semanal | Done | Done | Done | **Working** |
 | Milestone banners | Done | Done | Done | **Working** |
@@ -33,7 +33,7 @@
 | Prereq scan flow (`?scan=`) | Done | Done | Done | **Working** |
 | Cooldown after failure | Done | Done | Done | **Working** |
 | Full timed test / retest | **Missing** | **Missing** | **Missing** | **Not built** |
-| Real daily streak tracking | **Missing** | **Missing** | — | **Not built** |
+| Real daily streak tracking | Done | Done | Done | **Working** |
 | Error handling on 3 API routes | — | Done | — | **Working** |
 
 ---
@@ -94,7 +94,7 @@ via review/scan have high-difficulty generated questions.
 
 ---
 
-## Priority 3 — Missing Features
+## Priority 3 — Missing Features (3B resolved, 3A remaining)
 
 ### 3A. Full Timed Test (Retest)
 
@@ -129,26 +129,40 @@ fine for launch. Build the full test as a follow-up project.
 
 ---
 
-### 3B. Real Daily Streak Tracking
+### 3B. Real Daily Streak Tracking — FIXED (March 10, 2026)
 
 **Spec ref:** Section 13.1 — Habit Policy
 
-**Current state:**
-- `StreakBadge` honestly displays "X sesión(es) esta semana" (weekly
-  session count from `student_weekly_missions`)
-- No consecutive-day streak logic exists
+**Resolution:** Full daily streak tracking with schema + backend + frontend.
 
-**What the spec says:**
-- Daily streak: ≥1 mastered atom per day → streak increments
-- Missed day → streak resets to 0
-- Show current streak + max streak
+Schema: `current_streak`, `max_streak`, `last_streak_date` columns added
+to `users` table. Streak logic lives in a shared `streakTracker.ts` module
+with `updateDailyStreak()` (called on mastery) and `getDailyStreak()`
+(read-only, accounts for broken streaks). `StreakBadge` now shows daily
+streak with max-streak on hover. Streak data is served via the dashboard
+API and the sprint completion response.
 
-**Work needed:**
-1. Add `current_streak` and `max_streak` columns to `users` table
-2. Track daily activity: on each mastery, check if the student had a
-   mastery yesterday — if yes, increment; if gap, reset to 1
-3. Update `StreakBadge` to show actual daily streak
-4. Optional: streak freeze (1 per week), streak milestone badges
+**Files changed:**
+- `web/db/schema/users.ts` — added `currentStreak`, `maxStreak`,
+  `lastStreakDate` columns
+- `web/lib/student/streakTracker.ts` — **new** `updateDailyStreak()` +
+  `getDailyStreak()` helpers
+- `web/lib/student/atomMasteryEngine.ts` — calls `updateDailyStreak()`
+  on mastery completion
+- `web/lib/student/studySprints.ts` — sprint completion returns streak
+- `web/lib/student/studySprint.types.ts` — `StudySprintStreakPayload` +
+  `streak` field on completion payload
+- `web/app/api/student/dashboard/m1/route.ts` — serves `streak` data
+- `web/app/portal/types.ts` — `StreakPayload` + `streak` field on
+  `DashboardPayload`
+- `web/app/portal/components/StreakBadge.tsx` — daily streak display
+  with max-streak on hover
+- `web/app/portal/DashboardSections.tsx` — updated to use streak data
+- `web/app/portal/study/SprintCompletionPanel.tsx` — updated to use
+  streak data
+
+**Note:** Streak freeze (1 per week) is not implemented — spec marks it
+as optional. Can be added later as an enhancement.
 
 ---
 
@@ -251,6 +265,13 @@ HAVING COUNT(*) FILTER (WHERE gq.difficulty_level = 'high') = 0;
 
 ## Previously Completed
 
+### Sprint 4 — March 10, 2026
+
+- ✅ **Daily streak tracking** (3B) — `currentStreak`, `maxStreak`,
+  `lastStreakDate` on `users`; `streakTracker.ts` with update + read
+  helpers; hooked into mastery engine; served via dashboard + sprint
+  completion APIs; `StreakBadge` updated to show daily streak
+
 ### Sprint 3 — March 10, 2026
 
 - ✅ **FK mismatch fix** (1A) — review + prereq scan switched to
@@ -267,7 +288,7 @@ HAVING COUNT(*) FILTER (WHERE gq.difficulty_level = 'high') = 0;
 - ✅ Prereq scan flow frontend (`?scan=` routing, PrereqScanView,
   usePrereqScanController, API routes)
 - ✅ Diagnostic banner — removed dead retest CTA, honest copy
-- ✅ Streak badge — relabeled from streak to weekly sessions
+- ✅ Streak badge — relabeled (later upgraded to daily streak in Sprint 4)
 - ✅ Rich feedback props — wired questionsUnlocked + nextAtom through
   engine → API → UI
 - ✅ Score prediction governance — diagnostic ceiling cap
@@ -283,9 +304,6 @@ HAVING COUNT(*) FILTER (WHERE gq.difficulty_level = 'high') = 0;
    real students use the system. Especially important now that review
    and prereq scan use `generated_questions` (need high-difficulty
    questions for all atoms).
-2. **Real daily streaks** (3B) — needs schema change (`current_streak`,
-   `max_streak` on `users`), streak update logic on mastery, StreakBadge
-   update. Current weekly label is honest; not urgent.
-3. **Full timed test** (3A) — large feature: test data, creation API,
+2. **Full timed test** (3A) — large feature: test data, creation API,
    timed UI, score recalibration, retest CTA. Banner copy is honest;
    ship without it.

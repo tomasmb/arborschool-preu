@@ -49,6 +49,7 @@ import {
   getNextStudyAtom,
   evaluateHabitGuard,
 } from "./masteryLifecycle";
+import { updateDailyStreak } from "./streakTracker";
 
 export type {
   AnswerResultPayload,
@@ -459,6 +460,7 @@ export async function submitAnswer(params: {
     await applyImplicitRepetition(params.userId, session.atomId);
     await checkCooldownExpiry(params.userId, session.atomId);
     await incrementSessionCounters(params.userId);
+    await updateDailyStreak(params.userId);
 
     [questionsUnlocked, nextAtom] = await Promise.all([
       countNewlyUnlockedQuestions(params.userId, session.atomId),

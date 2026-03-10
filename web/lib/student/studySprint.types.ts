@@ -46,9 +46,15 @@ export type StudyMissionPayload = {
   status: string;
 };
 
+export type StudySprintStreakPayload = {
+  currentStreak: number;
+  maxStreak: number;
+};
+
 export type StudySprintCompletionPayload = {
   sprintId: string;
   status: string;
   alreadyCompleted: boolean;
   mission: StudyMissionPayload;
+  streak: StudySprintStreakPayload;
 };

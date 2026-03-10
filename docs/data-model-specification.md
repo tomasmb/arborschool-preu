@@ -176,6 +176,9 @@ CREATE TABLE users (
     last_name VARCHAR(100),
     subscription_status VARCHAR(50),
     subscription_expires_at TIMESTAMPTZ,
+    current_streak INTEGER NOT NULL DEFAULT 0,
+    max_streak INTEGER NOT NULL DEFAULT 0,
+    last_streak_date DATE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );

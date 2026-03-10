@@ -2,6 +2,7 @@ import { getM1Dashboard } from "@/lib/student/dashboardM1";
 import { getOrCreateCurrentMission } from "@/lib/student/missions";
 import { getStudentJourneySnapshot } from "@/lib/student/journeyState";
 import { getStudentNextAction } from "@/lib/student/nextAction";
+import { getDailyStreak } from "@/lib/student/streakTracker";
 import { studentApiError, studentApiSuccess } from "@/lib/student/apiEnvelope";
 import { getAuthenticatedStudentUserId } from "@/lib/student/auth";
 
@@ -12,16 +13,20 @@ export async function GET() {
   }
 
   try {
-    const [dashboard, mission, journey, nextAction] = await Promise.all([
-      getM1Dashboard(userId),
-      getOrCreateCurrentMission(userId),
-      getStudentJourneySnapshot(userId),
-      getStudentNextAction(userId),
-    ]);
+    const [dashboard, mission, journey, nextAction, streak] = await Promise.all(
+      [
+        getM1Dashboard(userId),
+        getOrCreateCurrentMission(userId),
+        getStudentJourneySnapshot(userId),
+        getStudentNextAction(userId),
+        getDailyStreak(userId),
+      ]
+    );
 
     return studentApiSuccess({
       ...dashboard,
       mission,
+      streak,
       journeyState: journey.journeyState,
       nextActionSummary: {
         status: nextAction.status,

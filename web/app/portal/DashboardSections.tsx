@@ -116,7 +116,8 @@ export function DashboardHeroSection({ data }: HeroSectionProps) {
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <StreakBadge
-              sessionsThisWeek={data.mission.completedSessions}
+              currentStreak={data.streak.currentStreak}
+              maxStreak={data.streak.maxStreak}
               compact
             />
             <ConfidenceBadge

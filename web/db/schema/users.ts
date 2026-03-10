@@ -6,6 +6,7 @@ import {
   integer,
   boolean,
   timestamp,
+  date,
   decimal,
   primaryKey,
   index,
@@ -75,6 +76,11 @@ export const users = pgTable("users", {
   followupEmailScheduledAt: timestamp("followup_email_scheduled_at", {
     withTimezone: true,
   }),
+
+  // Daily streak tracking (consecutive days with ≥1 mastery)
+  currentStreak: integer("current_streak").notNull().default(0),
+  maxStreak: integer("max_streak").notNull().default(0),
+  lastStreakDate: date("last_streak_date"),
 });
 
 // ------------------------------------------------------------------------------

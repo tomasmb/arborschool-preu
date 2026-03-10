@@ -8,21 +8,31 @@ const FLAME_PATH =
   "3.866-3.134 7-7 7z";
 
 type StreakBadgeProps = {
-  /** Number of study sessions completed this week */
-  sessionsThisWeek: number;
+  /** Consecutive days with ≥1 mastered atom */
+  currentStreak: number;
+  /** All-time best streak */
+  maxStreak: number;
   /** Compact mode for inline use (e.g. nav bar) */
   compact?: boolean;
 };
 
+function streakLabel(count: number): string {
+  return `${count} día${count !== 1 ? "s" : ""} seguidos`;
+}
+
 /**
- * Weekly session count indicator. Shows how many sessions the
- * student has completed this week (NOT a consecutive-day streak).
+ * Daily streak indicator. Shows consecutive days with at least
+ * one mastered atom, plus the all-time best streak on hover.
  */
 export function StreakBadge({
-  sessionsThisWeek,
+  currentStreak,
+  maxStreak,
   compact = false,
 }: StreakBadgeProps) {
-  const isActive = sessionsThisWeek > 0;
+  const isActive = currentStreak > 0;
+  const tooltip = isActive
+    ? `${streakLabel(currentStreak)} (récord: ${maxStreak})`
+    : `Sin racha activa (récord: ${maxStreak})`;
 
   if (compact) {
     return (
@@ -31,7 +41,7 @@ export function StreakBadge({
           "inline-flex items-center gap-1 text-xs font-bold",
           isActive ? "text-amber-500" : "text-gray-300",
         ].join(" ")}
-        title={`${sessionsThisWeek} sesión${sessionsThisWeek !== 1 ? "es" : ""} esta semana`}
+        title={tooltip}
       >
         <svg
           className={`w-4 h-4 ${isActive ? "animate-bounce-subtle" : ""}`}
@@ -40,8 +50,10 @@ export function StreakBadge({
         >
           <path d={FLAME_PATH} />
         </svg>
-        {sessionsThisWeek}
-        <span className="font-medium text-[10px] opacity-70">sem</span>
+        {currentStreak}
+        <span className="font-medium text-[10px] opacity-70">
+          {currentStreak === 1 ? "día" : "días"}
+        </span>
       </span>
     );
   }
@@ -55,6 +67,7 @@ export function StreakBadge({
           ? "bg-amber-50 text-amber-700 border border-amber-200"
           : "bg-gray-50 text-gray-400 border border-gray-200",
       ].join(" ")}
+      title={tooltip}
     >
       <svg
         className={[
@@ -66,10 +79,12 @@ export function StreakBadge({
       >
         <path d={FLAME_PATH} />
       </svg>
-      <span>
-        {sessionsThisWeek} sesión{sessionsThisWeek !== 1 ? "es" : ""} esta
-        semana
-      </span>
+      <span>{streakLabel(currentStreak)}</span>
+      {maxStreak > 0 && maxStreak > currentStreak && (
+        <span className="text-xs font-normal opacity-60">
+          récord {maxStreak}
+        </span>
+      )}
     </div>
   );
 }

@@ -8,6 +8,11 @@ export type RetestStatusPayload = {
   daysSinceLastTest: number | null;
 };
 
+export type StreakPayload = {
+  currentStreak: number;
+  maxStreak: number;
+};
+
 export type DashboardPayload = {
   status: "ready" | "missing_diagnostic" | "missing_target" | "missing_mastery";
   journeyState:
@@ -61,6 +66,7 @@ export type DashboardPayload = {
     completedSessions: number;
     status: string;
   };
+  streak: StreakPayload;
   nextActionSummary: {
     status: "ready" | "missing_diagnostic" | "missing_mastery";
     hasAction: boolean;

@@ -115,7 +115,8 @@ export function CompletionPanel({
 
         <div className="flex justify-center">
           <StreakBadge
-            sessionsThisWeek={completion.mission.completedSessions}
+            currentStreak={completion.streak.currentStreak}
+            maxStreak={completion.streak.maxStreak}
           />
         </div>
 

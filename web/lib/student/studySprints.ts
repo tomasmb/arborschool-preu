@@ -16,6 +16,7 @@ import {
   getOrCreateCurrentMission,
   incrementMissionProgress,
 } from "@/lib/student/missions";
+import { getDailyStreak } from "@/lib/student/streakTracker";
 import type {
   StudySprintCreatePayload,
   StudySprintItemPayload,
@@ -417,11 +418,15 @@ export async function completeStudySprint(userId: string, sprintId: string) {
     throw new Error("Sprint not found");
   }
   if (sprint.status === "completed") {
-    const mission = await getOrCreateCurrentMission(userId);
+    const [mission, streak] = await Promise.all([
+      getOrCreateCurrentMission(userId),
+      getDailyStreak(userId),
+    ]);
     return {
       sprintId,
       status: "completed",
       mission,
+      streak,
       alreadyCompleted: true,
     };
   }
@@ -462,19 +467,27 @@ export async function completeStudySprint(userId: string, sprintId: string) {
     )
     .returning({ id: studentStudySprints.id });
   if (markedCompleted.length === 0) {
-    const mission = await getOrCreateCurrentMission(userId);
+    const [mission, streak] = await Promise.all([
+      getOrCreateCurrentMission(userId),
+      getDailyStreak(userId),
+    ]);
     return {
       sprintId,
       status: "completed",
       mission,
+      streak,
       alreadyCompleted: true,
     };
   }
-  const mission = await incrementMissionProgress(userId);
+  const [mission, streak] = await Promise.all([
+    incrementMissionProgress(userId),
+    getDailyStreak(userId),
+  ]);
   return {
     sprintId,
     status: "completed",
     mission,
+    streak,
     alreadyCompleted: false,
   };
 }
