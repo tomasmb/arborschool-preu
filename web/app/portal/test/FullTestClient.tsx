@@ -12,6 +12,7 @@ import {
 } from "./FullTestResults";
 import { parseQtiXmlForReview } from "@/lib/qti/clientParser";
 import { MathContent } from "@/lib/qti/MathRenderer";
+import { PAES_TOTAL_QUESTIONS } from "@/lib/diagnostic/paesScoreTable";
 import type { ResolvedQuestion } from "@/lib/student/fullTest";
 
 // ============================================================================
@@ -69,7 +70,8 @@ function PreTestScreen({
             Test Completo PAES M1
           </h1>
           <p className="text-gray-600">
-            Evalúa tu nivel con un test completo de 60 preguntas
+            Evalúa tu nivel con un test completo de {PAES_TOTAL_QUESTIONS}{" "}
+            preguntas
           </p>
         </div>
 
@@ -88,11 +90,11 @@ function PreTestScreen({
             </li>
             <li className="flex gap-2">
               <span className="shrink-0 text-primary">•</span>
-              Tiempo límite: 150 minutos (2 horas 30 minutos)
+              Tiempo límite: 2 horas 30 minutos
             </li>
             <li className="flex gap-2">
               <span className="shrink-0 text-primary">•</span>
-              60 preguntas de opción múltiple
+              {PAES_TOTAL_QUESTIONS} preguntas de opción múltiple
             </li>
           </ul>
         </div>

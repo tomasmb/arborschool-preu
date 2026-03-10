@@ -48,6 +48,8 @@ type StartPayload = {
   timeLimitMinutes: number;
   totalQuestions: number;
   questions: ResolvedQuestion[];
+  resumed?: boolean;
+  expired?: boolean;
 };
 
 // ============================================================================
@@ -187,6 +189,23 @@ export function useFullTestFlow() {
     try {
       const data = await apiStartTest();
       const saved = loadProgress(data.attemptId);
+
+      // If resumed but time already expired, go straight to time-up
+      if (data.resumed && data.expired) {
+        setState((s) => ({
+          ...s,
+          screen: "time-up",
+          attemptId: data.attemptId,
+          testName: data.testName,
+          timeLimitMinutes: 0,
+          questions: data.questions,
+          answers: saved?.answers ?? new Map(),
+          currentPosition: 1,
+          loading: false,
+        }));
+        return;
+      }
+
       setState((s) => ({
         ...s,
         screen: "in-progress",

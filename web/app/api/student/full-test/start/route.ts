@@ -5,12 +5,17 @@ import { requireAuthenticatedStudentUser } from "@/lib/student/apiAuth";
 import { getRetestStatus } from "@/lib/student/retestGating";
 import {
   getAvailableFullTests,
+  getInProgressAttempt,
   resolveTestQuestions,
 } from "@/lib/student/fullTest";
 
 /**
  * POST /api/student/full-test/start
- * Starts a new full timed test for the authenticated student.
+ * Starts a new full timed test — or resumes an in-progress one.
+ *
+ * If the student has an unfinished attempt (started but not completed),
+ * returns that attempt's data so the client can resume from localStorage.
+ * Otherwise creates a new attempt.
  */
 export async function POST() {
   try {
@@ -19,6 +24,44 @@ export async function POST() {
       return authResult.unauthorizedResponse;
     }
     const userId = authResult.userId;
+
+    // Check for an unfinished attempt first (crash recovery)
+    const inProgress = await getInProgressAttempt(userId);
+    if (inProgress) {
+      const questions = await resolveTestQuestions(inProgress.testId);
+      const elapsed = Date.now() - inProgress.startedAt.getTime();
+      const elapsedMinutes = elapsed / 60_000;
+      const totalMinutes = inProgress.timeLimitMinutes ?? 150;
+      const remainingMinutes = Math.max(0, totalMinutes - elapsedMinutes);
+
+      if (remainingMinutes <= 0) {
+        // Time expired while away — auto-complete with 0 correct
+        return NextResponse.json({
+          success: true,
+          data: {
+            attemptId: inProgress.attemptId,
+            testName: inProgress.testName,
+            timeLimitMinutes: 0,
+            totalQuestions: questions.length,
+            questions,
+            resumed: true,
+            expired: true,
+          },
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          attemptId: inProgress.attemptId,
+          testName: inProgress.testName,
+          timeLimitMinutes: remainingMinutes,
+          totalQuestions: questions.length,
+          questions,
+          resumed: true,
+        },
+      });
+    }
 
     const retestStatus = await getRetestStatus(userId);
     if (!retestStatus.eligible) {

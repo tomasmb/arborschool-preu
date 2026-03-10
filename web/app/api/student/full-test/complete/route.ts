@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { testAttempts, questionAtoms, atoms } from "@/db/schema";
 import { requireAuthenticatedStudentUser } from "@/lib/student/apiAuth";
@@ -106,7 +106,7 @@ async function buildAxisPerformance(
     .innerJoin(atoms, eq(atoms.id, questionAtoms.atomId))
     .where(
       and(
-        sql`${questionAtoms.questionId} IN ${questionIds}`,
+        inArray(questionAtoms.questionId, questionIds),
         eq(questionAtoms.relevance, "primary")
       )
     );

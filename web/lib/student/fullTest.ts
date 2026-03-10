@@ -5,7 +5,15 @@
  * API routes are thin wrappers around these functions.
  */
 
-import { and, eq, desc, sql, isNotNull, notInArray } from "drizzle-orm";
+import {
+  and,
+  eq,
+  desc,
+  sql,
+  isNotNull,
+  notInArray,
+  inArray,
+} from "drizzle-orm";
 import { db } from "@/db";
 import {
   tests,
@@ -61,6 +69,56 @@ export type RecalibrateResult = {
   paesScoreMax: number;
   level: string;
 };
+
+// ============================================================================
+// RESUME IN-PROGRESS ATTEMPT
+// ============================================================================
+
+type InProgressAttempt = {
+  attemptId: string;
+  testId: string;
+  testName: string;
+  timeLimitMinutes: number | null;
+  startedAt: Date;
+};
+
+/**
+ * Finds an unfinished full-test attempt (started but not completed).
+ * Returns null if no in-progress attempt exists.
+ */
+export async function getInProgressAttempt(
+  userId: string
+): Promise<InProgressAttempt | null> {
+  const [row] = await db
+    .select({
+      attemptId: testAttempts.id,
+      testId: testAttempts.testId,
+      testName: tests.name,
+      timeLimitMinutes: tests.timeLimitMinutes,
+      startedAt: testAttempts.startedAt,
+    })
+    .from(testAttempts)
+    .innerJoin(tests, eq(tests.id, testAttempts.testId))
+    .where(
+      and(
+        eq(testAttempts.userId, userId),
+        isNotNull(testAttempts.testId),
+        sql`${testAttempts.completedAt} IS NULL`
+      )
+    )
+    .orderBy(desc(testAttempts.startedAt))
+    .limit(1);
+
+  if (!row || !row.testId) return null;
+
+  return {
+    attemptId: row.attemptId,
+    testId: row.testId,
+    testName: row.testName,
+    timeLimitMinutes: row.timeLimitMinutes,
+    startedAt: row.startedAt,
+  };
+}
 
 // ============================================================================
 // TEST SELECTION
@@ -324,7 +382,7 @@ async function upsertMasteryFromCorrectAnswers(
     .from(questionAtoms)
     .where(
       and(
-        sql`${questionAtoms.questionId} IN ${correctOriginals}`,
+        inArray(questionAtoms.questionId, correctOriginals),
         eq(questionAtoms.relevance, "primary")
       )
     );
