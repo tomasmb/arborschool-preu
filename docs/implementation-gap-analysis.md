@@ -5,7 +5,7 @@
 >
 > Use this document to plan and prioritize implementation work.
 
-**Audited:** March 10, 2026 (fourth pass — post-P1/P2/P4 fixes + daily streaks)
+**Audited:** March 10, 2026 (fifth pass — DRY refactor, bug fixes, dashboard metrics)
 
 ---
 
@@ -21,7 +21,7 @@
 | Diagnostic source banner (honest copy) | Done | Done | Done | **Working** |
 | Streak badge (daily streak + max streak) | Done | Done | Done | **Working** |
 | Rich feedback (questionsUnlocked, nextAtom) | Done | Done | Done | **Working** |
-| Misión semanal | Done | Done | Done | **Working** |
+| Misión semanal (incl. mastery credit) | Done | Done | Done | **Working** |
 | Milestone banners | Done | Done | Done | **Working** |
 | Habit quality guard (fatigue, diminishing returns) | Done | Done | Done | **Working** |
 | 3-hop implicit SR credit | Done | — | — | **Working** |
@@ -35,6 +35,9 @@
 | Full timed test / retest | **Missing** | **Missing** | **Missing** | **Not built** |
 | Real daily streak tracking | Done | Done | Done | **Working** |
 | Error handling on 3 API routes | — | Done | — | **Working** |
+| Scoped mastery metrics (spec 10.3) | Done | Done | Done | **Working** |
+| Dashboard questionsUnlocked (spec 10.2) | Done | Done | Done | **Working** |
+| DRY shared modules (SOLID) | Done | — | — | **Working** |
 
 ---
 
@@ -263,7 +266,116 @@ HAVING COUNT(*) FILTER (WHERE gq.difficulty_level = 'high') = 0;
 
 ---
 
+## ~~Priority 6 — DRY / SOLID Refactor~~ RESOLVED
+
+### 6A. Mission Not Credited on Mastery — FIXED (March 10, 2026)
+
+**Bug:** `incrementMissionProgress()` was only called from
+`completeStudySprint()`. Students who mastered atoms via the regular
+mini-clase flow (the primary learning path) never received mission
+progress credit.
+
+**Resolution:** Added `incrementMissionProgress(userId)` call to the
+mastery completion path in `atomMasteryEngine.ts → submitAnswer()`.
+
+**Files changed:**
+- `web/lib/student/atomMasteryEngine.ts` — added import + call to
+  `incrementMissionProgress` after mastery
+
+---
+
+### 6B. Mastered Atoms Not Scoped to Relevant Set — FIXED (March 10, 2026)
+
+**Spec ref:** Section 10.3 — Scoping Rule
+
+**Bug:** `metricsService.ts` counted ALL mastered atoms for the user,
+including atoms outside the relevant set (~205 PAES-linked atoms). The
+denominator was correctly scoped but the numerator wasn't, inflating
+`masteryPercentage` when students mastered non-PAES-linked atoms.
+
+**Resolution:** Combined the relevant atoms CTE with the mastered count
+into a single query that computes both `total` and `mastered` in one pass,
+scoped to the relevant atom set.
+
+**Files changed:**
+- `web/lib/student/metricsService.ts` — single CTE query for both
+  `totalRelevantAtoms` and `masteredAtoms` (scoped)
+
+---
+
+### 6C. Dashboard Missing `questionsUnlocked` Metric — FIXED (March 10, 2026)
+
+**Spec ref:** Section 10.2 — Core Metrics
+
+**Gap:** `metricsService.ts` computed `questionsUnlocked` but it was never
+included in `M1DashboardData` or the frontend payload. The progress section
+showed "Conceptos dominados" and "% avance" but not "Preguntas PAES
+desbloqueadas".
+
+**Resolution:** Added `questionsUnlocked` and `totalOfficialQuestions` to
+the `confidence` block of `M1DashboardData`, `DashboardPayload`, and
+`DashboardProgressSection`. The progress grid is now 3-column with the
+new metric displayed in amber styling.
+
+**Files changed:**
+- `web/lib/student/dashboardM1.ts` — added fields to type + both
+  dashboard builders
+- `web/app/portal/types.ts` — added fields to `DashboardPayload`
+- `web/app/portal/DashboardSections.tsx` — new "Preguntas PAES
+  desbloqueadas" card in progress section (3-column grid)
+
+---
+
+### 6D. DRY Refactor — Shared Modules — DONE (March 10, 2026)
+
+**Problem:** Several functions were duplicated across multiple files,
+violating DRY and SOLID principles.
+
+**Changes:**
+
+1. **`normalizeAnswer()`** — was duplicated in 4 files (atomMasteryEngine,
+   spacedRepetition, prerequisiteScan, studySprints). Extracted to
+   `questionQueries.ts` and imported everywhere.
+
+2. **`verifyOwnership()`** — was duplicated in atomMasteryEngine and
+   prerequisiteScan. Extracted as `verifySessionOwnership()` in new
+   `sessionQueries.ts` module.
+
+3. **`getUserDiagnosticSnapshot()` + `getMasteryRows()`** — were duplicated
+   across nextAction, dashboardM1, and studySprints (3 files, 5 functions).
+   Extracted to new `userQueries.ts` module with a single `MasteryRow`
+   type that includes cooldown field (superset used by all callers).
+
+**New shared modules:**
+- `web/lib/student/sessionQueries.ts` — `verifySessionOwnership()`
+- `web/lib/student/userQueries.ts` — `getUserDiagnosticSnapshot()`,
+  `getMasteryRows()`, types `DiagnosticSnapshot`, `MasteryRow`
+- `web/lib/student/questionQueries.ts` — added `normalizeAnswer()`
+
+**Files updated (imports consolidated):**
+- `web/lib/student/atomMasteryEngine.ts`
+- `web/lib/student/spacedRepetition.ts`
+- `web/lib/student/prerequisiteScan.ts`
+- `web/lib/student/studySprints.ts`
+- `web/lib/student/nextAction.ts`
+- `web/lib/student/dashboardM1.ts`
+
+---
+
 ## Previously Completed
+
+### Sprint 5 — March 10, 2026
+
+- ✅ **Mission credit on mastery** (6A) — `incrementMissionProgress`
+  called in mastery engine; students get weekly mission progress on
+  every mastered atom, not just study sprints
+- ✅ **Scoped mastery metrics** (6B) — `metricsService.ts` now counts
+  mastered atoms only within the relevant PAES-linked set (~205 atoms)
+- ✅ **Dashboard questionsUnlocked** (6C) — "Preguntas PAES
+  desbloqueadas" metric added to dashboard progress section
+- ✅ **DRY refactor** (6D) — extracted `normalizeAnswer`, `verifySession-
+  Ownership`, `getUserDiagnosticSnapshot`, `getMasteryRows` to shared
+  modules; eliminated 9 function duplicates across 6 files
 
 ### Sprint 4 — March 10, 2026
 

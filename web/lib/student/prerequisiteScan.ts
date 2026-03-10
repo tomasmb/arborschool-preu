@@ -20,7 +20,9 @@ import {
   findGeneratedQuestions,
   getQuestionAtomId,
   getQuestionContent,
+  normalizeAnswer,
 } from "./questionQueries";
+import { verifySessionOwnership } from "./sessionQueries";
 
 // ============================================================================
 // TYPES
@@ -65,24 +67,6 @@ export const COOLDOWN_MASTERY_COUNT = 3;
 // ============================================================================
 // HELPERS
 // ============================================================================
-
-function normalizeAnswer(v: string): string {
-  return v.trim().toUpperCase();
-}
-
-async function verifyOwnership(sessionId: string, userId: string) {
-  const [row] = await db
-    .select()
-    .from(atomStudySessions)
-    .where(
-      and(
-        eq(atomStudySessions.id, sessionId),
-        eq(atomStudySessions.userId, userId)
-      )
-    )
-    .limit(1);
-  return row ?? null;
-}
 
 async function getPrereqIds(atomId: string): Promise<string[]> {
   const [atom] = await db
@@ -244,7 +228,7 @@ export async function getNextScanQuestion(
   sessionId: string,
   userId: string
 ): Promise<ScanNextResult> {
-  const session = await verifyOwnership(sessionId, userId);
+  const session = await verifySessionOwnership(sessionId, userId);
   if (!session) throw new Error("Session not found");
   if (session.sessionType !== "prereq_scan") {
     throw new Error("Not a prereq scan session");
@@ -312,7 +296,7 @@ export async function submitScanAnswer(params: {
   selectedAnswer: string;
   userId: string;
 }): Promise<ScanAnswerResult> {
-  const session = await verifyOwnership(params.sessionId, params.userId);
+  const session = await verifySessionOwnership(params.sessionId, params.userId);
   if (!session) throw new Error("Session not found");
 
   const [resp] = await db

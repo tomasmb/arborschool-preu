@@ -1,14 +1,13 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import {
-  atomMastery,
   careerOfferings,
   careers,
   studentGoals,
   studentGoalScores,
   universities,
-  users,
 } from "@/db/schema";
+import { getUserDiagnosticSnapshot, getMasteryRows } from "./userQueries";
 import {
   analyzeLearningPotential,
   calculatePAESImprovement,
@@ -38,11 +37,6 @@ type StudentM1Target = {
   goalLabel: string;
 };
 
-type MasteryRow = {
-  atomId: string;
-  isMastered: boolean;
-};
-
 export type DiagnosticSource = "short_diagnostic" | "full_test";
 
 export type M1DashboardData = {
@@ -68,6 +62,8 @@ export type M1DashboardData = {
     masteredAtoms: number;
     totalAtoms: number;
     masteryPercentage: number;
+    questionsUnlocked: number;
+    totalOfficialQuestions: number;
   };
   effort: {
     estimatedMinutesToTarget: number | null;
@@ -130,19 +126,6 @@ function computeConfidence(params: {
   return { level: "low", score };
 }
 
-async function getUserDiagnosticSnapshot(userId: string) {
-  const rows = await db
-    .select({
-      paesScoreMin: users.paesScoreMin,
-      paesScoreMax: users.paesScoreMax,
-    })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
-
-  return rows[0] ?? null;
-}
-
 async function getStudentM1Target(
   userId: string
 ): Promise<StudentM1Target | null> {
@@ -182,16 +165,6 @@ async function getStudentM1Target(
     score: parsedScore,
     goalLabel: `Meta ${row.priority}: ${row.careerName} — ${row.universityName}`,
   };
-}
-
-async function getMasteryRows(userId: string): Promise<MasteryRow[]> {
-  return db
-    .select({
-      atomId: atomMastery.atomId,
-      isMastered: atomMastery.isMastered,
-    })
-    .from(atomMastery)
-    .where(eq(atomMastery.userId, userId));
 }
 
 function buildEmptyState(
@@ -252,6 +225,8 @@ function buildMissingDashboard(params: {
       masteredAtoms: 0,
       totalAtoms: 0,
       masteryPercentage: 0,
+      questionsUnlocked: 0,
+      totalOfficialQuestions: 0,
     },
     effort: {
       estimatedMinutesToTarget: null,
@@ -342,6 +317,8 @@ function buildReadyDashboard(params: {
     masteredAtoms: number;
     totalRelevantAtoms: number;
     masteryPercentage: number;
+    questionsUnlocked: number;
+    totalOfficialQuestions: number;
   };
   diagnosticSource: DiagnosticSource;
   retestStatus: RetestStatus | null;
@@ -383,6 +360,8 @@ function buildReadyDashboard(params: {
       masteredAtoms: params.metrics.masteredAtoms,
       totalAtoms: params.metrics.totalRelevantAtoms,
       masteryPercentage: params.metrics.masteryPercentage,
+      questionsUnlocked: params.metrics.questionsUnlocked,
+      totalOfficialQuestions: params.metrics.totalOfficialQuestions,
     },
     effort: {
       estimatedMinutesToTarget: effortMetrics.estimatedMinutesToTarget,

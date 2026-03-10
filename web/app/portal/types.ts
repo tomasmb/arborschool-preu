@@ -41,6 +41,8 @@ export type DashboardPayload = {
     masteredAtoms: number;
     totalAtoms: number;
     masteryPercentage: number;
+    questionsUnlocked: number;
+    totalOfficialQuestions: number;
   };
   effort: {
     estimatedMinutesToTarget: number | null;

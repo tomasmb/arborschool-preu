@@ -1,11 +1,12 @@
 import { and, desc, eq, gt, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { atomMastery, atomStudySessions, users } from "@/db/schema";
+import { atomStudySessions } from "@/db/schema";
 import {
   analyzeLearningPotential,
   type StudentLearningAnalysis,
 } from "@/lib/diagnostic/questionUnlock";
 import { getReviewDueItems } from "./spacedRepetition";
+import { getUserDiagnosticSnapshot, getMasteryRows } from "./userQueries";
 
 type NextActionStatus = "ready" | "missing_diagnostic" | "missing_mastery";
 
@@ -66,12 +67,6 @@ export type StudentNextActionData = {
   /** True when the SR balance rule suggests a review block before new atoms */
   reviewSuggested: boolean;
   emptyState: NextActionEmptyState;
-};
-
-type MasteryRow = {
-  atomId: string;
-  isMastered: boolean;
-  cooldown: number | null;
 };
 
 function byRoutePriority(
@@ -209,30 +204,6 @@ function buildEmptyState(status: Exclude<NextActionStatus, "ready">) {
     ctaLabel: "Comenzar mini-clase",
     ctaHref: "/portal/study",
   };
-}
-
-async function getUserDiagnosticSnapshot(userId: string) {
-  const rows = await db
-    .select({
-      paesScoreMin: users.paesScoreMin,
-      paesScoreMax: users.paesScoreMax,
-    })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
-
-  return rows[0] ?? null;
-}
-
-async function getMasteryRows(userId: string): Promise<MasteryRow[]> {
-  return db
-    .select({
-      atomId: atomMastery.atomId,
-      isMastered: atomMastery.isMastered,
-      cooldown: atomMastery.cooldownUntilMasteryCount,
-    })
-    .from(atomMastery)
-    .where(eq(atomMastery.userId, userId));
 }
 
 /** Suggest review block after this many new masteries (spec 7.10). */

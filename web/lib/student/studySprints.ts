@@ -1,15 +1,14 @@
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
-  atomMastery,
   atoms,
   questionAtoms,
   questions,
   studentStudySprintItems,
   studentStudySprintResponses,
   studentStudySprints,
-  users,
 } from "@/db/schema";
+import { getUserDiagnosticSnapshot, getMasteryRows } from "./userQueries";
 import { parseQtiXml } from "@/lib/diagnostic/qtiParser";
 import { analyzeLearningPotential } from "@/lib/diagnostic/questionUnlock";
 import {
@@ -17,6 +16,7 @@ import {
   incrementMissionProgress,
 } from "@/lib/student/missions";
 import { getDailyStreak } from "@/lib/student/streakTracker";
+import { normalizeAnswer } from "./questionQueries";
 import type {
   StudySprintCreatePayload,
   StudySprintItemPayload,
@@ -30,52 +30,34 @@ type CandidateAtom = {
   title: string;
   axis: string;
 };
-
-function normalizeAnswer(value: string): string {
-  return value.trim().toUpperCase();
-}
-async function getUserSnapshot(userId: string) {
-  const [row] = await db
-    .select({
-      paesScoreMin: users.paesScoreMin,
-      paesScoreMax: users.paesScoreMax,
-    })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
-  if (!row || row.paesScoreMin === null || row.paesScoreMax === null) {
-    return null;
-  }
-  return {
-    score: Math.round((row.paesScoreMin + row.paesScoreMax) / 2),
-  };
-}
-async function getMasteryRows(userId: string) {
-  return db
-    .select({ atomId: atomMastery.atomId, isMastered: atomMastery.isMastered })
-    .from(atomMastery)
-    .where(eq(atomMastery.userId, userId));
-}
 async function getTopAtomsForStudySprint(
   userId: string,
   limit = DEFAULT_SPRINT_ITEMS
 ): Promise<CandidateAtom[]> {
   const [snapshot, masteryRows] = await Promise.all([
-    getUserSnapshot(userId),
+    getUserDiagnosticSnapshot(userId),
     getMasteryRows(userId),
   ]);
-  if (!snapshot) {
+  const minScore = snapshot?.paesScoreMin;
+  const maxScore = snapshot?.paesScoreMax;
+  if (
+    minScore === null ||
+    minScore === undefined ||
+    maxScore === null ||
+    maxScore === undefined
+  ) {
     throw new Error("Diagnostic snapshot is required before starting a sprint");
   }
   if (masteryRows.length === 0) {
     throw new Error("Mastery signals are required before starting a sprint");
   }
+  const currentScore = Math.round((minScore + maxScore) / 2);
   const analysis = await analyzeLearningPotential(
     masteryRows.map((row) => ({
       atomId: row.atomId,
       mastered: row.isMastered,
     })),
-    { currentPaesScore: snapshot.score }
+    { currentPaesScore: currentScore }
   );
   const sorted = [...analysis.topAtomsByEfficiency].sort((a, b) => {
     if (b.efficiency !== a.efficiency) {

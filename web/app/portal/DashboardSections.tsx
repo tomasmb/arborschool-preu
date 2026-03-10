@@ -281,7 +281,13 @@ type ProgressSectionProps = {
 };
 
 export function DashboardProgressSection({ data }: ProgressSectionProps) {
-  const { masteredAtoms, totalAtoms, masteryPercentage } = data.confidence;
+  const {
+    masteredAtoms,
+    totalAtoms,
+    masteryPercentage,
+    questionsUnlocked,
+    totalOfficialQuestions,
+  } = data.confidence;
   const mounted = useAnimatedMount();
   const animatedMastery = useCountUp(masteryPercentage);
 
@@ -290,7 +296,7 @@ export function DashboardProgressSection({ data }: ProgressSectionProps) {
       <h2 className="text-lg font-serif font-semibold text-primary">
         Tu progreso
       </h2>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-xl bg-gradient-to-br from-primary/5 to-white border border-primary/10 p-4">
           <p className="text-3xl font-bold text-primary tabular-nums">
             {masteredAtoms}
@@ -311,6 +317,17 @@ export function DashboardProgressSection({ data }: ProgressSectionProps) {
               style={{ width: mounted ? `${masteryPercentage}%` : "0%" }}
             />
           </div>
+        </div>
+        <div className="rounded-xl bg-gradient-to-br from-amber-500/5 to-white border border-amber-100 p-4">
+          <p className="text-3xl font-bold text-amber-600 tabular-nums">
+            {questionsUnlocked}
+            <span className="text-lg font-normal text-gray-400">
+              /{totalOfficialQuestions}
+            </span>
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            Preguntas PAES desbloqueadas
+          </p>
         </div>
       </div>
       {data.effort.topRoute ? (

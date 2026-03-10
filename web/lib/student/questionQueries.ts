@@ -62,3 +62,8 @@ export async function getQuestionContent(
     .limit(1);
   return row ?? null;
 }
+
+/** Trims and uppercases a student answer for comparison. */
+export function normalizeAnswer(v: string): string {
+  return v.trim().toUpperCase();
+}

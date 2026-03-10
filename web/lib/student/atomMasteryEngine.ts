@@ -50,6 +50,9 @@ import {
   evaluateHabitGuard,
 } from "./masteryLifecycle";
 import { updateDailyStreak } from "./streakTracker";
+import { incrementMissionProgress } from "./missions";
+import { normalizeAnswer } from "./questionQueries";
+import { verifySessionOwnership } from "./sessionQueries";
 
 export type {
   AnswerResultPayload,
@@ -74,22 +77,6 @@ export type AnswerResultWithLifecycle = AnswerResultPayload & {
   nextAtom?: { id: string; title: string } | null;
   habitGuard?: HabitGuardSignal;
 };
-function normalizeAnswer(v: string): string {
-  return v.trim().toUpperCase();
-}
-async function verifyOwnership(sessionId: string, userId: string) {
-  const [row] = await db
-    .select()
-    .from(atomStudySessions)
-    .where(
-      and(
-        eq(atomStudySessions.id, sessionId),
-        eq(atomStudySessions.userId, userId)
-      )
-    )
-    .limit(1);
-  return row ?? null;
-}
 async function getUsedQuestionIds(
   userId: string,
   atomId: string
@@ -251,7 +238,7 @@ export async function markLessonViewed(
   sessionId: string,
   userId: string
 ): Promise<{ success: boolean }> {
-  const session = await verifyOwnership(sessionId, userId);
+  const session = await verifySessionOwnership(sessionId, userId);
   if (!session) throw new Error("Session not found");
 
   if (session.status === "lesson") {
@@ -268,7 +255,7 @@ export async function getNextQuestion(
   sessionId: string,
   userId: string
 ): Promise<NextQuestionPayload> {
-  const session = await verifyOwnership(sessionId, userId);
+  const session = await verifySessionOwnership(sessionId, userId);
   if (!session) throw new Error("Session not found");
   if (session.status !== "in_progress") {
     throw new Error(`Session is ${session.status}, cannot serve next question`);
@@ -357,7 +344,7 @@ export async function submitAnswer(params: {
   userId: string;
   responseTimeSeconds?: number;
 }): Promise<AnswerResultWithLifecycle> {
-  const session = await verifyOwnership(params.sessionId, params.userId);
+  const session = await verifySessionOwnership(params.sessionId, params.userId);
   if (!session) throw new Error("Session not found");
   if (session.status !== "in_progress") {
     throw new Error(`Session is ${session.status}, not accepting answers`);
@@ -461,6 +448,7 @@ export async function submitAnswer(params: {
     await checkCooldownExpiry(params.userId, session.atomId);
     await incrementSessionCounters(params.userId);
     await updateDailyStreak(params.userId);
+    await incrementMissionProgress(params.userId);
 
     [questionsUnlocked, nextAtom] = await Promise.all([
       countNewlyUnlockedQuestions(params.userId, session.atomId),

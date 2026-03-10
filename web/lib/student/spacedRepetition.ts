@@ -18,6 +18,7 @@ import {
   findGeneratedQuestions,
   getQuestionAtomId,
   getQuestionContent,
+  normalizeAnswer,
 } from "./questionQueries";
 
 // --- Types ------------------------------------------------------------------
@@ -84,10 +85,6 @@ function computeGrowthFactor(correct: number, total: number): number {
   if (acc > 0.85) return 2.5;
   if (acc > 0.7) return 2.0;
   return 1.5;
-}
-
-function normalizeAnswer(v: string): string {
-  return v.trim().toUpperCase();
 }
 
 // --- DB helpers -------------------------------------------------------------
