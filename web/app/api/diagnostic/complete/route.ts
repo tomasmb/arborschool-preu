@@ -23,6 +23,8 @@ export async function POST(request: NextRequest) {
       scorePercentage,
       stage1Score,
       stage2Difficulty,
+      paesScoreMin,
+      paesScoreMax,
     } = body;
 
     if (!attemptId) {
@@ -40,6 +42,8 @@ export async function POST(request: NextRequest) {
         scorePercentage: scorePercentage?.toString(),
         stage1Score,
         stage2Difficulty,
+        ...(paesScoreMin != null && { paesScoreMin }),
+        ...(paesScoreMax != null && { paesScoreMax }),
       })
       .where(
         and(eq(testAttempts.id, attemptId), eq(testAttempts.userId, userId))

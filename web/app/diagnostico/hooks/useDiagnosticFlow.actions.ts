@@ -300,6 +300,8 @@ async function completeRemoteAttempt(params: {
   attemptId: string | null;
   correctAnswers: number;
   route: Route;
+  paesScoreMin?: number;
+  paesScoreMax?: number;
 }) {
   if (isLocalAttempt(params.attemptId)) {
     return;
@@ -315,6 +317,8 @@ async function completeRemoteAttempt(params: {
     correctAnswers: params.correctAnswers,
     stage1Score: stage1Correct,
     stage2Difficulty: params.route,
+    paesScoreMin: params.paesScoreMin,
+    paesScoreMax: params.paesScoreMax,
   });
 }
 
@@ -420,10 +424,13 @@ export function useDiagnosticResultsActions(params: {
     });
 
     try {
+      const { calc } = computeScoredResults(params.route);
       await completeRemoteAttempt({
         attemptId: params.attemptId,
         correctAnswers: counts.scoredCorrect,
         route: params.route,
+        paesScoreMin: calc.paesMin,
+        paesScoreMax: calc.paesMax,
       });
     } catch (error) {
       console.error("Failed to complete test:", error);

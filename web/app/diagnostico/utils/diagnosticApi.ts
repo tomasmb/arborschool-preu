@@ -102,6 +102,8 @@ export async function completeTestAttempt(params: {
   correctAnswers: number;
   stage1Score: number;
   stage2Difficulty: string;
+  paesScoreMin?: number;
+  paesScoreMax?: number;
 }): Promise<void> {
   await fetch("/api/diagnostic/complete", {
     method: "POST",
