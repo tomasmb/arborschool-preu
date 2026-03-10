@@ -11,7 +11,7 @@ import { eq } from "drizzle-orm";
  *
  * Note: Using userId as token is simple but not secure for high-stakes unsubscribe.
  * For production with sensitive data, consider signed tokens (JWT or HMAC).
- * For a waitlist with low risk, this is acceptable.
+ * For low-risk lifecycle emails, this is acceptable as an interim approach.
  */
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get("token");

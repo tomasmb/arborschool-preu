@@ -1,0 +1,1 @@
+ALTER TYPE "public"."mastery_source" ADD VALUE 'study';

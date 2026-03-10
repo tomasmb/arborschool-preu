@@ -3,6 +3,7 @@
  * Combines the "how you learn" message with a tangible daily plan mockup
  */
 import { BrowserFrame } from "./BrowserFrame";
+import { ScrollReveal } from "./ScrollReveal";
 
 export function MasterySection() {
   return (
@@ -12,7 +13,7 @@ export function MasterySection() {
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
           {/* Left: method + features */}
-          <div className="text-center lg:text-left">
+          <ScrollReveal className="text-center lg:text-left">
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold text-charcoal mb-4 sm:mb-6">
               Aprendes de verdad,{" "}
               <span className="text-accent">no de memoria</span>
@@ -39,17 +40,17 @@ export function MasterySection() {
                 color="success"
               />
             </div>
-          </div>
+          </ScrollReveal>
 
           {/* Right: daily plan browser mockup */}
-          <div>
-            <p className="text-sm font-semibold text-primary/60 mb-3 sm:mb-4 text-center uppercase tracking-wide">
+          <ScrollReveal delay={150}>
+            <p className="text-sm font-semibold text-primary/80 mb-3 sm:mb-4 text-center uppercase tracking-wide">
               Así se verá tu plan diario
             </p>
             <BrowserFrame>
               <DailyPlanPreview />
             </BrowserFrame>
-          </div>
+          </ScrollReveal>
         </div>
       </div>
     </section>
@@ -96,7 +97,7 @@ function DailyPlanPreview() {
             Hoy
           </h3>
           <p className="text-cool-gray text-xs sm:text-sm">
-            Martes 13 de enero
+            Ejemplo de día de estudio
           </p>
         </div>
         <div className="text-right">
@@ -183,11 +184,11 @@ function TaskCard({
             </span>
           )}
         </div>
-        <p className="text-charcoal/60 text-xs sm:text-sm truncate">
+        <p className="text-charcoal/80 text-xs sm:text-sm truncate">
           {description}
         </p>
       </div>
-      <span className="text-[10px] sm:text-xs font-semibold text-charcoal/50 shrink-0">
+      <span className="text-[10px] sm:text-xs font-semibold text-charcoal/70 shrink-0">
         {time}
       </span>
     </div>

@@ -57,6 +57,62 @@
       "when": 1740621600000,
       "tag": "0007_consolidate_lesson_html",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1772558260539,
+      "tag": "0008_student_portal_phase2_admissions_goals",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1772588114684,
+      "tag": "0009_student_portal_world_class",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1772736937809,
+      "tag": "0010_atom_study_sessions",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1772738428077,
+      "tag": "0011_add_study_mastery_source",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1772748010643,
+      "tag": "0012_switch-responses-to-generated-questions",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1773152574543,
+      "tag": "0013_add_daily_streak_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1773164646749,
+      "tag": "0014_add-paes-scores-to-test-attempts",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1773179591824,
+      "tag": "0015_add-student-responses-unique",
+      "breakpoints": true
     }
   ]
 }

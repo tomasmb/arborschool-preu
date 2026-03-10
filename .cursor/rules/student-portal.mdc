@@ -1,0 +1,38 @@
+---
+description: Student portal learning system rules
+globs:
+  - web/lib/student/**
+  - web/app/portal/**
+  - web/app/api/student/**
+  - web/lib/diagnostic/**
+alwaysApply: false
+---
+
+# Student Portal Rules
+
+## Required Reading
+
+Before making changes to the student portal or learning system, read **`docs/arbor-learning-system-spec.md`** — the single source of truth for:
+
+- Learning path optimization algorithm
+- Mini-clase (adaptive mastery) algorithm
+- Prerequisite scan protocol and cooldown mechanism
+- Spaced repetition (activity-based)
+- Retest gating policy
+- Score prediction and confidence rules
+- Dashboard data contracts (DRY)
+- Student feedback UX contracts
+- Goals and objectives UX
+- Implementation status checklist
+
+## Key Contracts
+
+- **All learning methodology rules live in the master spec.** If the spec says it, it must be implemented. If it's not in the spec, it doesn't get built.
+- **Metrics must use the shared metrics service** (`web/lib/student/metricsService.ts`). No duplicate calculations across components.
+- **Mastery metrics are scoped to goal-relevant atoms**, not all 229.
+- **Diagnostic source must always be labeled** (short diagnostic vs full test).
+- **The atom result panel must show lifecycle context** (prereq scan, cooldown, gap detection) — not just pass/fail.
+
+## Database
+
+All database changes go through drizzle. See `AGENTS.md` for the full protocol.

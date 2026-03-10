@@ -3,7 +3,7 @@
  *
  * Provides backup storage for test responses in case API calls fail.
  * Also persists session state to survive page refreshes.
- * Data is cleared after successful signup/completion.
+ * Data is cleared after successful completion.
  */
 
 import {
@@ -104,7 +104,7 @@ export function getStoredResponses(): StoredResponse[] {
 
 /**
  * Clear all diagnostic data from localStorage.
- * Called after successful signup to clean up backup data.
+ * Called after successful completion to clean up backup data.
  */
 export function clearStoredResponses(): void {
   try {
@@ -156,7 +156,6 @@ export function generateLocalAttemptId(): string {
 // ============================================================================
 
 type Screen =
-  | "mini-form"
   | "question"
   | "transition"
   | "partial-results"
@@ -164,9 +163,25 @@ type Screen =
   | "confirm-skip"
   | "results"
   | "thank-you"
-  | "maintenance"
-  /** New onboarding Phase 2 — plan preview after results */
-  | "plan-preview";
+  | "maintenance";
+
+function normalizeStoredScreen(value: unknown): Screen {
+  if (value === "question") return value;
+  if (value === "transition") return value;
+  if (value === "partial-results") return value;
+  if (value === "profiling") return value;
+  if (value === "confirm-skip") return value;
+  if (value === "results") return value;
+  if (value === "thank-you") return value;
+  if (value === "maintenance") return value;
+
+  // Backward compatibility for legacy session snapshots.
+  if (value === "plan-preview") {
+    return "results";
+  }
+
+  return "question";
+}
 
 /** Results summary for storage (full DiagnosticResults is too large) */
 export interface StoredResults {
@@ -231,6 +246,11 @@ export function getStoredSessionState(): SessionState | null {
     throw new Error("Corrupted session data in localStorage");
   }
 
+  session = {
+    ...session,
+    screen: normalizeStoredScreen((session as { screen?: unknown }).screen),
+  };
+
   // Session expires after 1 hour of inactivity
   const ONE_HOUR = 60 * 60 * 1000;
   if (Date.now() - session.savedAt > ONE_HOUR) {
@@ -253,7 +273,7 @@ export function calculateRemainingTime(timerStartedAt: number): number {
 
 /**
  * Clear session state from localStorage.
- * Called when starting a new test or after signup.
+ * Called when starting a new test or after completion.
  */
 export function clearSessionState(): void {
   try {
@@ -356,7 +376,7 @@ export interface ReconstructOptions {
 
 /**
  * Reconstructs full DiagnosticResponse objects from localStorage.
- * Used for results calculation, signup, and time-up scenarios.
+ * Used for results calculation, profile save, and time-up scenarios.
  * Requires stored route for stage 2 responses.
  *
  * @param options - Options for filtering responses

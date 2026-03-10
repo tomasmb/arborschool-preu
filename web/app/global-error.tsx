@@ -51,7 +51,7 @@ export default function GlobalError({
                 fontSize: "1rem",
               }}
             >
-              Reintentar
+              Intentar de nuevo
             </button>
           </div>
         </div>

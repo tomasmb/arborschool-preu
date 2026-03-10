@@ -1,6 +1,7 @@
 "use client";
 
 import { AXIS_NAMES, SKILL_NAMES } from "@/lib/diagnostic/config";
+import { MathContent } from "@/lib/qti/MathRenderer";
 import type {
   ResponseForReview,
   QuestionReviewData,
@@ -145,11 +146,9 @@ export function QuestionReviewContent({
 
       {/* Question content */}
       <div className="card p-5 sm:p-6 overflow-x-auto">
-        <div
+        <MathContent
+          html={parsedHtml || "<p>Cargando pregunta...</p>"}
           className="prose prose-sm sm:prose max-w-none text-charcoal"
-          dangerouslySetInnerHTML={{
-            __html: parsedHtml || "<p>Cargando pregunta...</p>",
-          }}
         />
       </div>
 
@@ -207,9 +206,9 @@ export function QuestionReviewContent({
               >
                 {option.letter}
               </span>
-              <span
+              <MathContent
+                html={option.text}
                 className="flex-1 text-charcoal pt-1.5"
-                dangerouslySetInnerHTML={{ __html: option.text }}
               />
               {isCorrectOption && (
                 <span className="text-xs font-semibold text-success bg-success/10 px-2.5 py-1 rounded-full shrink-0">
@@ -267,9 +266,9 @@ export function QuestionReviewContent({
               <p className="text-sm font-semibold text-primary mb-3">
                 Solución paso a paso
               </p>
-              <div
+              <MathContent
+                html={generalFeedback}
                 className="prose prose-sm max-w-none text-charcoal"
-                dangerouslySetInnerHTML={{ __html: generalFeedback }}
               />
             </div>
           )}
@@ -310,9 +309,9 @@ function FeedbackCard({
           ? `Por qué ${letter} es correcta`
           : `Por qué ${letter} es incorrecta`}
       </p>
-      <div
+      <MathContent
+        html={feedback}
         className="prose prose-sm max-w-none text-charcoal"
-        dangerouslySetInnerHTML={{ __html: feedback }}
       />
     </div>
   );

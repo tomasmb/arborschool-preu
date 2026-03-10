@@ -1,7 +1,6 @@
 /**
  * Diagnostic test screen components
  */
-export { MiniFormScreen, type MiniFormData } from "./MiniFormScreen";
 export { QuestionScreen } from "./QuestionScreen";
 export { TransitionScreen } from "./TransitionScreen";
 export { PartialResultsScreen } from "./PartialResultsScreen";
@@ -39,3 +38,4 @@ export { QuestionSkeleton } from "./QuestionSkeleton";
 export { QuestionScreenWrapper } from "./QuestionScreenWrapper";
 export { ResultsScreenWrapper } from "./ResultsScreenWrapper";
 export { ImprovementHeroCard, formatStudyTime } from "./ImprovementHeroCard";
+export { StudentResultsHandoffScreen } from "./StudentResultsHandoffScreen";

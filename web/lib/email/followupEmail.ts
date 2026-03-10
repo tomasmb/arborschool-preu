@@ -13,6 +13,7 @@
 
 import { emailService, EMAIL_CONFIG } from "./service";
 import type { EmailResult, ResultsSnapshot, EmailRecipient } from "./types";
+import { buildEmailStartSprintUrl } from "./links";
 
 // ============================================================================
 // TYPES
@@ -137,25 +138,12 @@ function buildGapMessage(
 // HTML TEMPLATE
 // ============================================================================
 
-function generateFollowupHtml(
-  recipient: EmailRecipient,
-  results: ResultsSnapshot,
-  context: FollowupContext
-): string {
-  const unsubscribeUrl = `${EMAIL_CONFIG.baseUrl}/api/unsubscribe?token=${encodeURIComponent(recipient.userId)}`;
-  const ctaUrl = EMAIL_CONFIG.baseUrl;
+function buildRouteSection(results: ResultsSnapshot): string {
+  if (!results.topRoute) {
+    return "";
+  }
 
-  const midScore = Math.round((results.paesMin + results.paesMax) / 2);
-  const tierCopy = getTierCopy(results.performanceTier);
-  const gapMessage = buildGapMessage(midScore, context.paesGoal);
-
-  const greeting = recipient.firstName
-    ? `Hola ${recipient.firstName} 👋`
-    : "Hola 👋";
-
-  // Top route section
-  const routeSection = results.topRoute
-    ? `
+  return `
     <div style="background: linear-gradient(135deg, #fef7ed 0%, #fffbf5 100%);
       border-radius: 14px; padding: 18px 20px; margin: 20px 0;
       border: 1px solid #fed7aa;">
@@ -174,64 +162,39 @@ function generateFollowupHtml(
         ${results.topRoute.questionsUnlocked} preguntas PAES que podrías dominar
       </p>
     </div>
-  `
-    : "";
+  `;
+}
 
-  // Gap message section
-  const gapSection = gapMessage
-    ? `
+function buildGapSection(gapMessage: string | null): string {
+  if (!gapMessage) {
+    return "";
+  }
+
+  return `
     <p style="color: #374151; font-size: 15px; margin: 16px 0; line-height: 1.6;
       padding: 12px 16px; background: #f0f9ff; border-radius: 10px;
       border-left: 3px solid #0ea5e9;">
       ${gapMessage}
     </p>
-  `
-    : "";
+  `;
+}
 
+function buildTierScoreSection(params: {
+  tierCopy: TierCopy;
+  midScore: number;
+  paesMin: number;
+  paesMax: number;
+}): string {
   return `
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="x-apple-disable-message-reformatting">
-  <title>Tu plan PAES está esperándote</title>
-</head>
-<body style="margin: 0; padding: 0; background-color: #f8f7f4;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;">
-
-  <div style="max-width: 580px; margin: 0 auto; padding: 24px 16px;">
-
-    <!-- Header -->
-    <div style="text-align: center; margin-bottom: 20px;">
-      <img src="${EMAIL_CONFIG.baseUrl}/logo-arbor.png" alt="Arbor PreU"
-        style="height: 32px;" />
-    </div>
-
-    <!-- Main card -->
-    <div style="background: #ffffff; border-radius: 20px; padding: 32px 28px;
-      border: 1px solid #e5e7eb; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
-
-      <!-- Greeting -->
-      <p style="font-size: 22px; font-weight: 700; color: #1a1d1e; margin: 0 0 4px 0;">
-        ${greeting}
-      </p>
-
-      <!-- Hook -->
-      <p style="font-size: 15px; color: #64748b; margin: 0 0 20px 0; line-height: 1.5;">
-        Ayer completaste tu diagnóstico PAES. Aquí va un recordatorio de dónde estás y qué sigue.
-      </p>
-
-      <!-- Tier headline -->
       <div style="background: linear-gradient(135deg, #0b3a5b 0%, #072a42 100%);
         border-radius: 14px; padding: 22px 24px; margin-bottom: 20px;">
-        <p style="font-size: 28px; margin: 0 0 4px 0; line-height: 1;">${tierCopy.emoji}</p>
+        <p style="font-size: 28px; margin: 0 0 4px 0; line-height: 1;">${params.tierCopy.emoji}</p>
         <p style="color: #ffffff; font-size: 19px; font-weight: 700; margin: 6px 0 8px 0;
           font-family: Georgia, 'Times New Roman', serif; line-height: 1.3;">
-          ${tierCopy.headline}
+          ${params.tierCopy.headline}
         </p>
         <p style="color: #94a3b8; font-size: 14px; margin: 0; line-height: 1.5;">
-          ${tierCopy.subtext}
+          ${params.tierCopy.subtext}
         </p>
         <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.1);">
           <p style="color: #cbd5e1; font-size: 12px; margin: 0 0 4px 0; text-transform: uppercase;
@@ -239,18 +202,17 @@ function generateFollowupHtml(
             Tu puntaje PAES estimado
           </p>
           <p style="color: #ffffff; font-size: 38px; font-weight: 700; margin: 0; line-height: 1;">
-            ${midScore}
+            ${params.midScore}
           </p>
           <p style="color: #94a3b8; font-size: 13px; margin: 4px 0 0 0;">
-            Rango: ${results.paesMin}–${results.paesMax}
+            Rango: ${params.paesMin}–${params.paesMax}
           </p>
         </div>
       </div>
+  `;
+}
 
-      ${gapSection}
-      ${routeSection}
-
-      <!-- 3 action steps -->
+const FOLLOWUP_ACTION_STEPS_HTML = `
       <div style="margin: 24px 0;">
         <p style="font-size: 15px; font-weight: 700; color: #1a1d1e; margin: 0 0 14px 0;">
           3 cosas que puedes hacer hoy:
@@ -292,44 +254,115 @@ function generateFollowupHtml(
           </div>
         </div>
       </div>
+`;
 
-      <!-- CTA -->
+function buildMainCardHtml(params: {
+  greeting: string;
+  tierScoreSection: string;
+  gapSection: string;
+  routeSection: string;
+  ctaUrl: string;
+}): string {
+  return `
+    <div style="background: #ffffff; border-radius: 20px; padding: 32px 28px;
+      border: 1px solid #e5e7eb; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+      <p style="font-size: 22px; font-weight: 700; color: #1a1d1e; margin: 0 0 4px 0;">
+        ${params.greeting}
+      </p>
+      <p style="font-size: 15px; color: #64748b; margin: 0 0 20px 0; line-height: 1.5;">
+        Ayer completaste tu diagnóstico PAES. Aquí va un recordatorio de dónde estás y qué sigue.
+      </p>
+      ${params.tierScoreSection}
+      ${params.gapSection}
+      ${params.routeSection}
+      ${FOLLOWUP_ACTION_STEPS_HTML}
       <div style="text-align: center; margin: 28px 0 8px 0;">
-        <a href="${ctaUrl}"
+        <a href="${params.ctaUrl}"
           style="display: inline-block; background: linear-gradient(135deg, #0b3a5b, #1e6091);
             color: #ffffff; font-size: 16px; font-weight: 700; text-decoration: none;
             padding: 14px 36px; border-radius: 50px;
             box-shadow: 0 4px 14px rgba(11, 58, 91, 0.3);">
-          Volver a Arbor →
+          Comenzar mini-clase de hoy →
         </a>
         <p style="font-size: 12px; color: #94a3b8; margin: 10px 0 0 0;">
-          Tu diagnóstico y plan están guardados — retomas donde lo dejaste.
+          Siguiente paso recomendado: 10-15 min de estudio guiado.
         </p>
       </div>
-
     </div>
+  `;
+}
 
-    <!-- Footer / signature -->
+function buildFooterHtml(params: {
+  unsubscribeUrl: string;
+  ctaUrl: string;
+}): string {
+  return `
     <div style="padding: 24px 4px 16px; text-align: center;">
       <p style="font-size: 14px; color: #64748b; margin: 0 0 6px 0; line-height: 1.5;">
         — El equipo de Arbor 🌿
       </p>
-      <p style="font-size: 12px; color: #94a3b8; margin: 0 0 12px 0;">
-        Estamos construyendo la mejor forma de preparar la PAES en Chile.<br>
-        Gracias por ser parte del piloto.
-      </p>
       <p style="font-size: 11px; color: #c0c7d0; margin: 0;">
-        <a href="${unsubscribeUrl}"
+        <a href="${params.unsubscribeUrl}"
           style="color: #c0c7d0; text-decoration: underline;">
           Darse de baja
         </a>
         &nbsp;·&nbsp;
-        <a href="${ctaUrl}"
+        <a href="${params.ctaUrl}"
           style="color: #c0c7d0; text-decoration: underline;">
           preu.arbor.school
         </a>
       </p>
     </div>
+  `;
+}
+
+function generateFollowupHtml(
+  recipient: EmailRecipient,
+  results: ResultsSnapshot,
+  context: FollowupContext
+): string {
+  const unsubscribeUrl = `${EMAIL_CONFIG.baseUrl}/api/unsubscribe?token=${encodeURIComponent(recipient.userId)}`;
+  const ctaUrl = buildEmailStartSprintUrl("followup");
+  const midScore = Math.round((results.paesMin + results.paesMax) / 2);
+  const tierCopy = getTierCopy(results.performanceTier);
+  const gapMessage = buildGapMessage(midScore, context.paesGoal);
+  const greeting = recipient.firstName
+    ? `Hola ${recipient.firstName} 👋`
+    : "Hola 👋";
+
+  return `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="x-apple-disable-message-reformatting">
+  <title>Tu plan PAES está esperándote</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f8f7f4;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;">
+
+  <div style="max-width: 580px; margin: 0 auto; padding: 24px 16px;">
+
+    <!-- Header -->
+    <div style="text-align: center; margin-bottom: 20px;">
+      <img src="${EMAIL_CONFIG.baseUrl}/logo-arbor.png" alt="Arbor PreU"
+        style="height: 32px;" />
+    </div>
+
+    ${buildMainCardHtml({
+      greeting,
+      tierScoreSection: buildTierScoreSection({
+        tierCopy,
+        midScore,
+        paesMin: results.paesMin,
+        paesMax: results.paesMax,
+      }),
+      gapSection: buildGapSection(gapMessage),
+      routeSection: buildRouteSection(results),
+      ctaUrl,
+    })}
+    ${buildFooterHtml({ unsubscribeUrl, ctaUrl })}
 
   </div>
 </body>
@@ -347,6 +380,7 @@ function generateFollowupText(
   context: FollowupContext
 ): string {
   const unsubscribeUrl = `${EMAIL_CONFIG.baseUrl}/api/unsubscribe?token=${encodeURIComponent(recipient.userId)}`;
+  const ctaUrl = buildEmailStartSprintUrl("followup");
   const midScore = Math.round((results.paesMin + results.paesMax) / 2);
   const tierCopy = getTierCopy(results.performanceTier);
   const greeting = recipient.firstName ? `Hola ${recipient.firstName}` : "Hola";
@@ -389,7 +423,7 @@ ${tierCopy.subtext}
 3. 🎯 Enfócate en un solo eje esta semana
    El diagnóstico ya calculó tu ruta de mayor impacto. Empieza ahí.
 
-→ Volver a Arbor: ${EMAIL_CONFIG.baseUrl}
+→ Comenzar mini-clase de hoy: ${ctaUrl}
 
 — El equipo de Arbor 🌿
 
@@ -434,8 +468,8 @@ export async function scheduleFollowupEmail(
 
   // Subject varies based on whether we know their name
   const subject = recipient.firstName
-    ? `Tu plan PAES está esperándote, ${recipient.firstName} 📚`
-    : "Tu plan PAES está esperándote 📚";
+    ? `Tu siguiente mini-clase te espera, ${recipient.firstName}`
+    : "Tu siguiente mini-clase te espera";
 
   return emailService.send({
     to: recipient.email,

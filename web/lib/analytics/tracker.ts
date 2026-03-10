@@ -146,8 +146,8 @@ export function initializeTracker(
 
 /**
  * Identifies a user in the analytics system.
- * Links all previous anonymous events to this user.
- * Call this when a user signs up or logs in.
+ * Links pre-auth events to this user.
+ * Call this when a user logs in.
  */
 export function identifyUser(
   email: string,
@@ -202,17 +202,6 @@ export function trackLandingPageViewed(): void {
 }
 
 /**
- * Tracks landing CTA click. Call when user clicks any CTA to go to diagnostic.
- */
-export function trackLandingCtaClicked(
-  ctaLocation: AnalyticsEventMap["landing_cta_clicked"]["cta_location"]
-): void {
-  trackEvent("landing_cta_clicked", {
-    cta_location: ctaLocation,
-  });
-}
-
-/**
  * Tracks diagnostic intro/welcome screen view. Call when welcome screen mounts.
  */
 export function trackDiagnosticIntroViewed(): void {
@@ -227,13 +216,19 @@ export function trackDiagnosticIntroViewed(): void {
 export function trackDiagnosticCompleted(
   totalCorrect: number,
   performanceTier: AnalyticsEventMap["diagnostic_completed"]["performance_tier"],
-  route: AnalyticsEventMap["diagnostic_completed"]["route"]
+  route: AnalyticsEventMap["diagnostic_completed"]["route"],
+  options: {
+    entryPoint: string;
+    journeyState: AnalyticsEventMap["diagnostic_completed"]["journey_state"];
+  }
 ): void {
   trackEvent("diagnostic_completed", {
     total_correct: totalCorrect,
     performance_tier: performanceTier,
     time_elapsed_seconds: getDiagnosticElapsedSeconds(),
     route,
+    entry_point: options.entryPoint,
+    journey_state: options.journeyState,
   });
 }
 
@@ -297,32 +292,6 @@ export function trackRouteExplored(
   trackEvent("route_explored", {
     performance_tier: performanceTier,
     route,
-  });
-}
-
-/**
- * Tracks mini-form completion (email + role + curso, before test).
- * Also identifies the user and marks the diagnostic start time,
- * since form submission IS the test start (single user action).
- */
-export function trackMiniFormCompleted(
-  email: string,
-  userType: string,
-  curso: string
-): void {
-  // Identify the user early (since we now have their email)
-  identifyUser(email, { user_type: userType, curso });
-
-  // Mark diagnostic start time (for elapsed time calculation later)
-  markDiagnosticStart();
-
-  const utmParams = getPersistedUTMParams();
-
-  trackEvent("mini_form_completed", {
-    email,
-    user_type: userType,
-    curso,
-    ...utmParams,
   });
 }
 
@@ -395,5 +364,55 @@ export function trackTimeExpired(
     stage,
     question_index: questionIndex,
     questions_answered: questionsAnswered,
+  });
+}
+
+/**
+ * Tracks goal save/update in student portal.
+ */
+export function trackStudentGoalsSaved(
+  mode: "create" | "update",
+  goalCount: number,
+  primaryGoalCount: number
+): void {
+  trackEvent("student_goals_saved", {
+    mode,
+    goal_count: goalCount,
+    primary_goal_count: primaryGoalCount,
+  });
+}
+
+/**
+ * Tracks first simulator interaction in student portal goals.
+ */
+export function trackStudentSimulatorInteraction(
+  interactionType: "score_input" | "buffer_change"
+): void {
+  trackEvent("student_simulator_interaction", {
+    interaction_type: interactionType,
+  });
+}
+
+/**
+ * Tracks student dashboard view with the payload status.
+ */
+export function trackStudentDashboardViewed(
+  status: AnalyticsEventMap["student_dashboard_viewed"]["status"]
+): void {
+  trackEvent("student_dashboard_viewed", {
+    status,
+  });
+}
+
+/**
+ * Tracks next-action CTA clicks in student dashboard.
+ */
+export function trackStudentNextActionClicked(
+  ctaTarget: string,
+  hasNextAction: boolean
+): void {
+  trackEvent("student_next_action_clicked", {
+    cta_target: ctaTarget,
+    has_next_action: hasNextAction,
   });
 }

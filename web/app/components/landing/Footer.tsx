@@ -28,7 +28,7 @@ export function Footer() {
                 Arbor PreU
               </span>
             </div>
-            <p className="text-white/60 max-w-sm">
+            <p className="text-white/80 max-w-sm">
               Preparación PAES basada en dominio. Aprende lo que te falta,
               demuestra que lo sabes, avanza.
             </p>
@@ -36,12 +36,12 @@ export function Footer() {
 
           {/* Contact column */}
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-wider mb-4">
+            <h3 className="text-sm font-semibold uppercase tracking-wider mb-4">
               Contacto
-            </h4>
+            </h3>
             <a
               href="mailto:contacto@arbor.school"
-              className="text-white/60 hover:text-white transition-colors"
+              className="text-white/80 hover:text-white transition-colors"
             >
               contacto@arbor.school
             </a>
@@ -49,9 +49,9 @@ export function Footer() {
 
           {/* Legal column */}
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-wider mb-4">
+            <h3 className="text-sm font-semibold uppercase tracking-wider mb-4">
               Legal
-            </h4>
+            </h3>
             <ul className="space-y-2">
               {LEGAL_LINKS.map(({ href, label }) => (
                 <li key={href}>
@@ -59,7 +59,7 @@ export function Footer() {
                     href={href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-white/60 hover:text-white transition-colors"
+                    className="text-white/80 hover:text-white transition-colors"
                   >
                     {label}
                   </a>
@@ -71,7 +71,7 @@ export function Footer() {
 
         {/* Divider + copyright */}
         <div className="mt-10 pt-8 border-t border-white/10 text-center">
-          <p className="text-white/40 text-sm">
+          <p className="text-white/70 text-sm">
             © 2026 Arbor Learning SpA. Todos los derechos reservados.
           </p>
         </div>

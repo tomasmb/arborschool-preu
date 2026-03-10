@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { studentResponses } from "@/db/schema";
+import { requireAuthenticatedStudentUser } from "@/lib/student/apiAuth";
 
 /**
  * POST /api/diagnostic/response
@@ -8,16 +9,23 @@ import { studentResponses } from "@/db/schema";
  */
 export async function POST(request: NextRequest) {
   try {
+    const authResult = await requireAuthenticatedStudentUser();
+    if (authResult.unauthorizedResponse) {
+      return authResult.unauthorizedResponse;
+    }
+    const userId = authResult.userId;
+
     const body = await request.json();
     const {
       attemptId,
       questionId,
       selectedAnswer,
       isCorrect,
-      responseTimeSeconds,
       stage,
       questionIndex,
     } = body;
+    const responseTimeSeconds =
+      body.responseTimeSeconds ?? body.responseTime ?? 0;
 
     if (
       !attemptId ||
@@ -34,6 +42,7 @@ export async function POST(request: NextRequest) {
     const [response] = await db
       .insert(studentResponses)
       .values({
+        userId,
         testAttemptId: attemptId,
         questionId,
         selectedAnswer,

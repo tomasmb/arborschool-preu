@@ -39,6 +39,14 @@ function formatStudyTime(hours: number): string {
   return `~${minutes} min`;
 }
 
+function formatQuestionsUnlocked(questionsUnlocked: number): string {
+  if (questionsUnlocked === 1) {
+    return "+1 pregunta PAES";
+  }
+
+  return `+${questionsUnlocked} preguntas PAES`;
+}
+
 /**
  * Simplified route card showing questions unlocked, points gain, and study time.
  * The key value proposition: X points in Y hours.
@@ -83,10 +91,12 @@ export function SimpleRouteCard({
         </div>
 
         {/* Secondary info: questions unlocked */}
-        <div className="flex items-center justify-center gap-1.5 mt-1.5 text-sm text-cool-gray">
-          {Icons.unlock("w-4 h-4")}
-          <span>+{route.questionsUnlocked} preguntas PAES</span>
-        </div>
+        {route.questionsUnlocked > 0 ? (
+          <div className="flex items-center justify-center gap-1.5 mt-1.5 text-sm text-cool-gray">
+            {Icons.unlock("w-4 h-4")}
+            <span>{formatQuestionsUnlocked(route.questionsUnlocked)}</span>
+          </div>
+        ) : null}
       </div>
     </div>
   );
