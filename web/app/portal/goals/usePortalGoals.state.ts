@@ -74,6 +74,14 @@ export function useGoalsState() {
     return drafts[selectedGoalId] ?? null;
   }, [drafts, selectedGoalId]);
 
+  const isDirty = useMemo(() => {
+    if (loading) return false;
+    const savedOfferings = savedGoals.map((g) => g.offeringId);
+    const currentOfferings = goals.map((g) => g.offeringId);
+    if (savedOfferings.length !== currentOfferings.length) return true;
+    return savedOfferings.some((id, i) => id !== currentOfferings[i]);
+  }, [loading, goals, savedGoals]);
+
   return {
     loading,
     saving,
@@ -97,6 +105,7 @@ export function useGoalsState() {
     selectedGoal,
     selectedOption,
     selectedDraft,
+    isDirty,
     setLoading,
     setSaving,
     setSimLoading,

@@ -32,6 +32,7 @@ export function usePortalGoals() {
   }, []);
 
   return {
+    isDirty: state.isDirty,
     loading: state.loading,
     saving: state.saving,
     simLoading: state.simLoading,

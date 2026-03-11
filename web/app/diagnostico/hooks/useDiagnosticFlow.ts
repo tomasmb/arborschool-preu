@@ -64,7 +64,6 @@ function useExecutionControllers(
   routeRef: MutableRefObject<CoreState["route"]>
 ) {
   const resultActions = useDiagnosticResultsActions({
-    userId: core.userId,
     attemptId: timer.attemptId,
     route: core.route,
     topRouteInfo: core.topRouteInfo,
@@ -106,7 +105,6 @@ function useExecutionControllers(
 
   const profileExitActions = useDiagnosticProfileExitActions({
     route: core.route,
-    userId: core.userId,
     attemptId: timer.attemptId,
     topRouteInfo: core.topRouteInfo,
     profileSaved: core.profileSaved,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { PageShell } from "@/app/portal/components";
 import { GoalsEditorSection } from "./GoalsEditorSection";
 import { PlanningModeFlow } from "./PlanningModeFlow";
@@ -9,6 +9,39 @@ import { SimulatorSection } from "./SimulatorSection";
 import { usePortalGoals } from "./usePortalGoals";
 
 type GoalsTab = "metas" | "simulador";
+
+const UNSAVED_MSG =
+  "Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?";
+
+/**
+ * Warns the user before navigating away when there are unsaved changes.
+ * Covers browser-level navigation (refresh/close) via `beforeunload`
+ * and Next.js client-side navigation by patching `history.pushState`.
+ */
+function useUnsavedChangesWarning(isDirty: boolean) {
+  const dirtyRef = useRef(isDirty);
+  dirtyRef.current = isDirty;
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!dirtyRef.current) return;
+      e.preventDefault();
+    };
+
+    const originalPushState = history.pushState.bind(history);
+    history.pushState = function (...args: Parameters<History["pushState"]>) {
+      if (dirtyRef.current && !window.confirm(UNSAVED_MSG)) return;
+      return originalPushState(...args);
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      history.pushState = originalPushState;
+    };
+  }, []);
+}
 
 function GoalsTabBar({
   activeTab,
@@ -89,6 +122,8 @@ function PortalGoalsPageContent() {
     planningModeRequested &&
     (portalGoals.journeyState === null ||
       portalGoals.journeyState === "planning_required");
+
+  useUnsavedChangesWarning(portalGoals.isDirty && !isPlanningMode);
 
   usePlanningModeRedirect({
     planningModeRequested,

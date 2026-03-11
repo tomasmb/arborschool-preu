@@ -48,7 +48,6 @@ export interface SaveResponseParams {
 
 /** Profile payload building inputs */
 export interface ProfileContext {
-  userId: string | null;
   attemptId: string | null;
   route: Route;
   topRouteInfo?: {
@@ -221,7 +220,6 @@ export async function buildAndSaveProfile(ctx: ProfileContext) {
   const counts = getResponseCounts();
 
   const data = await saveProfileFetch({
-    userId: ctx.userId,
     attemptId: isLocal ? null : ctx.attemptId,
     profilingData: ctx.profilingData,
     atomResults,

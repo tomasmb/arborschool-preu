@@ -4,11 +4,13 @@ import { MathJaxContext, MathJax } from "better-react-mathjax";
 import { type ReactNode } from "react";
 
 /**
- * MathJax config: only process MathML markup (`<math>`) and render via CHTML.
- * Loads lazily from CDN — no cost on pages that never mount a <MathJax>.
+ * MathJax v3 all-in-one bundle for MathML → CHTML.
+ * Pinned to v3 because better-react-mathjax@3 defaults to MathJax v4 whose
+ * CDN module paths (`input/mathml.js`) don't resolve on jsdelivr.
  */
+const MATHJAX_SRC = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/mml-chtml.js";
+
 const MATHJAX_CONFIG = {
-  loader: { load: ["input/mathml", "output/chtml"] },
   options: { enableMenu: false },
 };
 
@@ -17,7 +19,11 @@ const MATHJAX_CONFIG = {
  * Place this once per route group (portal, diagnostico) via a layout.
  */
 export function MathProvider({ children }: { children: ReactNode }) {
-  return <MathJaxContext config={MATHJAX_CONFIG}>{children}</MathJaxContext>;
+  return (
+    <MathJaxContext version={3} src={MATHJAX_SRC} config={MATHJAX_CONFIG}>
+      {children}
+    </MathJaxContext>
+  );
 }
 
 /**

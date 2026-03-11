@@ -1,5 +1,12 @@
 import { NextResponse } from "next/server";
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function isValidUuid(value: string): boolean {
+  return UUID_RE.test(value);
+}
+
 export type StudentApiErrorCode =
   | "UNAUTHORIZED"
   | "USER_NOT_FOUND"
@@ -30,6 +37,7 @@ export type StudentApiErrorCode =
   | "SCAN_ANSWER_FAILED"
   | "GOALS_LOAD_FAILED"
   | "PROFILE_LOAD_FAILED"
+  | "INVALID_ID"
   | "INVALID_PARAMS"
   | "GOAL_NOT_FOUND"
   | "SIMULATION_LOAD_FAILED"

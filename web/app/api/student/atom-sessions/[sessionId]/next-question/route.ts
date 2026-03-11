@@ -1,5 +1,9 @@
 import { getNextQuestion } from "@/lib/student/atomMasteryEngine";
-import { studentApiError, studentApiSuccess } from "@/lib/student/apiEnvelope";
+import {
+  isValidUuid,
+  studentApiError,
+  studentApiSuccess,
+} from "@/lib/student/apiEnvelope";
 import { getAuthenticatedStudentUserId } from "@/lib/student/auth";
 
 export async function POST(
@@ -12,6 +16,10 @@ export async function POST(
   }
 
   const { sessionId } = await params;
+  if (!isValidUuid(sessionId)) {
+    return studentApiError("INVALID_ID", "Invalid session ID format", 400);
+  }
+
   try {
     const result = await getNextQuestion(sessionId, userId);
     return studentApiSuccess(result);

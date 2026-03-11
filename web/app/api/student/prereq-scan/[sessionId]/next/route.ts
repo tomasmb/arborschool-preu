@@ -1,5 +1,9 @@
 import { getNextScanQuestion } from "@/lib/student/prerequisiteScan";
-import { studentApiError, studentApiSuccess } from "@/lib/student/apiEnvelope";
+import {
+  isValidUuid,
+  studentApiError,
+  studentApiSuccess,
+} from "@/lib/student/apiEnvelope";
 import { getAuthenticatedStudentUserId } from "@/lib/student/auth";
 
 export async function GET(
@@ -12,6 +16,9 @@ export async function GET(
   }
 
   const { sessionId } = await params;
+  if (!isValidUuid(sessionId)) {
+    return studentApiError("INVALID_ID", "Invalid session ID format", 400);
+  }
 
   try {
     const result = await getNextScanQuestion(sessionId, userId);

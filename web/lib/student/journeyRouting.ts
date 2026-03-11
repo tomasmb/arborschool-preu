@@ -131,30 +131,35 @@ export function resolveStudyEntryRoute(params: {
     | "/portal";
   contextBannerCode?: PortalContextBannerCode;
 } {
-  if (params.journeySnapshot.journeyState === "planning_required") {
-    return { route: PLANNING_ROUTE };
-  }
+  const { journeyState, hasPlanningProfile } = params.journeySnapshot;
 
-  if (!params.journeySnapshot.hasPlanningProfile) {
-    return { route: PLANNING_ROUTE };
-  }
-
-  if (params.journeySnapshot.journeyState === "diagnostic_in_progress") {
-    return { route: DIAGNOSTIC_ROUTE };
-  }
-
-  if (params.journeySnapshot.journeyState === "activation_ready") {
+  if (journeyState === "active_learning") {
+    if (
+      params.isEmailLink &&
+      params.emailIntent === EMAIL_LINK_INTENT_START_FIRST_SPRINT
+    ) {
+      return {
+        route: PORTAL_ROUTE,
+        contextBannerCode: STALE_EMAIL_FIRST_SPRINT_BANNER,
+      };
+    }
     return { route: STUDY_ROUTE };
   }
 
-  if (
-    params.isEmailLink &&
-    params.emailIntent === EMAIL_LINK_INTENT_START_FIRST_SPRINT
-  ) {
-    return {
-      route: PORTAL_ROUTE,
-      contextBannerCode: STALE_EMAIL_FIRST_SPRINT_BANNER,
-    };
+  if (journeyState === "planning_required") {
+    return { route: PLANNING_ROUTE };
+  }
+
+  if (!hasPlanningProfile) {
+    return { route: PLANNING_ROUTE };
+  }
+
+  if (journeyState === "diagnostic_in_progress") {
+    return { route: DIAGNOSTIC_ROUTE };
+  }
+
+  if (journeyState === "activation_ready") {
+    return { route: STUDY_ROUTE };
   }
 
   return { route: STUDY_ROUTE };

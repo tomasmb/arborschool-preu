@@ -341,7 +341,6 @@ async function presentCompletionResults(params: {
 }
 
 export function useDiagnosticResultsActions(params: {
-  userId: string | null;
   attemptId: string | null;
   route: Route | null;
   topRouteInfo: TopRouteInfo | null;
@@ -393,7 +392,6 @@ export function useDiagnosticResultsActions(params: {
       }
 
       const result = await buildAndSaveProfile({
-        userId: params.userId,
         attemptId: params.attemptId,
         route: params.route,
         topRouteInfo: params.topRouteInfo,
@@ -446,7 +444,6 @@ export function useDiagnosticResultsActions(params: {
 
 export function useDiagnosticProfileExitActions(params: {
   route: Route | null;
-  userId: string | null;
   attemptId: string | null;
   topRouteInfo: TopRouteInfo | null;
   profileSaved: boolean;
@@ -476,7 +473,6 @@ export function useDiagnosticProfileExitActions(params: {
     if (!params.profileSaved && params.route) {
       try {
         await buildAndSaveProfile({
-          userId: params.userId,
           attemptId: params.attemptId,
           route: params.route,
           topRouteInfo: params.topRouteInfo,
