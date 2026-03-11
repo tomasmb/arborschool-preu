@@ -145,7 +145,7 @@ async function seedGoal(userId: string): Promise<void> {
 
   await db.insert(studentGoalScores).values({
     goalId: goal.id,
-    testCode: "m1",
+    testCode: "M1",
     score: "700",
     source: "student",
   });
@@ -163,7 +163,36 @@ async function seedGoal(userId: string): Promise<void> {
 
 async function seedCompletedDiagnostic(userId: string): Promise<void> {
   const testId = await pickDiagnosticTestId();
-  if (!testId) return;
+  if (!testId) {
+    console.warn(
+      "[testSeeder] No diagnostic test found in DB — seeding diagnostic " +
+        "attempt without testId and setting user PAES scores directly"
+    );
+    const now = new Date();
+    const startedAt = new Date(now.getTime() - 25 * 60 * 1000);
+    await db.insert(testAttempts).values({
+      userId,
+      startedAt,
+      completedAt: now,
+      totalQuestions: 16,
+      correctAnswers: 10,
+      scorePercentage: "62.50",
+      stage1Score: 5,
+      stage2Difficulty: "medium",
+      paesScoreMin: 620,
+      paesScoreMax: 700,
+    });
+    await db
+      .update(users)
+      .set({
+        paesScoreMin: 620,
+        paesScoreMax: 700,
+        performanceTier: "developing",
+        updatedAt: now,
+      })
+      .where(eq(users.id, userId));
+    return;
+  }
 
   const now = new Date();
   const startedAt = new Date(now.getTime() - 25 * 60 * 1000);

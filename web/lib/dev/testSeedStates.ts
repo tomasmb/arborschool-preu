@@ -141,22 +141,24 @@ async function seedSrReviewDue(userId: string): Promise<void> {
   if (!atomIds[0]) return;
 
   const past = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const reviewFields = {
+    status: "mastered" as const,
+    isMastered: true,
+    masterySource: "study" as const,
+    firstMasteredAt: past,
+    lastDemonstratedAt: past,
+    nextReviewAt: past,
+    reviewIntervalSessions: 3,
+    sessionsSinceLastReview: 4,
+    totalReviews: 1,
+  };
   await db
     .insert(atomMastery)
-    .values({
-      userId,
-      atomId: atomIds[0],
-      status: "mastered",
-      isMastered: true,
-      masterySource: "study",
-      firstMasteredAt: past,
-      lastDemonstratedAt: past,
-      nextReviewAt: past,
-      reviewIntervalSessions: 3,
-      sessionsSinceLastReview: 4,
-      totalReviews: 1,
-    })
-    .onConflictDoNothing();
+    .values({ userId, atomId: atomIds[0], ...reviewFields })
+    .onConflictDoUpdate({
+      target: [atomMastery.userId, atomMastery.atomId],
+      set: reviewFields,
+    });
 }
 
 async function seedStreak(userId: string, days: number): Promise<void> {
@@ -192,7 +194,6 @@ async function seedMissionComplete(userId: string): Promise<void> {
 
 async function seedMultipleHistoryPoints(userId: string): Promise<void> {
   const testId = await pickDiagnosticTestId();
-  if (!testId) return;
 
   const now = Date.now();
   const offsets = [30, 14, 7]; // days ago
@@ -204,7 +205,7 @@ async function seedMultipleHistoryPoints(userId: string): Promise<void> {
 
     await db.insert(testAttempts).values({
       userId,
-      testId,
+      ...(testId ? { testId } : {}),
       startedAt: start,
       completedAt: end,
       totalQuestions: 16,
