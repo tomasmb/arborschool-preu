@@ -1,321 +1,349 @@
-# End-to-End Test Plan
+# E2E Test Plan — Comprehensive Browser Testing
 
-> Manual E2E test scenarios for the student portal.
-> Covers the full timed test feature, progress page, dashboard integration,
-> and all features from the implementation gap analysis.
->
-> **How to use:** Work through each section. Record PASS/FAIL and notes in
-> the Result column. If a test fails, note the observed behavior.
+## Infrastructure: what we need to build first
 
-**Created:** March 10, 2026
+### Problem
 
----
+Google OAuth is the only auth path. Browser automation cannot complete a real
+Google sign-in flow (CAPTCHA, 2FA, consent screens). Every existing test script
+creates users directly in the DB, but none expose an HTTP endpoint the browser
+can hit.
 
-## Prerequisites
+### Solution: dev-only test harness API
 
-- Local DB migrated (`npx drizzle-kit migrate`)
-- Dev server running (`npm run dev` in `web/`)
-- A test student account logged in at `/portal`
-- Student has completed the short diagnostic (16-question flow)
-- At least one official test with 60 questions exists in the `tests` table
+Create a single **dev-only** API route that lets the browser automation:
 
----
+1. **Create** a fresh test user at any journey state
+2. **Mint** a valid session cookie for that user
+3. **Seed** specific data states (mastery, sprints, missions, etc.)
+4. **Tear down** the user and all related data after the test
 
-## 1. Full Test — Start Flow
+#### Route: `POST /api/dev/test-harness`
 
-| # | Scenario | Steps | Expected | Result |
-|---|----------|-------|----------|--------|
-| 1.1 | Pre-test screen loads | Navigate to `/portal/test` | See "Test Completo PAES M1" title, instructions, "Comenzar Test" button | |
-| 1.2 | Instructions show correct info | Read the bullet points | Shows "60 preguntas de opción múltiple" and "2 horas 30 minutos" | |
-| 1.3 | Start creates attempt | Click "Comenzar Test", check DB | New row in `test_attempts` with `test_id` set, `completed_at` NULL | |
-| 1.4 | Questions loaded | After clicking start | Transition to in-progress screen with 60 questions in navigator | |
-| 1.5 | Timer starts | After test begins | Timer shows ~02:30:00 and counts down | |
-| 1.6 | Start blocked — not eligible | Set `atom_mastery` count < 18 since last test, try to start | 403 error with "Necesitas dominar X conceptos más" message | |
-| 1.7 | Start blocked — spacing | Complete a full test, immediately try to start another | 403 error with "Espera X días más entre tests" | |
-| 1.8 | Start blocked — monthly cap | Complete 3 full tests within 30 days, try to start 4th | 403 error with "Máximo de tests mensuales alcanzado" | |
-| 1.9 | No tests available | Complete all official tests, try to start | 404 error with "No hay tests completos disponibles" | |
-| 1.10 | Alternate questions preferred | Verify question IDs in API response | Questions with `source='alternate'` are used when available via `parent_question_id` | |
+Blocked unless `NODE_ENV === "development"`.
 
----
+```
+POST /api/dev/test-harness
+Content-Type: application/json
 
-## 2. Full Test — In-Progress
+{
+  "action": "create_user" | "seed_state" | "cleanup",
+  "payload": { ... }
+}
+```
 
-| # | Scenario | Steps | Expected | Result |
-|---|----------|-------|----------|--------|
-| 2.1 | Question displays correctly | View first question | QTI content renders with MathJax, options A-E visible | |
-| 2.2 | Select answer | Click option B | Option B highlighted with primary color, others default | |
-| 2.3 | Change answer | Select A then select C | Only C highlighted, A reverts to default | |
-| 2.4 | Navigator updates | Answer questions 1, 3, 5 | Those numbers turn green in grid, others stay gray | |
-| 2.5 | Current question highlighted | Navigate to question 10 | Number 10 in navigator shows primary ring | |
-| 2.6 | Navigate via grid | Click number 30 in grid | Question 30 displays, position reads "Pregunta 30 de 60" | |
-| 2.7 | Next/Prev buttons | On Q1 click "Siguiente", on Q60 click "Anterior" | Goes to Q2, goes to Q59. Prev disabled on Q1, Next disabled on Q60 | |
-| 2.8 | Answer count | Answer 15 questions | Footer shows "15/60 respondidas" | |
-| 2.9 | Answers persist in localStorage | Answer 5 questions, check localStorage | Key `arbor-full-test-{attemptId}` exists with answers Map and currentPosition | |
-| 2.10 | Math content renders | Navigate to a question with LaTeX | Fractions, exponents, square roots render correctly via MathJax | |
+##### `create_user`
 
----
+Creates a user, mints a NextAuth session, and sets the session cookie on the
+response so subsequent browser requests are authenticated.
 
-## 3. Full Test — Timer
+```json
+{
+  "action": "create_user",
+  "payload": {
+    "email": "e2e-test-<timestamp>@arbor.local",
+    "firstName": "Test",
+    "lastName": "Student",
+    "journeyPreset": "fresh | planning_done | diagnostic_done | active"
+  }
+}
+```
 
-| # | Scenario | Steps | Expected | Result |
-|---|----------|-------|----------|--------|
-| 3.1 | Timer format | Start test | Displays as `HH:MM:SS` (e.g. `02:30:00`) | |
-| 3.2 | Normal urgency | Timer > 30 min remaining | Timer text in default gray color | |
-| 3.3 | Caution urgency | Timer at 29:59 remaining | Timer text turns yellow | |
-| 3.4 | Warning urgency | Timer at 9:59 remaining | Timer text turns orange | |
-| 3.5 | Critical urgency | Timer at 0:59 remaining | Timer text turns red with pulse animation | |
-| 3.6 | Time-up modal | Let timer reach 0:00 | Modal: "Se acabó el tiempo", "Ver resultados" button | |
-| 3.7 | Time-up auto-submit | Click "Ver resultados" in modal | Submits answered questions, shows results screen | |
+Journey presets seed the minimum data for each state:
 
----
+| Preset | What it seeds |
+|--------|--------------|
+| `fresh` | User row only — `planning_required`, no profile, no diagnostic |
+| `planning_done` | User + planning profile + goal — ready to enter diagnostic |
+| `diagnostic_done` | User + profile + goal + completed diagnostic + PAES scores |
+| `active` | All above + completed sprint + weekly mission + some atom mastery |
 
-## 4. Full Test — Submit & Results
+##### `seed_state`
 
-| # | Scenario | Steps | Expected | Result |
-|---|----------|-------|----------|--------|
-| 4.1 | Submit confirmation | Click "Enviar test" button | Modal: "¿Enviar test?" with answered count, "Volver" and "Enviar" buttons | |
-| 4.2 | Unanswered warning | Have 10 unanswered, click "Enviar test" | Modal shows "10 preguntas sin responder" in amber | |
-| 4.3 | Submit all answered | Answer all 60, confirm submit | Submitting screen, then results screen | |
-| 4.4 | Submit partial | Answer 30 of 60, confirm submit | Submitting screen, then results with 30 unanswered counted as wrong | |
-| 4.5 | Results — PAES score | View results | Big number (e.g. 650), band (e.g. 620–680), level badge | |
-| 4.6 | Results — correct count | View results | Shows "{X}/60 Respuestas correctas" | |
-| 4.7 | Results — axis breakdown | View results | Four axes (ALG, NUM, GEO, PROB) with progress bars and "{X}/{Y} (Z%)" | |
-| 4.8 | Results — CTAs | View results | "Ver tu progreso" → `/portal/progress`, "Volver al inicio" → `/portal` | |
-| 4.9 | DB — attempt completed | Check `test_attempts` row after submit | `completed_at` set, `correct_answers`, `score_percentage`, `paes_score_min`, `paes_score_max` all populated | |
-| 4.10 | DB — user scores updated | Check `users` row after submit | `paes_score_min` and `paes_score_max` updated to full-test values | |
-| 4.11 | DB — responses saved | Check `student_responses` for this attempt | 60 rows (one per question), each with `selected_answer`, `is_correct`, `question_index` | |
-| 4.12 | localStorage cleared | Check localStorage after submit | Key `arbor-full-test-{attemptId}` removed | |
+Seeds additional data for specific test scenarios:
 
----
+```json
+{
+  "action": "seed_state",
+  "payload": {
+    "userId": "<uuid>",
+    "seed": "mastery_atoms_18 | mastery_atoms_30 | full_test_completed
+           | cooldown_atom | sr_review_due | streak_5 | mission_complete
+           | multiple_history_points | reminders_off"
+  }
+}
+```
 
-## 5. Full Test — Crash Recovery
+##### `cleanup`
 
-| # | Scenario | Steps | Expected | Result |
-|---|----------|-------|----------|--------|
-| 5.1 | Resume after page refresh | Start test, answer 10 questions, hard-refresh browser, click "Comenzar Test" | Resumes same attempt (same attemptId), 10 answers restored from localStorage, timer shows remaining time (not full 150 min) | |
-| 5.2 | Resume after tab close | Start test, answer 20 questions, close tab, open `/portal/test`, click start | Same behavior as 5.1 — answers and position restored | |
-| 5.3 | Expired while away | Start test, wait for time to expire (or set `started_at` to >150 min ago in DB), reopen page, click start | Time-up modal appears immediately, can submit with whatever was answered | |
-| 5.4 | No duplicate attempts | Start test, refresh, click start | Only ONE `test_attempts` row in DB for this test (not two) | |
-| 5.5 | Clean start after completion | Complete a full test, navigate to `/portal/test`, click start | Creates a new attempt (no in-progress attempt to resume), starts fresh | |
+Deletes the user and all associated data (cascading through all related tables):
 
----
+```json
+{
+  "action": "cleanup",
+  "payload": { "userId": "<uuid>" }
+}
+```
 
-## 6. Full Test — Score Recalibration
+#### Files to create / change
 
-| # | Scenario | Steps | Expected | Result |
-|---|----------|-------|----------|--------|
-| 6.1 | PAES score accuracy | Answer 42/60 correctly, check score | `getPaesScore(42)` matches the PAES score table value | |
-| 6.2 | Confidence band ±2 | Check min/max on results | `paesScoreMin = getPaesScore(40)`, `paesScoreMax = getPaesScore(44)` (±2) | |
-| 6.3 | Band narrower than diagnostic | Compare full test band vs diagnostic | Full test uses ±2 questions; diagnostic uses ±5 (wider band) | |
-| 6.4 | Level assignment | Check level badge | Matches `getLevel(paesScore)` from config | |
-| 6.5 | Atom mastery upserted | Answer Q1 correctly (where Q1's primary atom = atom_X), check `atom_mastery` | atom_X: `is_mastered=true`, `mastery_source='practice_test'`, `status='mastered'` | |
-| 6.6 | Existing mastery preserved | If atom_X was already mastered via study, answer correctly | `mastery_source` stays `'study'` (not overwritten), `first_mastered_at` unchanged | |
-| 6.7 | Wrong answers don't upsert | Answer Q2 incorrectly, check its primary atoms | No new mastery rows created for those atoms | |
-| 6.8 | Zero correct edge case | Answer 0/60, submit | PAES score = `getPaesScore(0)` = 100, band 100–`getPaesScore(2)` | |
-| 6.9 | Perfect score edge case | Answer 60/60, submit | PAES score = `getPaesScore(60)` = 1000, band `getPaesScore(58)`–1000 | |
+| File | Purpose |
+|------|---------|
+| `web/app/api/dev/test-harness/route.ts` | The endpoint (dev-only guard) |
+| `web/lib/dev/testSeeder.ts` | Seeding logic for each preset and state |
+| `web/lib/dev/testSession.ts` | Mint a NextAuth JWT and set session cookie |
+| `web/lib/dev/testCleanup.ts` | Cascading delete across all user tables |
+
+#### Safety
+
+- Hard `NODE_ENV !== "development"` guard at the top of the route — returns 404
+  in any other environment.
+- All test emails use `@arbor.local` domain so they can never collide with real
+  users.
+- Cleanup deletes all rows across every user-linked table.
 
 ---
 
-## 7. Progress Page
+## Test cases
 
-| # | Scenario | Steps | Expected | Result |
-|---|----------|-------|----------|--------|
-| 7.1 | Page loads | Navigate to `/portal/progress` | See "Tu progreso" title, history chart, projection, retest CTA, history table | |
-| 7.2 | Score history — single point | Only diagnostic completed | Chart shows one amber circle point, centered, with error bars (min–max) | |
-| 7.3 | Score history — multiple points | Diagnostic + 1 full test | Chart shows amber circle + emerald diamond, connected by line | |
-| 7.4 | Score history — error bars | Check data points | Vertical lines from paesScoreMin to paesScoreMax for each point | |
-| 7.5 | Chart legend | View below chart | "Diagnóstico corto" (amber circle), "Test completo" (emerald diamond) | |
-| 7.6 | Target line | Student has a goal set | Horizontal dashed green line with "Meta" label | |
-| 7.7 | Projection — default | Page loads | Projection chart visible with 10 atoms/week selected, shows "= 200 minutos por semana" | |
-| 7.8 | Projection — slider | Click "5" button | Chart updates (after 400ms debounce), shows "= 100 minutos por semana" | |
-| 7.9 | Projection — all steps | Click each step [2, 5, 10, 15, 20] | Each updates the chart and minutes text correctly | |
-| 7.10 | Projection — governance cap | Check projection line | Never exceeds current `paesScoreMax` (diagnostic ceiling) | |
-| 7.11 | Projection — weeks to target | If projection reaches target | Green vertical line at intersection, text "Alcanzas tu meta en ~X semanas" | |
-| 7.12 | Projection — governance note | View below chart | Small text: "Proyección limitada por tu último test. Un test completo puede subir el techo." | |
-| 7.13 | Retest CTA — eligible + recommended | >= 30 atoms mastered since last test | Green banner: "Te recomendamos hacer un test completo", CTA button to `/portal/test` | |
-| 7.14 | Retest CTA — eligible only | 18-29 atoms mastered | Soft banner: "Ya puedes tomar un test completo", link to `/portal/test` | |
-| 7.15 | Retest CTA — not eligible | < 18 atoms mastered | Progress bar: "X/18 conceptos para desbloquear", blocked reason text if applicable | |
-| 7.16 | Test history table | Multiple tests completed | Table with Fecha, Tipo (badges), Puntaje, Correctas columns, most recent first | |
-| 7.17 | Type badges | View table | "Diagnóstico" in amber, "Test completo" in emerald | |
-| 7.18 | Empty state | No completed tests with PAES scores | "Aún no tienes tests completados" message in history section | |
+### A. Landing page and public routes
+
+| # | Test case | Steps | Expected |
+|---|-----------|-------|----------|
+| A1 | Anonymous landing CTA | Open `/` not signed in | CTA says "Crear mi plan y empezar diagnóstico", links to auth |
+| A2 | Signed-in landing — planning needed | Sign in as `fresh` user, open `/` | CTA says "Continuar planificación" |
+| A3 | Signed-in landing — diagnostic in progress | Sign in as user mid-diagnostic, open `/` | CTA says "Retomar diagnóstico" |
+| A4 | Signed-in landing — active student | Sign in as `active` user, open `/` | CTA says "Ir a mi portal" |
+| A5 | Legal pages load | Visit `/terminos`, `/privacidad`, `/cookies` | Titles and headings render |
+| A6 | Mobile landing layout | Viewport 375×812, open `/` | No overflow, CTA visible |
+
+### B. Auth and post-login routing
+
+| # | Test case | Steps | Expected |
+|---|-----------|-------|----------|
+| B1 | Unauthenticated portal redirect | Open `/portal` without session | Redirect to sign-in with callback |
+| B2 | Unauthenticated API returns 401 | `GET /api/student/me` without session | 401 JSON |
+| B3 | Post-login → planning | Create `fresh` user, hit `/auth/post-login` | Redirect to `/portal/goals?mode=planning` |
+| B4 | Post-login → diagnostic | Create `planning_done` user with in-progress attempt, hit `/auth/post-login` | Redirect to `/diagnostico` |
+| B5 | Post-login → portal | Create `active` user, hit `/auth/post-login` | Redirect to `/portal` |
+
+### C. Planning flow
+
+| # | Test case | Steps | Expected |
+|---|-----------|-------|----------|
+| C1 | Full planning wizard | As `fresh` user: open `/portal/goals?mode=planning` → search university → select career → confirm schedule → click "Empezar diagnóstico" | Each step renders, goal saved in DB, redirect to `/diagnostico` |
+| C2 | Save for later | Complete planning steps → click "Guardar y continuar después" | Success message, stay on page |
+| C3 | Resume planning | Complete step 1, reload page | State preserved, can continue from where left off |
+| C4 | Planning → diagnostic transition | Complete planning → click start diagnostic | No redirect loop, `/diagnostico` loads (Issue 1 regression) |
+| C5 | Planning validation | Try to start diagnostic without selecting a career | Error message shown |
+| C6 | Mobile planning | Viewport 375×812, complete wizard | All steps usable |
+
+### D. Diagnostic flow
+
+| # | Test case | Steps | Expected |
+|---|-----------|-------|----------|
+| D1 | Full diagnostic completion | As `planning_done` user: start diagnostic → answer all 16 questions → view results | Stage 1 (8q) → transition → stage 2 (8q) → results screen |
+| D2 | Diagnostic resume on refresh | Start diagnostic, answer 2 questions, refresh page | Resumes at question 3, answers preserved (Issue 2 regression) |
+| D3 | Diagnostic resume — no duplicate attempts | Start diagnostic, refresh 3 times | Only 1 `test_attempts` row in DB (Issue 2/8 regression) |
+| D4 | Stage 1 → stage 2 transition | Answer all 8 stage 1 questions | Transition screen shows, stage 2 loads with correct route |
+| D5 | Timer runs and displays correctly | Start diagnostic | Timer counts down from 30:00 in MM:SS format |
+| D6 | Timer expiry | Start diagnostic, let timer expire (or set low time) | Time-up modal appears |
+| D7 | "No sé" / skip answer | Click "No sé" on a question, then next | Answer recorded as skip, next question loads |
+| D8 | Results screen content | Complete diagnostic | PAES score band, axis performance, learning route shown |
+| D9 | Profiling screen | Complete diagnostic as student portal user | Profiling form appears, can submit or skip |
+| D10 | Post-diagnostic → portal | Complete diagnostic + profiling → navigate | Portal dashboard loads with diagnostic data |
+| D11 | Math rendering | Open questions with math notation | LaTeX renders correctly (no raw `\frac{}{}` visible) |
+| D12 | Mobile diagnostic | Viewport 375×812, complete diagnostic | Questions readable, answers tappable |
+
+### E. Portal dashboard
+
+| # | Test case | Steps | Expected |
+|---|-----------|-------|----------|
+| E1 | Dashboard loads — activation ready | As `diagnostic_done` user, open `/portal` | Score, band, next action CTA visible |
+| E2 | Dashboard loads — active learning | As `active` user, open `/portal` | Score, mission ring, progress section all render |
+| E3 | Score display | Open dashboard | PAES M1 score, min–max band, gap to target |
+| E4 | Diagnostic source label — short | As user with only short diagnostic | Shows "Estimado desde diagnóstico corto" |
+| E5 | Diagnostic source label — full test | As user with completed full test | Shows "Basado en test completo" |
+| E6 | Mission ring progress | As user with 3/5 sessions complete | Ring shows 3/5, "2 sesiones más para completar" (Issue 5 regression) |
+| E7 | Mission ring complete | As user with 5/5 sessions | Ring full, "Misión completada esta semana" |
+| E8 | Progress section | Open dashboard | Conceptos dominados, % avance, preguntas desbloqueadas |
+| E9 | Next action CTA | As activation_ready user | Shows recommended study action |
+| E10 | Retest recommendation banner | As user with 30+ mastered atoms | Strong retest recommendation shown |
+| E11 | Streak badge | As user with 5-day streak | Streak badge shows 5 |
+| E12 | Confidence badge | Open dashboard | Confidence badge renders with level |
+| E13 | Mobile dashboard | Viewport 375×812 | All sections usable, no overflow |
+
+### F. Study flow — mini-clase
+
+| # | Test case | Steps | Expected |
+|---|-----------|-------|----------|
+| F1 | Start first study sprint | As `diagnostic_done` user, click study CTA | Sprint created, first atom lesson loads |
+| F2 | Lesson pages render | Start a lesson | HTML lesson content renders with worked examples |
+| F3 | Lesson pagination | Multi-page lesson | Can navigate between pages |
+| F4 | First question after lesson | Complete lesson | First question appears at EASY difficulty |
+| F5 | Correct answer feedback | Answer correctly | Green feedback, explanation available |
+| F6 | Incorrect answer feedback | Answer incorrectly | Red feedback, explanation gated until viewed |
+| F7 | Difficulty progression up | Answer 2 correct in a row | Next question is higher difficulty |
+| F8 | Difficulty progression down | Answer 2 wrong in a row | Next question is lower difficulty |
+| F9 | Mastery achieved | Get 3 correct in a row (2+ at HARD) | Mastery celebration screen, atom marked mastered |
+| F10 | Failure — 3 wrong in a row | Answer 3 consecutive wrong | Failure outcome triggered |
+| F11 | Failure — low accuracy | 10+ questions, <70% accuracy | Failure outcome triggered |
+| F12 | Failure — max questions | 20 questions without mastery | Session ends |
+| F13 | Sprint completion | Complete all atoms in sprint | Sprint marked complete, return to dashboard |
+| F14 | Math rendering in questions | Open a math question | LaTeX renders correctly |
+| F15 | Mobile study flow | Viewport 375×812, complete a lesson + questions | Usable |
+
+### G. Prerequisite scan and cooldown
+
+| # | Test case | Steps | Expected |
+|---|-----------|-------|----------|
+| G1 | Failure triggers prereq scan | Fail an atom that has prereqs | "Vamos a verificar tus bases" screen |
+| G2 | Prereq scan — gap found | Fail prereq scan question | "Detectamos un vacío" message, prereq becomes next target |
+| G3 | Prereq scan — no gap | Pass prereq scan question | Cooldown applied, "concepto en pausa" message |
+| G4 | Failure without prereqs → cooldown | Fail an atom with no prereqs | Cooldown message directly |
+| G5 | Cooldown expiry | Master 3 atoms after cooldown | Previously cooled atom becomes eligible again |
+
+### H. Spaced repetition
+
+| # | Test case | Steps | Expected |
+|---|-----------|-------|----------|
+| H1 | SR schedule initialized on mastery | Master an atom | Review scheduled after N sessions |
+| H2 | Review appears when due | Complete enough sessions for review | Review block appears in study flow |
+| H3 | Review pass | Answer review correctly | Interval grows, review rescheduled |
+| H4 | Review fail with prereqs | Fail review on atom with prereqs | Prereq scan triggered |
+| H5 | Review fail without prereqs | Fail review on atom without prereqs | Interval halved |
+| H6 | Session budget cap | Have many reviews due | Max 5 review items per session |
+
+### I. Full test
+
+| # | Test case | Steps | Expected |
+|---|-----------|-------|----------|
+| I1 | Pre-screen — retest locked | As user with <18 mastered atoms | Gating message, cannot start |
+| I2 | Pre-screen — eligible | As user with 18+ mastered atoms | Can start test |
+| I3 | Pre-screen — spacing lockout | As user who took test <7 days ago | Spacing message shown |
+| I4 | Pre-screen — monthly cap | As user who took 3 tests this month | Monthly cap message |
+| I5 | Start full test | Click start | Timer starts at correct time, questions load |
+| I6 | Answer and navigate | Answer questions, move forward | Answers saved, can navigate between questions |
+| I7 | Resume full test on refresh | Answer some questions, refresh | Resumes with correct remaining time (Issue 3 regression) |
+| I8 | Timer format on resume | Refresh mid-test | Timer shows HH:MM:SS with no fractional seconds |
+| I9 | Submit partial test | Answer some questions, click submit | Test completes, results visible on progress page |
+| I10 | Time-up auto-complete | Let timer expire | Auto-submit triggers |
+| I11 | Full test results | Complete test | New history point on `/portal/progress` |
+| I12 | Score source updates | Complete full test, check dashboard | Source label changes to "Basado en test completo" |
+| I13 | Mobile full test | Viewport 375×812 | Timer visible, questions readable |
+
+### J. Goals and simulator
+
+| # | Test case | Steps | Expected |
+|---|-----------|-------|----------|
+| J1 | Goals tab — view current goals | Open `/portal/goals` | Current goals displayed |
+| J2 | Goals tab — edit and save | Change career preference, click save | Success confirmation |
+| J3 | Goals tab — up to 3 priorities | Add 3 goals | All 3 saved and displayed |
+| J4 | Goals tab — unsaved changes warning | Edit goal, navigate away | Warning dialog |
+| J5 | Simulator tab | Switch to simulador | Score inputs render, results compute on change |
+| J6 | Simulator — no persistence | Change simulator values, switch tab and back | Values reset (not saved) |
+
+### K. Progress page
+
+| # | Test case | Steps | Expected |
+|---|-----------|-------|----------|
+| K1 | Score history chart | As user with multiple test points | Chart renders with correct data points |
+| K2 | Score history — diagnostic vs full test markers | As user with both types | Different markers for each type |
+| K3 | Projection section | Open progress page | Projection chart renders with atoms-per-week slider |
+| K4 | Projection note — after short diagnostic | Latest test is short diagnostic | Note says "Un test completo puede subir el techo" |
+| K5 | Projection note — after full test | Latest test is full test | Note is hidden (Issue 6 regression) |
+| K6 | Atoms-per-week slider | Click different atom counts | Projection updates with debounce |
+| K7 | Retest CTA section | As user with 18+ atoms | Retest CTA visible |
+| K8 | Test history table | As user with multiple tests | Table with dates, types, scores, correctas |
+| K9 | Empty state | As user with no completed tests | "Aún no tienes tests completados" message |
+| K10 | Mobile progress | Viewport 375×812 | Charts usable, no horizontal overflow |
+
+### L. Profile page
+
+| # | Test case | Steps | Expected |
+|---|-----------|-------|----------|
+| L1 | Profile loads | Open `/portal/profile` | Name, email, avatar initial displayed |
+| L2 | Reminder toggles — initial state | Open profile with reminders off in DB | Checkboxes reflect DB state (Issue 4 regression) |
+| L3 | Toggle reminder off | Uncheck "Recordatorios por email" | DB updates, checkbox stays unchecked on reload |
+| L4 | Toggle reminder on | Check "Recordatorios en la app" | DB updates, persists on reload |
+| L5 | Help section | Open profile | Email link to contacto@arbor.school visible |
+| L6 | Sign out | Click "Cerrar sesión" | Session cleared, redirect to landing |
+
+### M. Navigation and portal chrome
+
+| # | Test case | Steps | Expected |
+|---|-----------|-------|----------|
+| M1 | Bottom nav links | Click each nav item | Correct page loads, active state updates |
+| M2 | Back navigation | Use browser back button from study | Returns to previous page without errors |
+| M3 | Deep link — authenticated | Open `/portal/progress` directly while signed in | Page loads directly |
+| M4 | Deep link — unauthenticated | Open `/portal/progress` while signed out | Redirect to sign-in, then back to progress |
+| M5 | 404 / unknown route | Open `/portal/nonexistent` | Graceful error or redirect |
+
+### N. Cross-cutting concerns
+
+| # | Test case | Steps | Expected |
+|---|-----------|-------|----------|
+| N1 | Session expiry during use | Invalidate session mid-flow | Graceful redirect to sign-in |
+| N2 | Network error during sprint answer | Disconnect network mid-answer | Error state shown, can retry |
+| N3 | Double-click protection | Double-click submit buttons | Only one request sent |
+| N4 | Console errors | Navigate through all main pages | No uncaught errors in console |
+| N5 | Chart sizing warnings | Open progress page | No repeated sizing warnings |
+| N6 | Concurrent tabs | Open portal in two tabs | No state corruption |
 
 ---
 
-## 8. Dashboard Integration
+## Test user matrix
 
-| # | Scenario | Steps | Expected | Result |
-|---|----------|-------|----------|--------|
-| 8.1 | Source banner — short diagnostic | Student only has diagnostic | Banner: "Estimado desde diagnóstico corto" (amber) | |
-| 8.2 | Source banner — full test | Student completed a full test | Banner: "Basado en test completo" (emerald) | |
-| 8.3 | Source banner — eligible + recommended | >= 30 study-mastered atoms | Banner links to `/portal/test`: "Te recomendamos un test completo" | |
-| 8.4 | Source banner — eligible only | 18-29 study-mastered atoms | Banner links to `/portal/test`: "Ya puedes tomar un test completo" | |
-| 8.5 | Source banner — not eligible | < 18 study-mastered atoms | Banner shows "X/18 conceptos para desbloquear test completo" | |
-| 8.6 | Progress link card | View dashboard | "Proyección y progreso" card visible, links to `/portal/progress` | |
-| 8.7 | Effort slider removed | View dashboard | No "Esfuerzo semanal" slider or projected score section | |
-| 8.8 | Details section removed | View dashboard | No "Ver detalle y escenarios" expandable section | |
-| 8.9 | Score updates after full test | Complete full test, return to dashboard | PAES score range reflects the narrower full-test band | |
+Each test case above requires a user at a specific journey state. These are the
+personas the harness needs to produce:
 
----
-
-## 9. Navigation
-
-| # | Scenario | Steps | Expected | Result |
-|---|----------|-------|----------|--------|
-| 9.1 | Progreso nav item | View bottom nav bar | "Progreso" tab visible with bar-chart icon between "Estudiar" and "Metas" | |
-| 9.2 | Progreso active state | Navigate to `/portal/progress` | "Progreso" tab highlighted/active | |
-| 9.3 | Nav items order | View all tabs | Inicio, Estudiar, Progreso, Metas (in that order) | |
-| 9.4 | Progreso link from dashboard | Click "Proyección y progreso" card | Navigates to `/portal/progress` | |
-| 9.5 | Progress link from results | Complete full test, click "Ver tu progreso" | Navigates to `/portal/progress` | |
-| 9.6 | Test link from progress CTA | On progress page, click retest CTA | Navigates to `/portal/test` | |
-| 9.7 | Test link from dashboard banner | Dashboard banner shows eligible CTA | Click navigates to `/portal/test` | |
+| Persona | Journey state | Key data |
+|---------|--------------|----------|
+| `new_anonymous` | Not signed in | No user row |
+| `fresh_student` | `planning_required` | User row, no planning profile |
+| `planning_complete` | `planning_required` + profile | User + planning profile + goal |
+| `diagnostic_in_progress` | `diagnostic_in_progress` | User + profile + goal + unfinished attempt |
+| `activation_ready` | `activation_ready` | User + profile + goal + PAES scores |
+| `active_student` | `active_learning` | All above + sprint + mission + some mastery |
+| `retest_eligible` | `active_learning` + 18 mastered | Above + 18 mastered atoms |
+| `retest_recommended` | `active_learning` + 30 mastered | Above + 30 mastered atoms |
+| `retest_spacing_blocked` | `active_learning` + recent test | Above + full test completed <7 days ago |
+| `retest_monthly_capped` | `active_learning` + 3 tests/month | Above + 3 full tests this month |
+| `has_cooldown_atom` | `active_learning` + cooldown | Above + 1 atom in cooldown |
+| `has_sr_review_due` | `active_learning` + review due | Above + 1 atom with review due |
+| `has_streak` | `active_learning` + streak | Above + currentStreak = 5 |
+| `mission_complete` | `active_learning` + mission done | Above + weekly mission completed |
+| `full_test_source` | `active_learning` + full test | Above + latest test is full test |
+| `multi_history` | `active_learning` + history | Above + 3+ score history points |
+| `reminders_off` | Any + reminders disabled | Above + reminderEmail = false |
 
 ---
 
-## 10. Retest Gating — Edge Cases
+## Execution approach
 
-| # | Scenario | Steps | Expected | Result |
-|---|----------|-------|----------|--------|
-| 10.1 | First-time student | Student never did diagnostic | Cannot access full test (must have diagnostic first) | |
-| 10.2 | Immediately after diagnostic | Complete diagnostic, check eligibility | Not eligible: 0/18 atoms mastered via study | |
-| 10.3 | Threshold boundary — 17 atoms | Master 17 atoms via study | Not eligible, shows "Necesitas dominar 1 conceptos más" | |
-| 10.4 | Threshold boundary — 18 atoms | Master 18th atom via study | Eligible, not recommended | |
-| 10.5 | Threshold boundary — 30 atoms | Master 30th atom via study | Eligible AND recommended | |
-| 10.6 | Spacing — day 6 | Complete full test, wait 6 days | Not eligible: "Espera 1 días más entre tests" | |
-| 10.7 | Spacing — day 7 | Complete full test, wait 7 days | Eligible (spacing cleared) | |
-| 10.8 | Monthly cap — 3rd test | Complete 3 tests in 30 days | Not eligible: "Máximo de tests mensuales alcanzado" | |
-| 10.9 | Monthly cap — after 30 days | Complete 3 tests, wait 31 days | Cap resets, can take another test | |
-| 10.10 | Study mastery only | Master atoms via `practice_test` source | Does NOT count toward 18-atom threshold (only `study` counts) | |
-| 10.11 | Atoms reset after full test | Complete full test, check count | `atomsMasteredSinceLastTest` resets — only counts atoms mastered AFTER the test date | |
+### Phase 1 — Build the harness
 
----
+1. Create `POST /api/dev/test-harness` with the `create_user`, `seed_state`,
+   and `cleanup` actions
+2. Implement session minting (encode a NextAuth JWT and set the cookie)
+3. Implement persona seeding for all presets in the matrix above
+4. Implement cascading cleanup
 
-## 11. Score History & Projection — Edge Cases
+### Phase 2 — Run the tests
 
-| # | Scenario | Steps | Expected | Result |
-|---|----------|-------|----------|--------|
-| 11.1 | No score data | New student, no tests | History: empty state. Projection: "No hay datos suficientes" | |
-| 11.2 | Diagnostic only | One short diagnostic | History: single amber point. Projection: works with diagnostic ceiling | |
-| 11.3 | Governance cap in effect | Check projection | All projection points capped at `paesScoreMax` from users table | |
-| 11.4 | Governance cap lifts | Complete full test with higher max → check progress page | New projection ceiling = new `paesScoreMax`, projection extends higher | |
-| 11.5 | Zero atoms remaining | Student mastered all relevant atoms | Projection curve flattens (no more improvement possible) | |
-| 11.6 | Atoms per week = 2 | Select "2" on slider | Projection extends further (slower pace), more weeks to target | |
-| 11.7 | Atoms per week = 20 | Select "20" on slider | Projection rises faster, fewer weeks to target | |
-| 11.8 | Multiple diagnostics + tests | Complete 2 diagnostics + 2 full tests | History chart shows 4 points in chronological order, correct shapes | |
-| 11.9 | Score regression | Full test score lower than diagnostic | Chart shows decline (this is valid — honest assessment) | |
+Use browser automation (browser-use subagent) to:
 
----
+1. Hit the harness to create a user at the right state
+2. Navigate to the target page
+3. Interact with UI elements
+4. Assert visual output and behavior
+5. Hit the harness to clean up
 
-## 12. Diagnostic Complete — PAES Score Backfill
+### Phase 3 — Report
 
-| # | Scenario | Steps | Expected | Result |
-|---|----------|-------|----------|--------|
-| 12.1 | Diagnostic saves PAES scores | Complete short diagnostic | `test_attempts` row has `paes_score_min` and `paes_score_max` set | |
-| 12.2 | Diagnostic appears in history | Complete diagnostic, visit `/portal/progress` | Score history shows the diagnostic data point with correct min/max/mid | |
-| 12.3 | Old diagnostic without scores | If old attempt has NULL paes_scores | That attempt does NOT appear in score history (filtered by `paes_score_min IS NOT NULL`) | |
+Write a findings report with:
 
----
-
-## 13. Axis Performance
-
-| # | Scenario | Steps | Expected | Result |
-|---|----------|-------|----------|--------|
-| 13.1 | All axes represented | Complete full test | Results show ALG, NUM, GEO, PROB breakdown (axes with 0 questions skipped) | |
-| 13.2 | Axis accuracy | Get 10/15 ALG correct | ALG shows "10/15 (67%)" with proportional bar | |
-| 13.3 | Zero in one axis | Get 0/10 in GEO | GEO shows "0/10 (0%)" with empty bar | |
-| 13.4 | Perfect axis | Get 20/20 in NUM | NUM shows "20/20 (100%)" with full bar | |
-
----
-
-## 14. Cross-Feature Integration
-
-| # | Scenario | Steps | Expected | Result |
-|---|----------|-------|----------|--------|
-| 14.1 | Diagnostic → study → full test → dashboard | Complete diagnostic, master 18+ atoms, take full test | Dashboard updates: source banner shows "Basado en test completo", score band narrows | |
-| 14.2 | Full test mastery → next action | Complete full test (atoms mastered via practice_test) | `nextAction` does NOT recommend reviewing those atoms as "newly mastered via study" | |
-| 14.3 | Full test mastery ≠ retest gating | Master atoms ONLY via full test | Retest gating still shows 0/18 (only `study` source counts) | |
-| 14.4 | Score governance after full test | Complete full test with higher ceiling, check projection | Projection curve can now reach higher scores | |
-| 14.5 | Multiple full tests | Complete 2 full tests over time | Both appear in progress history, dashboard uses latest score | |
-| 14.6 | Retest CTA disappears after test | Take full test from progress page CTA | After completion, retest CTA resets (0/18 atoms needed again) | |
-| 14.7 | questionsUnlocked updates | Master atoms via study, check dashboard | "Preguntas PAES desbloqueadas" metric increases | |
-| 14.8 | Mastery percentage scoped | Master non-PAES atoms | Mastery % on dashboard doesn't change (scoped to ~205 relevant atoms) | |
-
----
-
-## 15. Error Handling
-
-| # | Scenario | Steps | Expected | Result |
-|---|----------|-------|----------|--------|
-| 15.1 | Unauthenticated — start | Call POST `/api/student/full-test/start` without auth | 401 response | |
-| 15.2 | Unauthenticated — answer | Call POST `/api/student/full-test/answer` without auth | 401 response | |
-| 15.3 | Unauthenticated — complete | Call POST `/api/student/full-test/complete` without auth | 401 response | |
-| 15.4 | Unauthenticated — progress | Call GET `/api/student/progress` without auth | 401 response | |
-| 15.5 | Wrong attempt owner | Call complete with another user's attemptId | 404 "Test attempt not found" | |
-| 15.6 | Missing fields — answer | POST answer without `questionId` | 400 "Missing required fields" | |
-| 15.7 | Missing fields — complete | POST complete without `attemptId` | 400 "Missing required fields" | |
-| 15.8 | Server error display | Simulate API failure | Error message shown on pre-test screen in red | |
-| 15.9 | Submit failure recovery | Complete API fails during submit | Returns to in-progress screen with error, answers preserved | |
-
----
-
-## 16. Previously Implemented Features (Regression)
-
-These features were built in earlier sprints. Verify they still work after
-the full test + dashboard changes.
-
-| # | Scenario | Steps | Expected | Result |
-|---|----------|-------|----------|--------|
-| 16.1 | Short diagnostic flow | Navigate to `/diagnostico`, complete 16 questions | Score calculated, results shown, profile saved | |
-| 16.2 | Study flow — mini-clase | Go to `/portal/study?atom=...`, study an atom | Lesson, questions, mastery tracked | |
-| 16.3 | SR review flow | `/portal/study?mode=review` when due | Review questions for mastered atoms | |
-| 16.4 | Prereq scan flow | `/portal/study?scan=...` | Scan prerequisite atoms for mastery | |
-| 16.5 | Daily streak badge | Study something, check dashboard | Streak badge shows current day count | |
-| 16.6 | Weekly mission | Complete atom masteries, check dashboard | Mission progress increments (incl. mastery credit) | |
-| 16.7 | Milestone banners | Master enough atoms for a milestone | Banner animation shown | |
-| 16.8 | Goals page | Navigate to `/portal/goals` | Set target universities, see required scores | |
-| 16.9 | Cooldown after failure | Fail an atom, try again | 30-min cooldown enforced, timer shown | |
-| 16.10 | Learning path display | Check dashboard learning path section | Shows next atoms to study, competitive fork if applicable | |
-| 16.11 | Habit quality guard | Study >6 atoms in a session | Diminishing returns warning shown | |
-
----
-
-## Test Environment Notes
-
-- **Reset student state:** To test specific scenarios, you can modify
-  `atom_mastery`, `test_attempts`, and `users` rows directly in the database.
-  Just remember: schema changes must go through drizzle, but test DATA
-  manipulation for testing is fine with `psql`.
-
-- **Time-sensitive tests:** For timer tests (3.2–3.6), you may need to
-  adjust `started_at` in `test_attempts` to simulate elapsed time.
-
-- **Monthly cap test (10.8):** Requires 3 full tests in 30 days. You can
-  insert `test_attempts` rows with `test_id` set and recent `completed_at`
-  dates to simulate this without running 3 full tests.
-
-- **Retest gating shortcuts:** Insert rows into `atom_mastery` with
-  `mastery_source='study'` and recent `updated_at` to quickly reach the
-  18-atom or 30-atom thresholds.
-
----
-
-## Summary
-
-| Section | Tests | Critical? |
-|---------|-------|-----------|
-| 1. Start Flow | 10 | Yes |
-| 2. In-Progress | 10 | Yes |
-| 3. Timer | 7 | Yes |
-| 4. Submit & Results | 12 | Yes |
-| 5. Crash Recovery | 5 | Yes |
-| 6. Score Recalibration | 9 | Yes |
-| 7. Progress Page | 18 | Yes |
-| 8. Dashboard Integration | 9 | Yes |
-| 9. Navigation | 7 | Medium |
-| 10. Retest Gating | 11 | Yes |
-| 11. Score History Edge Cases | 9 | Medium |
-| 12. Diagnostic Backfill | 3 | Medium |
-| 13. Axis Performance | 4 | Medium |
-| 14. Cross-Feature Integration | 8 | Yes |
-| 15. Error Handling | 9 | Medium |
-| 16. Regression | 11 | Yes |
-| **Total** | **142** | |
+- Pass/fail per test case
+- Screenshots of failures
+- New bugs discovered
+- Console errors captured
