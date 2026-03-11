@@ -44,7 +44,9 @@ export function useFullTestTimer({
   onTimeUp,
   enabled,
 }: UseFullTestTimerParams): TimerState {
-  const [timeRemaining, setTimeRemaining] = useState(timeLimitMinutes * 60);
+  const [timeRemaining, setTimeRemaining] = useState(
+    Math.floor(timeLimitMinutes * 60)
+  );
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const onTimeUpRef = useRef(onTimeUp);
   onTimeUpRef.current = onTimeUp;
@@ -57,7 +59,7 @@ export function useFullTestTimer({
   }, []);
 
   useEffect(() => {
-    setTimeRemaining(timeLimitMinutes * 60);
+    setTimeRemaining(Math.floor(timeLimitMinutes * 60));
   }, [timeLimitMinutes]);
 
   useEffect(() => {

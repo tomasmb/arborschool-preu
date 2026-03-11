@@ -6,6 +6,10 @@ import {
   trackDiagnosticIntroViewed,
 } from "@/lib/analytics";
 import { buildSignInUrlWithCallback } from "@/lib/auth/callbackUrl";
+import {
+  getStoredAttemptId,
+  getStoredSessionState,
+} from "@/lib/diagnostic/storage";
 import type { Screen } from "./useDiagnosticFlow.types";
 
 export function useDiagnosticIntroTracking(params: {
@@ -77,6 +81,13 @@ export function useDiagnosticStudentBootstrap(params: {
           entryPoint: "/diagnostico",
           journeyState: payload.data.journeyState,
         });
+
+        const storedSession = getStoredSessionState();
+        const storedAttemptId = getStoredAttemptId();
+        if (storedSession && storedAttemptId) {
+          return;
+        }
+
         await params.startTest();
       } catch {
         if (!cancelled) {

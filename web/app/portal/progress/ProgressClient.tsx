@@ -37,6 +37,11 @@ export function ProgressClient() {
             targetScore={data.targetScore}
             atomsPerWeek={atomsPerWeek}
             onChangeAtomsPerWeek={setAtomsPerWeek}
+            latestTestType={
+              data.scoreHistory.length > 0
+                ? data.scoreHistory[data.scoreHistory.length - 1].type
+                : null
+            }
           />
           <RetestCTASection retestStatus={data.retestStatus} />
           <TestHistoryTable history={data.scoreHistory} />

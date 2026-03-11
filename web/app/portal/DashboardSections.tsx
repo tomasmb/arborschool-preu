@@ -255,7 +255,7 @@ export function DashboardMissionSection({ data }: MissionRingSectionProps) {
           <p className="text-sm font-medium text-gray-800">
             {done
               ? "Misión completada esta semana"
-              : `${remaining} sesión${remaining !== 1 ? "es" : ""} más para completar`}
+              : `${remaining} ${remaining !== 1 ? "sesiones" : "sesión"} más para completar`}
           </p>
           <p className="text-xs text-gray-500">
             Semana {data.mission.weekStartDate} — {data.mission.weekEndDate}

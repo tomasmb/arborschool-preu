@@ -92,6 +92,9 @@ export function resolveDiagnosticEntryRoute(
   >
 ): "/diagnostico" | "/portal/goals?mode=planning" | "/portal" {
   if (journeySnapshot.journeyState === "planning_required") {
+    if (journeySnapshot.hasPlanningProfile) {
+      return DIAGNOSTIC_ROUTE;
+    }
     return PLANNING_ROUTE;
   }
 

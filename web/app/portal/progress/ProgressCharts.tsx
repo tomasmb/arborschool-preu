@@ -240,11 +240,13 @@ export function ProjectionSection({
   targetScore,
   atomsPerWeek,
   onChangeAtomsPerWeek,
+  latestTestType,
 }: {
   projection: ProjectionResult;
   targetScore: number | null;
   atomsPerWeek: number;
   onChangeAtomsPerWeek: (value: number) => void;
+  latestTestType?: "short_diagnostic" | "full_test" | null;
 }) {
   const minutesPerWeek = atomsPerWeek * MINUTES_PER_ATOM;
   const pts = projection.points;
@@ -301,10 +303,12 @@ export function ProjectionSection({
         </p>
       ) : null}
 
-      <p className="text-xs text-gray-400">
-        Proyección limitada por tu último test. Un test completo puede subir el
-        techo.
-      </p>
+      {latestTestType !== "full_test" ? (
+        <p className="text-xs text-gray-400">
+          Proyección limitada por tu último test. Un test completo puede subir
+          el techo.
+        </p>
+      ) : null}
     </section>
   );
 }

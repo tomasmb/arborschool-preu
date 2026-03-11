@@ -47,10 +47,19 @@ function useProfileData() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch("/api/student/me", { credentials: "include" });
-        const data = await res.json();
-        if (data.success) {
-          setProfile(data.data);
+        const [profileRes, remindersRes] = await Promise.all([
+          fetch("/api/student/me", { credentials: "include" }),
+          fetch("/api/student/reminders/preferences", {
+            credentials: "include",
+          }),
+        ]);
+        const profileData = await profileRes.json();
+        if (profileData.success) {
+          setProfile(profileData.data);
+        }
+        const remindersData = await remindersRes.json();
+        if (remindersData.success) {
+          setReminders(remindersData.data);
         }
       } catch {
         // Ignore

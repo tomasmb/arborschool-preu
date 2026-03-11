@@ -122,8 +122,8 @@ function assertDiagnosticEntryMatrix() {
     resolveDiagnosticEntryRoute({
       journeyState: "planning_required",
       hasPlanningProfile: true,
-    }) === "/portal/goals?mode=planning",
-    "Planning-required users must be redirected to planning mode from diagnostic entry"
+    }) === "/diagnostico",
+    "Planning-complete students must be allowed into diagnostic entry"
   );
 
   assert(

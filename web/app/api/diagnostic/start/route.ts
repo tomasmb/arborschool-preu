@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { testAttempts } from "@/db/schema";
 import { requireAuthenticatedStudentUser } from "@/lib/student/apiAuth";
 
 /**
  * POST /api/diagnostic/start
- * Creates a new diagnostic test attempt.
+ * Creates a new diagnostic test attempt — or resumes an in-progress one.
  */
 export async function POST() {
   try {
@@ -14,6 +15,27 @@ export async function POST() {
       return authResult.unauthorizedResponse;
     }
     const userId = authResult.userId;
+
+    const [existing] = await db
+      .select({ id: testAttempts.id })
+      .from(testAttempts)
+      .where(
+        and(
+          eq(testAttempts.userId, userId),
+          isNull(testAttempts.completedAt),
+          isNull(testAttempts.testId)
+        )
+      )
+      .orderBy(desc(testAttempts.startedAt))
+      .limit(1);
+
+    if (existing) {
+      return NextResponse.json({
+        success: true,
+        attemptId: existing.id,
+        resumed: true,
+      });
+    }
 
     const [attempt] = await db
       .insert(testAttempts)

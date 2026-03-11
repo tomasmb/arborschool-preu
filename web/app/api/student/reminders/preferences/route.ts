@@ -4,6 +4,35 @@ import { studentPlanningProfiles } from "@/db/schema";
 import { studentApiError, studentApiSuccess } from "@/lib/student/apiEnvelope";
 import { getAuthenticatedStudentUserId } from "@/lib/student/auth";
 
+export async function GET() {
+  const userId = await getAuthenticatedStudentUserId();
+  if (!userId) {
+    return studentApiError("UNAUTHORIZED", "Unauthorized", 401);
+  }
+
+  try {
+    const [row] = await db
+      .select({
+        reminderInApp: studentPlanningProfiles.reminderInApp,
+        reminderEmail: studentPlanningProfiles.reminderEmail,
+      })
+      .from(studentPlanningProfiles)
+      .where(eq(studentPlanningProfiles.userId, userId))
+      .limit(1);
+
+    return studentApiSuccess({
+      reminderInApp: row?.reminderInApp ?? true,
+      reminderEmail: row?.reminderEmail ?? true,
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Failed to load reminder preferences";
+    return studentApiError("REMINDER_PREFERENCES_LOAD_FAILED", message, 500);
+  }
+}
+
 type ReminderPreferencesBody = {
   reminderInApp?: boolean;
   reminderEmail?: boolean;
