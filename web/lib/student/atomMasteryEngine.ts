@@ -77,6 +77,30 @@ export type AnswerResultWithLifecycle = AnswerResultPayload & {
   nextAtom?: { id: string; title: string } | null;
   habitGuard?: HabitGuardSignal;
 };
+/** Median response time (seconds) for answered questions in a session. */
+async function getMedianResponseTime(
+  sessionId: string
+): Promise<number | null> {
+  const rows = await db
+    .select({ time: atomStudyResponses.responseTimeSeconds })
+    .from(atomStudyResponses)
+    .where(
+      and(
+        eq(atomStudyResponses.sessionId, sessionId),
+        sql`${atomStudyResponses.responseTimeSeconds} IS NOT NULL`
+      )
+    )
+    .orderBy(atomStudyResponses.responseTimeSeconds);
+
+  const times = rows.map((r) => r.time).filter((t): t is number => t != null);
+  if (times.length === 0) return null;
+
+  const mid = Math.floor(times.length / 2);
+  return times.length % 2 === 1
+    ? times[mid]
+    : (times[mid - 1] + times[mid]) / 2;
+}
+
 /** Delegates to the shared helper in questionQueries.ts */
 const getUsedQuestionIds = getSeenQuestionIds;
 async function findQuestions(
@@ -418,7 +442,12 @@ export async function submitAnswer(params: {
       updated.totalQuestions > 0
         ? updated.correctQuestions / updated.totalQuestions
         : 0;
-    const quality = determineMasteryQuality(updated.totalQuestions, accuracy);
+    const medianResponseTime = await getMedianResponseTime(params.sessionId);
+    const quality = determineMasteryQuality(
+      updated.totalQuestions,
+      accuracy,
+      medianResponseTime
+    );
     await initializeReviewSchedule(params.userId, session.atomId, quality);
     await applyImplicitRepetition(params.userId, session.atomId);
     await checkCooldownExpiry(params.userId, session.atomId);
