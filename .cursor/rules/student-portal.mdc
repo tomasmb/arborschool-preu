@@ -33,6 +33,15 @@ Before making changes to the student portal or learning system, read **`docs/arb
 - **Diagnostic source must always be labeled** (short diagnostic vs full test).
 - **The atom result panel must show lifecycle context** (prereq scan, cooldown, gap detection) — not just pass/fail.
 
+## Landing Page Preview Sync
+
+The landing page (`web/app/components/landing/`) contains **static mockups** of portal UI:
+
+- `MasterySection.tsx` → `LearningPathPreview` mirrors the portal's `LearningPathSection.tsx` (axis badges, atom nodes, review items, "Comenzar mini-clase" CTA)
+- `ProgressSection.tsx` → `ProgressCard` mirrors `DashboardSections.tsx` (mastered atoms, mastery %, PAES questions unlocked, score/target, mission ring)
+
+**When changing these portal components, check that the landing page previews still match.** Key things that can drift: metric names, visual structure, terminology, axis labels, CTA copy.
+
 ## Database
 
 All database changes go through drizzle. See `AGENTS.md` for the full protocol.

@@ -35,8 +35,8 @@ export function HowItWorksSection() {
           <ScrollReveal delay={240}>
             <StepCard
               number={3}
-              title="Empieza tu primera mini-clase"
-              description="Arbor prioriza tu siguiente acción por impacto para mover puntaje semana a semana."
+              title="Estudia con tu misión semanal"
+              description="Arbor prioriza tu siguiente mini-clase por impacto. Cumple tu misión semanal y mueve tu puntaje paso a paso."
               variant="accent"
             />
           </ScrollReveal>
