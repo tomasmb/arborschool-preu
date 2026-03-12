@@ -3,10 +3,10 @@ import {
   buildSignInUrlWithCallback,
 } from "@/lib/auth/callbackUrl";
 import {
-  EMAIL_LINK_INTENT_START_FIRST_SPRINT,
+  EMAIL_LINK_INTENT_START_FIRST_STUDY,
   resolvePortalContextBanner,
   resolveStudyEntryRoute,
-  STALE_EMAIL_FIRST_SPRINT_BANNER,
+  STALE_EMAIL_FIRST_STUDY_BANNER,
 } from "@/lib/student/journeyRouting";
 import type { StudentJourneySnapshot } from "@/lib/student/journeyState";
 
@@ -35,7 +35,7 @@ function assertCallbackPreservesQuery() {
   assertProtectedRouteCallback({
     callbackPath: appendSearchParamsToPath("/diagnostico", {
       source: "email",
-      intent: EMAIL_LINK_INTENT_START_FIRST_SPRINT,
+      intent: EMAIL_LINK_INTENT_START_FIRST_STUDY,
     }),
     expectedCallbackUrl: "/diagnostico?source=email&intent=start_first_sprint",
   });
@@ -49,7 +49,7 @@ function assertCallbackPreservesQuery() {
   assertProtectedRouteCallback({
     callbackPath: appendSearchParamsToPath("/portal/study", {
       source: "email",
-      intent: EMAIL_LINK_INTENT_START_FIRST_SPRINT,
+      intent: EMAIL_LINK_INTENT_START_FIRST_STUDY,
     }),
     expectedCallbackUrl: "/portal/study?source=email&intent=start_first_sprint",
   });
@@ -108,7 +108,7 @@ function assertStudyEntryRoutingMatrix() {
   const activationReady = resolveStudyEntryRoute({
     journeySnapshot: journeySnapshot("activation_ready", true),
     isEmailLink: true,
-    emailIntent: EMAIL_LINK_INTENT_START_FIRST_SPRINT,
+    emailIntent: EMAIL_LINK_INTENT_START_FIRST_STUDY,
   });
   assert(
     activationReady.route === "/portal/study",
@@ -118,11 +118,11 @@ function assertStudyEntryRoutingMatrix() {
   const staleEmail = resolveStudyEntryRoute({
     journeySnapshot: journeySnapshot("active_learning", true),
     isEmailLink: true,
-    emailIntent: EMAIL_LINK_INTENT_START_FIRST_SPRINT,
+    emailIntent: EMAIL_LINK_INTENT_START_FIRST_STUDY,
   });
   assert(
     staleEmail.route === "/portal" &&
-      staleEmail.contextBannerCode === STALE_EMAIL_FIRST_SPRINT_BANNER,
+      staleEmail.contextBannerCode === STALE_EMAIL_FIRST_STUDY_BANNER,
     "Stale sprint deep links must redirect to portal with context banner"
   );
 
@@ -137,7 +137,7 @@ function assertStudyEntryRoutingMatrix() {
 }
 
 function assertPortalContextBannerCopy() {
-  const copy = resolvePortalContextBanner(STALE_EMAIL_FIRST_SPRINT_BANNER);
+  const copy = resolvePortalContextBanner(STALE_EMAIL_FIRST_STUDY_BANNER);
   assert(
     copy?.includes("Ya completaste"),
     "Stale email banner copy should explain completed action context"

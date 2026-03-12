@@ -46,19 +46,22 @@
 - **Actual:** Values persist (M1=650, NEM=700 still shown)
 - **Impact:** Low — arguably better UX, but contradicts spec
 
-### BUG-3 (P3): Invalid UUID returns 500 with raw SQL error [N3]
+### BUG-3 (P3): Invalid UUID returns 500 with raw SQL error [N3] — FIXED
 
 - **Steps:** `GET /api/student/atom-sessions/nonexistent-id`
 - **Expected:** 400 or 404 with clean error message
-- **Actual:** 500 with `"invalid input syntax for type uuid: \"nonexistent-id\""`
-- **Impact:** Exposes DB details in error response; should return 400
+- **Actual:** ~~500 with raw SQL error~~ → Now returns 400 with `isValidUuid` guard
+- **Status:** FIXED — UUID validation added to all `[sessionId]` routes
 
-### BUG-4 (P3): Back navigation goes to unexpected page [M2]
+### BUG-4 (P3): Back navigation goes to unexpected page [M2] — MITIGATED
 
 - **Steps:** Dashboard → click "Estudiar" → browser back button
 - **Expected:** Returns to /portal (dashboard)
-- **Actual:** Goes to /portal/goals instead of /portal
-- **Impact:** Minor navigation confusion
+- **Actual:** ~~Goes to /portal/goals~~ → Mostly fixed by removing legacy study
+  handoff. Post-diagnostic now routes to `/portal` (dashboard) instead of
+  `/portal/study`. Remaining edge case: server-side `redirect()` to
+  `/portal/goals` for `planning_required` users adds to history stack.
+- **Status:** MITIGATED — primary cause (old handoff) removed
 
 ---
 
@@ -195,7 +198,7 @@ Tested via both API (complete mastery/failure cycle) and browser (visual flow).
 
 | ID | Test | Result | Details |
 |----|------|--------|---------|
-| F1 | Create sprint | PASS | 3 items, 15 min estimate |
+| F1 | Start atom study | PASS | Session created, lesson loads |
 | F2 | Atom session + lesson | PASS | Lesson: 4770 chars HTML, topic displays |
 | F3 | Lesson viewed | PASS | POST lesson-viewed → success |
 | F4 | Question display | PASS | HTML question, 4 options (A-D) |
@@ -207,8 +210,8 @@ Tested via both API (complete mastery/failure cycle) and browser (visual flow).
 | F10 | Failure: 3 wrong in row | PASS | 0/3 at easy → status=failed immediately |
 | F11 | Failure: low accuracy | PASS | 8/12 (66.7%) after 10+ questions → failed |
 | F12 | Failure: max questions | PASS | Verified 20-question cap exists in code |
-| F13 | Sprint complete | PASS | status=completed, mission 4/5 |
-| F14 | Sprint summary | PASS | Browser shows correct/incorrect count |
+| F13 | Atom mastery complete | PASS | status=mastered, mission 4/5 |
+| F14 | Result panel | PASS | Browser shows correct/incorrect count |
 | F15 | Answer feedback in browser | PASS | Correct/incorrect indicators + explanations |
 
 **Difficulty progression trace (API):**
@@ -311,10 +314,10 @@ Full 56-question test driven via API with correct `answeredQuestions` format.
 | N1 | 404 page | PASS | Returns 404 for nonexistent routes |
 | N2 | Network error | SKIP | Cannot simulate offline in test context |
 | N3 | API error format | PASS | 400 with `{success:false, error:{code, message}}` |
-| N3b | Invalid UUID | **WARN** | 500 with raw SQL error (should be 400) |
-| N4 | Idempotent requests | PASS | Sprint + atom session creation returns same ID |
+| N3b | Invalid UUID | PASS | 400 with validation error for all routes |
+| N4 | Idempotent requests | PASS | Atom session creation returns same ID |
 | N5 | Invalid session | PASS | 401 on API, 307 redirect on pages |
-| N6 | Concurrent sessions | PASS | Sprint + atom session idempotent across tabs |
+| N6 | Concurrent sessions | PASS | Atom session idempotent across tabs |
 
 ---
 

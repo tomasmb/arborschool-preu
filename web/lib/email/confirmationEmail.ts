@@ -1,13 +1,13 @@
 import { emailService, EMAIL_CONFIG } from "./service";
 import type { EmailResult, ResultsSnapshot, EmailRecipient } from "./types";
-import { buildEmailStartSprintUrl } from "./links";
+import { buildEmailStartStudyUrl } from "./links";
 
 function generateConfirmationHtml(
   recipient: EmailRecipient,
   results: ResultsSnapshot
 ): string {
   const unsubscribeUrl = `${EMAIL_CONFIG.baseUrl}/api/unsubscribe?token=${encodeURIComponent(recipient.userId)}`;
-  const startSprintUrl = buildEmailStartSprintUrl("confirmation");
+  const startStudyUrl = buildEmailStartStudyUrl("confirmation");
   const midScore = Math.round((results.paesMin + results.paesMax) / 2);
   const greeting = recipient.firstName ? `Hola ${recipient.firstName}` : "Hola";
 
@@ -65,7 +65,7 @@ function generateConfirmationHtml(
 
       <div style="text-align:center;margin:22px 0 6px 0;">
         <a
-          href="${startSprintUrl}"
+          href="${startStudyUrl}"
           style="display:inline-block;background:#0b3a5b;color:#ffffff;text-decoration:none;font-size:15px;font-weight:700;
             padding:12px 24px;border-radius:999px;"
         >
@@ -90,7 +90,7 @@ function generateConfirmationText(
   results: ResultsSnapshot
 ): string {
   const unsubscribeUrl = `${EMAIL_CONFIG.baseUrl}/api/unsubscribe?token=${encodeURIComponent(recipient.userId)}`;
-  const startSprintUrl = buildEmailStartSprintUrl("confirmation");
+  const startStudyUrl = buildEmailStartStudyUrl("confirmation");
   const midScore = Math.round((results.paesMin + results.paesMax) / 2);
   const greeting = recipient.firstName ? `Hola ${recipient.firstName}` : "Hola";
 
@@ -113,7 +113,7 @@ Impacto estimado: +${results.topRoute.pointsGain} puntos
   text += `
 
 Primera acción recomendada: Comenzar mini-clase de hoy (10-15 min)
-${startSprintUrl}
+${startStudyUrl}
 
 ---
 Darse de baja: ${unsubscribeUrl}

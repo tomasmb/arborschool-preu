@@ -123,11 +123,11 @@ function assertGoalsRecoveryPanels() {
 }
 
 function assertSharedRecoveryPanelUsage() {
-  const nextActionSource = readSource("app/portal/NextActionSection.tsx");
+  const learningPathSource = readSource("app/portal/LearningPathSection.tsx");
   assertContains(
-    nextActionSource,
+    learningPathSource,
     "<InlineRecoveryPanel",
-    "Next action error state should use shared inline recovery panel"
+    "Learning path error state should use shared inline recovery panel"
   );
 
   const componentIndexSource = readSource("app/portal/components/index.ts");

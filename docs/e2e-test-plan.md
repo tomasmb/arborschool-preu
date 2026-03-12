@@ -15,7 +15,7 @@ Create a single **dev-only** API route that lets the browser automation:
 
 1. **Create** a fresh test user at any journey state
 2. **Mint** a valid session cookie for that user
-3. **Seed** specific data states (mastery, sprints, missions, etc.)
+3. **Seed** specific data states (mastery, missions, etc.)
 4. **Tear down** the user and all related data after the test
 
 #### Route: `POST /api/dev/test-harness`
@@ -56,7 +56,7 @@ Journey presets seed the minimum data for each state:
 | `fresh` | User row only — `planning_required`, no profile, no diagnostic |
 | `planning_done` | User + planning profile + goal — ready to enter diagnostic |
 | `diagnostic_done` | User + profile + goal + completed diagnostic + PAES scores |
-| `active` | All above + completed sprint + weekly mission + some atom mastery |
+| `active` | All above + weekly mission + some atom mastery |
 
 ##### `seed_state`
 
@@ -177,7 +177,7 @@ Deletes the user and all associated data (cascading through all related tables):
 
 | # | Test case | Steps | Expected |
 |---|-----------|-------|----------|
-| F1 | Start first study sprint | As `diagnostic_done` user, click study CTA | Sprint created, first atom lesson loads |
+| F1 | Start first atom study | As `diagnostic_done` user, click study CTA | Atom study session created, lesson loads |
 | F2 | Lesson pages render | Start a lesson | HTML lesson content renders with worked examples |
 | F3 | Lesson pagination | Multi-page lesson | Can navigate between pages |
 | F4 | First question after lesson | Complete lesson | First question appears at EASY difficulty |
@@ -189,7 +189,7 @@ Deletes the user and all associated data (cascading through all related tables):
 | F10 | Failure — 3 wrong in a row | Answer 3 consecutive wrong | Failure outcome triggered |
 | F11 | Failure — low accuracy | 10+ questions, <70% accuracy | Failure outcome triggered |
 | F12 | Failure — max questions | 20 questions without mastery | Session ends |
-| F13 | Sprint completion | Complete all atoms in sprint | Sprint marked complete, return to dashboard |
+| F13 | Atom mastery completion | Achieve mastery on an atom | Atom marked mastered, return to dashboard |
 | F14 | Math rendering in questions | Open a math question | LaTeX renders correctly |
 | F15 | Mobile study flow | Viewport 375×812, complete a lesson + questions | Usable |
 
@@ -284,7 +284,7 @@ Deletes the user and all associated data (cascading through all related tables):
 | # | Test case | Steps | Expected |
 |---|-----------|-------|----------|
 | N1 | Session expiry during use | Invalidate session mid-flow | Graceful redirect to sign-in |
-| N2 | Network error during sprint answer | Disconnect network mid-answer | Error state shown, can retry |
+| N2 | Network error during study answer | Disconnect network mid-answer | Error state shown, can retry |
 | N3 | Double-click protection | Double-click submit buttons | Only one request sent |
 | N4 | Console errors | Navigate through all main pages | No uncaught errors in console |
 | N5 | Chart sizing warnings | Open progress page | No repeated sizing warnings |
@@ -304,7 +304,7 @@ personas the harness needs to produce:
 | `planning_complete` | `planning_required` + profile | User + planning profile + goal |
 | `diagnostic_in_progress` | `diagnostic_in_progress` | User + profile + goal + unfinished attempt |
 | `activation_ready` | `activation_ready` | User + profile + goal + PAES scores |
-| `active_student` | `active_learning` | All above + sprint + mission + some mastery |
+| `active_student` | `active_learning` | All above + mission + some mastery |
 | `retest_eligible` | `active_learning` + 18 mastered | Above + 18 mastered atoms |
 | `retest_recommended` | `active_learning` + 30 mastered | Above + 30 mastered atoms |
 | `retest_spacing_blocked` | `active_learning` + recent test | Above + full test completed <7 days ago |

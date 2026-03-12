@@ -53,6 +53,7 @@ export const masteryStatusEnum = pgEnum("mastery_status", [
   "not_started",
   "in_progress",
   "mastered",
+  "needs_verification", // Full test discrepancy detected; pending quick check
   "frozen", // Blocked due to failed PP100
 ]);
 
@@ -72,6 +73,7 @@ export const sessionTypeEnum = pgEnum("session_type", [
   "mastery",
   "prereq_scan",
   "review",
+  "verification", // Quick check for full-test discrepancies
 ]);
 
 // Study session progression status

@@ -6,6 +6,7 @@ import {
   type StudentLearningAnalysis,
 } from "@/lib/diagnostic/questionUnlock";
 import { getReviewDueItems } from "./spacedRepetition";
+import { getVerificationDueItems } from "./verificationQuiz";
 import { getUserDiagnosticSnapshot, getMasteryRows } from "./userQueries";
 
 type NextActionStatus = "ready" | "missing_diagnostic" | "missing_mastery";
@@ -57,8 +58,18 @@ export type ReviewItemPreview = {
   title: string;
 };
 
+export type VerificationItemPreview = {
+  atomId: string;
+  title: string;
+};
+
+/** What the student should do first, in priority order. */
+export type PrimaryIntent = "verification" | "review" | "study";
+
 export type StudentNextActionData = {
   status: NextActionStatus;
+  /** Highest-priority action type for the student right now. */
+  primaryIntent: PrimaryIntent;
   nextAction: NextActionItem | null;
   queuePreview: QueuePreviewItem[];
   competitiveRoutes?: CompetitiveRoute[];
@@ -66,6 +77,9 @@ export type StudentNextActionData = {
   reviewItems: ReviewItemPreview[];
   /** True when the SR balance rule suggests a review block before new atoms */
   reviewSuggested: boolean;
+  /** Atoms flagged by full test that need a quick verification check */
+  verificationDueCount: number;
+  verificationItems: VerificationItemPreview[];
   emptyState: NextActionEmptyState;
 };
 
@@ -259,11 +273,14 @@ export async function getStudentNextAction(
   if (!hasDiagnostic) {
     return {
       status: "missing_diagnostic",
+      primaryIntent: "study",
       nextAction: null,
       queuePreview: [],
       reviewDueCount: 0,
       reviewItems: [],
       reviewSuggested: false,
+      verificationDueCount: 0,
+      verificationItems: [],
       emptyState: buildEmptyState("missing_diagnostic"),
     };
   }
@@ -271,11 +288,14 @@ export async function getStudentNextAction(
   if (masteryRows.length === 0) {
     return {
       status: "missing_mastery",
+      primaryIntent: "study",
       nextAction: null,
       queuePreview: [],
       reviewDueCount: 0,
       reviewItems: [],
       reviewSuggested: false,
+      verificationDueCount: 0,
+      verificationItems: [],
       emptyState: buildEmptyState("missing_mastery"),
     };
   }
@@ -287,17 +307,19 @@ export async function getStudentNextAction(
     (r) => !(r.cooldown && r.cooldown > 0)
   );
 
-  const [analysis, reviewDueItems, masteriesSinceReview] = await Promise.all([
-    analyzeLearningPotential(
-      eligibleRows.map((row) => ({
-        atomId: row.atomId,
-        mastered: row.isMastered,
-      })),
-      { currentPaesScore: currentScore }
-    ),
-    getReviewDueItems(userId),
-    getMasteriesSinceLastReview(userId),
-  ]);
+  const [analysis, reviewDueItems, masteriesSinceReview, verificationDue] =
+    await Promise.all([
+      analyzeLearningPotential(
+        eligibleRows.map((row) => ({
+          atomId: row.atomId,
+          mastered: row.isMastered,
+        })),
+        { currentPaesScore: currentScore }
+      ),
+      getReviewDueItems(userId),
+      getMasteriesSinceLastReview(userId),
+      getVerificationDueItems(userId),
+    ]);
 
   const insights = buildNextActionInsights(analysis);
 
@@ -305,8 +327,16 @@ export async function getStudentNextAction(
   const reviewSuggested =
     reviewDueItems.length > 0 && masteriesSinceReview >= SR_BALANCE_THRESHOLD;
 
+  const primaryIntent: PrimaryIntent =
+    verificationDue.length > 0
+      ? "verification"
+      : reviewSuggested
+        ? "review"
+        : "study";
+
   return {
     status: "ready",
+    primaryIntent,
     nextAction: insights.nextAction,
     queuePreview: insights.queuePreview,
     competitiveRoutes: insights.competitiveRoutes,
@@ -316,6 +346,11 @@ export async function getStudentNextAction(
       title: r.atomTitle,
     })),
     reviewSuggested,
+    verificationDueCount: verificationDue.length,
+    verificationItems: verificationDue.map((v) => ({
+      atomId: v.atomId,
+      title: v.atomTitle,
+    })),
     emptyState: null,
   };
 }

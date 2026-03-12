@@ -14,7 +14,7 @@ type StudentResultsHandoffScreenProps = {
     expectedPointsBand: string;
     whyFirst: string;
   };
-  onStartSprint: () => void;
+  onStartStudy: () => void;
   onAdjustGoal: () => void;
 };
 
@@ -38,7 +38,7 @@ export function StudentResultsHandoffScreen({
   confidenceExplanation,
   targetGapLabel,
   firstAction,
-  onStartSprint,
+  onStartStudy,
   onAdjustGoal,
 }: StudentResultsHandoffScreenProps) {
   const midScore = Math.round((scoreMin + scoreMax) / 2);
@@ -89,7 +89,7 @@ export function StudentResultsHandoffScreen({
         <section className="flex flex-wrap gap-3">
           <button
             type="button"
-            onClick={onStartSprint}
+            onClick={onStartStudy}
             className="btn-primary text-sm"
           >
             Comenzar mini-clase de hoy

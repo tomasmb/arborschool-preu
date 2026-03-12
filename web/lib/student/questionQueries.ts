@@ -7,9 +7,13 @@
  * source of truth for question content after migration 0012.
  */
 
-import { and, desc, eq, notInArray } from "drizzle-orm";
+import { and, desc, eq, inArray, notInArray } from "drizzle-orm";
 import { db } from "@/db";
-import { generatedQuestions } from "@/db/schema";
+import {
+  generatedQuestions,
+  atomStudySessions,
+  atomStudyResponses,
+} from "@/db/schema";
 
 export type GeneratedQuestionRow = { id: string; qtiXml: string };
 
@@ -61,6 +65,38 @@ export async function getQuestionContent(
     .where(eq(generatedQuestions.id, questionId))
     .limit(1);
   return row ?? null;
+}
+
+/**
+ * Returns IDs of all generated questions a student has answered for a
+ * given atom, across ALL session types (mastery, review, scan, verification).
+ * Used to implement the "unseen-first" question selection principle.
+ */
+export async function getSeenQuestionIds(
+  userId: string,
+  atomId: string
+): Promise<string[]> {
+  const sessions = await db
+    .select({ id: atomStudySessions.id })
+    .from(atomStudySessions)
+    .where(
+      and(
+        eq(atomStudySessions.userId, userId),
+        eq(atomStudySessions.atomId, atomId)
+      )
+    );
+  if (sessions.length === 0) return [];
+
+  const rows = await db
+    .select({ questionId: atomStudyResponses.questionId })
+    .from(atomStudyResponses)
+    .where(
+      inArray(
+        atomStudyResponses.sessionId,
+        sessions.map((s) => s.id)
+      )
+    );
+  return [...new Set(rows.map((r) => r.questionId))];
 }
 
 /** Trims and uppercases a student answer for comparison. */

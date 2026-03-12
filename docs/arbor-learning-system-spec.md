@@ -55,6 +55,27 @@ A question is unlocked only when ALL its primary atoms are mastered. The
 algorithm finds the most efficient path through the knowledge graph to
 unlock the most questions with the fewest atoms.
 
+### Question Freshness Principle (Cross-Cutting)
+
+**Every flow MUST prefer unseen questions. Repeat only when the pool is
+exhausted.**
+
+This applies to ALL student-facing flows:
+
+| Flow | Pool | Strategy |
+|---|---|---|
+| Full test | Official `questions` | Per-student assembly: prefer alternate versions the student hasn't seen. If all versions seen, find another question testing the same atoms. Repeat only as last resort. Goal: cover all/most atoms the test assesses. |
+| Mini-clase | `generated_questions` | Exclude all questions this user has ever answered for this atom (across all sessions). Difficulty fallback when pool exhausted. |
+| SR review | `generated_questions` | Exclude all previously answered questions for this atom. Prefer hard. |
+| Prereq scan | `generated_questions` | Exclude all previously answered questions for this atom (all sessions, not just current). Prefer hard, fall back to medium. |
+| Verification | `generated_questions` | Exclude all previously answered questions for this atom. Hard only. |
+
+**Learning science basis:**
+- Retrieval practice is strongest with novel cues; repeating the same
+  question shifts from genuine retrieval to recognition memory
+- Desirable difficulty: new question variants force deeper processing
+- Ecological validity: PAES has no repeated questions
+
 ### Journey States
 
 | State | Description |
@@ -499,6 +520,64 @@ Use atom-mastery gating as the primary retest control.
 - Count only atoms mastered SINCE the last full test (or since diagnostic
   if no full test yet)
 
+### 8.6 Full Test Mastery Integration
+
+When a student completes a full timed test, the system processes all answers:
+
+**Correct answers on mastered atoms:** Credit spaced repetition.
+- Reset `sessionsSinceLastReview` to 0
+- Update `lastDemonstratedAt` to now
+- Boost `reviewIntervalSessions` by 1.5x (cap at 20)
+- Recalculate `nextReviewAt`
+
+A timed 60-question test is high-quality evidence of retention.
+
+**Wrong answers on mastered atoms:** Flag as `needs_verification`.
+- Set `status = 'needs_verification'`
+- Do NOT immediately downgrade `isMastered`
+- One wrong answer in a timed test may be a careless mistake
+
+### 8.7 Verification Quiz Protocol
+
+**Trigger:** Atoms in `needs_verification` status exist for the student
+AND at least 24 hours have passed since they were flagged.
+
+**Grace period (24h):** Verification is not surfaced immediately after a
+full test. The 24-hour delay ensures one sleep-consolidation cycle,
+reduces post-test ego depletion, and produces more reliable diagnostic
+data (spacing effect). During this window `isMastered` stays true, so
+the learning path still benefits from newly-proven atoms.
+
+**Priority:** After the grace period, verification items are surfaced
+with highest priority in the next-action engine (`primaryIntent:
+"verification"`), above SR reviews and new atom study.
+
+**Session construction:**
+- `session_type = 'verification'`
+- 1 hard generated question per `needs_verification` atom
+- All items loaded into a single session
+
+**On correct answer:**
+- Restore `status = 'mastered'`
+- Reset `sessionsSinceLastReview` to 0
+- Update `lastDemonstratedAt` to now
+- Framing: "Concepto confirmado — sigue contando como dominado."
+
+**On incorrect answer:**
+- Set `status = 'in_progress'`, `isMastered = false`
+- Trigger prerequisite scan on the failed atom
+- Framing: "Vacío detectado — lo agregaremos a tu camino de aprendizaje."
+
+**Learning science basis:**
+- Testing effect (Roediger & Karpicke, 2006): retrieval under different
+  conditions is the gold standard for verifying knowledge
+- Spacing effect: the delay between full test and verification quiz
+  (next study session) creates productive spacing
+- Avoids false negatives: one wrong answer in a timed test could be a
+  careless mistake, hence verify rather than immediately penalize
+- Self-determination theory: framing as "verificación rápida" rather
+  than "you failed" preserves autonomy and competence
+
 ---
 
 ## 9. Score Prediction and Confidence
@@ -725,7 +804,7 @@ Internal code (variable names, DB columns, API paths) uses the internal terms.
 | id | uuid | Primary key |
 | userId | uuid | FK to users |
 | atomId | varchar(50) | FK to atoms |
-| sessionType | enum | mastery, prereq_scan, review |
+| sessionType | enum | mastery, prereq_scan, review, verification |
 | attemptNumber | integer | 1-3 |
 | status | enum | lesson, in_progress, mastered, failed, abandoned |
 | currentDifficulty | enum | easy, medium, hard |
@@ -777,9 +856,9 @@ Internal code (variable names, DB columns, API paths) uses the internal terms.
 
 ### 15.5 Key Enums
 
-- `mastery_status`: not_started, in_progress, mastered, frozen
+- `mastery_status`: not_started, in_progress, mastered, needs_verification, frozen
 - `mastery_source`: diagnostic, practice_test, pp100, study
-- `session_type`: mastery, prereq_scan, review
+- `session_type`: mastery, prereq_scan, review, verification
 - `session_status`: lesson, in_progress, mastered, failed, abandoned
 - `session_difficulty`: easy, medium, hard
 - `review_result`: pass, fail
@@ -818,6 +897,11 @@ Internal code (variable names, DB columns, API paths) uses the internal terms.
 | Shared metrics service | IMPLEMENTED | `metricsService.ts` | Single source of truth for mastery metrics |
 | Diagnostic source indicator | IMPLEMENTED | `DashboardSections.tsx` | Shows source label + retest CTA |
 | Scoped mastery metrics | IMPLEMENTED | `metricsService.ts` | Scoped to question-linked atoms |
+| Full test SR credit | IMPLEMENTED | `fullTest.ts` | Resets SR counters for correct on mastered |
+| Full test discrepancy flagging | IMPLEMENTED | `fullTest.ts` | Flags wrong on mastered as needs_verification |
+| Verification quiz engine | IMPLEMENTED | `verificationQuiz.ts` | 1 hard Q per flagged atom, restore/downgrade |
+| Question freshness (gen. Qs) | IMPLEMENTED | `questionQueries.ts` | Shared `getSeenQuestionIds` for SR, scan, verification |
+| Question freshness (full test) | PENDING | `fullTest.ts` | Per-student test assembly with unseen-first selection |
 
 ### 16.3 UI — Implemented
 
@@ -844,6 +928,8 @@ Internal code (variable names, DB columns, API paths) uses the internal terms.
 | Diagnostic source label | IMPLEMENTED | Banner with source label + retest CTA |
 | Retest encouragement | IMPLEMENTED | Shows eligibility/recommendation based on atoms mastered |
 | Animated learning path | PARTIAL | Mini path with animated atom nodes on result panel |
+| Verification quiz UI | IMPLEMENTED | `VerificationView.tsx` with feedback per answer |
+| Verification banner | IMPLEMENTED | `LearningPathSection.tsx` prioritized CTA |
 
 ---
 

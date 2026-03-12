@@ -4,7 +4,7 @@ import {
   trackAuthSuccessOnce,
   trackDiagnosticCompleted,
   trackDiagnosticStarted,
-  trackFirstSprintStarted,
+  trackFirstStudyStarted,
   trackLandingCtaClicked,
   trackPlanningSavedMilestone,
   trackWeeklyActive,
@@ -121,10 +121,8 @@ function main() {
     entryPoint: "/diagnostico",
     journeyState: "activation_ready",
   });
-  trackFirstSprintStarted({
-    sprintId: "sprint-test-1",
-    estimatedMinutes: 15,
-    itemCount: 5,
+  trackFirstStudyStarted({
+    atomId: "atom-test-1",
     entryPoint: "/portal/study",
     journeyState: "activation_ready",
   });
@@ -142,7 +140,7 @@ function main() {
     "planning_saved",
     "diagnostic_started",
     "diagnostic_completed",
-    "first_sprint_started",
+    "first_study_started",
     "weekly_active",
   ];
 

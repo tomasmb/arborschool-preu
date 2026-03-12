@@ -21,11 +21,11 @@ export const AUTH_DIAGNOSTIC_CALLBACK_URL =
 export const EMAIL_LINK_SOURCE_PARAM = "source";
 export const EMAIL_LINK_INTENT_PARAM = "intent";
 export const EMAIL_LINK_SOURCE_VALUE = "email";
-export const EMAIL_LINK_INTENT_START_FIRST_SPRINT = "start_first_sprint";
+export const EMAIL_LINK_INTENT_START_FIRST_STUDY = "start_first_sprint";
 
 export const PORTAL_CONTEXT_BANNER_PARAM = "context";
-export const STALE_EMAIL_FIRST_SPRINT_BANNER = "stale_email_first_sprint";
-export type PortalContextBannerCode = typeof STALE_EMAIL_FIRST_SPRINT_BANNER;
+export const STALE_EMAIL_FIRST_STUDY_BANNER = "stale_email_first_sprint";
+export type PortalContextBannerCode = typeof STALE_EMAIL_FIRST_STUDY_BANNER;
 
 const PLANNING_ROUTE = "/portal/goals?mode=planning";
 const DIAGNOSTIC_ROUTE = "/diagnostico";
@@ -136,11 +136,11 @@ export function resolveStudyEntryRoute(params: {
   if (journeyState === "active_learning") {
     if (
       params.isEmailLink &&
-      params.emailIntent === EMAIL_LINK_INTENT_START_FIRST_SPRINT
+      params.emailIntent === EMAIL_LINK_INTENT_START_FIRST_STUDY
     ) {
       return {
         route: PORTAL_ROUTE,
-        contextBannerCode: STALE_EMAIL_FIRST_SPRINT_BANNER,
+        contextBannerCode: STALE_EMAIL_FIRST_STUDY_BANNER,
       };
     }
     return { route: STUDY_ROUTE };
@@ -168,7 +168,7 @@ export function resolveStudyEntryRoute(params: {
 export function resolvePortalContextBanner(
   code: string | null | undefined
 ): string | null {
-  if (code === STALE_EMAIL_FIRST_SPRINT_BANNER) {
+  if (code === STALE_EMAIL_FIRST_STUDY_BANNER) {
     return "Ya completaste esa primera mini-clase. Te llevamos a tu misión actual.";
   }
 

@@ -18,10 +18,9 @@ import {
   findGeneratedQuestions,
   getQuestionAtomId,
   getQuestionContent,
+  getSeenQuestionIds,
   normalizeAnswer,
 } from "./questionQueries";
-
-// --- Types ------------------------------------------------------------------
 
 export type MasteryQuality = "high" | "medium" | "low";
 
@@ -61,8 +60,6 @@ export type ReviewFailureResult = {
   pendingScans: Array<{ atomId: string; scanSessionId: string }>;
 };
 
-// --- Pure functions ---------------------------------------------------------
-
 function computeInitialInterval(quality: MasteryQuality): number {
   if (quality === "high") return 5;
   if (quality === "medium") return 3;
@@ -87,8 +84,6 @@ function computeGrowthFactor(correct: number, total: number): number {
   return 1.5;
 }
 
-// --- DB helpers -------------------------------------------------------------
-
 /** Finds one hard generated question for an atom */
 async function findReviewQuestion(atomId: string, excludeIds: string[]) {
   const rows = await findGeneratedQuestions({
@@ -104,8 +99,6 @@ async function findReviewQuestion(atomId: string, excludeIds: string[]) {
 function masteryWhere(userId: string, atomId: string) {
   return and(eq(atomMastery.userId, userId), eq(atomMastery.atomId, atomId));
 }
-
-// --- Public API -------------------------------------------------------------
 
 /** Sets the initial review schedule after mastery is achieved. */
 export async function initializeReviewSchedule(
@@ -203,7 +196,8 @@ export async function createReviewSession(
   const items: ReviewSession["items"] = [];
   for (let i = 0; i < dueItems.length; i++) {
     const due = dueItems[i];
-    const q = await findReviewQuestion(due.atomId, []);
+    const seenIds = await getSeenQuestionIds(userId, due.atomId);
+    const q = await findReviewQuestion(due.atomId, seenIds);
     if (!q) continue;
 
     const parsed = parseQtiXml(q.qtiXml);

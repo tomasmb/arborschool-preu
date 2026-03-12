@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { studentResponses } from "@/db/schema";
 import { requireAuthenticatedStudentUser } from "@/lib/student/apiAuth";
+import { isValidUuid } from "@/lib/student/apiEnvelope";
 
 /**
  * POST /api/student/full-test/answer
@@ -34,6 +35,13 @@ export async function POST(request: NextRequest) {
     ) {
       return NextResponse.json(
         { success: false, error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
+    if (!isValidUuid(attemptId) || !isValidUuid(questionId)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid UUID format" },
         { status: 400 }
       );
     }

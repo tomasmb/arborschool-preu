@@ -182,11 +182,9 @@ export interface StudentNextActionClickedProperties
   has_next_action: boolean;
 }
 
-export interface FirstSprintStartedProperties
+export interface FirstStudyStartedProperties
   extends JourneyMilestoneBaseProperties {
-  sprint_id: string;
-  estimated_minutes: number;
-  item_count: number;
+  atom_id: string;
 }
 
 export interface WeeklyActiveProperties extends JourneyMilestoneBaseProperties {
@@ -208,7 +206,7 @@ export type AnalyticsEventName =
   | "diagnostic_started"
   | "diagnostic_intro_viewed"
   | "diagnostic_completed"
-  | "first_sprint_started"
+  | "first_study_started"
   | "weekly_active"
   | "stage_1_completed"
   | "time_expired"
@@ -238,7 +236,7 @@ export interface AnalyticsEventMap {
   diagnostic_started: DiagnosticStartedProperties;
   diagnostic_intro_viewed: DiagnosticIntroViewedProperties;
   diagnostic_completed: DiagnosticCompletedProperties;
-  first_sprint_started: FirstSprintStartedProperties;
+  first_study_started: FirstStudyStartedProperties;
   weekly_active: WeeklyActiveProperties;
   stage_1_completed: Stage1CompletedProperties;
   time_expired: TimeExpiredProperties;

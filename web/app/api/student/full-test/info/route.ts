@@ -21,7 +21,11 @@ export async function GET() {
 
     const inProgress = await getInProgressAttempt(userId);
     if (inProgress) {
-      const questions = await resolveTestQuestions(inProgress.testId);
+      const questions = await resolveTestQuestions(
+        inProgress.testId,
+        userId,
+        inProgress.attemptId
+      );
       return NextResponse.json({
         success: true,
         data: {
@@ -41,7 +45,7 @@ export async function GET() {
     }
 
     const test = available[0];
-    const questions = await resolveTestQuestions(test.id);
+    const questions = await resolveTestQuestions(test.id, userId);
 
     return NextResponse.json({
       success: true,

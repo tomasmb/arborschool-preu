@@ -28,7 +28,11 @@ export async function POST() {
     // Check for an unfinished attempt first (crash recovery)
     const inProgress = await getInProgressAttempt(userId);
     if (inProgress) {
-      const questions = await resolveTestQuestions(inProgress.testId);
+      const questions = await resolveTestQuestions(
+        inProgress.testId,
+        userId,
+        inProgress.attemptId
+      );
       const elapsed = Date.now() - inProgress.startedAt.getTime();
       const elapsedMinutes = elapsed / 60_000;
       const totalMinutes = inProgress.timeLimitMinutes ?? 150;
@@ -86,7 +90,7 @@ export async function POST() {
     }
 
     const test = available[0];
-    const resolvedQuestions = await resolveTestQuestions(test.id);
+    const resolvedQuestions = await resolveTestQuestions(test.id, userId);
 
     const [attempt] = await db
       .insert(testAttempts)

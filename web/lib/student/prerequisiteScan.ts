@@ -20,6 +20,7 @@ import {
   findGeneratedQuestions,
   getQuestionAtomId,
   getQuestionContent,
+  getSeenQuestionIds,
   normalizeAnswer,
 } from "./questionQueries";
 import { verifySessionOwnership } from "./sessionQueries";
@@ -116,15 +117,28 @@ async function getTestedPrereqs(
   }, []);
 }
 
-/** Finds one hard generated question for a prereq atom */
-async function findHardQuestion(prereqAtomId: string, excludeIds: string[]) {
-  const rows = await findGeneratedQuestions({
+/**
+ * Finds one hard-or-medium generated question for a prereq atom.
+ * Prefers hard; falls back to medium if no hard questions remain unseen.
+ */
+async function findScanQuestion(prereqAtomId: string, excludeIds: string[]) {
+  const hard = await findGeneratedQuestions({
     atomId: prereqAtomId,
     difficulty: "high",
     excludeIds,
     limit: 1,
   });
-  return rows[0] ?? null;
+  if (hard[0]) return { question: hard[0], difficulty: "hard" as const };
+
+  const medium = await findGeneratedQuestions({
+    atomId: prereqAtomId,
+    difficulty: "medium",
+    excludeIds,
+    limit: 1,
+  });
+  if (medium[0]) return { question: medium[0], difficulty: "medium" as const };
+
+  return null;
 }
 
 /** Upserts cooldown on the failed atom's mastery row */
@@ -152,15 +166,6 @@ async function completeScanSession(sessionId: string) {
     .update(atomStudySessions)
     .set({ completedAt: new Date() })
     .where(eq(atomStudySessions.id, sessionId));
-}
-
-/** Question IDs already used in a session (answered or not, for exclusion) */
-async function getUsedQuestionIds(sessionId: string): Promise<string[]> {
-  const rows = await db
-    .select({ questionId: atomStudyResponses.questionId })
-    .from(atomStudyResponses)
-    .where(eq(atomStudyResponses.sessionId, sessionId));
-  return rows.map((r) => r.questionId);
 }
 
 // ============================================================================
@@ -237,14 +242,15 @@ export async function getNextScanQuestion(
   const prereqIds = await getPrereqIds(session.atomId);
   const tested = await getTestedPrereqs(sessionId, prereqIds);
   const testedSet = new Set(tested.map((t) => t.atomId));
-  const usedIds = await getUsedQuestionIds(sessionId);
 
   for (const prereqId of prereqIds) {
     if (testedSet.has(prereqId)) continue;
 
-    const q = await findHardQuestion(prereqId, usedIds);
-    if (!q) continue; // no hard question available → assume solid
+    const seenIds = await getSeenQuestionIds(userId, prereqId);
+    const result = await findScanQuestion(prereqId, seenIds);
+    if (!result) continue; // no questions available → assume solid
 
+    const { question: q, difficulty } = result;
     const [prereqAtom] = await db
       .select({ title: atoms.title })
       .from(atoms)
@@ -260,7 +266,7 @@ export async function getNextScanQuestion(
         sessionId,
         questionId: q.id,
         position,
-        difficultyLevel: "hard",
+        difficultyLevel: difficulty,
       })
       .returning({ id: atomStudyResponses.id });
 
