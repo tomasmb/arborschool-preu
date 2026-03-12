@@ -66,13 +66,29 @@ function computeInitialInterval(quality: MasteryQuality): number {
   return 2;
 }
 
+/**
+ * Fluency thresholds (seconds). Median response time above these caps
+ * sturdiness downward — a slow-but-accurate student gets reviewed sooner.
+ */
+const FLUENCY_FAST_CEIL = 60;
+const FLUENCY_MODERATE_CEIL = 120;
+
 export function determineMasteryQuality(
   totalQuestions: number,
-  accuracy: number
+  accuracy: number,
+  medianResponseTimeSec?: number | null
 ): MasteryQuality {
-  if (totalQuestions <= 10 && accuracy > 0.85) return "high";
-  if (totalQuestions <= 17 && accuracy >= 0.7) return "medium";
-  return "low";
+  let quality: MasteryQuality = "low";
+  if (totalQuestions <= 10 && accuracy > 0.85) quality = "high";
+  else if (totalQuestions <= 17 && accuracy >= 0.7) quality = "medium";
+
+  if (medianResponseTimeSec == null) return quality;
+
+  if (medianResponseTimeSec > FLUENCY_MODERATE_CEIL) return "low";
+  if (medianResponseTimeSec > FLUENCY_FAST_CEIL && quality === "high") {
+    return "medium";
+  }
+  return quality;
 }
 
 /** Growth factor between 1.5–2.5 based on overall accuracy history */

@@ -293,11 +293,13 @@ ANY of:
 After mastery is achieved, the system must (in order):
 
 1. Record mastery: upsert `atom_mastery` with `isMastered: true`
-2. Initialize SR schedule: call `initializeReviewSchedule(userId, atomId, masteryQuality)`
-3. Apply implicit repetition: call `applyImplicitRepetition(userId, atomId)`
-4. Check cooldown expiry: call `checkCooldownExpiry(userId, masteredAtomId)`
-5. Increment session counters: call `incrementSessionCounters(userId)`
-6. Advance to next highest-ROI feasible item (new atom or SR block)
+2. Compute mastery quality: `determineMasteryQuality(totalQuestions,
+   accuracy, medianResponseTimeSec)` — see section 7.2 for fluency gates
+3. Initialize SR schedule: call `initializeReviewSchedule(userId, atomId, masteryQuality)`
+4. Apply implicit repetition: call `applyImplicitRepetition(userId, atomId)`
+5. Check cooldown expiry: call `checkCooldownExpiry(userId, masteredAtomId)`
+6. Increment session counters: call `incrementSessionCounters(userId)`
+7. Advance to next highest-ROI feasible item (new atom or SR block)
 
 ### 4.9 On Failure
 
@@ -390,13 +392,26 @@ Pure time-based intervals break down for students with irregular activity.
 
 ### 7.2 Initial Interval (Sturdiness)
 
-After mastery, the initial review interval depends on mastery quality:
+After mastery, the initial review interval depends on mastery quality.
+Quality is determined by accuracy, question count, AND response-time
+fluency (median seconds per answer):
 
-| Sturdiness | Criteria | First Review |
-|---|---|---|
-| High | <= 10 questions, > 85% accuracy | 5 sessions |
-| Medium | 11-17 questions, 70-85% accuracy | 3 sessions |
-| Low | 18-20 questions, barely passed | 2 sessions |
+| Sturdiness | Accuracy + Questions | Fluency Gate | First Review |
+|---|---|---|---|
+| High | <= 10 Qs, > 85% accuracy | median < 60s | 5 sessions |
+| Medium | 11-17 Qs, 70-85% accuracy | median < 120s | 3 sessions |
+| Low | 18-20 Qs, barely passed | any | 2 sessions |
+
+**Fluency caps (conservative — only lowers sturdiness, never raises):**
+- Median response time > 120s → cap at Low regardless of accuracy
+- Median response time 60–120s → cap at Medium (High demoted)
+- Median response time < 60s → no penalty
+
+**Rationale** (Anderson, 1982; Pellegrino & Goldman): Speed of correct
+retrieval predicts durable mastery vs. fragile knowledge that decays
+quickly. A slow-but-accurate student still earns mastery but gets
+reviewed sooner. Since PAES is timed, fluency also directly affects
+test-day performance.
 
 ### 7.3 Interval Growth (On Successful Review)
 
