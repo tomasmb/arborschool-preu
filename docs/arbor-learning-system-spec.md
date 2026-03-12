@@ -321,15 +321,13 @@ If the failed atom has NO prerequisites, skip directly to cooldown (section 6).
 
 ### 5.2 Process
 
-1. Get prerequisite chain for the failed atom (recursive, deepest first)
+1. Get **direct** prerequisites for the failed atom (one level, not
+   recursive — v1 simplification; recursive scanning deferred)
 2. For each prerequisite:
-   - Present **1 HARD question** (from `questions` + `questionAtoms` table,
-     not `generatedQuestions`)
+   - Present **1 hard question** from `generated_questions`
+   - Prefer hard; fall back to medium if no unseen hard questions remain
    - If **correct**: prereq is solid, move to next
-   - If **incorrect**: gap candidate found
-     - First pass: stop scanning, focus on this prereq
-     - Allow up to **3 questions per prereq** across entire scan
-3. Max 3 questions per prerequisite across the scan
+   - If **incorrect**: gap found — stop scanning, focus on this prereq
 
 ### 5.3 Outcomes
 
@@ -341,16 +339,21 @@ If the failed atom has NO prerequisites, skip directly to cooldown (section 6).
 - Student's next mini-clase is this prerequisite (gap-fill)
 - After mastering it, re-attempt the original atom
 
-**No gap found:**
+**No gap found (mastery failure):**
 - All prereqs are solid; apply cooldown to the failed atom (section 6)
+
+**No gap found (SR review failure):**
+- All prereqs are solid; halve the review interval (min 1) and reset
+  `sessionsSinceLastReview` to 0, keeping the atom mastered (section 7.9)
 
 ### 5.4 Constants
 
 | Constant | Value |
 |---|---|
 | `COOLDOWN_MASTERY_COUNT` | 3 |
-| Max questions per prereq | 3 |
-| Question difficulty | HARD |
+| Questions per prereq | 1 |
+| Question source | `generated_questions` |
+| Question difficulty | Hard (medium fallback) |
 
 ---
 
@@ -380,8 +383,8 @@ Pure time-based intervals break down for students with irregular activity.
 - Reviews measured in **sessions**, not calendar days
 - Each session has a **review budget** (capped fraction)
 - Calendar time is a secondary signal (inactivity decay)
-- Uses **alternate versions** of PAES official questions (not generated
-  questions)
+- v1 uses `generated_questions` for reviews (official alternate versions
+  deferred until question bank is expanded)
 - Balance rule: don't do too many reviews without completing new atoms
   in between
 
@@ -441,7 +444,6 @@ effectively reviews B and C as well, reducing explicit review burden.
 If inactive > 14 days:
 - Apply 2%/day decay to all review intervals
 - Floor: 50% of original interval (never decay below half)
-- First session back: up to 40% review budget
 
 ### 7.8 Review Construction
 
@@ -459,16 +461,16 @@ When a student fails review questions:
 2. For atoms WITH prerequisites: start `startPrereqScan` (section 5)
 3. For atoms WITHOUT prerequisites: halve review interval (min 1), reset
    `sessionsSinceLastReview`
-4. Gap found in scan -> mark prereqs `not_mastered`, add to learning path
-5. No gap -> halve interval for failed atoms
+4. Gap found in scan → mark prereq `in_progress`, add to learning path
+5. No gap in scan → halve interval for the failed atom (section 5.3)
 
 ### 7.10 Balance Rule
 
-SR blocks should be inserted after every 2-3 newly mastered atoms OR when
-due by session count. The system must not allow spaced repetition to
-dominate sessions at the expense of forward progress. The session budget
-caps enforce this, but the UI should also interleave new learning with
-reviews.
+SR blocks should be inserted after every **3** newly mastered atoms
+(`SR_BALANCE_THRESHOLD = 3`) OR when due by session count. The system
+must not allow spaced repetition to dominate sessions at the expense of
+forward progress. The session budget caps enforce this, but the UI should
+also interleave new learning with reviews.
 
 ---
 
@@ -901,7 +903,7 @@ Internal code (variable names, DB columns, API paths) uses the internal terms.
 | Full test discrepancy flagging | IMPLEMENTED | `fullTest.ts` | Flags wrong on mastered as needs_verification |
 | Verification quiz engine | IMPLEMENTED | `verificationQuiz.ts` | 1 hard Q per flagged atom, restore/downgrade |
 | Question freshness (gen. Qs) | IMPLEMENTED | `questionQueries.ts` | Shared `getSeenQuestionIds` for SR, scan, verification |
-| Question freshness (full test) | PENDING | `fullTest.ts` | Per-student test assembly with unseen-first selection |
+| Question freshness (full test) | IMPLEMENTED | `fullTest.ts` | Per-student test assembly with unseen-first selection |
 
 ### 16.3 UI — Implemented
 
