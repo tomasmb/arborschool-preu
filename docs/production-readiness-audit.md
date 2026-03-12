@@ -146,13 +146,17 @@ flag, no re-verification, no learning path adjustment.
 **Fix:**
 1. New `needs_verification` mastery status — preserves nuance (careless mistake vs real gap)
 2. New `verification` session type
-3. Verification quiz: 1 hard question per flagged atom, surfaced next study session
+3. Verification quiz: 1 hard question per flagged atom, surfaced after 24h grace period
 4. On correct: restore mastered + credit SR. On incorrect: downgrade to `in_progress` + prereq scan
+5. 24-hour grace period: verification is NOT surfaced immediately after full test. During
+   the grace window `isMastered` stays true and the learning path benefits from newly-proven
+   atoms. After 24h, verification appears with highest priority (`primaryIntent: "verification"`).
 
 **Learning science basis:**
 - Testing effect (Roediger & Karpicke, 2006): retrieval under different conditions verifies knowledge
-- Spacing effect: delay between full test and verification creates productive spacing
+- Spacing effect: 24h delay ensures one sleep-consolidation cycle, producing more reliable data
 - Avoids false negatives: one wrong answer in a timed test may be careless
+- Ego depletion: post-test cognitive fatigue makes immediate verification unreliable and punishing
 - Self-determination theory: framing as "verificacion rapida" preserves autonomy
 
 ### MODERATE-5: Confidence Badge Ignores Diagnostic Source
@@ -324,5 +328,5 @@ fully exhausted.
 | Verification quiz | `web/lib/student/verificationQuiz.ts` (NEW) |
 | Next action | `web/lib/student/nextAction.ts` |
 | Dashboard | `web/lib/student/dashboardM1.ts` |
-| Study UI | `web/app/portal/study/study-sprint-client.tsx` |
+| Study UI | `web/app/portal/study/study-client.tsx` |
 | Master spec | `docs/arbor-learning-system-spec.md` |

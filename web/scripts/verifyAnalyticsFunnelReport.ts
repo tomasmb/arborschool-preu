@@ -105,7 +105,7 @@ function buildUserOneJourneyEvents(): FunnelEvent[] {
       journeyState: "activation_ready",
     }),
     milestoneEvent({
-      event: "first_sprint_started",
+      event: "first_study_started",
       distinctId: "u1",
       timestamp: "2026-03-02T11:00:00.000Z",
       entryPoint: "/portal/study",
@@ -180,7 +180,7 @@ function assertStageCounts(report: ReturnType<typeof buildWeeklyFunnelReport>) {
     planning_saved: 1,
     diagnostic_started: 2,
     diagnostic_completed: 1,
-    first_sprint_started: 1,
+    first_study_started: 1,
     weekly_active: 1,
   };
 
@@ -224,7 +224,7 @@ function assertInsightDefinition() {
     "planning_saved",
     "diagnostic_started",
     "diagnostic_completed",
-    "first_sprint_started",
+    "first_study_started",
     "weekly_active",
   ];
 

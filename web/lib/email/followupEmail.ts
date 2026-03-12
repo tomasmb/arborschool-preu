@@ -13,7 +13,7 @@
 
 import { emailService, EMAIL_CONFIG } from "./service";
 import type { EmailResult, ResultsSnapshot, EmailRecipient } from "./types";
-import { buildEmailStartSprintUrl } from "./links";
+import { buildEmailStartStudyUrl } from "./links";
 
 // ============================================================================
 // TYPES
@@ -322,7 +322,7 @@ function generateFollowupHtml(
   context: FollowupContext
 ): string {
   const unsubscribeUrl = `${EMAIL_CONFIG.baseUrl}/api/unsubscribe?token=${encodeURIComponent(recipient.userId)}`;
-  const ctaUrl = buildEmailStartSprintUrl("followup");
+  const ctaUrl = buildEmailStartStudyUrl("followup");
   const midScore = Math.round((results.paesMin + results.paesMax) / 2);
   const tierCopy = getTierCopy(results.performanceTier);
   const gapMessage = buildGapMessage(midScore, context.paesGoal);
@@ -380,7 +380,7 @@ function generateFollowupText(
   context: FollowupContext
 ): string {
   const unsubscribeUrl = `${EMAIL_CONFIG.baseUrl}/api/unsubscribe?token=${encodeURIComponent(recipient.userId)}`;
-  const ctaUrl = buildEmailStartSprintUrl("followup");
+  const ctaUrl = buildEmailStartStudyUrl("followup");
   const midScore = Math.round((results.paesMin + results.paesMax) / 2);
   const tierCopy = getTierCopy(results.performanceTier);
   const greeting = recipient.firstName ? `Hola ${recipient.firstName}` : "Hola";

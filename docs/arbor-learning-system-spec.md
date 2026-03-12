@@ -539,10 +539,18 @@ A timed 60-question test is high-quality evidence of retention.
 
 ### 8.7 Verification Quiz Protocol
 
-**Trigger:** Atoms in `needs_verification` status exist for the student.
+**Trigger:** Atoms in `needs_verification` status exist for the student
+AND at least 24 hours have passed since they were flagged.
 
-**Priority:** Verification items are surfaced with highest priority in the
-next-action engine, above SR reviews and new atom study.
+**Grace period (24h):** Verification is not surfaced immediately after a
+full test. The 24-hour delay ensures one sleep-consolidation cycle,
+reduces post-test ego depletion, and produces more reliable diagnostic
+data (spacing effect). During this window `isMastered` stays true, so
+the learning path still benefits from newly-proven atoms.
+
+**Priority:** After the grace period, verification items are surfaced
+with highest priority in the next-action engine (`primaryIntent:
+"verification"`), above SR reviews and new atom study.
 
 **Session construction:**
 - `session_type = 'verification'`
@@ -796,7 +804,7 @@ Internal code (variable names, DB columns, API paths) uses the internal terms.
 | id | uuid | Primary key |
 | userId | uuid | FK to users |
 | atomId | varchar(50) | FK to atoms |
-| sessionType | enum | mastery, prereq_scan, review |
+| sessionType | enum | mastery, prereq_scan, review, verification |
 | attemptNumber | integer | 1-3 |
 | status | enum | lesson, in_progress, mastered, failed, abandoned |
 | currentDifficulty | enum | easy, medium, hard |

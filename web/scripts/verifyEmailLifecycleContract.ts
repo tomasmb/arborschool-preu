@@ -24,7 +24,7 @@ function countOccurrences(source: string, fragment: string): number {
 }
 
 function assertSingleSprintCtaBuilder(file: string, source: string) {
-  const occurrences = countOccurrences(source, "buildEmailStartSprintUrl(");
+  const occurrences = countOccurrences(source, "buildEmailStartStudyUrl(");
   assert(
     occurrences >= 1 && occurrences <= 2,
     `${file} must use one canonical sprint CTA URL builder for html/text variants`
@@ -45,7 +45,7 @@ function assertStudyLinkDestinationContract() {
     "Email sprint CTA deep link must target /portal/study"
   );
   assert(
-    linksSource.includes("EMAIL_LINK_INTENT_START_FIRST_SPRINT"),
+    linksSource.includes("EMAIL_LINK_INTENT_START_FIRST_STUDY"),
     "Email sprint CTA deep link must preserve start-first-sprint intent"
   );
 }

@@ -7,7 +7,7 @@ export const CANONICAL_FUNNEL_MILESTONES = [
   "planning_saved",
   "diagnostic_started",
   "diagnostic_completed",
-  "first_sprint_started",
+  "first_study_started",
   "weekly_active",
 ] as const;
 

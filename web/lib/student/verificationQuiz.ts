@@ -10,7 +10,7 @@
  * On incorrect: downgrade to `in_progress` + trigger prereq scan.
  */
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, sql, lt } from "drizzle-orm";
 import { db } from "@/db";
 import {
   atomMastery,
@@ -25,6 +25,13 @@ import {
   normalizeAnswer,
 } from "./questionQueries";
 import { startPrereqScan } from "./prerequisiteScan";
+
+/**
+ * Hours after flagging before verification becomes active.
+ * Ensures at least one sleep-consolidation cycle so results
+ * distinguish careless mistakes from real gaps (spacing effect).
+ */
+const VERIFICATION_GRACE_HOURS = 24;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -68,10 +75,17 @@ export type VerificationCompletionResult = {
 // Queries
 // ---------------------------------------------------------------------------
 
-/** Returns atoms in `needs_verification` status for a user. */
+/**
+ * Returns atoms in `needs_verification` status for a user,
+ * excluding those still within the post-test grace period.
+ */
 export async function getVerificationDueItems(
   userId: string
 ): Promise<VerificationDueItem[]> {
+  const graceCutoff = new Date(
+    Date.now() - VERIFICATION_GRACE_HOURS * 60 * 60 * 1000
+  );
+
   const rows = await db
     .select({
       atomId: atomMastery.atomId,
@@ -82,7 +96,8 @@ export async function getVerificationDueItems(
     .where(
       and(
         eq(atomMastery.userId, userId),
-        eq(atomMastery.status, "needs_verification")
+        eq(atomMastery.status, "needs_verification"),
+        lt(atomMastery.updatedAt, graceCutoff)
       )
     );
 

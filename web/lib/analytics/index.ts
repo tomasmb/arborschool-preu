@@ -25,7 +25,7 @@ export {
   trackAuthSuccessOnce,
   trackPlanningSavedMilestone,
   trackDiagnosticStarted,
-  trackFirstSprintStarted,
+  trackFirstStudyStarted,
   trackWeeklyActive,
 } from "./milestones";
 

@@ -55,7 +55,7 @@ function RedirectToDashboard() {
   return null;
 }
 
-export function StudySprintClient() {
+export function StudyClient() {
   const searchParams = useSearchParams();
 
   const mode = searchParams.get("mode");

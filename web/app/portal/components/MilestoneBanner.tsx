@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 type MilestoneType =
-  | "first_sprint"
+  | "first_study"
   | "streak_3"
   | "streak_7"
   | "mission_complete"
@@ -55,10 +55,10 @@ function getMasteryMilestone(
 }
 
 const STREAK_MESSAGES: Record<
-  "first_sprint" | "streak_3" | "streak_7" | "mission_complete",
+  "first_study" | "streak_3" | "streak_7" | "mission_complete",
   { emoji: string; title: string; subtitle: string }
 > = {
-  first_sprint: {
+  first_study: {
     emoji: "🎉",
     title: "Primera mini-clase completada",
     subtitle: "Ya diste tu primer paso hacia la PAES. Sigue así.",
@@ -124,8 +124,8 @@ function detectMilestone(
   }
 
   if (completedSessions === 1) {
-    const m = STREAK_MESSAGES.first_sprint;
-    return { type: "first_sprint", ...m };
+    const m = STREAK_MESSAGES.first_study;
+    return { type: "first_study", ...m };
   }
 
   return null;

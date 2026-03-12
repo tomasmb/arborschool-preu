@@ -16,7 +16,7 @@ import {
   resolveStudyEntryRoute,
 } from "@/lib/student/journeyRouting";
 import { PageShell } from "../components";
-import { StudySprintClient } from "./study-sprint-client";
+import { StudyClient } from "./study-client";
 
 interface StudyPageProps {
   searchParams?: Promise<QueryParamsRecord>;
@@ -64,7 +64,7 @@ export default async function StudyPage({ searchParams }: StudyPageProps) {
       title="Tu mini-clase"
       subtitle="Aprende con tu mini-clase personalizada. Cada respuesta suma."
     >
-      <StudySprintClient />
+      <StudyClient />
     </PageShell>
   );
 }

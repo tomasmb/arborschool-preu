@@ -117,17 +117,13 @@ export function trackDiagnosticStarted(params: {
   });
 }
 
-export function trackFirstSprintStarted(params: {
-  sprintId: string;
-  estimatedMinutes: number;
-  itemCount: number;
+export function trackFirstStudyStarted(params: {
+  atomId: string;
   entryPoint: string;
-  journeyState: AnalyticsEventMap["first_sprint_started"]["journey_state"];
+  journeyState: AnalyticsEventMap["first_study_started"]["journey_state"];
 }): void {
-  trackEvent("first_sprint_started", {
-    sprint_id: params.sprintId,
-    estimated_minutes: params.estimatedMinutes,
-    item_count: params.itemCount,
+  trackEvent("first_study_started", {
+    atom_id: params.atomId,
     entry_point: params.entryPoint,
     journey_state: params.journeyState,
   });

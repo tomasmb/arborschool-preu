@@ -63,8 +63,13 @@ export type VerificationItemPreview = {
   title: string;
 };
 
+/** What the student should do first, in priority order. */
+export type PrimaryIntent = "verification" | "review" | "study";
+
 export type StudentNextActionData = {
   status: NextActionStatus;
+  /** Highest-priority action type for the student right now. */
+  primaryIntent: PrimaryIntent;
   nextAction: NextActionItem | null;
   queuePreview: QueuePreviewItem[];
   competitiveRoutes?: CompetitiveRoute[];
@@ -268,6 +273,7 @@ export async function getStudentNextAction(
   if (!hasDiagnostic) {
     return {
       status: "missing_diagnostic",
+      primaryIntent: "study",
       nextAction: null,
       queuePreview: [],
       reviewDueCount: 0,
@@ -282,6 +288,7 @@ export async function getStudentNextAction(
   if (masteryRows.length === 0) {
     return {
       status: "missing_mastery",
+      primaryIntent: "study",
       nextAction: null,
       queuePreview: [],
       reviewDueCount: 0,
@@ -320,8 +327,16 @@ export async function getStudentNextAction(
   const reviewSuggested =
     reviewDueItems.length > 0 && masteriesSinceReview >= SR_BALANCE_THRESHOLD;
 
+  const primaryIntent: PrimaryIntent =
+    verificationDue.length > 0
+      ? "verification"
+      : reviewSuggested
+        ? "review"
+        : "study";
+
   return {
     status: "ready",
+    primaryIntent,
     nextAction: insights.nextAction,
     queuePreview: insights.queuePreview,
     competitiveRoutes: insights.competitiveRoutes,

@@ -4,7 +4,11 @@ import {
   completeReviewSession,
   handleReviewFailures,
 } from "@/lib/student/spacedRepetition";
-import { studentApiError, studentApiSuccess } from "@/lib/student/apiEnvelope";
+import {
+  studentApiError,
+  studentApiSuccess,
+  isValidUuid,
+} from "@/lib/student/apiEnvelope";
 import { getAuthenticatedStudentUserId } from "@/lib/student/auth";
 
 /**
@@ -69,6 +73,9 @@ export async function PUT(request: Request) {
         400
       );
     }
+    if (!isValidUuid(body.sessionId) || !isValidUuid(body.responseId)) {
+      return studentApiError("INVALID_ID", "Invalid UUID format", 400);
+    }
     try {
       const result = await submitReviewAnswer({
         sessionId: body.sessionId,
@@ -89,6 +96,9 @@ export async function PUT(request: Request) {
   if (body.action === "complete") {
     if (!body.sessionId) {
       return studentApiError("MISSING_FIELDS", "sessionId is required", 400);
+    }
+    if (!isValidUuid(body.sessionId)) {
+      return studentApiError("INVALID_ID", "Invalid UUID format", 400);
     }
     try {
       const completion = await completeReviewSession(body.sessionId, userId);

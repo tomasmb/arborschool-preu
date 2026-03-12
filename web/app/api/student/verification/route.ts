@@ -2,7 +2,11 @@ import {
   createVerificationSession,
   submitVerificationAnswer,
 } from "@/lib/student/verificationQuiz";
-import { studentApiError, studentApiSuccess } from "@/lib/student/apiEnvelope";
+import {
+  studentApiError,
+  studentApiSuccess,
+  isValidUuid,
+} from "@/lib/student/apiEnvelope";
 import { getAuthenticatedStudentUserId } from "@/lib/student/auth";
 
 /**
@@ -64,6 +68,10 @@ export async function PUT(request: Request) {
       "sessionId, responseId, and selectedAnswer are required",
       400
     );
+  }
+
+  if (!isValidUuid(body.sessionId) || !isValidUuid(body.responseId)) {
+    return studentApiError("INVALID_ID", "Invalid UUID format", 400);
   }
 
   try {

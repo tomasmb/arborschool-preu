@@ -17,6 +17,8 @@ export type ReviewItemPayload = {
 
 export type NextActionPayload = {
   status: "ready" | "missing_diagnostic" | "missing_mastery";
+  /** Highest-priority action type for the student right now. */
+  primaryIntent?: "verification" | "review" | "study";
   nextAction: {
     axis: string;
     pointsGain: number;
