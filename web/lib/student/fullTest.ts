@@ -8,28 +8,23 @@
 import {
   and,
   eq,
+  ne,
   desc,
   sql,
   isNotNull,
   notInArray,
-  inArray,
 } from "drizzle-orm";
 import { db } from "@/db";
-
-/** Transaction-compatible client type for helper functions */
-type TxClient = Parameters<Parameters<typeof db.transaction>[0]>[0];
 import {
   tests,
   testQuestions,
   questions,
-  questionAtoms,
   testAttempts,
-  atomMastery,
-  users,
+  studentResponses,
 } from "@/db/schema";
-import { getPaesScore } from "@/lib/diagnostic/paesScoreTable";
 import { parseQtiXml } from "@/lib/diagnostic/qtiParser";
-import { getLevel } from "@/lib/diagnostic/config";
+export { recalibrateScore } from "./fullTestScoring";
+export type { RecalibrateParams, RecalibrateResult } from "./fullTestScoring";
 
 // ============================================================================
 // TYPES
@@ -51,23 +46,6 @@ export type ResolvedQuestion = {
   atoms: { atomId: string; relevance: "primary" | "secondary" }[];
 };
 
-export type RecalibrateParams = {
-  userId: string;
-  attemptId: string;
-  correctAnswers: number;
-  totalQuestions: number;
-  answeredQuestions: {
-    originalQuestionId: string;
-    isCorrect: boolean;
-  }[];
-};
-
-export type RecalibrateResult = {
-  paesScore: number;
-  paesScoreMin: number;
-  paesScoreMax: number;
-  level: string;
-};
 
 // ============================================================================
 // RESUME IN-PROGRESS ATTEMPT
@@ -173,6 +151,35 @@ export async function getAvailableFullTests(
 }
 
 // ============================================================================
+// SEEN-QUESTION TRACKING (unseen-first principle)
+// ============================================================================
+
+/**
+ * Returns IDs of all official questions a student has answered across
+ * every test attempt (diagnostic + full tests). Used by the per-student
+ * test assembly to prefer unseen questions.
+ *
+ * @param excludeAttemptId - omit responses from this attempt (resume scenario:
+ *   mid-test answers should not affect question resolution)
+ */
+async function getSeenOfficialQuestionIds(
+  userId: string,
+  excludeAttemptId?: string
+): Promise<Set<string>> {
+  const conds = [eq(studentResponses.userId, userId)];
+  if (excludeAttemptId) {
+    conds.push(ne(studentResponses.testAttemptId, excludeAttemptId));
+  }
+  const rows = await db
+    .select({ questionId: studentResponses.questionId })
+    .from(studentResponses)
+    .where(and(...conds));
+  return new Set(
+    rows.filter((r) => r.questionId != null).map((r) => r.questionId!)
+  );
+}
+
+// ============================================================================
 // QUESTION RESOLUTION
 // ============================================================================
 
@@ -185,20 +192,36 @@ function normalizeCorrectAnswer(answer: string): string {
 }
 
 /**
- * Resolves all questions for a test, preferring alternates over originals.
- * Returns questions with parsed correct answers and atom mappings.
+ * Resolves all questions for a test with per-student unseen-first assembly.
+ *
+ * When userId is provided, applies the unseen-first principle:
+ * 1. SQL pass: prefer unseen alternates > unseen originals > seen versions
+ * 2. App-level pass: substitute still-seen positions with unseen official
+ *    questions covering the same primary atoms from outside the test
+ *
+ * When userId is omitted, falls back to the original behavior (prefer
+ * alternates over originals without student awareness).
+ *
+ * @param excludeAttemptId - ignore responses from this attempt (resume
+ *   scenario: mid-test answers should not shift question resolution)
  */
 export async function resolveTestQuestions(
-  testId: string
+  testId: string,
+  userId?: string,
+  excludeAttemptId?: string
 ): Promise<ResolvedQuestion[]> {
+  const seenIds = userId
+    ? await getSeenOfficialQuestionIds(userId, excludeAttemptId)
+    : new Set<string>();
+
   const [questionRows, atomRows] = await Promise.all([
-    resolveQuestionRows(testId),
+    resolveQuestionRows(testId, seenIds),
     fetchAtomMappings(testId),
   ]);
 
   const atomsByQuestion = groupAtomsByQuestion(atomRows);
 
-  return questionRows.map((row) => {
+  let resolved = questionRows.map((row) => {
     const parsed = parseQtiXml(row.qti_xml);
     const correctAnswer = parsed.correctAnswer
       ? normalizeCorrectAnswer(parsed.correctAnswer)
@@ -213,13 +236,49 @@ export async function resolveTestQuestions(
       atoms: atomsByQuestion.get(row.original_id) ?? [],
     };
   });
+
+  if (seenIds.size > 0) {
+    resolved = await substituteSeenPositions(resolved, seenIds, testId);
+  }
+
+  return resolved;
 }
 
+type QuestionRow = {
+  position: number;
+  original_id: string;
+  resolved_id: string;
+  qti_xml: string;
+};
+
 /**
- * Query 1: Resolve questions with LEFT JOIN for alternates.
- * Prefers alternate questions (source='alternate') over originals.
+ * Resolve questions with LEFT JOIN for alternates.
+ * When seenIds is provided, ORDER BY prefers unseen questions:
+ *   1. unseen alternate  2. unseen original  3. seen alternate  4. seen original
+ * When seenIds is empty, falls back to: alternate first, then original.
  */
-async function resolveQuestionRows(testId: string) {
+async function resolveQuestionRows(
+  testId: string,
+  seenIds: Set<string>
+): Promise<QuestionRow[]> {
+  const seenArray = [...seenIds];
+  if (seenArray.length === 0) {
+    return db.execute(sql`
+      SELECT DISTINCT ON (tq.position)
+        tq.position,
+        q.id AS original_id,
+        COALESCE(alt.id, q.id) AS resolved_id,
+        COALESCE(alt.qti_xml, q.qti_xml) AS qti_xml
+      FROM test_questions tq
+      JOIN questions q ON q.id = tq.question_id
+      LEFT JOIN questions alt
+        ON alt.parent_question_id = q.id
+        AND alt.source = 'alternate'
+      WHERE tq.test_id = ${testId}
+      ORDER BY tq.position, alt.id NULLS LAST
+    `) as unknown as QuestionRow[];
+  }
+
   return db.execute(sql`
     SELECT DISTINCT ON (tq.position)
       tq.position,
@@ -232,13 +291,12 @@ async function resolveQuestionRows(testId: string) {
       ON alt.parent_question_id = q.id
       AND alt.source = 'alternate'
     WHERE tq.test_id = ${testId}
-    ORDER BY tq.position, alt.id NULLS LAST
-  `) as unknown as {
-    position: number;
-    original_id: string;
-    resolved_id: string;
-    qti_xml: string;
-  }[];
+    ORDER BY
+      tq.position,
+      CASE WHEN COALESCE(alt.id, q.id) = ANY(${seenArray}) THEN 1 ELSE 0 END,
+      CASE WHEN alt.id IS NOT NULL THEN 0 ELSE 1 END,
+      alt.id NULLS LAST
+  `) as unknown as QuestionRow[];
 }
 
 type AtomRow = {
@@ -275,247 +333,111 @@ function groupAtomsByQuestion(
 }
 
 // ============================================================================
-// SCORE RECALIBRATION
+// CROSS-POSITION SUBSTITUTION (unseen-first, second pass)
 // ============================================================================
 
 /**
- * Recalibrates the student's PAES score after completing a full test.
- *
- * Steps:
- * 1. Direct table lookup for PAES score
- * 2. Confidence band ±2 questions (narrower than diagnostic's ±5)
- * 3. Update test_attempts and users rows
- * 4. Upsert atom_mastery for correctly-answered questions
+ * For positions where ALL versions (original + alternates) were already
+ * seen, attempt to find an unseen official question that tests the same
+ * primary atoms. Only substitutes when a valid replacement exists;
+ * keeps the seen question as a last resort.
  */
-export async function recalibrateScore(
-  params: RecalibrateParams
-): Promise<RecalibrateResult> {
-  const {
-    userId,
-    attemptId,
-    correctAnswers,
-    totalQuestions,
-    answeredQuestions,
-  } = params;
+async function substituteSeenPositions(
+  resolved: ResolvedQuestion[],
+  seenIds: Set<string>,
+  testId: string
+): Promise<ResolvedQuestion[]> {
+  const seenPositions = resolved.filter((q) =>
+    seenIds.has(q.resolvedQuestionId)
+  );
+  if (seenPositions.length === 0) return resolved;
 
-  const paesScore = getPaesScore(correctAnswers);
-  const minCorrect = Math.max(0, correctAnswers - 2);
-  const maxCorrect = Math.min(60, correctAnswers + 2);
-  const paesScoreMin = getPaesScore(minCorrect);
-  const paesScoreMax = getPaesScore(maxCorrect);
-  const level = getLevel(paesScore);
+  const usedQuestionIds = new Set(resolved.map((q) => q.resolvedQuestionId));
 
-  const scorePercentage =
-    totalQuestions > 0
-      ? ((correctAnswers / totalQuestions) * 100).toFixed(2)
-      : "0";
-
-  await db.transaction(async (tx) => {
-    await updateTestAttempt(tx, attemptId, userId, {
-      correctAnswers,
-      scorePercentage,
-      paesScoreMin,
-      paesScoreMax,
-    });
-    await updateUserScores(tx, userId, paesScoreMin, paesScoreMax);
-    await upsertMasteryFromCorrectAnswers(tx, userId, answeredQuestions);
-    await creditSpacedRepetitionFromTest(tx, userId, answeredQuestions);
-    await flagMasteryDiscrepancies(tx, userId, answeredQuestions);
-  });
-
-  return { paesScore, paesScoreMin, paesScoreMax, level };
-}
-
-async function updateTestAttempt(
-  tx: TxClient,
-  attemptId: string,
-  userId: string,
-  data: {
-    correctAnswers: number;
-    scorePercentage: string;
-    paesScoreMin: number;
-    paesScoreMax: number;
+  const primaryAtomsByPosition = new Map<number, string[]>();
+  for (const q of seenPositions) {
+    const atoms = q.atoms
+      .filter((a) => a.relevance === "primary")
+      .map((a) => a.atomId);
+    if (atoms.length > 0) primaryAtomsByPosition.set(q.position, atoms);
   }
-) {
-  await tx
-    .update(testAttempts)
-    .set({
-      correctAnswers: data.correctAnswers,
-      scorePercentage: data.scorePercentage,
-      paesScoreMin: data.paesScoreMin,
-      paesScoreMax: data.paesScoreMax,
-      completedAt: new Date(),
-    })
-    .where(
-      and(eq(testAttempts.id, attemptId), eq(testAttempts.userId, userId))
-    );
-}
+  if (primaryAtomsByPosition.size === 0) return resolved;
 
-async function updateUserScores(
-  tx: TxClient,
-  userId: string,
-  paesScoreMin: number,
-  paesScoreMax: number
-) {
-  await tx
-    .update(users)
-    .set({ paesScoreMin, paesScoreMax })
-    .where(eq(users.id, userId));
-}
+  const allTargetAtoms = [
+    ...new Set([...primaryAtomsByPosition.values()].flat()),
+  ];
 
-/**
- * For each correctly-answered question, upsert atom_mastery for primary atoms.
- * Only marks as mastered if not already mastered.
- */
-async function upsertMasteryFromCorrectAnswers(
-  tx: TxClient,
-  userId: string,
-  answeredQuestions: RecalibrateParams["answeredQuestions"]
-) {
-  const correctOriginals = answeredQuestions
-    .filter((q) => q.isCorrect)
-    .map((q) => q.originalQuestionId);
-
-  if (correctOriginals.length === 0) return;
-
-  const primaryAtoms = await tx
-    .select({
-      questionId: questionAtoms.questionId,
-      atomId: questionAtoms.atomId,
-    })
-    .from(questionAtoms)
-    .where(
-      and(
-        inArray(questionAtoms.questionId, correctOriginals),
-        eq(questionAtoms.relevance, "primary")
+  // Find unseen official questions covering any of these atoms
+  const candidates = (await db.execute(sql`
+    SELECT q.id, q.qti_xml, qa.atom_id, qa.relevance
+    FROM questions q
+    JOIN question_atoms qa ON qa.question_id = q.id AND qa.relevance = 'primary'
+    WHERE q.source = 'official'
+      AND q.id NOT IN (
+        SELECT question_id FROM test_questions WHERE test_id = ${testId}
       )
-    );
+      AND qa.atom_id = ANY(${allTargetAtoms})
+      AND q.id != ALL(${[...seenIds]})
+  `)) as unknown as {
+    id: string;
+    qti_xml: string;
+    atom_id: string;
+    relevance: "primary" | "secondary";
+  }[];
 
-  const now = new Date();
-  const nowIso = now.toISOString();
-  for (const { atomId } of primaryAtoms) {
-    await tx
-      .insert(atomMastery)
-      .values({
-        userId,
-        atomId,
-        isMastered: true,
-        masterySource: "practice_test",
-        firstMasteredAt: now,
-        status: "mastered",
-        updatedAt: now,
-      })
-      .onConflictDoUpdate({
-        target: [atomMastery.userId, atomMastery.atomId],
-        set: {
-          isMastered: true,
-          masterySource: sql`CASE
-            WHEN ${atomMastery.isMastered} = true
-            THEN ${atomMastery.masterySource}
-            ELSE 'practice_test'
-          END`,
-          firstMasteredAt: sql`COALESCE(
-            ${atomMastery.firstMasteredAt},
-            ${nowIso}::timestamptz
-          )`,
-          status: "mastered",
-          updatedAt: now,
-        },
-      });
+  // Group candidates by question ID
+  const candidateMap = new Map<
+    string,
+    { qtiXml: string; primaryAtoms: Set<string> }
+  >();
+  for (const c of candidates) {
+    if (usedQuestionIds.has(c.id)) continue;
+    const entry = candidateMap.get(c.id) ?? {
+      qtiXml: c.qti_xml,
+      primaryAtoms: new Set<string>(),
+    };
+    entry.primaryAtoms.add(c.atom_id);
+    candidateMap.set(c.id, entry);
   }
-}
 
-/** Extracts unique primary atom IDs for a set of question IDs. */
-async function getPrimaryAtomIds(
-  tx: TxClient,
-  questionIds: string[]
-): Promise<string[]> {
-  if (questionIds.length === 0) return [];
-  const rows = await tx
-    .select({ atomId: questionAtoms.atomId })
-    .from(questionAtoms)
-    .where(
-      and(
-        inArray(questionAtoms.questionId, questionIds),
-        eq(questionAtoms.relevance, "primary")
-      )
-    );
-  return [...new Set(rows.map((r) => r.atomId))];
-}
+  const result = [...resolved];
+  for (const [position, targetAtoms] of primaryAtomsByPosition) {
+    const targetSet = new Set(targetAtoms);
+    let bestId: string | null = null;
+    let bestOverlap = 0;
+    let bestXml = "";
 
-/**
- * For correct answers on atoms that were ALREADY mastered, reset SR counters.
- * A full test is high-quality evidence of retention — credit it accordingly.
- */
-async function creditSpacedRepetitionFromTest(
-  tx: TxClient,
-  userId: string,
-  answeredQuestions: RecalibrateParams["answeredQuestions"]
-) {
-  const correctQIds = answeredQuestions
-    .filter((q) => q.isCorrect)
-    .map((q) => q.originalQuestionId);
-  const atomIds = await getPrimaryAtomIds(tx, correctQIds);
-  if (atomIds.length === 0) return;
+    for (const [qId, { qtiXml, primaryAtoms }] of candidateMap) {
+      if (usedQuestionIds.has(qId)) continue;
+      const overlap = [...primaryAtoms].filter((a) => targetSet.has(a)).length;
+      if (overlap > bestOverlap) {
+        bestOverlap = overlap;
+        bestId = qId;
+        bestXml = qtiXml;
+      }
+    }
 
-  const now = new Date();
-  const BOOST = 1.5;
-  for (const atomId of atomIds) {
-    await tx
-      .update(atomMastery)
-      .set({
-        sessionsSinceLastReview: 0,
-        lastDemonstratedAt: now,
-        reviewIntervalSessions: sql`CASE
-          WHEN ${atomMastery.reviewIntervalSessions} IS NOT NULL
-          THEN LEAST(CEIL(${atomMastery.reviewIntervalSessions} * ${BOOST}), 20)
-          ELSE ${atomMastery.reviewIntervalSessions}
-        END`,
-        nextReviewAt: sql`CASE
-          WHEN ${atomMastery.reviewIntervalSessions} IS NOT NULL
-          THEN NOW() + (LEAST(CEIL(${atomMastery.reviewIntervalSessions} * ${BOOST}), 20) * INTERVAL '2 days')
-          ELSE ${atomMastery.nextReviewAt}
-        END`,
-        updatedAt: now,
-      })
-      .where(
-        and(
-          eq(atomMastery.userId, userId),
-          eq(atomMastery.atomId, atomId),
-          eq(atomMastery.isMastered, true)
-        )
-      );
+    if (!bestId) continue;
+
+    const idx = result.findIndex((q) => q.position === position);
+    if (idx === -1) continue;
+
+    const parsed = parseQtiXml(bestXml);
+    const correctAnswer = parsed.correctAnswer
+      ? normalizeCorrectAnswer(parsed.correctAnswer)
+      : "A";
+
+    result[idx] = {
+      ...result[idx],
+      resolvedQuestionId: bestId,
+      qtiXml: bestXml,
+      correctAnswer,
+    };
+
+    usedQuestionIds.add(bestId);
+    candidateMap.delete(bestId);
   }
+
+  return result;
 }
 
-/**
- * For wrong answers whose primary atoms are currently mastered,
- * flag them as needs_verification. The verification quiz engine
- * will surface a quick check in the student's next study session.
- */
-async function flagMasteryDiscrepancies(
-  tx: TxClient,
-  userId: string,
-  answeredQuestions: RecalibrateParams["answeredQuestions"]
-) {
-  const wrongQIds = answeredQuestions
-    .filter((q) => !q.isCorrect)
-    .map((q) => q.originalQuestionId);
-  const atomIds = await getPrimaryAtomIds(tx, wrongQIds);
-  if (atomIds.length === 0) return;
-
-  const now = new Date();
-  for (const atomId of atomIds) {
-    await tx
-      .update(atomMastery)
-      .set({ status: "needs_verification", updatedAt: now })
-      .where(
-        and(
-          eq(atomMastery.userId, userId),
-          eq(atomMastery.atomId, atomId),
-          eq(atomMastery.isMastered, true),
-          eq(atomMastery.status, "mastered")
-        )
-      );
-  }
-}

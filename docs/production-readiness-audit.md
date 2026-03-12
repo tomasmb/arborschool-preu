@@ -186,7 +186,7 @@ already-seen ones only when the pool is exhausted.
 
 | Flow | Question pool | Excludes seen? | Status |
 |---|---|---|---|
-| Full test | `questions` (official) | No | **PENDING** — needs per-student assembly (Phase 6b) |
+| Full test | `questions` (official) | Yes (per-student assembly) | DONE — unseen-first with cross-position substitution |
 | Atom mastery | `generated_questions` | Yes (user+atom history) | DONE — uses shared `getSeenQuestionIds` |
 | SR review | `generated_questions` | Yes (user+atom history) | DONE — updated to pass `excludeIds` |
 | Prereq scan | `generated_questions` | Yes (all sessions) + medium fallback | DONE — updated to full history + `findScanQuestion` |
@@ -242,7 +242,7 @@ preserved in same file.
 | Mastery-based progression | IMPLEMENTED | 3CCR with hard items required |
 | Metacognitive feedback | IMPLEMENTED | Result panels show prereq context |
 | Interleaving | PARTIAL | SR reviews interleave topics |
-| Question freshness | PARTIAL | All generated-Q flows now exclude seen; full test assembly still pending |
+| Question freshness | IMPLEMENTED | All flows (generated-Q + full test) prefer unseen questions |
 | Error analysis | IMPLEMENTED | Full test discrepancies flagged + verified |
 | Calibration correction | IMPLEMENTED | Verification quiz for test failures |
 | Distributed practice | IMPLEMENTED | Spacing via SR intervals |
@@ -293,24 +293,22 @@ fully exhausted.
 4. ~~Update verification `findHardQuestion` to exclude seen IDs~~
 5. ~~Prereq scan: allow `"medium"` fallback when no hard questions remain~~
 
-#### 6b. Full test question selection (per-student test assembly) — TODO
-1. Before resolving test questions, load the student's `student_responses`
-   to know which `question_id` values they've already answered
-2. For each test position, prefer an alternate version the student hasn't
-   seen. If no unseen alternate exists, check if the original is unseen.
-3. If ALL versions of a question (original + alternates) are seen, search
+#### 6b. Full test question selection (per-student test assembly) — DONE
+1. ~~Before resolving test questions, load the student's `student_responses`
+   to know which `question_id` values they've already answered~~
+2. ~~For each test position, prefer an alternate version the student hasn't
+   seen. If no unseen alternate exists, check if the original is unseen.~~
+3. ~~If ALL versions of a question (original + alternates) are seen, search
    for another official question testing the same primary atoms that the
-   student hasn't seen.
-4. Goal: cover all atoms the test was designed to assess (directly or via
-   transitivity), using only unseen questions when possible.
-5. Only repeat a question when no unseen option exists for those atoms.
+   student hasn't seen.~~
+4. ~~Goal: cover all atoms the test was designed to assess (directly or via
+   transitivity), using only unseen questions when possible.~~
+5. ~~Only repeat a question when no unseen option exists for those atoms.~~
 
-**Files to modify:**
-- `web/lib/student/questionQueries.ts` — new shared `getSeenQuestionIds`
-- `web/lib/student/spacedRepetition.ts` — use `excludeIds`
-- `web/lib/student/prerequisiteScan.ts` — use all-session history + medium fallback
-- `web/lib/student/verificationQuiz.ts` — use `excludeIds`
-- `web/lib/student/fullTest.ts` — per-student test assembly logic
+**Files modified:**
+- `web/lib/student/fullTest.ts` — `getSeenOfficialQuestionIds`, `resolveQuestionRows` with unseen-first ORDER BY, `substituteSeenPositions` cross-position fallback
+- `web/app/api/student/full-test/start/route.ts` — pass `userId` and `excludeAttemptId`
+- `web/app/api/student/full-test/info/route.ts` — pass `userId` and `excludeAttemptId`
 
 ---
 
