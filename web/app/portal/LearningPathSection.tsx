@@ -132,6 +132,46 @@ function ReviewBadge({ count }: { count: number }) {
   );
 }
 
+function VerificationBanner({ count }: { count: number }) {
+  return (
+    <Link
+      href="/portal/study?mode=verification"
+      onClick={() => trackStudentNextActionClicked("verification", true)}
+      className="mb-4 flex items-center gap-3 rounded-xl border border-amber-200
+        bg-amber-50/60 px-4 py-3 hover:bg-amber-50 transition"
+    >
+      <span
+        className="w-8 h-8 rounded-full bg-amber-100 flex items-center
+          justify-center shrink-0"
+      >
+        <svg
+          className="w-4 h-4 text-amber-600"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-amber-800">
+          Verificación rápida
+        </p>
+        <p className="text-xs text-amber-600">
+          {count} {count === 1 ? "concepto necesita" : "conceptos necesitan"}{" "}
+          confirmación de tu último test
+        </p>
+      </div>
+      <ArrowIcon />
+    </Link>
+  );
+}
+
 function CurrentNode({
   atom,
   axisLabel,
@@ -389,6 +429,10 @@ function LearningPathContent({ data }: { data: NextActionPayload }) {
         </h2>
         <ReviewBadge count={data.reviewDueCount ?? 0} />
       </div>
+
+      {(data.verificationDueCount ?? 0) > 0 && (
+        <VerificationBanner count={data.verificationDueCount ?? 0} />
+      )}
 
       {reviewSuggested && (
         <ReviewSuggestionBanner count={data.reviewDueCount ?? 0} />

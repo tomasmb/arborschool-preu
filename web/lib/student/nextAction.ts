@@ -6,6 +6,7 @@ import {
   type StudentLearningAnalysis,
 } from "@/lib/diagnostic/questionUnlock";
 import { getReviewDueItems } from "./spacedRepetition";
+import { getVerificationDueItems } from "./verificationQuiz";
 import { getUserDiagnosticSnapshot, getMasteryRows } from "./userQueries";
 
 type NextActionStatus = "ready" | "missing_diagnostic" | "missing_mastery";
@@ -57,6 +58,11 @@ export type ReviewItemPreview = {
   title: string;
 };
 
+export type VerificationItemPreview = {
+  atomId: string;
+  title: string;
+};
+
 export type StudentNextActionData = {
   status: NextActionStatus;
   nextAction: NextActionItem | null;
@@ -66,6 +72,9 @@ export type StudentNextActionData = {
   reviewItems: ReviewItemPreview[];
   /** True when the SR balance rule suggests a review block before new atoms */
   reviewSuggested: boolean;
+  /** Atoms flagged by full test that need a quick verification check */
+  verificationDueCount: number;
+  verificationItems: VerificationItemPreview[];
   emptyState: NextActionEmptyState;
 };
 
@@ -264,6 +273,8 @@ export async function getStudentNextAction(
       reviewDueCount: 0,
       reviewItems: [],
       reviewSuggested: false,
+      verificationDueCount: 0,
+      verificationItems: [],
       emptyState: buildEmptyState("missing_diagnostic"),
     };
   }
@@ -276,6 +287,8 @@ export async function getStudentNextAction(
       reviewDueCount: 0,
       reviewItems: [],
       reviewSuggested: false,
+      verificationDueCount: 0,
+      verificationItems: [],
       emptyState: buildEmptyState("missing_mastery"),
     };
   }
@@ -287,17 +300,19 @@ export async function getStudentNextAction(
     (r) => !(r.cooldown && r.cooldown > 0)
   );
 
-  const [analysis, reviewDueItems, masteriesSinceReview] = await Promise.all([
-    analyzeLearningPotential(
-      eligibleRows.map((row) => ({
-        atomId: row.atomId,
-        mastered: row.isMastered,
-      })),
-      { currentPaesScore: currentScore }
-    ),
-    getReviewDueItems(userId),
-    getMasteriesSinceLastReview(userId),
-  ]);
+  const [analysis, reviewDueItems, masteriesSinceReview, verificationDue] =
+    await Promise.all([
+      analyzeLearningPotential(
+        eligibleRows.map((row) => ({
+          atomId: row.atomId,
+          mastered: row.isMastered,
+        })),
+        { currentPaesScore: currentScore }
+      ),
+      getReviewDueItems(userId),
+      getMasteriesSinceLastReview(userId),
+      getVerificationDueItems(userId),
+    ]);
 
   const insights = buildNextActionInsights(analysis);
 
@@ -316,6 +331,11 @@ export async function getStudentNextAction(
       title: r.atomTitle,
     })),
     reviewSuggested,
+    verificationDueCount: verificationDue.length,
+    verificationItems: verificationDue.map((v) => ({
+      atomId: v.atomId,
+      title: v.atomTitle,
+    })),
     emptyState: null,
   };
 }

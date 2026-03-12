@@ -104,7 +104,7 @@ function StudentPartialResults(props: {
   confidenceExplanation: string;
   potentialImprovement: number;
   studyHours: number;
-  onStartSprint: () => void;
+  onStartStudy: () => void;
   onAdjustGoal: () => void;
 }) {
   const estimatedMinutes =
@@ -130,7 +130,7 @@ function StudentPartialResults(props: {
             ? "Se prioriza la ruta con mejor relación impacto/tiempo."
             : "Se recomienda una mini-clase inicial para acumular evidencia.",
       }}
-      onStartSprint={props.onStartSprint}
+      onStartStudy={props.onStartStudy}
       onAdjustGoal={props.onAdjustGoal}
     />
   );
@@ -140,7 +140,7 @@ function StudentResultsScreen(props: {
   source: StudentResultsSource;
   confidenceLevel: ConfidenceLevel;
   confidenceExplanation: string;
-  onStartSprint: () => void;
+  onStartStudy: () => void;
   onAdjustGoal: () => void;
 }) {
   const topRoute = props.source.routes.length
@@ -168,7 +168,7 @@ function StudentResultsScreen(props: {
           ? `Se recomienda partir por ${topRoute.axis} porque tiene mejor mejor resultado por tiempo invertido.`
           : "Se recomienda una mini-clase inicial para generar evidencia de dominio.",
       }}
-      onStartSprint={props.onStartSprint}
+      onStartStudy={props.onStartStudy}
       onAdjustGoal={props.onAdjustGoal}
     />
   );
@@ -178,7 +178,7 @@ function renderPartialResults(
   flow: ReturnType<typeof useDiagnosticFlow>,
   confidenceLevel: ConfidenceLevel,
   confidenceExplanation: string,
-  onStartSprint: () => void,
+  onStartStudy: () => void,
   onAdjustGoal: () => void
 ) {
   if (!flow.route) {
@@ -211,7 +211,7 @@ function renderPartialResults(
         confidenceExplanation={confidenceExplanation}
         potentialImprovement={potentialImprovement}
         studyHours={studyHours}
-        onStartSprint={onStartSprint}
+        onStartStudy={onStartStudy}
         onAdjustGoal={onAdjustGoal}
       />
     );
@@ -236,7 +236,7 @@ function renderResults(
   source: StudentResultsSource | null,
   confidenceLevel: ConfidenceLevel,
   confidenceExplanation: string,
-  onStartSprint: () => void,
+  onStartStudy: () => void,
   onAdjustGoal: () => void
 ) {
   if (flow.isStudentPortalUser && source) {
@@ -245,7 +245,7 @@ function renderResults(
         source={source}
         confidenceLevel={confidenceLevel}
         confidenceExplanation={confidenceExplanation}
-        onStartSprint={onStartSprint}
+        onStartStudy={onStartStudy}
         onAdjustGoal={onAdjustGoal}
       />
     );
@@ -279,7 +279,7 @@ function renderFlowScreen(params: {
   studentResultsSource: StudentResultsSource | null;
   confidenceLevel: ConfidenceLevel;
   confidenceExplanation: string;
-  goToSprint: () => void;
+  goToStudy: () => void;
   goToGoals: () => void;
 }) {
   switch (params.flow.screen) {
@@ -292,7 +292,7 @@ function renderFlowScreen(params: {
         params.flow,
         params.confidenceLevel,
         params.confidenceExplanation,
-        params.goToSprint,
+        params.goToStudy,
         params.goToGoals
       );
     case "results":
@@ -301,7 +301,7 @@ function renderFlowScreen(params: {
         params.studentResultsSource,
         params.confidenceLevel,
         params.confidenceExplanation,
-        params.goToSprint,
+        params.goToStudy,
         params.goToGoals
       );
     case "profiling":
@@ -334,7 +334,7 @@ export default function DiagnosticoClientPage() {
 
   const studentResultsSource = getStudentResultsSource(flow);
   const confidence = confidenceFromSource(studentResultsSource);
-  const goToSprint = () => router.push("/portal/study");
+  const goToStudy = () => router.push("/portal");
   const goToGoals = () => router.push("/portal/goals");
 
   if (flow.isInitializingStudentSession) {
@@ -346,7 +346,7 @@ export default function DiagnosticoClientPage() {
     studentResultsSource,
     confidenceLevel: confidence.level,
     confidenceExplanation: confidence.explanation,
-    goToSprint,
+    goToStudy,
     goToGoals,
   });
 }

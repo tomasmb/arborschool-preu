@@ -2,7 +2,7 @@
  * Shared user-level query helpers.
  *
  * Centralizes reads from `users` and `atom_mastery` that are needed
- * by nextAction, dashboardM1, studySprints, and other student modules.
+ * by nextAction, dashboardM1, and other student modules.
  */
 
 import { eq } from "drizzle-orm";

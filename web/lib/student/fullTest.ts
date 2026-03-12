@@ -27,11 +27,7 @@ import {
   atomMastery,
   users,
 } from "@/db/schema";
-import { getRetestStatus } from "./retestGating";
-import {
-  getPaesScore,
-  estimateCorrectFromScore,
-} from "@/lib/diagnostic/paesScoreTable";
+import { getPaesScore } from "@/lib/diagnostic/paesScoreTable";
 import { parseQtiXml } from "@/lib/diagnostic/qtiParser";
 import { getLevel } from "@/lib/diagnostic/config";
 
@@ -323,6 +319,8 @@ export async function recalibrateScore(
     });
     await updateUserScores(tx, userId, paesScoreMin, paesScoreMax);
     await upsertMasteryFromCorrectAnswers(tx, userId, answeredQuestions);
+    await creditSpacedRepetitionFromTest(tx, userId, answeredQuestions);
+    await flagMasteryDiscrepancies(tx, userId, answeredQuestions);
   });
 
   return { paesScore, paesScoreMin, paesScoreMax, level };
@@ -424,5 +422,100 @@ async function upsertMasteryFromCorrectAnswers(
           updatedAt: now,
         },
       });
+  }
+}
+
+/** Extracts unique primary atom IDs for a set of question IDs. */
+async function getPrimaryAtomIds(
+  tx: TxClient,
+  questionIds: string[]
+): Promise<string[]> {
+  if (questionIds.length === 0) return [];
+  const rows = await tx
+    .select({ atomId: questionAtoms.atomId })
+    .from(questionAtoms)
+    .where(
+      and(
+        inArray(questionAtoms.questionId, questionIds),
+        eq(questionAtoms.relevance, "primary")
+      )
+    );
+  return [...new Set(rows.map((r) => r.atomId))];
+}
+
+/**
+ * For correct answers on atoms that were ALREADY mastered, reset SR counters.
+ * A full test is high-quality evidence of retention — credit it accordingly.
+ */
+async function creditSpacedRepetitionFromTest(
+  tx: TxClient,
+  userId: string,
+  answeredQuestions: RecalibrateParams["answeredQuestions"]
+) {
+  const correctQIds = answeredQuestions
+    .filter((q) => q.isCorrect)
+    .map((q) => q.originalQuestionId);
+  const atomIds = await getPrimaryAtomIds(tx, correctQIds);
+  if (atomIds.length === 0) return;
+
+  const now = new Date();
+  const BOOST = 1.5;
+  for (const atomId of atomIds) {
+    await tx
+      .update(atomMastery)
+      .set({
+        sessionsSinceLastReview: 0,
+        lastDemonstratedAt: now,
+        reviewIntervalSessions: sql`CASE
+          WHEN ${atomMastery.reviewIntervalSessions} IS NOT NULL
+          THEN LEAST(CEIL(${atomMastery.reviewIntervalSessions} * ${BOOST}), 20)
+          ELSE ${atomMastery.reviewIntervalSessions}
+        END`,
+        nextReviewAt: sql`CASE
+          WHEN ${atomMastery.reviewIntervalSessions} IS NOT NULL
+          THEN NOW() + (LEAST(CEIL(${atomMastery.reviewIntervalSessions} * ${BOOST}), 20) * INTERVAL '2 days')
+          ELSE ${atomMastery.nextReviewAt}
+        END`,
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(atomMastery.userId, userId),
+          eq(atomMastery.atomId, atomId),
+          eq(atomMastery.isMastered, true)
+        )
+      );
+  }
+}
+
+/**
+ * For wrong answers whose primary atoms are currently mastered,
+ * flag them as needs_verification. The verification quiz engine
+ * will surface a quick check in the student's next study session.
+ */
+async function flagMasteryDiscrepancies(
+  tx: TxClient,
+  userId: string,
+  answeredQuestions: RecalibrateParams["answeredQuestions"]
+) {
+  const wrongQIds = answeredQuestions
+    .filter((q) => !q.isCorrect)
+    .map((q) => q.originalQuestionId);
+  const atomIds = await getPrimaryAtomIds(tx, wrongQIds);
+  if (atomIds.length === 0) return;
+
+  const now = new Date();
+  for (const atomId of atomIds) {
+    await tx
+      .update(atomMastery)
+      .set({ status: "needs_verification", updatedAt: now })
+      .where(
+        and(
+          eq(atomMastery.userId, userId),
+          eq(atomMastery.atomId, atomId),
+          eq(atomMastery.isMastered, true),
+          eq(atomMastery.status, "mastered")
+        )
+      );
   }
 }

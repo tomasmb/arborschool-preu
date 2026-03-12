@@ -365,13 +365,13 @@ function buildReadyDashboard(params: {
       masteredAtoms: params.metrics.masteredAtoms,
       totalAtoms: params.metrics.totalRelevantAtoms,
       masteryPercentage: params.metrics.masteryPercentage,
-      questionsUnlocked: params.metrics.totalOfficialQuestions > 0
-        ? Math.round(
-            params.metrics.questionsUnlocked
-            * PAES_TOTAL_QUESTIONS
-            / params.metrics.totalOfficialQuestions
-          )
-        : 0,
+      questionsUnlocked:
+        params.metrics.totalOfficialQuestions > 0
+          ? Math.round(
+              (params.metrics.questionsUnlocked * PAES_TOTAL_QUESTIONS) /
+                params.metrics.totalOfficialQuestions
+            )
+          : 0,
       totalOfficialQuestions: PAES_TOTAL_QUESTIONS,
     },
     effort: {

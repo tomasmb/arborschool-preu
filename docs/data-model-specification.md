@@ -6,7 +6,7 @@
 
 Test preparation platform for PAES Chile. Content repo manages atoms, questions, lessons. Student app serves content and tracks progress.
 
-Core flow: Diagnostic → Learning plan → Mini-clase mastery → Practice tests → Spaced repetition
+Core flow: Diagnostic → Learning plan → Mini-clase mastery → Practice tests → Spaced repetition → Verification
 
 ---
 
@@ -40,16 +40,19 @@ CREATE TYPE atom_relevance AS ENUM ('primary', 'secondary');
 
 CREATE TYPE test_type AS ENUM ('official', 'diagnostic', 'practice');
 
-CREATE TYPE mastery_status AS ENUM ('not_started', 'in_progress', 'mastered', 'frozen');
+CREATE TYPE mastery_status AS ENUM (
+    'not_started', 'in_progress', 'mastered', 'needs_verification', 'frozen'
+);
 
-CREATE TYPE mastery_source AS ENUM ('diagnostic', 'practice_test', 'study');
+CREATE TYPE mastery_source AS ENUM ('diagnostic', 'practice_test', 'pp100', 'study');
 
 CREATE TYPE user_role AS ENUM ('student', 'admin');
 
 -- Session enums (for atom_study_sessions)
-CREATE TYPE session_type AS ENUM ('mastery', 'prereq_scan', 'review');
+CREATE TYPE session_type AS ENUM ('mastery', 'prereq_scan', 'review', 'verification');
 CREATE TYPE session_status AS ENUM ('lesson', 'in_progress', 'mastered', 'failed', 'abandoned');
 CREATE TYPE session_difficulty AS ENUM ('easy', 'medium', 'hard');
+CREATE TYPE review_result AS ENUM ('pass', 'fail');
 ```
 
 ---
@@ -176,6 +179,29 @@ CREATE TABLE users (
     last_name VARCHAR(100),
     subscription_status VARCHAR(50),
     subscription_expires_at TIMESTAMPTZ,
+    -- Email preferences
+    unsubscribed BOOLEAN NOT NULL DEFAULT FALSE,
+    unsubscribed_at TIMESTAMPTZ,
+    -- Diagnostic snapshot for PAES score tracking
+    paes_score_min INTEGER,
+    paes_score_max INTEGER,
+    performance_tier VARCHAR(20),
+    top_route_name VARCHAR(100),
+    top_route_questions_unlocked INTEGER,
+    top_route_points_gain INTEGER,
+    -- Mini-form (pre-test)
+    user_type VARCHAR(20),
+    curso VARCHAR(20),
+    -- Profiling (post-results, optional)
+    paes_goal VARCHAR(20),
+    paes_date VARCHAR(20),
+    in_preu BOOLEAN,
+    school_type VARCHAR(30),
+    -- Notification tracking
+    notified_platform_launch BOOLEAN NOT NULL DEFAULT FALSE,
+    notified_platform_launch_at TIMESTAMPTZ,
+    followup_email_scheduled_at TIMESTAMPTZ,
+    -- Daily streak tracking
     current_streak INTEGER NOT NULL DEFAULT 0,
     max_streak INTEGER NOT NULL DEFAULT 0,
     last_streak_date DATE,
@@ -194,6 +220,14 @@ CREATE TABLE atom_mastery (
     current_streak INTEGER DEFAULT 0,
     total_attempts INTEGER DEFAULT 0,
     correct_attempts INTEGER DEFAULT 0,
+    -- Cooldown: blocks re-attempt for N other masteries after failure
+    cooldown_until_mastery_count INTEGER DEFAULT 0,
+    -- Spaced repetition fields
+    next_review_at TIMESTAMPTZ,
+    review_interval_sessions INTEGER,
+    sessions_since_last_review INTEGER DEFAULT 0,
+    total_reviews INTEGER DEFAULT 0,
+    last_review_result review_result,
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     PRIMARY KEY (user_id, atom_id)
 );
@@ -209,6 +243,8 @@ CREATE TABLE test_attempts (
     score_percentage DECIMAL(5,2),
     stage_1_score INTEGER,
     stage_2_difficulty VARCHAR(20),
+    paes_score_min INTEGER,
+    paes_score_max INTEGER,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -216,11 +252,14 @@ CREATE TABLE student_responses (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     question_id VARCHAR(100) REFERENCES questions(id),
-    test_attempt_id UUID REFERENCES test_attempts(id),
+    test_attempt_id UUID REFERENCES test_attempts(id) NOT NULL,
     selected_answer VARCHAR(50) NOT NULL,
     is_correct BOOLEAN NOT NULL,
     response_time_seconds INTEGER,
-    answered_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    stage INTEGER DEFAULT 1,
+    question_index INTEGER,
+    answered_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(test_attempt_id, question_id)
 );
 ```
 
@@ -509,8 +548,11 @@ users ──N:N──▶ atoms (via atom_mastery)
 - Mini-clase mastery: 3 consecutive correct, at least 2 at HARD difficulty
 - Mini-clase failure: 3 consecutive incorrect OR <70% accuracy after 10 questions OR 20 questions without mastery → status = `frozen`, trigger prerequisite scan
 - Auto-unfreeze: when all prerequisites become mastered, frozen → in_progress
-- `mastery_source`: records how mastery was achieved (diagnostic, practice_test, study)
+- `mastery_source`: records how mastery was achieved (diagnostic, practice_test, pp100, study)
 - `last_demonstrated_at`: used for spaced repetition scheduling
+- Full test credit: correct answers on mastered atoms reset SR counters + update `last_demonstrated_at`
+- Full test discrepancy: wrong answers on mastered atoms → status = `needs_verification`
+- Verification quiz: 1 hard question per `needs_verification` atom; correct → restore mastered + SR credit; incorrect → downgrade to `in_progress` + prereq scan
 
 ### Question Generation
 

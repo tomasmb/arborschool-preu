@@ -46,19 +46,22 @@
 - **Actual:** Values persist (M1=650, NEM=700 still shown)
 - **Impact:** Low — arguably better UX, but contradicts spec
 
-### BUG-3 (P3): Invalid UUID returns 500 with raw SQL error [N3]
+### BUG-3 (P3): Invalid UUID returns 500 with raw SQL error [N3] — FIXED
 
 - **Steps:** `GET /api/student/atom-sessions/nonexistent-id`
 - **Expected:** 400 or 404 with clean error message
-- **Actual:** 500 with `"invalid input syntax for type uuid: \"nonexistent-id\""`
-- **Impact:** Exposes DB details in error response; should return 400
+- **Actual:** ~~500 with raw SQL error~~ → Now returns 400 with `isValidUuid` guard
+- **Status:** FIXED — UUID validation added to all `[sessionId]` routes
 
-### BUG-4 (P3): Back navigation goes to unexpected page [M2]
+### BUG-4 (P3): Back navigation goes to unexpected page [M2] — MITIGATED
 
 - **Steps:** Dashboard → click "Estudiar" → browser back button
 - **Expected:** Returns to /portal (dashboard)
-- **Actual:** Goes to /portal/goals instead of /portal
-- **Impact:** Minor navigation confusion
+- **Actual:** ~~Goes to /portal/goals~~ → Mostly fixed by removing legacy sprint
+  handoff. Post-diagnostic now routes to `/portal` (dashboard) instead of
+  `/portal/study`. Remaining edge case: server-side `redirect()` to
+  `/portal/goals` for `planning_required` users adds to history stack.
+- **Status:** MITIGATED — primary cause (sprint handoff) removed
 
 ---
 

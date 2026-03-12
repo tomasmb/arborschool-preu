@@ -10,15 +10,7 @@ export async function GET() {
 
   try {
     const nextActionData = await getStudentNextAction(userId);
-
-    return studentApiSuccess({
-      ...nextActionData,
-      sprintHint: {
-        ctaHref: "/portal/study",
-        suggestedItemCount: 5,
-        estimatedMinutes: nextActionData.nextAction?.studyMinutes ?? 25,
-      },
-    });
+    return studentApiSuccess(nextActionData);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to load next action";

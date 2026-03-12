@@ -51,7 +51,7 @@ import {
 } from "./masteryLifecycle";
 import { updateDailyStreak } from "./streakTracker";
 import { incrementMissionProgress } from "./missions";
-import { normalizeAnswer } from "./questionQueries";
+import { normalizeAnswer, getSeenQuestionIds } from "./questionQueries";
 import { verifySessionOwnership } from "./sessionQueries";
 
 export type {
@@ -77,32 +77,8 @@ export type AnswerResultWithLifecycle = AnswerResultPayload & {
   nextAtom?: { id: string; title: string } | null;
   habitGuard?: HabitGuardSignal;
 };
-async function getUsedQuestionIds(
-  userId: string,
-  atomId: string
-): Promise<string[]> {
-  const sessions = await db
-    .select({ id: atomStudySessions.id })
-    .from(atomStudySessions)
-    .where(
-      and(
-        eq(atomStudySessions.userId, userId),
-        eq(atomStudySessions.atomId, atomId)
-      )
-    );
-  if (sessions.length === 0) return [];
-
-  const rows = await db
-    .select({ questionId: atomStudyResponses.questionId })
-    .from(atomStudyResponses)
-    .where(
-      inArray(
-        atomStudyResponses.sessionId,
-        sessions.map((s) => s.id)
-      )
-    );
-  return rows.map((r) => r.questionId);
-}
+/** Delegates to the shared helper in questionQueries.ts */
+const getUsedQuestionIds = getSeenQuestionIds;
 async function findQuestions(
   atomId: string,
   difficulty: "low" | "medium" | "high",
