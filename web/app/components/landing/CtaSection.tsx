@@ -30,10 +30,11 @@ export function CtaSection({
 
       <ScrollReveal className="relative max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold text-charcoal mb-6">
-          Tu siguiente paso está en el portal
+          Tu siguiente mini-clase te está esperando
         </h2>
         <p className="text-xl text-cool-gray mb-10">
-          Haz una acción concreta ahora y sigue avanzando con foco.
+          Define tu meta, haz el diagnóstico y empieza a dominar
+          conceptos hoy.
         </p>
 
         <LoadingButton
