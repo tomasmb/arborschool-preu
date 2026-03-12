@@ -2,6 +2,7 @@
  * Progress section - dark navy section showing progress tracking
  * Mirrors the real portal: score, mastered atoms, mission ring, PAES Qs
  */
+import { PAES_TOTAL_QUESTIONS } from "@/lib/diagnostic/paesScoreTable";
 import { ScrollReveal } from "./ScrollReveal";
 
 export function ProgressSection() {
@@ -61,8 +62,10 @@ function ProgressCard() {
         </div>
         <div className="bg-amber-500/15 rounded-xl p-3 text-center border border-amber-400/20">
           <p className="text-2xl sm:text-3xl font-bold text-amber-400 tabular-nums">
-            87
-            <span className="text-base font-normal text-white/50">/320</span>
+            38
+            <span className="text-base font-normal text-white/50">
+              /{PAES_TOTAL_QUESTIONS}
+            </span>
           </p>
           <p className="text-[10px] sm:text-xs text-white/60 mt-1">
             Preguntas PAES
