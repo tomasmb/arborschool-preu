@@ -10,4 +10,5 @@
 export * from "./enums";
 export * from "./content";
 export * from "./users";
+export * from "./studentPortal";
 export * from "./relations";

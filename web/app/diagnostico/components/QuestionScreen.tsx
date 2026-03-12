@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, memo } from "react";
 import Link from "next/link";
+import { MathContent } from "@/lib/qti/MathRenderer";
 import {
   AXIS_NAMES,
   SKILL_NAMES,
@@ -84,9 +85,9 @@ function OptionButton({
       >
         {letter}
       </span>
-      <span
+      <MathContent
+        html={text}
         className="text-left text-charcoal flex-1 text-sm sm:text-base min-w-0 break-words"
-        dangerouslySetInnerHTML={{ __html: text }}
       />
       {isSelected && (
         <svg
@@ -254,15 +255,15 @@ export const QuestionScreen = memo(function QuestionScreen({
             Estamos en mantenimiento
           </h2>
           <p className="text-cool-gray mb-8 max-w-md mx-auto">
-            No pudimos cargar las preguntas del diagnóstico. Estamos trabajando
-            para solucionarlo lo antes posible.
+            No pudimos cargar las preguntas. Estamos en eso, vuelve a intentarlo
+            en un momento.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             {retryCount < MAX_RETRIES ? (
               <button
                 onClick={handleRetry}
-                aria-label="Reintentar cargar la pregunta"
+                aria-label="Intentar cargar la pregunta de nuevo"
                 className="btn-primary px-8 py-3 flex items-center justify-center gap-2"
               >
                 <svg
@@ -279,7 +280,7 @@ export const QuestionScreen = memo(function QuestionScreen({
                     d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                   />
                 </svg>
-                Reintentar
+                Intentar de nuevo
               </button>
             ) : null}
             <Link
@@ -344,9 +345,9 @@ export const QuestionScreen = memo(function QuestionScreen({
         {/* Question content */}
         <div className="prose prose-sm sm:prose-lg max-w-none mb-6 sm:mb-8 overflow-x-auto">
           {parsedQuestion?.html ? (
-            <div
+            <MathContent
+              html={parsedQuestion.html}
               className="text-charcoal text-base sm:text-lg leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: parsedQuestion.html }}
             />
           ) : (
             <p className="text-charcoal text-base sm:text-lg leading-relaxed">

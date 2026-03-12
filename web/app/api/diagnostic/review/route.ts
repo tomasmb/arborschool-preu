@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { questions } from "@/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { parseQtiXml } from "@/lib/diagnostic/qtiParser";
+import { requireAuthenticatedStudentUser } from "@/lib/student/apiAuth";
 
 /**
  * POST /api/diagnostic/review
@@ -26,6 +27,9 @@ import { parseQtiXml } from "@/lib/diagnostic/qtiParser";
  */
 export async function POST(request: NextRequest) {
   try {
+    const authResult = await requireAuthenticatedStudentUser();
+    if (authResult.unauthorizedResponse) return authResult.unauthorizedResponse;
+
     const body = await request.json();
     const { questions: questionRefs } = body;
 

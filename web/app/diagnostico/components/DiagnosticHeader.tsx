@@ -75,9 +75,10 @@ export function DiagnosticHeader({
             <Image
               src="/logo-arbor.svg"
               alt="Arbor"
-              width={28}
-              height={28}
-              className="sm:w-8 sm:h-8"
+              width={32}
+              height={32}
+              className="w-7 sm:w-8"
+              style={{ height: "auto" }}
             />
             <span className="font-serif font-bold text-primary hidden sm:inline">
               Diagnóstico PAES M1

@@ -7,12 +7,16 @@ interface HeroSectionProps {
   onStartDiagnostic: () => void;
   onShowExample: () => void;
   isNavigating: boolean;
+  ctaLabel: string;
+  ctaSupportingText: string;
 }
 
 export function HeroSection({
   onStartDiagnostic,
   onShowExample,
   isNavigating,
+  ctaLabel,
+  ctaSupportingText,
 }: HeroSectionProps) {
   return (
     <section className="relative pt-24 pb-10 sm:pt-36 sm:pb-28 overflow-hidden">
@@ -24,9 +28,9 @@ export function HeroSection({
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-4xl mx-auto">
           <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-serif font-bold tracking-tight text-charcoal mb-8 sm:mb-10">
-            Cada prueba PAES tiene más de 200 conceptos.
+            Empieza tu plan PAES con
             <span className="block text-accent mt-2">
-              ¿Para qué estudiar los que ya sabes?
+              meta, diagnóstico y mini-clase.
             </span>
           </h1>
 
@@ -36,7 +40,7 @@ export function HeroSection({
             loadingText="Cargando..."
             className="btn-cta text-base sm:text-lg px-8 sm:px-10 py-4 sm:py-5 shadow-lg"
           >
-            Descubrir lo que me falta
+            {ctaLabel}
             <svg
               className="w-5 h-5 ml-2"
               fill="none"
@@ -52,9 +56,7 @@ export function HeroSection({
             </svg>
           </LoadingButton>
 
-          <p className="text-sm text-cool-gray mt-4">
-            16 preguntas · ~15 min · Puntaje inmediato
-          </p>
+          <p className="text-sm text-cool-gray mt-4">{ctaSupportingText}</p>
 
           {/* Example Results Preview — more prominent */}
           <button
@@ -80,7 +82,10 @@ export function HeroSection({
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-.274.955-.67 1.856-1.166 2.686M15.536 15.536A5.003 5.003 0 0112 17c-4.478 0-8.268-2.943-9.542-7a9.969 9.969 0 011.166-2.686"
+                d={
+                  "M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-.274.955-.67 1.856-1.166 2.686" +
+                  "M15.536 15.536A5.003 5.003 0 0112 17c-4.478 0-8.268-2.943-9.542-7a9.969 9.969 0 011.166-2.686"
+                }
               />
             </svg>
             Ver cómo se ven los resultados →

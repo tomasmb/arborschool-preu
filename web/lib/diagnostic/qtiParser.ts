@@ -89,8 +89,8 @@ function serializeNodeToHtml(node: Node): string {
       return `<${tagName} ${attrs}>${content}</${tagName}>`;
     }
 
-    // Handle div containers
-    if (tagName === "div") {
+    // Handle div containers and QTI content-body wrapper
+    if (tagName === "div" || tagName === "qti-content-body") {
       const content = serializeChildNodes(el);
       return `<div class="my-4">${content}</div>`;
     }
@@ -99,6 +99,40 @@ function serializeNodeToHtml(node: Node): string {
     if (tagName === "p") {
       const content = serializeChildNodes(el);
       return `<p class="mb-4">${content}</p>`;
+    }
+
+    // Lists
+    if (tagName === "ol") {
+      const content = serializeChildNodes(el);
+      return `<ol class="list-decimal list-outside pl-6 my-4 space-y-3">${content}</ol>`;
+    }
+    if (tagName === "ul") {
+      const content = serializeChildNodes(el);
+      return `<ul class="list-disc list-outside pl-6 my-4 space-y-2">${content}</ul>`;
+    }
+    if (tagName === "li") {
+      const content = serializeChildNodes(el);
+      return `<li class="pl-1">${content}</li>`;
+    }
+
+    // Inline formatting
+    if (tagName === "strong" || tagName === "b") {
+      return `<strong>${serializeChildNodes(el)}</strong>`;
+    }
+    if (tagName === "em" || tagName === "i") {
+      return `<em>${serializeChildNodes(el)}</em>`;
+    }
+    if (tagName === "sup") {
+      return `<sup>${serializeChildNodes(el)}</sup>`;
+    }
+    if (tagName === "sub") {
+      return `<sub>${serializeChildNodes(el)}</sub>`;
+    }
+    if (tagName === "br") {
+      return "<br />";
+    }
+    if (tagName === "span") {
+      return `<span>${serializeChildNodes(el)}</span>`;
     }
 
     // Recursively process children for other elements
@@ -292,4 +326,87 @@ function findCorrectAnswer(
   }
 
   return null;
+}
+
+// ============================================================================
+// FEEDBACK EXTRACTION (post-answer, server-side)
+// ============================================================================
+
+export interface QtiChoiceFeedback {
+  identifier: string;
+  letter: string;
+  feedbackHtml?: string;
+}
+
+export interface QtiExtractedFeedback {
+  choiceFeedbacks: QtiChoiceFeedback[];
+  generalFeedbackHtml?: string;
+}
+
+const INLINE_FEEDBACK_TAGS = new Set([
+  "qti-feedback-inline",
+  "feedbackinline",
+]);
+
+const BLOCK_FEEDBACK_TAGS = new Set([
+  "qti-feedback-block",
+  "feedbackblock",
+  "qti-modal-feedback",
+  "modalfeedback",
+]);
+
+/**
+ * Extract feedback content from QTI XML after a student answers.
+ * Returns per-choice inline feedback and the general feedback block.
+ */
+export function extractFeedbackFromQti(
+  xmlString: string
+): QtiExtractedFeedback {
+  const { document: xmlDoc } = parseHTML(xmlString);
+  const choices = xmlDoc.querySelectorAll(
+    "simpleChoice, qti-simple-choice"
+  );
+  const itemBody = xmlDoc.querySelector("itemBody, qti-item-body");
+
+  const letters = ["A", "B", "C", "D"];
+  const choiceFeedbacks: QtiChoiceFeedback[] = [];
+
+  choices.forEach((choice, index) => {
+    const identifier =
+      choice.getAttribute("identifier") || letters[index];
+    let feedbackHtml: string | undefined;
+
+    for (const child of Array.from(choice.childNodes)) {
+      if (child.nodeType !== ELEMENT_NODE) continue;
+      const el = child as Element;
+      const tag = (el.localName || el.tagName).toLowerCase();
+      if (INLINE_FEEDBACK_TAGS.has(tag)) {
+        const content = serializeChildNodes(el).trim();
+        if (content) feedbackHtml = content;
+        break;
+      }
+    }
+
+    choiceFeedbacks.push({
+      identifier,
+      letter: letters[index],
+      feedbackHtml,
+    });
+  });
+
+  let generalFeedbackHtml: string | undefined;
+  if (itemBody) {
+    for (const child of Array.from(itemBody.childNodes)) {
+      if (child.nodeType !== ELEMENT_NODE) continue;
+      const el = child as Element;
+      const tag = (el.localName || el.tagName).toLowerCase();
+      if (BLOCK_FEEDBACK_TAGS.has(tag)) {
+        const content = serializeChildNodes(el).trim();
+        if (content) generalFeedbackHtml = content;
+        break;
+      }
+    }
+  }
+
+  return { choiceFeedbacks, generalFeedbackHtml };
 }

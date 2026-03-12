@@ -121,16 +121,15 @@ gh pr merge <PR_NUMBER> --squash --delete-branch
 
 ### Post-Merge: Wait for Production Deploy
 
-After merge, the Cloud Run deployment will trigger. Monitor it:
+After merge, Vercel will automatically deploy from `main`. Monitor the PR's deployment status:
 
 ```bash
-gh run list --branch main --limit 1 --json status,conclusion,name
+gh pr view <PR_NUMBER> --json statusCheckRollup --jq '.statusCheckRollup[] | select(.context | test("Vercel")) | {context, state, targetUrl}'
 ```
 
-Poll until the "Deploy to Cloud Run" workflow completes:
-- Report: "Waiting for production deploy to Cloud Run..."
-- On success: "Production deploy complete! ✓"
-- On failure: "Production deploy failed. Check GitHub Actions for details."
+- Report: "Waiting for Vercel production deploy..."
+- On success: "Production deploy complete!"
+- On failure: "Production deploy failed. Check Vercel dashboard for details."
 
 ## Output Summary
 
@@ -154,37 +153,19 @@ PR is ready for review. Run `/deploy merge` after approval to merge.
   Preview URL: <PREVIEW_URL>
 ✓ PR merged to main
 ✓ Production deploy complete
-✓ Switched back to dev branch
 
 Deployment successful!
 ```
 
 ## Post-Deploy Cleanup (IMPORTANT)
 
-After deployment completes (whether merged or not), ensure the user stays on `dev` branch:
-
-### After Merge
+After merge, do NOT leave the user on `main`. Switch back to the working branch:
 
 ```bash
-# Switch to dev branch
-git checkout dev
-
-# Pull latest from main to keep dev up to date
+git checkout -
 git pull origin main
-
-# Confirm branch
 git branch --show-current
 ```
-
-### After Preview Only (no merge)
-
-Stay on `dev` - no action needed since we were already on dev.
-
-### Why This Matters
-
-- The workflow is: work on `dev` → PR to `main` → merge → continue on `dev`
-- After merge, the dev branch should pull in main to stay current
-- Never leave the user on main branch after deploy
 
 ## Error Handling
 
@@ -196,7 +177,7 @@ Stay on `dev` - no action needed since we were already on dev.
 | Branch up to date with main | Inform user, no PR needed |
 | Checks failing | Report which check failed, don't merge |
 | Merge blocked by reviews | Provide PR URL for manual review/merge |
-| Deploy timeout (>10 min) | Report timeout, provide links to check manually |
+| Deploy timeout (>10 min) | Report timeout, provide Vercel dashboard link |
 
 ## Boundaries
 
@@ -211,5 +192,5 @@ Stay on `dev` - no action needed since we were already on dev.
 - Always show the preview URL when available
 - Report clear status at each step
 - Provide actionable next steps on any failure
-- After merge, switch back to dev and pull from main
+- After merge, switch back to working branch and pull from main
 - Confirm final branch state in output summary

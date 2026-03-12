@@ -61,7 +61,34 @@ export const masterySourceEnum = pgEnum("mastery_source", [
   "diagnostic",
   "practice_test",
   "pp100",
+  "study",
 ]);
 
 // User roles in the system
 export const userRoleEnum = pgEnum("user_role", ["student", "admin"]);
+
+// Study session types (atom study sessions)
+export const sessionTypeEnum = pgEnum("session_type", [
+  "mastery",
+  "prereq_scan",
+  "review",
+]);
+
+// Study session progression status
+export const sessionStatusEnum = pgEnum("session_status", [
+  "lesson",
+  "in_progress",
+  "mastered",
+  "failed",
+  "abandoned",
+]);
+
+// Difficulty levels within a study session
+export const sessionDifficultyEnum = pgEnum("session_difficulty", [
+  "easy",
+  "medium",
+  "hard",
+]);
+
+// Review outcome for spaced-review sessions
+export const reviewResultEnum = pgEnum("review_result", ["pass", "fail"]);

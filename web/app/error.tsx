@@ -50,7 +50,7 @@ export default function Error({
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button onClick={reset} className="btn-cta px-8 py-3">
-            Reintentar
+            Intentar de nuevo
           </button>
           <Link href="/" className="btn-ghost px-8 py-3">
             Volver al inicio

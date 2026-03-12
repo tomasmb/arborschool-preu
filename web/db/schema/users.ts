@@ -6,11 +6,18 @@ import {
   integer,
   boolean,
   timestamp,
+  date,
   decimal,
   primaryKey,
   index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
-import { userRoleEnum, masteryStatusEnum, masterySourceEnum } from "./enums";
+import {
+  userRoleEnum,
+  masteryStatusEnum,
+  masterySourceEnum,
+  reviewResultEnum,
+} from "./enums";
 import { atoms } from "./content";
 import { questions, tests } from "./content";
 
@@ -70,6 +77,11 @@ export const users = pgTable("users", {
   followupEmailScheduledAt: timestamp("followup_email_scheduled_at", {
     withTimezone: true,
   }),
+
+  // Daily streak tracking (consecutive days with ≥1 mastery)
+  currentStreak: integer("current_streak").notNull().default(0),
+  maxStreak: integer("max_streak").notNull().default(0),
+  lastStreakDate: date("last_streak_date"),
 });
 
 // ------------------------------------------------------------------------------
@@ -95,6 +107,14 @@ export const atomMastery = pgTable(
     currentStreak: integer("current_streak").default(0),
     totalAttempts: integer("total_attempts").default(0),
     correctAttempts: integer("correct_attempts").default(0),
+    cooldownUntilMasteryCount: integer("cooldown_until_mastery_count").default(
+      0
+    ),
+    nextReviewAt: timestamp("next_review_at", { withTimezone: true }),
+    reviewIntervalSessions: integer("review_interval_sessions"),
+    sessionsSinceLastReview: integer("sessions_since_last_review").default(0),
+    totalReviews: integer("total_reviews").default(0),
+    lastReviewResult: reviewResultEnum("last_review_result"),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
   },
   (table) => [
@@ -124,6 +144,8 @@ export const testAttempts = pgTable(
     scorePercentage: decimal("score_percentage", { precision: 5, scale: 2 }),
     stage1Score: integer("stage_1_score"),
     stage2Difficulty: varchar("stage_2_difficulty", { length: 20 }),
+    paesScoreMin: integer("paes_score_min"),
+    paesScoreMax: integer("paes_score_max"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   },
   (table) => [index("idx_test_attempts_user").on(table.userId)]
@@ -157,5 +179,9 @@ export const studentResponses = pgTable(
   (table) => [
     index("idx_student_responses_user").on(table.userId),
     index("idx_student_responses_attempt").on(table.testAttemptId),
+    uniqueIndex("uq_student_responses_attempt_question").on(
+      table.testAttemptId,
+      table.questionId
+    ),
   ]
 );

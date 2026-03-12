@@ -25,12 +25,6 @@ import { type LearningRoutesResponse } from "../hooks/useLearningRoutes";
 // TYPES
 // ============================================================================
 
-interface RegisterResult {
-  success: boolean;
-  userId?: string;
-  error?: string;
-}
-
 interface StartResult {
   success: boolean;
   attemptId?: string;
@@ -54,7 +48,6 @@ export interface SaveResponseParams {
 
 /** Profile payload building inputs */
 export interface ProfileContext {
-  userId: string | null;
   attemptId: string | null;
   route: Route;
   topRouteInfo?: {
@@ -70,31 +63,14 @@ export interface ProfileContext {
 // API FUNCTIONS
 // ============================================================================
 
-/** Register a new user via the mini-form */
-export async function registerUser(
-  email: string,
-  userType: string,
-  curso: string
-): Promise<RegisterResult> {
-  const res = await fetch("/api/diagnostic/register", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, userType, curso }),
-  });
-  return res.json();
-}
-
 /** Start a new test attempt (with 10s timeout to avoid stale DB hangs) */
-export async function startTestAttempt(
-  userId: string | null
-): Promise<StartResult> {
+export async function startTestAttempt(): Promise<StartResult> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 10000);
 
   const res = await fetch("/api/diagnostic/start", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId }),
     signal: controller.signal,
   });
   clearTimeout(timeoutId);
@@ -125,6 +101,8 @@ export async function completeTestAttempt(params: {
   correctAnswers: number;
   stage1Score: number;
   stage2Difficulty: string;
+  paesScoreMin?: number;
+  paesScoreMax?: number;
 }): Promise<void> {
   await fetch("/api/diagnostic/complete", {
     method: "POST",
@@ -242,7 +220,6 @@ export async function buildAndSaveProfile(ctx: ProfileContext) {
   const counts = getResponseCounts();
 
   const data = await saveProfileFetch({
-    userId: ctx.userId,
     attemptId: isLocal ? null : ctx.attemptId,
     profilingData: ctx.profilingData,
     atomResults,
