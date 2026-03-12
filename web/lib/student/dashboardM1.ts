@@ -13,6 +13,7 @@ import {
   calculatePAESImprovement,
   type StudentLearningAnalysis,
 } from "@/lib/diagnostic/questionUnlock";
+import { PAES_TOTAL_QUESTIONS } from "@/lib/diagnostic/paesScoreTable";
 import { buildNextActionInsights } from "@/lib/student/nextAction";
 import {
   getRetestStatus,
@@ -109,6 +110,7 @@ function defaultEffortModel() {
 function computeConfidence(params: {
   masteryRatio: number;
   bandWidth: number;
+  diagnosticSource: DiagnosticSource;
 }): { level: ConfidenceLevel; score: number } {
   const masteryComponent = Math.max(0, Math.min(1, params.masteryRatio));
   const bandComponent = Math.max(0, Math.min(1, 1 - params.bandWidth / 250));
@@ -116,7 +118,9 @@ function computeConfidence(params: {
     (masteryComponent * 0.65 + bandComponent * 0.35) * 100
   );
 
-  if (score >= 70) {
+  const isShortDiagnosticOnly = params.diagnosticSource !== "full_test";
+
+  if (score >= 70 && !isShortDiagnosticOnly) {
     return { level: "high", score };
   }
   if (score >= 40) {
@@ -226,7 +230,7 @@ function buildMissingDashboard(params: {
       totalAtoms: 0,
       masteryPercentage: 0,
       questionsUnlocked: 0,
-      totalOfficialQuestions: 0,
+      totalOfficialQuestions: PAES_TOTAL_QUESTIONS,
     },
     effort: {
       estimatedMinutesToTarget: null,
@@ -338,6 +342,7 @@ function buildReadyDashboard(params: {
   const confidence = computeConfidence({
     masteryRatio,
     bandWidth: params.maxScore - params.minScore,
+    diagnosticSource: params.diagnosticSource,
   });
 
   return {
@@ -360,8 +365,14 @@ function buildReadyDashboard(params: {
       masteredAtoms: params.metrics.masteredAtoms,
       totalAtoms: params.metrics.totalRelevantAtoms,
       masteryPercentage: params.metrics.masteryPercentage,
-      questionsUnlocked: params.metrics.questionsUnlocked,
-      totalOfficialQuestions: params.metrics.totalOfficialQuestions,
+      questionsUnlocked: params.metrics.totalOfficialQuestions > 0
+        ? Math.round(
+            params.metrics.questionsUnlocked
+            * PAES_TOTAL_QUESTIONS
+            / params.metrics.totalOfficialQuestions
+          )
+        : 0,
+      totalOfficialQuestions: PAES_TOTAL_QUESTIONS,
     },
     effort: {
       estimatedMinutesToTarget: effortMetrics.estimatedMinutesToTarget,
