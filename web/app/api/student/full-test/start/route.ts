@@ -8,6 +8,7 @@ import {
   getInProgressAttempt,
   resolveTestQuestions,
 } from "@/lib/student/fullTest";
+import { getUserAccessStatus } from "@/lib/student/accessControl";
 
 /**
  * POST /api/student/full-test/start
@@ -24,6 +25,18 @@ export async function POST() {
       return authResult.unauthorizedResponse;
     }
     const userId = authResult.userId;
+
+    const access = await getUserAccessStatus(userId);
+    if (access.subscriptionStatus !== "active") {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Los tests completos requieren acceso completo.",
+          code: "ACCESS_REQUIRED",
+        },
+        { status: 403 }
+      );
+    }
 
     // Check for an unfinished attempt first (crash recovery)
     const inProgress = await getInProgressAttempt(userId);

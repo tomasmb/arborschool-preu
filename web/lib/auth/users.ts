@@ -1,8 +1,9 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { users } from "@/db/schema";
+import { resolveAccessGrant } from "./accessGrants";
 
-interface GoogleProfile {
+interface OAuthProfile {
   email: string;
   name: string | null;
 }
@@ -17,6 +18,9 @@ export interface AuthenticatedUserRecord {
   email: string;
   firstName: string | null;
   lastName: string | null;
+  role: "student" | "admin";
+  subscriptionStatus: string;
+  schoolId: string | null;
   hasDiagnosticSnapshot: boolean;
 }
 
@@ -44,7 +48,7 @@ function parseName(name: string | null): ParsedName {
   };
 }
 
-export async function upsertUserFromGoogleProfile(profile: GoogleProfile) {
+export async function upsertUserFromOAuth(profile: OAuthProfile) {
   const normalizedEmail = normalizeEmail(profile.email);
   const { firstName, lastName } = parseName(profile.name);
 
@@ -54,6 +58,8 @@ export async function upsertUserFromGoogleProfile(profile: GoogleProfile) {
       email: users.email,
       firstName: users.firstName,
       lastName: users.lastName,
+      subscriptionStatus: users.subscriptionStatus,
+      schoolId: users.schoolId,
     })
     .from(users)
     .where(eq(users.email, normalizedEmail))
@@ -64,15 +70,29 @@ export async function upsertUserFromGoogleProfile(profile: GoogleProfile) {
     const nextFirstName = existingUser.firstName ?? firstName;
     const nextLastName = existingUser.lastName ?? lastName;
 
-    if (
+    // Re-evaluate access grant on each sign-in (picks up new grants)
+    const grant = await resolveAccessGrant(normalizedEmail);
+    const nextStatus =
+      grant.status === "active"
+        ? "active"
+        : (existingUser.subscriptionStatus ?? "free");
+    const nextSchoolId = grant.schoolId ?? existingUser.schoolId;
+
+    const nameChanged =
       nextFirstName !== existingUser.firstName ||
-      nextLastName !== existingUser.lastName
-    ) {
+      nextLastName !== existingUser.lastName;
+    const accessChanged =
+      nextStatus !== existingUser.subscriptionStatus ||
+      nextSchoolId !== existingUser.schoolId;
+
+    if (nameChanged || accessChanged) {
       await db
         .update(users)
         .set({
           firstName: nextFirstName,
           lastName: nextLastName,
+          subscriptionStatus: nextStatus,
+          schoolId: nextSchoolId,
           updatedAt: new Date(),
         })
         .where(eq(users.id, existingUser.id));
@@ -86,6 +106,9 @@ export async function upsertUserFromGoogleProfile(profile: GoogleProfile) {
     };
   }
 
+  // New user — check access grants before creating
+  const grant = await resolveAccessGrant(normalizedEmail);
+
   const [createdUser] = await db
     .insert(users)
     .values({
@@ -93,6 +116,8 @@ export async function upsertUserFromGoogleProfile(profile: GoogleProfile) {
       firstName,
       lastName,
       role: "student",
+      subscriptionStatus: grant.status === "active" ? "active" : "free",
+      schoolId: grant.schoolId,
     })
     .returning({
       id: users.id,
@@ -113,6 +138,9 @@ export async function getAuthenticatedUserById(
       email: users.email,
       firstName: users.firstName,
       lastName: users.lastName,
+      role: users.role,
+      subscriptionStatus: users.subscriptionStatus,
+      schoolId: users.schoolId,
       paesScoreMin: users.paesScoreMin,
       paesScoreMax: users.paesScoreMax,
     })
@@ -131,6 +159,9 @@ export async function getAuthenticatedUserById(
     email: row.email,
     firstName: row.firstName,
     lastName: row.lastName,
+    role: row.role,
+    subscriptionStatus: row.subscriptionStatus,
+    schoolId: row.schoolId,
     hasDiagnosticSnapshot:
       row.paesScoreMin !== null && row.paesScoreMax !== null,
   };

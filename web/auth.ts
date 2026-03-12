@@ -1,12 +1,17 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
-import { upsertUserFromGoogleProfile } from "@/lib/auth/users";
+import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
+import { upsertUserFromOAuth } from "@/lib/auth/users";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
+    }),
+    MicrosoftEntraID({
+      clientId: process.env.AUTH_MICROSOFT_ENTRA_ID_ID,
+      clientSecret: process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET,
     }),
   ],
   session: {
@@ -21,7 +26,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return false;
       }
 
-      const dbUser = await upsertUserFromGoogleProfile({
+      const dbUser = await upsertUserFromOAuth({
         email: user.email,
         name: user.name ?? null,
       });

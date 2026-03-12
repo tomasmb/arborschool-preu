@@ -1,0 +1,27 @@
+---
+description: Environment configuration and local development setup
+globs: 
+alwaysApply: true
+---
+
+# Environment Configuration
+
+## Local environment file
+
+- The local environment file is `web/.env.local`
+- All database operations (drizzle-kit generate, migrate, studio) read from `.env.local`
+- NEVER commit `.env.local` to git
+- When running drizzle-kit commands, run them from the `web/` directory so they pick up `.env.local`
+
+## Key environment variables
+
+- `DATABASE_URL` — Postgres connection string (Neon)
+- `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` — Google OAuth
+- `AUTH_MICROSOFT_ENTRA_ID_ID` / `AUTH_MICROSOFT_ENTRA_ID_SECRET` — Microsoft OAuth
+- `AUTH_SECRET` — NextAuth secret
+
+## Brand
+
+- Company domain: `arbor.school`
+- Contact email: `contacto@arbor.school`
+- Platform name: Arbor PreU

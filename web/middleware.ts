@@ -13,6 +13,18 @@ export default auth((request) => {
     );
   }
 
+  if (!isAuthenticated && pathname.startsWith("/api/admin/")) {
+    return NextResponse.json(
+      { success: false, error: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
+  if (!isAuthenticated && pathname.startsWith("/admin")) {
+    const signInPath = buildSignInUrlWithCallback(`${pathname}${search}`);
+    return NextResponse.redirect(new URL(signInPath, request.url));
+  }
+
   if (!isAuthenticated && pathname.startsWith("/portal")) {
     const signInPath = buildSignInUrlWithCallback(`${pathname}${search}`);
     return NextResponse.redirect(new URL(signInPath, request.url));
@@ -22,5 +34,10 @@ export default auth((request) => {
 });
 
 export const config = {
-  matcher: ["/portal/:path*", "/api/student/:path*"],
+  matcher: [
+    "/portal/:path*",
+    "/api/student/:path*",
+    "/admin/:path*",
+    "/api/admin/:path*",
+  ],
 };

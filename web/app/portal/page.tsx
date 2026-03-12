@@ -56,7 +56,10 @@ export default async function PortalPage({ searchParams }: PortalPageProps) {
       title={`Hola, ${displayName}`}
       subtitle="Tu misión semanal y siguiente mejor acción."
     >
-      <M1DashboardClient contextBanner={contextBanner} />
+      <M1DashboardClient
+        contextBanner={contextBanner}
+        subscriptionStatus={user.subscriptionStatus}
+      />
     </PageShell>
   );
 }

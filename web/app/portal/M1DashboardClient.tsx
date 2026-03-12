@@ -16,6 +16,7 @@ import { usePortalDashboard } from "./usePortalDashboard";
 
 type M1DashboardClientProps = {
   contextBanner?: string | null;
+  subscriptionStatus: string;
 };
 
 function ContextBanner({ message }: { message: string }) {
@@ -56,7 +57,10 @@ function DashboardSkeleton() {
   );
 }
 
-export function M1DashboardClient({ contextBanner }: M1DashboardClientProps) {
+export function M1DashboardClient({
+  contextBanner,
+  subscriptionStatus,
+}: M1DashboardClientProps) {
   const {
     loading,
     error,
@@ -103,6 +107,7 @@ export function M1DashboardClient({ contextBanner }: M1DashboardClientProps) {
         loading={nextActionLoading}
         error={nextActionError}
         data={nextActionData}
+        subscriptionStatus={subscriptionStatus}
       />
       <DashboardMissionSection data={data} />
       <DashboardProgressSection data={data} />

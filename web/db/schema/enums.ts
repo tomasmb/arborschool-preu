@@ -94,3 +94,9 @@ export const sessionDifficultyEnum = pgEnum("session_difficulty", [
 
 // Review outcome for spaced-review sessions
 export const reviewResultEnum = pgEnum("review_result", ["pass", "fail"]);
+
+// Access grant types for controlling platform access
+export const accessGrantTypeEnum = pgEnum("access_grant_type", [
+  "email",
+  "domain",
+]);

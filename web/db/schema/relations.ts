@@ -11,6 +11,7 @@ import {
   testQuestions,
 } from "./content";
 import { users, atomMastery, testAttempts, studentResponses } from "./users";
+import { schools, accessGrants } from "./access";
 import {
   admissionsDatasets,
   universities,
@@ -126,7 +127,11 @@ export const testQuestionsRelations = relations(testQuestions, ({ one }) => ({
 // USER RELATIONS
 // ------------------------------------------------------------------------------
 
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ one, many }) => ({
+  school: one(schools, {
+    fields: [users.schoolId],
+    references: [schools.id],
+  }),
   atomMastery: many(atomMastery),
   testAttempts: many(testAttempts),
   studentResponses: many(studentResponses),
@@ -356,3 +361,23 @@ export const studentReminderJobsRelations = relations(
     }),
   })
 );
+
+// ------------------------------------------------------------------------------
+// ACCESS CONTROL RELATIONS
+// ------------------------------------------------------------------------------
+
+export const schoolsRelations = relations(schools, ({ many }) => ({
+  accessGrants: many(accessGrants),
+  users: many(users),
+}));
+
+export const accessGrantsRelations = relations(accessGrants, ({ one }) => ({
+  school: one(schools, {
+    fields: [accessGrants.schoolId],
+    references: [schools.id],
+  }),
+  grantedByUser: one(users, {
+    fields: [accessGrants.grantedBy],
+    references: [users.id],
+  }),
+}));

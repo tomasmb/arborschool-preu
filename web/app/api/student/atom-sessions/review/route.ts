@@ -10,6 +10,7 @@ import {
   isValidUuid,
 } from "@/lib/student/apiEnvelope";
 import { getAuthenticatedStudentUserId } from "@/lib/student/auth";
+import { getUserAccessStatus } from "@/lib/student/accessControl";
 
 /**
  * POST /api/student/atom-sessions/review
@@ -20,6 +21,15 @@ export async function POST() {
   const userId = await getAuthenticatedStudentUserId();
   if (!userId) {
     return studentApiError("UNAUTHORIZED", "Unauthorized", 401);
+  }
+
+  const access = await getUserAccessStatus(userId);
+  if (access.subscriptionStatus !== "active") {
+    return studentApiError(
+      "ACCESS_REQUIRED",
+      "La revisión espaciada requiere acceso completo.",
+      403
+    );
   }
 
   try {
