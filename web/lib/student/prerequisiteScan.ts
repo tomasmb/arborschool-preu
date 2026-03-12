@@ -47,7 +47,7 @@ export type ScanQuestionPayload = {
 
 export type ScanNextResult =
   | { done: false; question: ScanQuestionPayload }
-  | { done: true; cooldown: true; scannedPrereqs: ScannedPrereq[] };
+  | { done: true; cooldown: boolean; scannedPrereqs: ScannedPrereq[] };
 
 export type ScannedPrereq = { atomId: string; correct: boolean };
 
@@ -139,6 +139,20 @@ async function findScanQuestion(prereqAtomId: string, excludeIds: string[]) {
   if (medium[0]) return { question: medium[0], difficulty: "medium" as const };
 
   return null;
+}
+
+/** Halves the review interval for a mastered atom after SR failure with no gap. */
+async function halveReviewInterval(userId: string, atomId: string) {
+  await db
+    .update(atomMastery)
+    .set({
+      reviewIntervalSessions: sql`GREATEST(1, FLOOR(
+        ${atomMastery.reviewIntervalSessions} / 2
+      ))`,
+      sessionsSinceLastReview: 0,
+      updatedAt: new Date(),
+    })
+    .where(and(eq(atomMastery.userId, userId), eq(atomMastery.atomId, atomId)));
 }
 
 /** Upserts cooldown on the failed atom's mastery row */
@@ -284,11 +298,31 @@ export async function getNextScanQuestion(
     };
   }
 
-  // All prereqs tested or skipped → cooldown the failed atom
-  await setCooldown(userId, session.atomId);
+  // All prereqs tested or skipped — no gap found.
+  // Behavior depends on whether the atom is mastered (SR failure)
+  // or not mastered (mastery failure).
+  const [mastery] = await db
+    .select({ isMastered: atomMastery.isMastered })
+    .from(atomMastery)
+    .where(
+      and(
+        eq(atomMastery.userId, userId),
+        eq(atomMastery.atomId, session.atomId)
+      )
+    )
+    .limit(1);
+
+  if (mastery?.isMastered) {
+    // SR review failure: atom is still mastered — halve interval (spec 7.9)
+    await halveReviewInterval(userId, session.atomId);
+  } else {
+    // Mastery failure: atom not mastered — apply cooldown (spec 6)
+    await setCooldown(userId, session.atomId);
+  }
+
   await completeScanSession(sessionId);
   const scannedPrereqs = await getTestedPrereqs(sessionId, prereqIds);
-  return { done: true, cooldown: true, scannedPrereqs };
+  return { done: true, cooldown: !mastery?.isMastered, scannedPrereqs };
 }
 
 /**
