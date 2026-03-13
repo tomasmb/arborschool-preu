@@ -14,6 +14,7 @@ import {
 import { ScoreJourneyChart } from "./ScoreJourneyChart";
 import type {
   CurrentScore,
+  GoalMilestone,
   MasteryBreakdown,
   ProgressData,
   ProjectionResult,
@@ -34,6 +35,22 @@ const HERO_GRADIENT = "linear-gradient(90deg, #0b3a5b, #134b73, #059669)";
 export function ProgressClient() {
   const { data, loading, error, atomsPerWeek, setAtomsPerWeek } =
     useProgressData();
+  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(
+    null
+  );
+
+  const milestones = data?.goalMilestones ?? [];
+  const effectiveGoalId =
+    selectedGoalId ??
+    milestones.find((m) => m.isPrimary)?.goalId ??
+    milestones[0]?.goalId ??
+    null;
+
+  const selectedMilestones: GoalMilestone[] = effectiveGoalId
+    ? milestones.filter((m) => m.goalId === effectiveGoalId)
+    : [];
+
+  const selectedMeta = selectedMilestones[0]?.userM1Target ?? null;
 
   return (
     <PageShell
@@ -51,10 +68,17 @@ export function ProgressClient() {
             currentScore={data.currentScore}
           />
 
+          <GoalMilestonesSection
+            milestones={milestones}
+            currentScore={data.currentScore}
+            selectedGoalId={effectiveGoalId}
+            onSelectGoal={setSelectedGoalId}
+          />
+
           <ScoreJourneyChart
             history={data.scoreHistory}
             projection={data.projection.points}
-            milestones={data.goalMilestones}
+            milestones={selectedMilestones}
             currentScore={data.currentScore}
             diagnosticCeiling={data.projection.diagnosticCeiling}
           />
@@ -66,11 +90,7 @@ export function ProgressClient() {
             allAtomsMastered={
               data.masteryBreakdown.mastered >= data.masteryBreakdown.total
             }
-          />
-
-          <GoalMilestonesSection
-            milestones={data.goalMilestones}
-            currentScore={data.currentScore}
+            selectedMeta={selectedMeta}
           />
 
           <AxisBreakdownSection axisMastery={data.axisMastery} />
@@ -323,14 +343,17 @@ function ProjectionCard({
   atomsPerWeek,
   onChangeAtomsPerWeek,
   allAtomsMastered,
+  selectedMeta,
 }: {
   projection: ProjectionResult;
   atomsPerWeek: number;
   onChangeAtomsPerWeek: (value: number) => void;
   allAtomsMastered: boolean;
+  selectedMeta: number | null;
 }) {
   const minutesPerWeek = atomsPerWeek * MINUTES_PER_ATOM;
   const hoursPerWeek = (minutesPerWeek / 60).toFixed(1);
+  const displayMeta = selectedMeta ?? projection.targetScore;
   const n = projection.weeksToTarget;
   const lastPoint = projection.points[projection.points.length - 1];
   const projectedScore = lastPoint?.projectedScoreMid ?? null;
@@ -392,10 +415,10 @@ function ProjectionCard({
           <p className="text-sm font-medium text-emerald-800">
             Alcanzas tu meta más alta en ~{n} {n === 1 ? "semana" : "semanas"}
           </p>
-          {projection.targetScore && projectedScore && (
+          {displayMeta && projectedScore && (
             <p className="text-xs text-emerald-600 mt-0.5">
               Puntaje proyectado a {projection.points.length} semanas:{" "}
-              {projectedScore} (meta: {projection.targetScore})
+              {projectedScore} (meta: {displayMeta})
             </p>
           )}
         </div>

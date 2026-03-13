@@ -15,9 +15,13 @@ import type {
 export function GoalMilestonesSection({
   milestones,
   currentScore,
+  selectedGoalId,
+  onSelectGoal,
 }: {
   milestones: GoalMilestone[];
   currentScore: { mid: number } | null;
+  selectedGoalId: string | null;
+  onSelectGoal: (goalId: string) => void;
 }) {
   if (milestones.length === 0) {
     return (
@@ -44,12 +48,17 @@ export function GoalMilestonesSection({
       <h2 className="text-lg font-serif font-semibold text-primary">
         Metas por carrera
       </h2>
+      <p className="text-xs text-gray-400 -mt-2">
+        Selecciona una carrera para ver su meta en el gráfico
+      </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {milestones.map((m) => (
           <MilestoneCard
             key={m.goalId}
             milestone={m}
             currentMid={currentScore?.mid ?? null}
+            isSelected={m.goalId === selectedGoalId}
+            onSelect={() => onSelectGoal(m.goalId)}
           />
         ))}
       </div>
@@ -60,9 +69,13 @@ export function GoalMilestonesSection({
 function MilestoneCard({
   milestone,
   currentMid,
+  isSelected,
+  onSelect,
 }: {
   milestone: GoalMilestone;
   currentMid: number | null;
+  isSelected: boolean;
+  onSelect: () => void;
 }) {
   const { userM1Target, weeksToReach, isPrimary } = milestone;
 
@@ -71,14 +84,23 @@ function MilestoneCard({
     currentMid !== null &&
     currentMid >= userM1Target;
 
-  const borderColor = reachedGoal
-    ? "border-emerald-200 bg-emerald-50/50"
-    : isPrimary
-      ? "border-primary/20 bg-primary/5"
-      : "border-gray-200";
+  const borderColor = isSelected
+    ? "ring-2 ring-primary border-primary/30 bg-primary/5"
+    : reachedGoal
+      ? "border-emerald-200 bg-emerald-50/50"
+      : "border-gray-200 hover:border-gray-300";
 
   return (
-    <div className={`rounded-xl border p-4 space-y-2 ${borderColor}`}>
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onSelect}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") onSelect();
+      }}
+      className={`rounded-xl border p-4 space-y-2 cursor-pointer
+        transition-all ${borderColor}`}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-gray-800 truncate">

@@ -47,11 +47,18 @@ export function ScoreJourneyChart({
   currentScore,
   diagnosticCeiling,
 }: Props) {
-  const { xDomain, yDomain, histPoints, projPoints, goalLines, todayX } =
-    useMemo(
-      () => buildChartData(history, projection, milestones, currentScore),
-      [history, projection, milestones, currentScore]
-    );
+  const {
+    xDomain,
+    yDomain,
+    histPoints,
+    projPoints,
+    goalLines,
+    farGoals,
+    todayX,
+  } = useMemo(
+    () => buildChartData(history, projection, milestones, currentScore),
+    [history, projection, milestones, currentScore]
+  );
 
   if (histPoints.length === 0 && projPoints.length === 0) {
     return (
@@ -195,6 +202,22 @@ export function ScoreJourneyChart({
             </g>
           ))}
 
+          {/* Far-away goal labels pinned to chart top */}
+          {farGoals.map((g, i) => (
+            <g key={`far-${g.goalId}`}>
+              <text
+                x={W - PAD.right - 2}
+                y={PAD.top + 12 + i * 14}
+                textAnchor="end"
+                fill={COLORS.goalLine}
+                fontSize={9}
+                fontWeight={600}
+              >
+                ↑ {g.label}: {g.score}
+              </text>
+            </g>
+          ))}
+
           {/* "Today" vertical line */}
           {todayX !== null && (
             <line
@@ -264,7 +287,7 @@ export function ScoreJourneyChart({
         hasHistory={histPoints.length > 0}
         hasProjection={projPoints.length > 0}
         hasCeiling={diagnosticCeiling !== null}
-        hasGoals={goalLines.length > 0}
+        hasGoals={goalLines.length > 0 || farGoals.length > 0}
       />
     </section>
   );
@@ -392,12 +415,21 @@ function buildChartData(
       isPrimary: m.isPrimary,
     }));
 
-  // Compute axis domains
-  const allYValues = [
+  // Compute axis domains — exclude far-away goals to avoid compression
+  const dataYValues = [
     ...histPoints.map((p) => p.y),
     ...projPoints.flatMap((p) => [p.min, p.max]),
-    ...goalLines.map((g) => g.score),
     currentScore?.mid ?? 100,
+  ];
+  const dataMax = Math.max(...dataYValues);
+
+  // Only include goals within 200 pts of data range in domain
+  const nearGoals = goalLines.filter((g) => g.score <= dataMax + 200);
+  const farGoals = goalLines.filter((g) => g.score > dataMax + 200);
+
+  const allYValues = [
+    ...dataYValues,
+    ...nearGoals.map((g) => g.score),
   ];
   const allXValues = [
     ...histPoints.map((p) => p.x),
@@ -405,8 +437,8 @@ function buildChartData(
     0,
   ];
 
-  const yMin = Math.max(100, Math.min(...allYValues) - 40);
-  const yMax = Math.min(1000, Math.max(...allYValues) + 40);
+  const yMin = Math.max(100, Math.min(...allYValues) - 20);
+  const yMax = Math.min(1000, Math.max(...allYValues) + 60);
   const xMin = Math.min(...allXValues, -2);
   const xMax = Math.max(...allXValues, 4);
 
@@ -415,7 +447,8 @@ function buildChartData(
     yDomain: [yMin, yMax] as [number, number],
     histPoints,
     projPoints,
-    goalLines,
+    goalLines: nearGoals,
+    farGoals,
     todayX: 0,
   };
 }
