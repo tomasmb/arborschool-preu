@@ -259,19 +259,26 @@ async function saveAtomMastery(params: {
     );
     const now = new Date();
 
-    const masteryRecords = fullMastery.map((result) => ({
-      userId: params.userId,
-      atomId: result.atomId,
-      status: result.mastered
-        ? ("mastered" as const)
-        : ("not_started" as const),
-      isMastered: result.mastered,
-      masterySource: result.mastered ? ("diagnostic" as const) : null,
-      firstMasteredAt: result.mastered ? now : null,
-      lastDemonstratedAt: result.source === "direct" ? now : null,
-      totalAttempts: result.source === "direct" ? 1 : 0,
-      correctAttempts: result.source === "direct" && result.mastered ? 1 : 0,
-    }));
+    // Only persist atoms the diagnostic actually tested (direct) or
+    // inferred as mastered (transitivity). Atoms the diagnostic never
+    // covered ("not_tested") get no row — the learning path treats
+    // missing rows as unknown status, while rows with isMastered=false
+    // become "confirmed unknowns" that get prioritized for study.
+    const masteryRecords = fullMastery
+      .filter((r) => r.source === "direct" || r.source === "inferred")
+      .map((result) => ({
+        userId: params.userId,
+        atomId: result.atomId,
+        status: result.mastered
+          ? ("mastered" as const)
+          : ("not_started" as const),
+        isMastered: result.mastered,
+        masterySource: result.mastered ? ("diagnostic" as const) : null,
+        firstMasteredAt: result.mastered ? now : null,
+        lastDemonstratedAt: result.source === "direct" ? now : null,
+        totalAttempts: result.source === "direct" ? 1 : 0,
+        correctAttempts: result.source === "direct" && result.mastered ? 1 : 0,
+      }));
 
     for (
       let index = 0;
