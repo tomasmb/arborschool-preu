@@ -1,4 +1,4 @@
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import {
   careerOfferings,
@@ -177,4 +177,57 @@ export async function replaceStudentGoals(
     await tx.insert(studentGoalBuffers).values(bufferRows);
     await upsertPlanningProfile(tx, userId, normalizedPlanningProfile);
   });
+}
+
+/**
+ * Updates a single test score on the user's primary goal.
+ * Used by the dashboard inline meta editor to persist M1 target changes.
+ */
+export async function updatePrimaryGoalScore(
+  userId: string,
+  testCode: string,
+  score: number
+) {
+  const normalized = testCode.trim().toUpperCase();
+  const scoreStr = normalizeScore(score);
+
+  const [primaryGoal] = await db
+    .select({ id: studentGoals.id })
+    .from(studentGoals)
+    .where(
+      and(eq(studentGoals.userId, userId), eq(studentGoals.isPrimary, true))
+    )
+    .limit(1);
+
+  if (!primaryGoal) {
+    throw new Error("No primary goal found");
+  }
+
+  const [existing] = await db
+    .select({ id: studentGoalScores.id })
+    .from(studentGoalScores)
+    .where(
+      and(
+        eq(studentGoalScores.goalId, primaryGoal.id),
+        eq(studentGoalScores.testCode, normalized)
+      )
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(studentGoalScores)
+      .set({ score: scoreStr, source: "student", updatedAt: new Date() })
+      .where(eq(studentGoalScores.id, existing.id));
+  } else {
+    await db.insert(studentGoalScores).values({
+      goalId: primaryGoal.id,
+      testCode: normalized,
+      score: scoreStr,
+      source: "student",
+      updatedAt: new Date(),
+    });
+  }
+
+  return { testCode: normalized, score };
 }

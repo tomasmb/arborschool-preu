@@ -226,6 +226,29 @@ export function RetestCTASection({
 }: {
   retestStatus: RetestStatus;
 }) {
+  // First test after diagnostic — strong calibration CTA
+  if (retestStatus.isFirstTest && retestStatus.eligible) {
+    return (
+      <section
+        className="rounded-2xl border border-primary/20 bg-primary/5
+          p-5 sm:p-6 space-y-3"
+      >
+        <h2 className="text-base font-semibold text-primary">
+          Calibra tu puntaje real
+        </h2>
+        <p className="text-sm text-gray-700">
+          El diagnóstico solo cubrió 16 preguntas. Un test completo (60
+          preguntas) mide tu nivel real y evita que estudies cosas que ya
+          dominas.
+        </p>
+        <Link href="/portal/test" className="btn-primary inline-block text-sm">
+          Tomar test completo
+        </Link>
+      </section>
+    );
+  }
+
+  // Retest: eligible + recommended (30+ atoms)
   if (retestStatus.eligible && retestStatus.recommended) {
     return (
       <section
@@ -246,6 +269,7 @@ export function RetestCTASection({
     );
   }
 
+  // Retest: eligible (18+ atoms)
   if (retestStatus.eligible) {
     return (
       <section className="card-section space-y-3">
@@ -265,6 +289,7 @@ export function RetestCTASection({
     );
   }
 
+  // Atoms met but blocked by time/monthly cap
   if (retestStatus.atomsMasteredSinceLastTest >= 18) {
     return (
       <section className="card-section space-y-3">
@@ -293,6 +318,7 @@ export function RetestCTASection({
     );
   }
 
+  // Progress toward unlock (post-first-test)
   const progress = Math.min(
     100,
     Math.round((retestStatus.atomsMasteredSinceLastTest / 18) * 100)

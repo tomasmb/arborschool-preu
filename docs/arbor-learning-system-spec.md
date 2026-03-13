@@ -502,7 +502,11 @@ Use atom-mastery gating as the primary retest control.
 
 ### 8.2 Policy
 
-1. Full retest stays **locked** until the student masters at least `X` new
+0. **First full test:** available immediately after diagnostic — the
+   diagnostic is a rough screen (16 questions) and many atoms remain
+   uncovered. Requiring study before the first real measurement would
+   force students to study atoms they may already know.
+1. **Subsequent tests:** locked until the student masters at least `X` new
    atoms since the last full test
 2. Once the student reaches `Y` new atoms, the system shows a clear
    **recommendation** to retest to recalibrate prediction quality

@@ -1,16 +1,17 @@
 /**
  * Retest Gating — controls when students can take a full timed test.
  *
- * Policy (from arbor-learning-system-spec.md):
- * - X = 18 atoms since last test to unlock eligibility
- * - Y = 30 atoms to actively recommend retest
+ * Policy:
+ * - First test after diagnostic: available immediately (no atom gate)
+ * - Subsequent tests: 18 atoms since last test to unlock
+ * - 30 atoms to actively recommend retest
  * - Minimum 7 day spacing between full tests
  * - Max 3 full tests per month
  */
 
 import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { atomMastery, testAttempts } from "@/db/schema";
+import { atomMastery, testAttempts, users } from "@/db/schema";
 
 const UNLOCK_THRESHOLD = 18;
 const RECOMMEND_THRESHOLD = 30;
@@ -23,6 +24,7 @@ export type RetestStatus = {
   recommended: boolean;
   blockedReason: string | null;
   daysSinceLastTest: number | null;
+  isFirstTest: boolean;
 };
 
 /**
@@ -98,22 +100,53 @@ async function countFullTestsInLastMonth(userId: string): Promise<number> {
 }
 
 /**
+ * Whether the student has completed a diagnostic (has PAES scores set).
+ */
+async function hasDiagnosticScore(userId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ min: users.paesScoreMin })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  return row?.min != null;
+}
+
+/**
  * Determines if the student is eligible for and/or should be recommended
- * to take a full timed retest.
+ * to take a full timed test.
+ *
+ * First test: available immediately after diagnostic — the diagnostic is
+ * a rough screen (16 questions) and many atoms remain uncovered. Forcing
+ * 18 study-mastered atoms before the first real measurement would make
+ * the student study atoms they may already know.
+ *
+ * Subsequent tests: normal gating (18 atoms, 7 days, 3/month).
  */
 export async function getRetestStatus(userId: string): Promise<RetestStatus> {
   const lastTestDate = await getLastFullTestDate(userId);
+
+  // First full test — skip atom gate, just require a diagnostic
+  if (lastTestDate === null) {
+    const hasDiag = await hasDiagnosticScore(userId);
+    return {
+      atomsMasteredSinceLastTest: 0,
+      eligible: hasDiag,
+      recommended: hasDiag,
+      blockedReason: hasDiag ? null : "Completa el diagnóstico primero",
+      daysSinceLastTest: null,
+      isFirstTest: true,
+    };
+  }
+
+  // Subsequent tests — normal gating
   const atomsMastered = await countAtomsMasteredSinceViaStudy(
     userId,
     lastTestDate
   );
 
-  let daysSinceLastTest: number | null = null;
-  if (lastTestDate) {
-    daysSinceLastTest = Math.floor(
-      (Date.now() - lastTestDate.getTime()) / (1000 * 60 * 60 * 24)
-    );
-  }
+  const daysSinceLastTest = Math.floor(
+    (Date.now() - lastTestDate.getTime()) / (1000 * 60 * 60 * 24)
+  );
 
   if (atomsMastered < UNLOCK_THRESHOLD) {
     return {
@@ -122,16 +155,18 @@ export async function getRetestStatus(userId: string): Promise<RetestStatus> {
       recommended: false,
       blockedReason: `Necesitas dominar ${UNLOCK_THRESHOLD - atomsMastered} conceptos más`,
       daysSinceLastTest,
+      isFirstTest: false,
     };
   }
 
-  if (daysSinceLastTest !== null && daysSinceLastTest < MIN_SPACING_DAYS) {
+  if (daysSinceLastTest < MIN_SPACING_DAYS) {
     return {
       atomsMasteredSinceLastTest: atomsMastered,
       eligible: false,
       recommended: false,
       blockedReason: `Espera ${MIN_SPACING_DAYS - daysSinceLastTest} días más entre tests`,
       daysSinceLastTest,
+      isFirstTest: false,
     };
   }
 
@@ -143,6 +178,7 @@ export async function getRetestStatus(userId: string): Promise<RetestStatus> {
       recommended: false,
       blockedReason: "Máximo de tests mensuales alcanzado",
       daysSinceLastTest,
+      isFirstTest: false,
     };
   }
 
@@ -152,5 +188,6 @@ export async function getRetestStatus(userId: string): Promise<RetestStatus> {
     recommended: atomsMastered >= RECOMMEND_THRESHOLD,
     blockedReason: null,
     daysSinceLastTest,
+    isFirstTest: false,
   };
 }

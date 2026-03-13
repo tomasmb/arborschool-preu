@@ -46,6 +46,7 @@ export type RetestStatus = {
   recommended: boolean;
   blockedReason: string | null;
   daysSinceLastTest: number | null;
+  isFirstTest: boolean;
 };
 
 export type MasteryBreakdown = {

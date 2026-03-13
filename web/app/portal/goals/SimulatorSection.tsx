@@ -16,7 +16,10 @@ import { normalizeTestCode } from "./utils";
 type SimulatorSectionProps = {
   loading: boolean;
   simLoading: boolean;
+  saving: boolean;
   simulatorError: string | null;
+  error: string | null;
+  infoMessage: string | null;
   savedGoals: StudentGoal[];
   selectedGoalId: string | null;
   selectedGoal: StudentGoal | null;
@@ -27,6 +30,7 @@ type SimulatorSectionProps = {
   onSelectGoal: (goalId: string) => void;
   onUpdateDraftScore: (goalId: string, testCode: string, value: string) => void;
   onUpdateDraftBuffer: (goalId: string, value: string) => void;
+  onSave: () => void;
 };
 
 function SimulatorHeader({
@@ -330,6 +334,32 @@ function SimulatorResultsPanel({
   );
 }
 
+function SimulatorSaveButton({
+  saving,
+  error,
+  infoMessage,
+  onSave,
+}: Pick<SimulatorSectionProps, "saving" | "error" | "infoMessage" | "onSave">) {
+  return (
+    <div className="space-y-2">
+      <button
+        type="button"
+        disabled={saving}
+        onClick={onSave}
+        className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm
+          font-medium text-white transition-colors hover:bg-primary/90
+          disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {saving ? "Guardando…" : "Guardar puntajes"}
+      </button>
+      {error ? <p className="text-xs text-red-600">{error}</p> : null}
+      {infoMessage ? (
+        <p className="text-xs text-emerald-600">{infoMessage}</p>
+      ) : null}
+    </div>
+  );
+}
+
 function SimulatorWorkspace(
   props: Pick<
     SimulatorSectionProps,
@@ -342,6 +372,10 @@ function SimulatorWorkspace(
     | "onRetrySimulation"
     | "simLoading"
     | "simulation"
+    | "saving"
+    | "error"
+    | "infoMessage"
+    | "onSave"
   >
 ) {
   if (!props.selectedGoal || !props.selectedOption || !props.selectedDraft) {
@@ -363,6 +397,12 @@ function SimulatorWorkspace(
         simLoading={props.simLoading}
       />
       <SimulatorResultsPanel simulation={props.simulation} />
+      <SimulatorSaveButton
+        saving={props.saving}
+        error={props.error}
+        infoMessage={props.infoMessage}
+        onSave={props.onSave}
+      />
     </>
   );
 }
@@ -392,6 +432,10 @@ export function SimulatorSection(props: SimulatorSectionProps) {
         onRetrySimulation={props.onRetrySimulation}
         simLoading={props.simLoading}
         simulation={props.simulation}
+        saving={props.saving}
+        error={props.error}
+        infoMessage={props.infoMessage}
+        onSave={props.onSave}
       />
     </section>
   );
