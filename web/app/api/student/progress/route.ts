@@ -11,6 +11,7 @@ import {
   getAxisMasteryBreakdown,
 } from "@/lib/student/metricsService";
 import { getProgressTargets } from "@/lib/student/progressTargets";
+import { resolveDisplayScore } from "@/lib/student/scoreDisplay";
 import type { GoalMilestone } from "@/lib/student/progressTargets";
 import type { ProjectionPoint } from "@/lib/student/scoreHistory";
 
@@ -65,10 +66,13 @@ export async function GET(request: NextRequest) {
       getProgressTargets(userId),
     ]);
 
+    const projectionTarget =
+      targets.highestUserM1 ?? targets.highestTargetM1;
+
     const projection = await buildProjectionCurve({
       userId,
       atomsPerWeek,
-      targetScore: targets.highestTargetM1,
+      targetScore: projectionTarget,
     });
 
     const goalMilestones = enrichMilestonesWithWeeks(
@@ -76,16 +80,27 @@ export async function GET(request: NextRequest) {
       projection.points
     );
 
-    const currentScore =
-      snapshot?.paesScoreMin != null && snapshot?.paesScoreMax != null
-        ? {
-            min: snapshot.paesScoreMin,
-            max: snapshot.paesScoreMax,
-            mid: Math.round(
-              (snapshot.paesScoreMin + snapshot.paesScoreMax) / 2
-            ),
-          }
-        : null;
+    const hasSnapshot =
+      snapshot?.paesScoreMin != null && snapshot?.paesScoreMax != null;
+
+    const display = hasSnapshot
+      ? resolveDisplayScore(
+          {
+            paesScoreMin: snapshot!.paesScoreMin!,
+            paesScoreMax: snapshot!.paesScoreMax!,
+          },
+          scoreHistory
+        )
+      : null;
+
+    const currentScore = display
+      ? {
+          min: display.min,
+          max: display.max,
+          mid: display.score,
+          isPersonalBest: display.isPersonalBest,
+        }
+      : null;
 
     const personalBest =
       scoreHistory.length > 0

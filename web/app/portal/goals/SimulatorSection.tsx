@@ -383,27 +383,46 @@ function SimulatorWorkspace(
   }
 
   return (
-    <>
-      <SimulatorInputs
-        selectedGoal={props.selectedGoal}
-        selectedOption={props.selectedOption}
-        selectedDraft={props.selectedDraft}
-        onUpdateDraftScore={props.onUpdateDraftScore}
-        onUpdateDraftBuffer={props.onUpdateDraftBuffer}
-      />
-      <SimulatorStatusPanels
-        simulatorError={props.simulatorError}
-        onRetrySimulation={props.onRetrySimulation}
-        simLoading={props.simLoading}
-      />
-      <SimulatorResultsPanel simulation={props.simulation} />
-      <SimulatorSaveButton
-        saving={props.saving}
-        error={props.error}
-        infoMessage={props.infoMessage}
-        onSave={props.onSave}
-      />
-    </>
+    <div className="space-y-5">
+      {/* Settings: scores, buffer, and save action */}
+      <div
+        className="rounded-xl border border-gray-200 bg-gray-50/30
+          p-4 space-y-4"
+      >
+        <p className="text-sm font-semibold text-gray-700">
+          Tus puntajes
+        </p>
+        <SimulatorInputs
+          selectedGoal={props.selectedGoal}
+          selectedOption={props.selectedOption}
+          selectedDraft={props.selectedDraft}
+          onUpdateDraftScore={props.onUpdateDraftScore}
+          onUpdateDraftBuffer={props.onUpdateDraftBuffer}
+        />
+        <SimulatorSaveButton
+          saving={props.saving}
+          error={props.error}
+          infoMessage={props.infoMessage}
+          onSave={props.onSave}
+        />
+      </div>
+
+      {/* Results: gap, formula, sensitivity */}
+      <div
+        className="rounded-xl border border-gray-200 bg-white
+          p-4 space-y-4"
+      >
+        <p className="text-sm font-semibold text-gray-700">
+          Resultados
+        </p>
+        <SimulatorStatusPanels
+          simulatorError={props.simulatorError}
+          onRetrySimulation={props.onRetrySimulation}
+          simLoading={props.simLoading}
+        />
+        <SimulatorResultsPanel simulation={props.simulation} />
+      </div>
+    </div>
   );
 }
 
