@@ -11,6 +11,7 @@ import {
 } from "@/lib/student/apiEnvelope";
 import { getAuthenticatedStudentUserId } from "@/lib/student/auth";
 import { getUserAccessStatus } from "@/lib/student/accessControl";
+import { hasVerificationDue } from "@/lib/student/verificationQuiz";
 
 /**
  * POST /api/student/atom-sessions/review
@@ -21,6 +22,15 @@ export async function POST() {
   const userId = await getAuthenticatedStudentUserId();
   if (!userId) {
     return studentApiError("UNAUTHORIZED", "Unauthorized", 401);
+  }
+
+  const verificationBlocking = await hasVerificationDue(userId);
+  if (verificationBlocking) {
+    return studentApiError(
+      "VERIFICATION_REQUIRED",
+      "Tienes conceptos pendientes de verificación. Completa la verificación antes de continuar con la revisión.",
+      403
+    );
   }
 
   const access = await getUserAccessStatus(userId);

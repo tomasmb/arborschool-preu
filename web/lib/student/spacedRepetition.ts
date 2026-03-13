@@ -92,7 +92,7 @@ export function determineMasteryQuality(
 }
 
 /** Growth factor between 1.5–2.5 based on overall accuracy history */
-function computeGrowthFactor(correct: number, total: number): number {
+export function computeGrowthFactor(correct: number, total: number): number {
   if (total === 0) return 2.0;
   const acc = correct / total;
   if (acc > 0.85) return 2.5;

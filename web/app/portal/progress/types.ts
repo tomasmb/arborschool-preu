@@ -14,8 +14,6 @@ export type ScoreDataPoint = {
 export type ProjectionPoint = {
   week: number;
   projectedScoreMid: number;
-  projectedScoreMin: number;
-  projectedScoreMax: number;
 };
 
 export type ProjectionResult = {
@@ -33,7 +31,26 @@ export type RetestStatus = {
   daysSinceLastTest: number | null;
 };
 
+export type MasteryBreakdown = {
+  mastered: number;
+  inProgress: number;
+  needsVerification: number;
+  notStarted: number;
+  total: number;
+};
+
+export type AxisMasteryItem = {
+  axis: string;
+  axisCode: string;
+  label: string;
+  mastered: number;
+  total: number;
+};
+
 export type ProgressData = {
+  masteryBreakdown: MasteryBreakdown;
+  axisMastery: AxisMasteryItem[];
+  personalBest: number | null;
   scoreHistory: ScoreDataPoint[];
   projection: ProjectionResult;
   retestStatus: RetestStatus;

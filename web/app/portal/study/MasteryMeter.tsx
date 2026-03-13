@@ -59,9 +59,7 @@ export function MasteryMeter({
   const activeIdx = PHASE_INDEX[difficulty];
   const streak = Math.min(consecutiveCorrect, 3);
   const accuracy =
-    totalAnswered > 0
-      ? Math.round((totalCorrect / totalAnswered) * 100)
-      : 0;
+    totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
 
   return (
     <div className="space-y-3">

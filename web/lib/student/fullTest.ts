@@ -5,24 +5,19 @@
  * API routes are thin wrappers around these functions.
  */
 
-import {
-  and,
-  eq,
-  ne,
-  desc,
-  sql,
-  isNotNull,
-  notInArray,
-} from "drizzle-orm";
+import { and, eq, desc, sql, isNotNull, notInArray } from "drizzle-orm";
 import { db } from "@/db";
 import {
   tests,
   testQuestions,
   questions,
   testAttempts,
-  studentResponses,
 } from "@/db/schema";
 import { parseQtiXml } from "@/lib/diagnostic/qtiParser";
+import {
+  normalizeCorrectAnswer,
+  getSeenQuestionIds,
+} from "./questionHelpers";
 export { recalibrateScore } from "./fullTestScoring";
 export type { RecalibrateParams, RecalibrateResult } from "./fullTestScoring";
 
@@ -151,45 +146,8 @@ export async function getAvailableFullTests(
 }
 
 // ============================================================================
-// SEEN-QUESTION TRACKING (unseen-first principle)
-// ============================================================================
-
-/**
- * Returns IDs of all official questions a student has answered across
- * every test attempt (diagnostic + full tests). Used by the per-student
- * test assembly to prefer unseen questions.
- *
- * @param excludeAttemptId - omit responses from this attempt (resume scenario:
- *   mid-test answers should not affect question resolution)
- */
-async function getSeenOfficialQuestionIds(
-  userId: string,
-  excludeAttemptId?: string
-): Promise<Set<string>> {
-  const conds = [eq(studentResponses.userId, userId)];
-  if (excludeAttemptId) {
-    conds.push(ne(studentResponses.testAttemptId, excludeAttemptId));
-  }
-  const rows = await db
-    .select({ questionId: studentResponses.questionId })
-    .from(studentResponses)
-    .where(and(...conds));
-  return new Set(
-    rows.filter((r) => r.questionId != null).map((r) => r.questionId!)
-  );
-}
-
-// ============================================================================
 // QUESTION RESOLUTION
 // ============================================================================
-
-/**
- * Strips "Choice" prefix from QTI answer identifiers.
- * e.g. "ChoiceA" → "A", "A" → "A"
- */
-function normalizeCorrectAnswer(answer: string): string {
-  return answer.startsWith("Choice") ? answer.replace("Choice", "") : answer;
-}
 
 /**
  * Resolves all questions for a test with per-student unseen-first assembly.
@@ -211,7 +169,7 @@ export async function resolveTestQuestions(
   excludeAttemptId?: string
 ): Promise<ResolvedQuestion[]> {
   const seenIds = userId
-    ? await getSeenOfficialQuestionIds(userId, excludeAttemptId)
+    ? await getSeenQuestionIds(userId, excludeAttemptId)
     : new Set<string>();
 
   const [questionRows, atomRows] = await Promise.all([

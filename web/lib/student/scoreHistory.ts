@@ -14,10 +14,7 @@ import {
   estimateCorrectFromScore,
   PAES_TOTAL_QUESTIONS,
 } from "@/lib/diagnostic/paesScoreTable";
-import {
-  MINUTES_PER_ATOM,
-  IMPROVEMENT_UNCERTAINTY,
-} from "@/lib/diagnostic/scoringConstants";
+import { MINUTES_PER_ATOM } from "@/lib/diagnostic/scoringConstants";
 import { getStudentMetrics } from "./metricsService";
 import { getUserDiagnosticSnapshot } from "./userQueries";
 
@@ -39,8 +36,6 @@ export type ScoreDataPoint = {
 export type ProjectionPoint = {
   week: number;
   projectedScoreMid: number;
-  projectedScoreMin: number;
-  projectedScoreMax: number;
 };
 
 export type ProjectionResult = {
@@ -162,16 +157,7 @@ export async function buildProjectionCurve(
     // Governance cap: cannot exceed diagnostic ceiling until a new full test
     projectedMid = Math.min(projectedMid, ceiling);
 
-    const uncertainty = Math.round(projectedMid * IMPROVEMENT_UNCERTAINTY);
-    const projectedMin = Math.max(100, projectedMid - uncertainty);
-    const projectedMax = Math.min(1000, projectedMid + uncertainty);
-
-    points.push({
-      week,
-      projectedScoreMid: projectedMid,
-      projectedScoreMin: projectedMin,
-      projectedScoreMax: projectedMax,
-    });
+    points.push({ week, projectedScoreMid: projectedMid });
 
     if (weeksToTarget === null && projectedMid >= targetScore) {
       weeksToTarget = week;
