@@ -56,6 +56,8 @@ type ProjectionParams = {
   userId: string;
   atomsPerWeek: number;
   targetScore?: number | null;
+  /** Override starting score (e.g. personal best) instead of snapshot. */
+  startingScore?: number | null;
   maxWeeks?: number;
 };
 
@@ -135,11 +137,14 @@ export async function buildProjectionCurve(
     return emptyProjection(studyMinutesPerWeek);
   }
 
-  const currentMid = Math.round(
+  const snapshotMid = Math.round(
     (snapshot.paesScoreMin + snapshot.paesScoreMax) / 2
   );
+  const currentMid = params.startingScore
+    ? Math.max(params.startingScore, snapshotMid)
+    : snapshotMid;
   const currentCorrect = estimateCorrectFromScore(currentMid);
-  const ceiling = snapshot.paesScoreMax;
+  const ceiling = Math.max(snapshot.paesScoreMax, currentMid);
   const targetScore = params.targetScore ?? null;
 
   const { totalRelevantAtoms, masteredAtoms, totalOfficialQuestions } = metrics;

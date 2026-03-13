@@ -66,20 +66,6 @@ export async function GET(request: NextRequest) {
       getProgressTargets(userId),
     ]);
 
-    const projectionTarget =
-      targets.highestUserM1 ?? targets.highestTargetM1;
-
-    const projection = await buildProjectionCurve({
-      userId,
-      atomsPerWeek,
-      targetScore: projectionTarget,
-    });
-
-    const goalMilestones = enrichMilestonesWithWeeks(
-      targets.milestones,
-      projection.points
-    );
-
     const hasSnapshot =
       snapshot?.paesScoreMin != null && snapshot?.paesScoreMax != null;
 
@@ -92,6 +78,21 @@ export async function GET(request: NextRequest) {
           scoreHistory
         )
       : null;
+
+    const projectionTarget =
+      targets.highestUserM1 ?? targets.highestTargetM1;
+
+    const projection = await buildProjectionCurve({
+      userId,
+      atomsPerWeek,
+      targetScore: projectionTarget,
+      startingScore: display?.score ?? null,
+    });
+
+    const goalMilestones = enrichMilestonesWithWeeks(
+      targets.milestones,
+      projection.points
+    );
 
     const currentScore = display
       ? {
@@ -107,13 +108,20 @@ export async function GET(request: NextRequest) {
         ? Math.max(...scoreHistory.map((s) => s.paesScoreMid))
         : null;
 
+    const hasFullTests = scoreHistory.some(
+      (s) => s.type === "full_test"
+    );
+    const displayHistory = hasFullTests
+      ? scoreHistory.filter((s) => s.type === "full_test")
+      : scoreHistory;
+
     return NextResponse.json({
       success: true,
       data: {
         masteryBreakdown,
         axisMastery,
         personalBest,
-        scoreHistory,
+        scoreHistory: displayHistory,
         projection,
         retestStatus,
         currentScore,
