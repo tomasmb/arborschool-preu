@@ -2,12 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { InlineRecoveryPanel } from "../components";
-import { GoalRecord, MAX_PRIMARY_GOALS } from "./types";
-
-type GoalOptionItem = {
-  offeringId: string;
-  label: string;
-};
+import { OfferingAutocomplete } from "./OfferingAutocomplete";
+import { GoalOption, GoalRecord, MAX_PRIMARY_GOALS } from "./types";
 
 type GoalsEditorSectionProps = {
   dataset: {
@@ -18,7 +14,7 @@ type GoalsEditorSectionProps = {
   loading: boolean;
   saving: boolean;
   goals: GoalRecord[];
-  options: GoalOptionItem[];
+  options: GoalOption[];
   loadError: string | null;
   error: string | null;
   onRetryLoadGoals: () => void;
@@ -48,12 +44,10 @@ function GoalRow(props: {
   goal: GoalRecord;
   index: number;
   showRemove: boolean;
-  options: GoalOptionItem[];
+  options: GoalOption[];
   onSetGoalOffering: GoalsEditorSectionProps["onSetGoalOffering"];
   onRemoveGoalSlot: GoalsEditorSectionProps["onRemoveGoalSlot"];
 }) {
-  const hasSelection = props.goal.offeringId !== "";
-
   return (
     <div className="group rounded-xl border border-gray-200 bg-gray-50/50 p-4 transition-colors hover:border-primary/20 hover:bg-primary/[0.02]">
       <div className="flex items-center justify-between mb-2">
@@ -83,45 +77,14 @@ function GoalRow(props: {
           </button>
         )}
       </div>
-      <div className="relative">
-        <select
-          value={props.goal.offeringId}
-          onChange={(event) =>
-            props.onSetGoalOffering(props.goal.priority, event.target.value)
-          }
-          className={[
-            "w-full appearance-none rounded-lg border bg-white pl-4 pr-10",
-            "py-3 text-sm transition-all cursor-pointer",
-            "focus:border-primary focus:ring-2 focus:ring-primary/10",
-            "focus:outline-none",
-            hasSelection
-              ? "border-primary/30 text-gray-900 font-medium"
-              : "border-gray-200 text-gray-500",
-          ].join(" ")}
-        >
-          <option value="">Selecciona carrera y universidad</option>
-          {props.options.map((option) => (
-            <option key={option.offeringId} value={option.offeringId}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-          <svg
-            className="w-4 h-4 text-gray-400"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
-        </div>
-      </div>
+      <OfferingAutocomplete
+        options={props.options}
+        selectedOfferingId={props.goal.offeringId}
+        onSelectOffering={(offeringId) =>
+          props.onSetGoalOffering(props.goal.priority, offeringId)
+        }
+        idPrefix={`goal-${props.goal.priority}`}
+      />
     </div>
   );
 }

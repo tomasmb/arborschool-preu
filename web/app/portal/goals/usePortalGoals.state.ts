@@ -46,15 +46,6 @@ export function useGoalsState() {
     [options]
   );
 
-  const availableOptions = useMemo(
-    () =>
-      options.map((option) => ({
-        offeringId: option.offeringId,
-        label: `${option.careerName} — ${option.universityName}`,
-      })),
-    [options]
-  );
-
   const selectedGoal = useMemo(
     () => savedGoals.find((goal) => goal.id === selectedGoalId) ?? null,
     [savedGoals, selectedGoalId]
@@ -101,7 +92,6 @@ export function useGoalsState() {
     planningProfile,
     simulation,
     optionByOffering,
-    availableOptions,
     selectedGoal,
     selectedOption,
     selectedDraft,

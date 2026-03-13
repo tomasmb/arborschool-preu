@@ -168,7 +168,7 @@ function PortalGoalsPageContent() {
               loading={portalGoals.loading}
               saving={portalGoals.saving}
               goals={portalGoals.goals}
-              options={portalGoals.availableOptions}
+              options={portalGoals.options}
               loadError={portalGoals.loadError}
               error={portalGoals.error}
               onRetryLoadGoals={portalGoals.retryLoadGoals}
