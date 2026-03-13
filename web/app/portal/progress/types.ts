@@ -14,13 +14,30 @@ export type ScoreDataPoint = {
 export type ProjectionPoint = {
   week: number;
   projectedScoreMid: number;
+  projectedScoreMin: number;
+  projectedScoreMax: number;
+  beyondCeiling: boolean;
 };
 
 export type ProjectionResult = {
   points: ProjectionPoint[];
   weeksToTarget: number | null;
   targetScore: number | null;
+  diagnosticCeiling: number | null;
   studyMinutesPerWeek: number;
+};
+
+export type GoalMilestone = {
+  goalId: string;
+  label: string;
+  careerName: string;
+  universityName: string;
+  isPrimary: boolean;
+  neededM1Score: number | null;
+  weeksToReach: number | null;
+  lastCutoff: number | null;
+  bufferPoints: number;
+  missingNonM1Tests: string[];
 };
 
 export type RetestStatus = {
@@ -55,5 +72,6 @@ export type ProgressData = {
   projection: ProjectionResult;
   retestStatus: RetestStatus;
   currentScore: { min: number; max: number; mid: number } | null;
-  targetScore: number | null;
+  goalMilestones: GoalMilestone[];
+  defaultAtomsPerWeek: number | null;
 };
