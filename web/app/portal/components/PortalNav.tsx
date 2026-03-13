@@ -71,20 +71,30 @@ const NAV_ITEMS: NavItem[] = [
     href: "/portal/progress",
     label: "Progreso",
     icon: (active) => (
-      <svg
-        className="w-6 h-6"
-        fill={active ? "currentColor" : "none"}
-        stroke="currentColor"
-        strokeWidth={active ? 0 : 1.5}
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M2.25 18L9 11.25l4.306 4.306a11.95 11.95 0
-            015.814-5.518l2.74-1.22m0 0l-5.94-2.281m5.94
-            2.28l-2.28 5.941"
-        />
+      <svg className="w-6 h-6" viewBox="0 0 24 24">
+        {active ? (
+          <path
+            fill="currentColor"
+            d="M15.22 6.268a.75.75 0 0 1 .968-.432l5.942
+              2.28a.75.75 0 0 1 .431.97l-2.28 5.94a.75.75 0
+              0 1-1.4-.536l1.479-3.856-6.397 5.89a.75.75 0 0
+              1-1.056-.035L9.47 13.052l-6.22 6.22a.75.75 0 0
+              1-1.06-1.06l6.75-6.75a.75.75 0 0 1 1.07.02l3.358
+              3.446 5.782-5.326-.95 2.478a.75.75 0 1
+              1-1.4-.536l1.372-3.276Z"
+          />
+        ) : (
+          <path
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M2.25 18L9 11.25l4.306 4.306a11.95 11.95 0
+              015.814-5.518l2.74-1.22m0 0l-5.94-2.281m5.94
+              2.28l-2.28 5.941"
+          />
+        )}
       </svg>
     ),
   },
@@ -232,7 +242,7 @@ export function PortalBottomNav() {
               ].join(" ")}
             >
               <span
-                className={`transition-transform duration-200 ${active ? "scale-110" : ""}`}
+                className={`transition-transform duration-200 overflow-visible ${active ? "scale-110" : ""}`}
               >
                 {item.icon(active)}
               </span>
@@ -256,7 +266,7 @@ export function PortalBottomNav() {
               ].join(" ")}
             >
               <span
-                className={`transition-transform duration-200 ${profileActive ? "scale-110" : ""}`}
+                className={`transition-transform duration-200 overflow-visible ${profileActive ? "scale-110" : ""}`}
               >
                 <svg
                   className="w-6 h-6"

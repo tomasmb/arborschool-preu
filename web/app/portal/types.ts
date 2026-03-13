@@ -9,6 +9,7 @@ export type RetestStatusPayload = {
   recommended: boolean;
   blockedReason: string | null;
   daysSinceLastTest: number | null;
+  isFirstTest: boolean;
 };
 
 export type StreakPayload = {
@@ -27,6 +28,7 @@ export type DashboardPayload = {
     score: number | null;
     min: number | null;
     max: number | null;
+    isPersonalBest: boolean;
   };
   target: {
     score: number | null;

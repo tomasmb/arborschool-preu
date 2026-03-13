@@ -2,8 +2,8 @@
  * Score History & Projection — query historical scores, build projection curves.
  *
  * Supports the progress page with historical data and future projections.
- * Governance cap per spec §9.3: projection cannot exceed diagnosticPredictionMax
- * until a new full test recalibrates.
+ * The projection shows uncapped growth toward the student's real goal,
+ * with a confidence band that widens beyond the diagnostic ceiling.
  */
 
 import { and, eq, isNotNull } from "drizzle-orm";
@@ -14,7 +14,10 @@ import {
   estimateCorrectFromScore,
   PAES_TOTAL_QUESTIONS,
 } from "@/lib/diagnostic/paesScoreTable";
-import { MINUTES_PER_ATOM } from "@/lib/diagnostic/scoringConstants";
+import {
+  MINUTES_PER_ATOM,
+  IMPROVEMENT_UNCERTAINTY,
+} from "@/lib/diagnostic/scoringConstants";
 import { getStudentMetrics } from "./metricsService";
 import { getUserDiagnosticSnapshot } from "./userQueries";
 
@@ -36,18 +39,23 @@ export type ScoreDataPoint = {
 export type ProjectionPoint = {
   week: number;
   projectedScoreMid: number;
+  projectedScoreMin: number;
+  projectedScoreMax: number;
+  beyondCeiling: boolean;
 };
 
 export type ProjectionResult = {
   points: ProjectionPoint[];
   weeksToTarget: number | null;
   targetScore: number | null;
+  diagnosticCeiling: number | null;
   studyMinutesPerWeek: number;
 };
 
 type ProjectionParams = {
   userId: string;
   atomsPerWeek: number;
+  targetScore?: number | null;
   maxWeeks?: number;
 };
 
@@ -100,14 +108,17 @@ export async function getScoreHistory(
 // PROJECTION CURVE
 // ============================================================================
 
+const UNCERTAINTY_WITHIN_CEILING = IMPROVEMENT_UNCERTAINTY;
+const UNCERTAINTY_BEYOND_CEILING = 0.22;
+
 /**
  * Builds a projection curve showing expected score improvement over weeks.
  *
  * Algorithm:
- * 1. Get current PAES score + metrics (mastered atoms, total atoms)
- * 2. For each week, estimate new atoms mastered → additional questions → score
- * 3. Apply governance cap: projection cannot exceed current diagnosticPredictionMax
- * 4. Apply ±15% uncertainty for min/max band
+ * 1. Start from current PAES score (diagnostic mid)
+ * 2. Each week: estimate new atoms mastered → questions → score
+ * 3. Apply confidence band (tighter within ceiling, wider beyond)
+ * 4. Track when projection reaches the real goal target
  */
 export async function buildProjectionCurve(
   params: ProjectionParams
@@ -129,6 +140,7 @@ export async function buildProjectionCurve(
   );
   const currentCorrect = estimateCorrectFromScore(currentMid);
   const ceiling = snapshot.paesScoreMax;
+  const targetScore = params.targetScore ?? null;
 
   const { totalRelevantAtoms, masteredAtoms, totalOfficialQuestions } = metrics;
   let remaining = totalRelevantAtoms - masteredAtoms;
@@ -136,7 +148,6 @@ export async function buildProjectionCurve(
   const questionsPerAtom =
     totalRelevantAtoms > 0 ? totalOfficialQuestions / totalRelevantAtoms : 0;
 
-  const targetScore = ceiling;
   let cumulativeAdditionalCorrect = 0;
   let weeksToTarget: number | null = null;
   const points: ProjectionPoint[] = [];
@@ -152,21 +163,38 @@ export async function buildProjectionCurve(
       PAES_TOTAL_QUESTIONS,
       currentCorrect + Math.round(cumulativeAdditionalCorrect)
     );
-    let projectedMid = getPaesScore(projectedCorrect);
+    const projectedMid = getPaesScore(projectedCorrect);
+    const beyondCeiling = projectedMid > ceiling;
 
-    // Governance cap: cannot exceed diagnostic ceiling until a new full test
-    projectedMid = Math.min(projectedMid, ceiling);
+    const uncertainty = beyondCeiling
+      ? UNCERTAINTY_BEYOND_CEILING
+      : UNCERTAINTY_WITHIN_CEILING;
+    const band = Math.round(projectedMid * uncertainty);
+    const projectedMin = Math.max(100, projectedMid - band);
+    const projectedMax = Math.min(1000, projectedMid + band);
 
-    points.push({ week, projectedScoreMid: projectedMid });
+    points.push({
+      week,
+      projectedScoreMid: projectedMid,
+      projectedScoreMin: projectedMin,
+      projectedScoreMax: projectedMax,
+      beyondCeiling,
+    });
 
-    if (weeksToTarget === null && projectedMid >= targetScore) {
+    if (targetScore && weeksToTarget === null && projectedMid >= targetScore) {
       weeksToTarget = week;
     }
 
     if (remaining <= 0) break;
   }
 
-  return { points, weeksToTarget, targetScore, studyMinutesPerWeek };
+  return {
+    points,
+    weeksToTarget,
+    targetScore,
+    diagnosticCeiling: ceiling,
+    studyMinutesPerWeek,
+  };
 }
 
 function emptyProjection(studyMinutesPerWeek: number): ProjectionResult {
@@ -174,6 +202,7 @@ function emptyProjection(studyMinutesPerWeek: number): ProjectionResult {
     points: [],
     weeksToTarget: null,
     targetScore: null,
+    diagnosticCeiling: null,
     studyMinutesPerWeek,
   };
 }

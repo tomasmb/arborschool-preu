@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { ConfidenceBadge, StreakBadge } from "./components";
+import { EditableMetaScore } from "./EditableMetaScore";
 import { formatScore } from "./formatters";
 import { useAnimatedMount, useCountUp } from "./hooks";
 import type { DashboardPayload } from "./types";
@@ -21,6 +23,25 @@ function DiagnosticSourceBanner({
     );
   }
 
+  // First test after diagnostic — strong CTA to calibrate
+  if (retestStatus?.isFirstTest && retestStatus.eligible) {
+    return (
+      <Link
+        href="/portal/test"
+        className="block rounded-lg border border-primary/20 bg-primary/5 px-3 py-2
+          hover:bg-primary/10 transition space-y-1"
+      >
+        <p className="text-xs font-medium text-primary">
+          Calibra tu puntaje con un test completo
+        </p>
+        <p className="text-xs text-gray-600">
+          El diagnóstico cubrió solo 16 preguntas. Un test de 60 mide tu nivel
+          real.
+        </p>
+      </Link>
+    );
+  }
+
   if (retestStatus?.eligible && retestStatus.recommended) {
     return (
       <Link
@@ -33,7 +54,7 @@ function DiagnosticSourceBanner({
         </p>
         <p className="text-xs text-emerald-600">
           Has dominado {retestStatus.atomsMasteredSinceLastTest} conceptos
-          nuevos desde tu último diagnóstico.
+          nuevos desde tu último test.
         </p>
       </Link>
     );
@@ -89,9 +110,13 @@ type HeroSectionProps = {
 function ScoreProgressBar({
   current,
   target,
+  goalLabel,
+  onTargetChange,
 }: {
   current: number | null;
   target: number | null;
+  goalLabel: string | null;
+  onTargetChange: (newTarget: number) => void;
 }) {
   const mounted = useAnimatedMount();
   if (current === null || target === null || target <= 100) return null;
@@ -105,7 +130,11 @@ function ScoreProgressBar({
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-xs text-gray-500">
         <span>100</span>
-        <span>Meta: {formatScore(target)}</span>
+        <EditableMetaScore
+          target={target}
+          goalLabel={goalLabel}
+          onTargetChange={onTargetChange}
+        />
       </div>
       <div className="h-3 rounded-full bg-gray-100 overflow-hidden relative">
         <div
@@ -130,14 +159,16 @@ function ScoreProgressBar({
 
 export function DashboardHeroSection({ data }: HeroSectionProps) {
   const score = data.current.score;
-  const gap = data.target.gapPoints;
-  const surplus =
-    score !== null && data.target.score !== null && score > data.target.score;
+  const [localTarget, setLocalTarget] = useState(data.target.score);
+  const gap =
+    score !== null && localTarget !== null
+      ? Math.max(0, Math.round(localTarget - score))
+      : data.target.gapPoints;
+  const surplus = score !== null && localTarget !== null && score > localTarget;
   const animatedScore = useCountUp(score);
 
   return (
     <section className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
-      {/* Accent top border */}
       <div
         className="h-[3px]"
         style={{
@@ -151,11 +182,18 @@ export function DashboardHeroSection({ data }: HeroSectionProps) {
               {score !== null ? animatedScore.toLocaleString("es-CL") : "—"}
             </p>
             <div>
-              <p className="text-sm font-medium text-gray-700">Puntaje M1</p>
+              <p className="text-sm font-medium text-gray-700">
+                Tu puntaje demostrado
+              </p>
               <p className="text-xs text-gray-500">
-                Banda {formatScore(data.current.min)}–
+                Rango {formatScore(data.current.min)}–
                 {formatScore(data.current.max)}
               </p>
+              {data.current.isPersonalBest ? (
+                <p className="text-xs text-emerald-600 font-medium">
+                  Basado en tu mejor resultado
+                </p>
+              ) : null}
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -173,7 +211,9 @@ export function DashboardHeroSection({ data }: HeroSectionProps) {
 
         <ScoreProgressBar
           current={data.current.score}
-          target={data.target.score}
+          target={localTarget}
+          goalLabel={data.target.goalLabel}
+          onTargetChange={setLocalTarget}
         />
 
         {!surplus && gap !== null && gap > 0 ? (

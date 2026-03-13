@@ -52,7 +52,7 @@ function GoalsTabBar({
 }) {
   const tabs: Array<{ id: GoalsTab; label: string; hint: string }> = [
     { id: "metas", label: "Metas de admisión", hint: "Se guardan" },
-    { id: "simulador", label: "Simulador", hint: "Solo exploración" },
+    { id: "simulador", label: "Simulador", hint: "Ajusta y guarda puntajes" },
   ];
 
   return (
@@ -183,7 +183,10 @@ function PortalGoalsPageContent() {
             <SimulatorSection
               loading={portalGoals.loading}
               simLoading={portalGoals.simLoading}
+              saving={portalGoals.saving}
               simulatorError={portalGoals.simulatorError}
+              error={portalGoals.error}
+              infoMessage={portalGoals.infoMessage}
               savedGoals={portalGoals.savedGoals}
               selectedGoalId={portalGoals.selectedGoalId}
               selectedGoal={portalGoals.selectedGoal}
@@ -194,6 +197,7 @@ function PortalGoalsPageContent() {
               onSelectGoal={portalGoals.setSelectedGoalId}
               onUpdateDraftScore={portalGoals.updateDraftScore}
               onUpdateDraftBuffer={portalGoals.updateDraftBuffer}
+              onSave={portalGoals.handleSave}
             />
           )}
         </div>

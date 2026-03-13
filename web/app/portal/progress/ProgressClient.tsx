@@ -5,13 +5,14 @@ import { PageShell, ErrorStatePanel } from "@/app/portal/components";
 import type { ApiEnvelope } from "@/lib/student/apiClientEnvelope";
 import { resolveApiErrorMessage } from "@/lib/student/apiClientEnvelope";
 import { MINUTES_PER_ATOM } from "@/lib/diagnostic/scoringConstants";
-import { RetestCTASection, TestHistoryTable } from "./ProgressSections";
-import type {
-  AxisMasteryItem,
-  MasteryBreakdown,
-  ProgressData,
-  ProjectionResult,
-} from "./types";
+import {
+  AxisBreakdownSection,
+  GoalMilestonesSection,
+  RetestCTASection,
+  TestHistoryTable,
+} from "./ProgressSections";
+import { ScoreJourneyChart } from "./ScoreJourneyChart";
+import type { MasteryBreakdown, ProgressData, ProjectionResult } from "./types";
 
 // ============================================================================
 // CONSTANTS
@@ -19,8 +20,7 @@ import type {
 
 const ATOMS_STEPS = [2, 5, 10, 15, 20];
 
-const HERO_GRADIENT =
-  "linear-gradient(90deg, #0b3a5b, #134b73, #059669)";
+const HERO_GRADIENT = "linear-gradient(90deg, #0b3a5b, #134b73, #059669)";
 
 // ============================================================================
 // MAIN COMPONENT
@@ -46,13 +46,30 @@ export function ProgressClient() {
             personalBest={data.personalBest}
             currentScore={data.currentScore}
           />
-          <AxisBreakdownSection axisMastery={data.axisMastery} />
+
+          <ScoreJourneyChart
+            history={data.scoreHistory}
+            projection={data.projection.points}
+            milestones={data.goalMilestones}
+            currentScore={data.currentScore}
+            diagnosticCeiling={data.projection.diagnosticCeiling}
+          />
+
           <ProjectionCard
             projection={data.projection}
-            targetScore={data.targetScore}
             atomsPerWeek={atomsPerWeek}
             onChangeAtomsPerWeek={setAtomsPerWeek}
+            allAtomsMastered={
+              data.masteryBreakdown.mastered >= data.masteryBreakdown.total
+            }
           />
+
+          <GoalMilestonesSection
+            milestones={data.goalMilestones}
+            currentScore={data.currentScore}
+          />
+
+          <AxisBreakdownSection axisMastery={data.axisMastery} />
           <RetestCTASection retestStatus={data.retestStatus} />
           <TestHistoryTable history={data.scoreHistory} />
         </div>
@@ -69,9 +86,10 @@ function useProgressData() {
   const [data, setData] = useState<ProgressData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [atomsPerWeek, setAtomsPerWeek] = useState(10);
+  const [atomsPerWeek, setAtomsPerWeek] = useState<number | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const mountedRef = useRef(true);
+  const initializedRef = useRef(false);
 
   const fetchData = useCallback(async (atoms: number) => {
     try {
@@ -84,7 +102,16 @@ function useProgressData() {
           resolveApiErrorMessage(payload, "Error al cargar progreso")
         );
       }
-      if (mountedRef.current) setData(payload.data);
+      if (mountedRef.current) {
+        setData(payload.data);
+
+        // Use planning profile default on first load
+        if (!initializedRef.current && payload.data.defaultAtomsPerWeek) {
+          const closest = findClosestStep(payload.data.defaultAtomsPerWeek);
+          setAtomsPerWeek(closest);
+          initializedRef.current = true;
+        }
+      }
     } catch (err) {
       if (!mountedRef.current) return;
       const msg =
@@ -97,7 +124,7 @@ function useProgressData() {
 
   useEffect(() => {
     mountedRef.current = true;
-    fetchData(atomsPerWeek);
+    fetchData(atomsPerWeek ?? 10);
     return () => {
       mountedRef.current = false;
     };
@@ -116,13 +143,27 @@ function useProgressData() {
     data,
     loading,
     error,
-    atomsPerWeek,
+    atomsPerWeek: atomsPerWeek ?? 10,
     setAtomsPerWeek: handleAtomsChange,
   };
 }
 
+/** Snap an arbitrary atoms-per-week value to the nearest ATOMS_STEPS. */
+function findClosestStep(value: number): number {
+  let best = ATOMS_STEPS[0];
+  let bestDist = Math.abs(value - best);
+  for (const step of ATOMS_STEPS) {
+    const dist = Math.abs(value - step);
+    if (dist < bestDist) {
+      best = step;
+      bestDist = dist;
+    }
+  }
+  return best;
+}
+
 // ============================================================================
-// MASTERY HERO (matches DashboardHeroSection accent-bar pattern)
+// MASTERY HERO
 // ============================================================================
 
 function MasteryHeroSection({
@@ -178,9 +219,7 @@ function MasteryHeroSection({
               className="absolute inset-0 flex flex-col items-center
                 justify-center"
             >
-              <span className="text-2xl font-bold text-gray-900">
-                {pct}%
-              </span>
+              <span className="text-2xl font-bold text-gray-900">{pct}%</span>
               <span className="text-[11px] text-gray-500">dominado</span>
             </div>
           </div>
@@ -277,138 +316,93 @@ function StatusBadge({
 }
 
 // ============================================================================
-// AXIS BREAKDOWN
-// ============================================================================
-
-const AXIS_CARD_COLORS: Record<string, { bg: string; bar: string }> = {
-  ALG: { bg: "bg-indigo-50 border-indigo-100", bar: "bg-indigo-500" },
-  NUM: { bg: "bg-amber-50 border-amber-100", bar: "bg-amber-500" },
-  GEO: { bg: "bg-emerald-50 border-emerald-100", bar: "bg-emerald-500" },
-  PROB: { bg: "bg-rose-50 border-rose-100", bar: "bg-rose-500" },
-};
-
-function AxisBreakdownSection({
-  axisMastery,
-}: {
-  axisMastery: AxisMasteryItem[];
-}) {
-  if (axisMastery.length === 0) return null;
-
-  return (
-    <section className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      {axisMastery.map((axis) => {
-        const pct =
-          axis.total > 0
-            ? Math.round((axis.mastered / axis.total) * 100)
-            : 0;
-        const colors =
-          AXIS_CARD_COLORS[axis.axisCode] ?? AXIS_CARD_COLORS.ALG;
-
-        return (
-          <div
-            key={axis.axisCode}
-            className={`rounded-xl border p-4 ${colors.bg}`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold text-gray-800">
-                {axis.label}
-              </span>
-              <span className="text-xs font-medium text-gray-500">
-                {axis.mastered}/{axis.total}
-              </span>
-            </div>
-            <div className="h-2 rounded-full bg-white/60 overflow-hidden">
-              <div
-                className={`h-full rounded-full ${colors.bar}
-                  transition-all duration-500`}
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-            <p className="mt-1.5 text-xs text-gray-500">
-              {pct}% dominado
-            </p>
-          </div>
-        );
-      })}
-    </section>
-  );
-}
-
-// ============================================================================
 // PROJECTION CARD
 // ============================================================================
 
 function ProjectionCard({
   projection,
-  targetScore,
   atomsPerWeek,
   onChangeAtomsPerWeek,
+  allAtomsMastered,
 }: {
   projection: ProjectionResult;
-  targetScore: number | null;
   atomsPerWeek: number;
   onChangeAtomsPerWeek: (value: number) => void;
+  allAtomsMastered: boolean;
 }) {
   const minutesPerWeek = atomsPerWeek * MINUTES_PER_ATOM;
+  const hoursPerWeek = (minutesPerWeek / 60).toFixed(1);
   const n = projection.weeksToTarget;
   const lastPoint = projection.points[projection.points.length - 1];
   const projectedScore = lastPoint?.projectedScoreMid ?? null;
+  const hasProjection = projection.points.length > 0;
 
   return (
     <section className="card-section space-y-4">
       <h2 className="text-lg font-serif font-semibold text-primary">
-        Proyección de mejora
+        Ritmo de estudio
       </h2>
 
       <div className="space-y-2">
         <label className="block text-sm text-gray-700">
-          Si estudias{" "}
-          <span className="font-semibold">
-            {atomsPerWeek} conceptos
-          </span>{" "}
-          por semana
+          Si estudias <span className="font-semibold">{hoursPerWeek}h</span> por
+          semana
           <span className="text-gray-400 text-xs ml-1">
-            ({minutesPerWeek} min/sem)
+            ({atomsPerWeek} conceptos · {minutesPerWeek} min)
           </span>
         </label>
         <div className="flex items-center gap-2">
-          {ATOMS_STEPS.map((step) => (
-            <button
-              key={step}
-              type="button"
-              onClick={() => onChangeAtomsPerWeek(step)}
-              className={[
-                "rounded-lg px-3 py-1.5 text-sm font-medium transition",
-                step === atomsPerWeek
-                  ? "bg-primary text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200",
-              ].join(" ")}
-            >
-              {step}
-            </button>
-          ))}
+          {ATOMS_STEPS.map((step) => {
+            const h = ((step * MINUTES_PER_ATOM) / 60).toFixed(1);
+            return (
+              <button
+                key={step}
+                type="button"
+                onClick={() => onChangeAtomsPerWeek(step)}
+                className={[
+                  "rounded-lg px-3 py-1.5 text-sm font-medium transition",
+                  step === atomsPerWeek
+                    ? "bg-primary text-white"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200",
+                ].join(" ")}
+              >
+                {h}h
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {n ? (
+      {allAtomsMastered ? (
         <div
           className="rounded-xl bg-emerald-50 border border-emerald-100
             px-4 py-3"
         >
           <p className="text-sm font-medium text-emerald-800">
-            Alcanzas tu meta en ~{n}{" "}
-            {n === 1 ? "semana" : "semanas"}
+            ¡Has dominado todos los conceptos!
           </p>
-          {targetScore && projectedScore && (
+          <p className="text-xs text-emerald-600 mt-0.5">
+            Toma un test completo para validar tu puntaje final.
+          </p>
+        </div>
+      ) : n ? (
+        <div
+          className="rounded-xl bg-emerald-50 border border-emerald-100
+            px-4 py-3"
+        >
+          <p className="text-sm font-medium text-emerald-800">
+            Alcanzas tu meta más alta en ~{n} {n === 1 ? "semana" : "semanas"}
+          </p>
+          {projection.targetScore && projectedScore && (
             <p className="text-xs text-emerald-600 mt-0.5">
-              Puntaje proyectado: {projectedScore} (meta:{" "}
-              {targetScore})
+              Puntaje proyectado a {projection.points.length} semanas:{" "}
+              {projectedScore} (meta: {projection.targetScore})
             </p>
           )}
         </div>
-      ) : projectedScore ? (
+      ) : hasProjection && projectedScore ? (
         <p className="text-sm text-gray-600">
-          Puntaje proyectado a 20 semanas:{" "}
+          Puntaje proyectado a {projection.points.length} semanas:{" "}
           <span className="font-semibold">{projectedScore}</span>
         </p>
       ) : (
@@ -427,7 +421,7 @@ function ProjectionCard({
 function ProgressSkeleton() {
   return (
     <div className="space-y-6">
-      {[0, 1, 2].map((i) => (
+      {[0, 1, 2, 3].map((i) => (
         <div key={i} className="card-section animate-pulse">
           <div className="h-5 w-40 bg-gray-200 rounded mb-4" />
           <div className="h-48 bg-gray-100 rounded-lg" />

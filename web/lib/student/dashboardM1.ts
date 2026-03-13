@@ -8,6 +8,7 @@ import {
   universities,
 } from "@/db/schema";
 import { getUserDiagnosticSnapshot, getMasteryRows } from "./userQueries";
+import { getScoreHistory, type ScoreDataPoint } from "./scoreHistory";
 import {
   analyzeLearningPotential,
   calculatePAESImprovement,
@@ -46,6 +47,7 @@ export type M1DashboardData = {
     score: number | null;
     min: number | null;
     max: number | null;
+    isPersonalBest: boolean;
   };
   target: {
     score: number | null;
@@ -171,45 +173,33 @@ async function getStudentM1Target(
   };
 }
 
-function buildEmptyState(
-  status: DashboardStatus
-): M1DashboardData["emptyState"] {
-  if (status === "missing_diagnostic") {
-    return {
-      title: "Activa planificación y diagnóstico",
-      description:
-        "Primero define tu meta y compromiso semanal para iniciar el diagnóstico con foco.",
-      ctaLabel: "Ir a planificación",
-      ctaHref: "/portal/goals?mode=planning",
-    };
-  }
-
-  if (status === "missing_target") {
-    return {
-      title: "Define tu meta M1",
-      description:
-        "Agrega un puntaje objetivo M1 en tus metas para activar la brecha y el plan de esfuerzo.",
-      ctaLabel: "Configurar metas",
-      ctaHref: "/portal/goals",
-    };
-  }
-
-  if (status === "missing_mastery") {
-    return {
-      title: "Aún no hay señal de aprendizaje",
-      description:
-        "Todavía no encontramos registros de dominio por átomo para calcular una proyección confiable.",
-      ctaLabel: "Comenzar estudio",
-      ctaHref: "/portal/study",
-    };
-  }
-
-  return null;
-}
+const EMPTY_STATES: Record<string, M1DashboardData["emptyState"]> = {
+  missing_diagnostic: {
+    title: "Activa planificación y diagnóstico",
+    description:
+      "Primero define tu meta y compromiso semanal para iniciar el diagnóstico con foco.",
+    ctaLabel: "Ir a planificación",
+    ctaHref: "/portal/goals?mode=planning",
+  },
+  missing_target: {
+    title: "Define tu meta M1",
+    description:
+      "Agrega un puntaje objetivo M1 en tus metas para activar la brecha y el plan de esfuerzo.",
+    ctaLabel: "Configurar metas",
+    ctaHref: "/portal/goals",
+  },
+  missing_mastery: {
+    title: "Aún no hay señal de aprendizaje",
+    description:
+      "Todavía no encontramos registros de dominio por átomo para calcular una proyección confiable.",
+    ctaLabel: "Comenzar estudio",
+    ctaHref: "/portal/study",
+  },
+};
 
 function buildMissingDashboard(params: {
   status: Exclude<DashboardStatus, "ready">;
-  current: { score: number | null; min: number | null; max: number | null };
+  current: M1DashboardData["current"];
   target: StudentM1Target | null;
   bandWidth: number | null;
 }): M1DashboardData {
@@ -239,7 +229,7 @@ function buildMissingDashboard(params: {
     },
     diagnosticSource: "short_diagnostic",
     retestStatus: null,
-    emptyState: buildEmptyState(params.status),
+    emptyState: EMPTY_STATES[params.status] ?? null,
   };
 }
 
@@ -260,36 +250,30 @@ function computeEffortMetrics(params: {
     totalPotentialUnlocks
   );
   const topRoute = insights.nextAction;
-
-  const gapPointsRaw = params.targetScore - params.currentScore;
-  const gapPoints = gapPointsRaw > 0 ? Math.round(gapPointsRaw) : 0;
-
+  const gapPoints = Math.max(
+    0,
+    Math.round(params.targetScore - params.currentScore)
+  );
   const topRouteMinutes = topRoute ? Math.round(topRoute.studyMinutes) : null;
   const topRoutePoints = topRoute ? topRoute.pointsGain : null;
-
   const minutesPerPointRaw =
     topRouteMinutes !== null && topRoutePoints !== null && topRoutePoints > 0
       ? topRouteMinutes / topRoutePoints
       : null;
-
   const minutesPerPoint =
     minutesPerPointRaw !== null && minutesPerPointRaw > 0
       ? round1(minutesPerPointRaw)
       : null;
-
   const minutesPerTenPoints =
     minutesPerPointRaw !== null && minutesPerPointRaw > 0
       ? round1(minutesPerPointRaw * 10)
       : null;
-
   const estimatedMinutesToTarget =
     gapPoints === 0
       ? 0
       : minutesPerPointRaw !== null
         ? Math.round(gapPoints * minutesPerPointRaw)
         : null;
-
-  // Spec 9.3: scenario_score = min(effort_projection, diagnostic_prediction_max)
   const ceiling = clampScore(params.diagnosticMax);
 
   return {
@@ -303,7 +287,6 @@ function computeEffortMetrics(params: {
         ceiling
       ),
     },
-    gapPoints,
     estimatedMinutesToTarget,
     minutesPerPoint,
     minutesPerTenPoints,
@@ -312,9 +295,13 @@ function computeEffortMetrics(params: {
 }
 
 function buildReadyDashboard(params: {
-  currentScore: number;
-  minScore: number;
-  maxScore: number;
+  displayScore: number;
+  displayMin: number;
+  displayMax: number;
+  isPersonalBest: boolean;
+  latestScore: number;
+  latestMin: number;
+  latestMax: number;
   target: StudentM1Target;
   analysis: StudentLearningAnalysis;
   metrics: {
@@ -327,10 +314,11 @@ function buildReadyDashboard(params: {
   diagnosticSource: DiagnosticSource;
   retestStatus: RetestStatus | null;
 }): M1DashboardData {
+  // Effort uses the latest score for honest internal projections
   const effortMetrics = computeEffortMetrics({
-    currentScore: params.currentScore,
+    currentScore: params.latestScore,
     targetScore: params.target.score,
-    diagnosticMax: params.maxScore,
+    diagnosticMax: params.latestMax,
     analysis: params.analysis,
   });
 
@@ -341,27 +329,34 @@ function buildReadyDashboard(params: {
 
   const confidence = computeConfidence({
     masteryRatio,
-    bandWidth: params.maxScore - params.minScore,
+    bandWidth: params.latestMax - params.latestMin,
     diagnosticSource: params.diagnosticSource,
   });
+
+  // Gap uses the displayed (personal best) score for the student-facing metric
+  const gapPoints = Math.max(
+    0,
+    Math.round(params.target.score - params.displayScore)
+  );
 
   return {
     status: "ready",
     current: {
-      score: params.currentScore,
-      min: params.minScore,
-      max: params.maxScore,
+      score: params.displayScore,
+      min: params.displayMin,
+      max: params.displayMax,
+      isPersonalBest: params.isPersonalBest,
     },
     target: {
       score: params.target.score,
-      gapPoints: effortMetrics.gapPoints,
+      gapPoints,
       goalLabel: params.target.goalLabel,
     },
     prediction: effortMetrics.prediction,
     confidence: {
       level: confidence.level,
       score: confidence.score,
-      bandWidth: params.maxScore - params.minScore,
+      bandWidth: params.latestMax - params.latestMin,
       masteredAtoms: params.metrics.masteredAtoms,
       totalAtoms: params.metrics.totalRelevantAtoms,
       masteryPercentage: params.metrics.masteryPercentage,
@@ -396,43 +391,74 @@ function buildReadyDashboard(params: {
   };
 }
 
+/** Finds the score history entry with the highest mid score. */
+function findPersonalBest(history: ScoreDataPoint[]): ScoreDataPoint | null {
+  if (history.length === 0) return null;
+  return history.reduce((best, entry) =>
+    entry.paesScoreMid > best.paesScoreMid ? entry : best
+  );
+}
+
 export async function getM1Dashboard(userId: string): Promise<M1DashboardData> {
-  const [snapshot, target, masteryRows] = await Promise.all([
+  const [snapshot, target, masteryRows, scoreHistory] = await Promise.all([
     getUserDiagnosticSnapshot(userId),
     getStudentM1Target(userId),
     getMasteryRows(userId),
+    getScoreHistory(userId),
   ]);
 
-  const minScore = snapshot?.paesScoreMin ?? null;
-  const maxScore = snapshot?.paesScoreMax ?? null;
-  const hasDiagnostic = minScore !== null && maxScore !== null;
+  const latestMin = snapshot?.paesScoreMin ?? null;
+  const latestMax = snapshot?.paesScoreMax ?? null;
+  const hasDiagnostic = latestMin !== null && latestMax !== null;
 
   if (!hasDiagnostic) {
     return buildMissingDashboard({
       status: "missing_diagnostic",
-      current: { score: null, min: minScore, max: maxScore },
+      current: {
+        score: null,
+        min: latestMin,
+        max: latestMax,
+        isPersonalBest: false,
+      },
       target,
       bandWidth: null,
     });
   }
 
-  const currentScore = Math.round((minScore + maxScore) / 2);
+  const latestScore = Math.round((latestMin + latestMax) / 2);
+
+  // Personal best: highest mid score from test history, fallback to latest
+  const best = findPersonalBest(scoreHistory);
+  const isPersonalBest = best !== null && best.paesScoreMid > latestScore;
+  const displayScore = isPersonalBest ? best.paesScoreMid : latestScore;
+  const displayMin = isPersonalBest ? best.paesScoreMin : latestMin;
+  const displayMax = isPersonalBest ? best.paesScoreMax : latestMax;
 
   if (!target) {
     return buildMissingDashboard({
       status: "missing_target",
-      current: { score: currentScore, min: minScore, max: maxScore },
+      current: {
+        score: displayScore,
+        min: displayMin,
+        max: displayMax,
+        isPersonalBest,
+      },
       target: null,
-      bandWidth: maxScore - minScore,
+      bandWidth: latestMax - latestMin,
     });
   }
 
   if (masteryRows.length === 0) {
     return buildMissingDashboard({
       status: "missing_mastery",
-      current: { score: currentScore, min: minScore, max: maxScore },
+      current: {
+        score: displayScore,
+        min: displayMin,
+        max: displayMax,
+        isPersonalBest,
+      },
       target,
-      bandWidth: maxScore - minScore,
+      bandWidth: latestMax - latestMin,
     });
   }
 
@@ -442,7 +468,7 @@ export async function getM1Dashboard(userId: string): Promise<M1DashboardData> {
         atomId: row.atomId,
         mastered: row.isMastered,
       })),
-      { currentPaesScore: currentScore }
+      { currentPaesScore: latestScore }
     ),
     getRetestStatus(userId),
     getStudentMetrics(userId),
@@ -454,9 +480,13 @@ export async function getM1Dashboard(userId: string): Promise<M1DashboardData> {
     : "short_diagnostic";
 
   return buildReadyDashboard({
-    currentScore,
-    minScore,
-    maxScore,
+    displayScore,
+    displayMin,
+    displayMax,
+    isPersonalBest,
+    latestScore,
+    latestMin,
+    latestMax,
     target,
     analysis,
     metrics,

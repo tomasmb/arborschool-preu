@@ -10,11 +10,32 @@ import {
   getMasteryStatusBreakdown,
   getAxisMasteryBreakdown,
 } from "@/lib/student/metricsService";
+import { getProgressTargets } from "@/lib/student/progressTargets";
+import type { GoalMilestone } from "@/lib/student/progressTargets";
+import type { ProjectionPoint } from "@/lib/student/scoreHistory";
+
+/**
+ * Computes weeksToReach for each milestone by scanning projection points.
+ */
+function enrichMilestonesWithWeeks(
+  milestones: GoalMilestone[],
+  points: ProjectionPoint[]
+): Array<GoalMilestone & { weeksToReach: number | null }> {
+  return milestones.map((m) => {
+    if (m.neededM1Score === null) {
+      return { ...m, weeksToReach: null };
+    }
+    const point = points.find((p) => p.projectedScoreMid >= m.neededM1Score!);
+    return { ...m, weeksToReach: point?.week ?? null };
+  });
+}
 
 /**
  * GET /api/student/progress
- * Returns mastery breakdown, axis mastery, score history, projection,
- * retest status, and current/target scores.
+ *
+ * Returns mastery breakdown, axis mastery, score history, projection
+ * (toward real career goals), retest status, goal milestones, and
+ * current scores.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -30,19 +51,30 @@ export async function GET(request: NextRequest) {
 
     const [
       scoreHistory,
-      projection,
       retestStatus,
       snapshot,
       masteryBreakdown,
       axisMastery,
+      targets,
     ] = await Promise.all([
       getScoreHistory(userId),
-      buildProjectionCurve({ userId, atomsPerWeek }),
       getRetestStatus(userId),
       getUserDiagnosticSnapshot(userId),
       getMasteryStatusBreakdown(userId),
       getAxisMasteryBreakdown(userId),
+      getProgressTargets(userId),
     ]);
+
+    const projection = await buildProjectionCurve({
+      userId,
+      atomsPerWeek,
+      targetScore: targets.highestTargetM1,
+    });
+
+    const goalMilestones = enrichMilestonesWithWeeks(
+      targets.milestones,
+      projection.points
+    );
 
     const currentScore =
       snapshot?.paesScoreMin != null && snapshot?.paesScoreMax != null
@@ -70,7 +102,8 @@ export async function GET(request: NextRequest) {
         projection,
         retestStatus,
         currentScore,
-        targetScore: snapshot?.paesScoreMax ?? null,
+        goalMilestones,
+        defaultAtomsPerWeek: targets.defaultAtomsPerWeek,
       },
     });
   } catch (error) {

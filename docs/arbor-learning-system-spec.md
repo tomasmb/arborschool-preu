@@ -167,13 +167,20 @@ unmastered prerequisites (low cost).
 **Critical rule**: The learning path must prioritize atoms the student
 **definitively failed** in the diagnostic over atoms with unknown status.
 
-- Atoms with `mastery_source = 'diagnostic'` and `isMastered = false` are
+- Atoms **with** an `atom_mastery` row where `isMastered = false` are
   **confirmed unknowns** — the student was tested and failed
-- Atoms with `mastery_source = 'not_tested'` have **unknown status** — the
-  short diagnostic (16 questions) could not determine mastery
-- Confirmed unknowns must receive a priority multiplier in the unlock
-  scoring, so the learning path starts with what we KNOW the student
-  doesn't know
+- Atoms **without** an `atom_mastery` row have **unknown status** — the
+  short diagnostic (16 questions) never covered them
+- Confirmed unknowns receive a `1.5×` priority multiplier in the unlock
+  scoring (`CONFIRMED_UNKNOWN_MULTIPLIER`), so the learning path starts
+  with what we KNOW the student doesn't know
+
+**Persistence rule**: The diagnostic profile save must only write
+`atom_mastery` rows for atoms that were actually tested (`source =
+"direct"`) or inferred as mastered via transitivity (`source =
+"inferred"`). Atoms the diagnostic never covered (`source =
+"not_tested"`) must NOT get rows. This allows `computeMasteryAsMap` to
+correctly categorize atoms: rows → `"direct"`, no row → `"not_tested"`.
 
 **Rationale**: Starting with confirmed unknowns gives the student immediate
 wins (they address real gaps), while starting with untested atoms may waste
@@ -502,7 +509,11 @@ Use atom-mastery gating as the primary retest control.
 
 ### 8.2 Policy
 
-1. Full retest stays **locked** until the student masters at least `X` new
+0. **First full test:** available immediately after diagnostic — the
+   diagnostic is a rough screen (16 questions) and many atoms remain
+   uncovered. Requiring study before the first real measurement would
+   force students to study atoms they may already know.
+1. **Subsequent tests:** locked until the student masters at least `X` new
    atoms since the last full test
 2. Once the student reaches `Y` new atoms, the system shows a clear
    **recommendation** to retest to recalibrate prediction quality
@@ -909,7 +920,7 @@ Internal code (variable names, DB columns, API paths) uses the internal terms.
 | Cooldown expiry check | WIRED | `atomMasteryEngine.ts` | Calls `checkCooldownExpiry` on mastery |
 | Prereq scan on mastery failure | WIRED | `atomMasteryEngine.ts` | Calls `startPrereqScan` on failure |
 | Retest gating | IMPLEMENTED | `retestGating.ts` | X=18 unlock, Y=30 recommend, 7-day spacing |
-| Confirmed-unknown priority | IMPLEMENTED | `unlockCalculator.ts` | 1.5x multiplier for confirmed unknowns |
+| Confirmed-unknown priority | IMPLEMENTED | `unlockCalculator.ts`, `profile/route.ts` | 1.5x multiplier; diagnostic only persists tested/inferred atoms |
 | Per-test question normalization | FIXED | `routeOptimizer.ts` | Route ranking now uses `estimatedPointsGain` |
 | Shared metrics service | IMPLEMENTED | `metricsService.ts` | Single source of truth for mastery metrics |
 | Diagnostic source indicator | IMPLEMENTED | `DashboardSections.tsx` | Shows source label + retest CTA |
