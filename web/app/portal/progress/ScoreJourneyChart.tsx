@@ -382,12 +382,12 @@ function buildChartData(
     });
   }
 
-  // Goal lines (only milestones with computed M1 targets)
+  // Goal lines use the student's own M1 target from the simulator
   const goalLines: GoalLine[] = milestones
-    .filter((m) => m.neededM1Score !== null)
+    .filter((m) => m.userM1Target !== null)
     .map((m) => ({
       goalId: m.goalId,
-      score: m.neededM1Score!,
+      score: m.userM1Target!,
       label: truncateLabel(m.careerName, 28),
       isPrimary: m.isPrimary,
     }));

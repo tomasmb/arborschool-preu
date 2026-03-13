@@ -23,10 +23,11 @@ function enrichMilestonesWithWeeks(
   points: ProjectionPoint[]
 ): Array<GoalMilestone & { weeksToReach: number | null }> {
   return milestones.map((m) => {
-    if (m.neededM1Score === null) {
+    const target = m.userM1Target;
+    if (target === null) {
       return { ...m, weeksToReach: null };
     }
-    const point = points.find((p) => p.projectedScoreMid >= m.neededM1Score!);
+    const point = points.find((p) => p.projectedScoreMid >= target);
     return { ...m, weeksToReach: point?.week ?? null };
   });
 }

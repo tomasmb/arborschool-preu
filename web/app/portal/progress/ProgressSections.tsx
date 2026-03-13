@@ -64,13 +64,12 @@ function MilestoneCard({
   milestone: GoalMilestone;
   currentMid: number | null;
 }) {
-  const { neededM1Score, weeksToReach, missingNonM1Tests, isPrimary } =
-    milestone;
+  const { userM1Target, weeksToReach, isPrimary } = milestone;
 
   const reachedGoal =
-    neededM1Score !== null &&
+    userM1Target !== null &&
     currentMid !== null &&
-    currentMid >= neededM1Score;
+    currentMid >= userM1Target;
 
   const borderColor = reachedGoal
     ? "border-emerald-200 bg-emerald-50/50"
@@ -96,22 +95,25 @@ function MilestoneCard({
         )}
       </div>
 
-      {neededM1Score !== null ? (
+      {userM1Target !== null ? (
         <div className="space-y-1">
           <div className="flex items-baseline gap-2">
             <span className="text-lg font-bold text-gray-900 tabular-nums">
-              {neededM1Score}
+              {userM1Target}
             </span>
-            <span className="text-xs text-gray-500">puntaje M1 necesario</span>
+            <span className="text-xs text-gray-500">tu meta M1</span>
           </div>
 
           {currentMid !== null && (
-            <MilestoneProgressBar current={currentMid} target={neededM1Score} />
+            <MilestoneProgressBar
+              current={currentMid}
+              target={userM1Target}
+            />
           )}
 
           {reachedGoal ? (
             <p className="text-xs font-medium text-emerald-700">
-              Ya alcanzas el puntaje necesario
+              Ya alcanzas tu meta
             </p>
           ) : weeksToReach !== null ? (
             <p className="text-xs text-gray-500">
@@ -124,20 +126,16 @@ function MilestoneCard({
             </p>
           )}
         </div>
-      ) : missingNonM1Tests.length > 0 ? (
+      ) : (
         <p className="text-xs text-amber-600">
-          Ingresa tus puntajes de {missingNonM1Tests.join(", ")} en{" "}
+          Ingresa tu puntaje M1 en{" "}
           <Link
             href="/portal/goals?tab=simulador"
             className="font-medium underline"
           >
             Simulador
           </Link>{" "}
-          para calcular tu meta M1.
-        </p>
-      ) : (
-        <p className="text-xs text-gray-400">
-          No se pudo calcular el puntaje necesario.
+          para ver tu meta.
         </p>
       )}
     </div>
