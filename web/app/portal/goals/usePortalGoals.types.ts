@@ -34,7 +34,6 @@ export type PortalGoalsState = {
   dataset: StudentGoalsPayload["dataset"];
   options: StudentGoalsPayload["options"];
   goals: GoalRecord[];
-  availableOptions: { offeringId: string; label: string }[];
   savedGoals: StudentGoal[];
   selectedGoalId: string | null;
   selectedGoal: StudentGoal | null;

@@ -4,11 +4,11 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import { InlineRecoveryPanel } from "../components";
 import type { GoalOption, PlanningProfileDraft } from "./types";
+import { OfferingAutocomplete } from "./OfferingAutocomplete";
 import {
   formatPlanningCutoff,
-  PlanningGoalCombobox,
   selectedPlanningOption,
-} from "./PlanningGoalCombobox";
+} from "./goalHelpers";
 
 type PlanningModeFlowProps = {
   loading: boolean;
@@ -137,10 +137,11 @@ function StepCareer({
           retryLabel="Intentar de nuevo"
         />
       ) : (
-        <PlanningGoalCombobox
+        <OfferingAutocomplete
           options={options}
           selectedOfferingId={selectedOfferingId}
           onSelectOffering={onSelectOffering}
+          idPrefix="planning"
         />
       )}
 
