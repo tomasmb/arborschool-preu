@@ -114,13 +114,31 @@ const UNCERTAINTY_WITHIN_CEILING = IMPROVEMENT_UNCERTAINTY;
 const UNCERTAINTY_BEYOND_CEILING = 0.22;
 
 /**
- * Builds a projection curve showing expected score improvement over weeks.
+ * Not all atoms studied in a week get mastered on the first pass.
+ * Some need multiple sessions. Conservative estimate: ~65%.
+ */
+const MASTERY_RATE_PER_PASS = 0.65;
+
+/**
+ * Even for mastered atoms, test-day accuracy isn't 100%.
+ * Time pressure, wording variations, etc. Conservative: ~80%.
+ */
+const TEST_ACCURACY_ON_MASTERED = 0.80;
+
+/**
+ * Builds a conservative projection curve based on real question
+ * unlocks from mastered atoms.
  *
  * Algorithm:
- * 1. Start from current PAES score (diagnostic mid)
- * 2. Each week: estimate new atoms mastered → questions → score
- * 3. Apply confidence band (tighter within ceiling, wider beyond)
- * 4. Track when projection reaches the real goal target
+ * 1. Start from current PAES score (best demonstrated score)
+ * 2. Each week the student covers `atomsPerWeek` atoms, but only
+ *    ~65% are mastered per pass (rest return to the pool)
+ * 3. Mastered atoms unlock PAES questions, but test-day accuracy
+ *    is ~80%, not 100%
+ * 4. Net effect: each studied atom contributes ~52% of its
+ *    theoretical maximum score improvement
+ * 5. Apply confidence band (tighter within ceiling, wider beyond)
+ * 6. Track when projection reaches the real goal target
  */
 export async function buildProjectionCurve(
   params: ProjectionParams
@@ -158,11 +176,13 @@ export async function buildProjectionCurve(
   const points: ProjectionPoint[] = [];
 
   for (let week = 1; week <= maxWeeks; week++) {
-    const newAtoms = Math.min(atomsPerWeek, remaining);
-    remaining -= newAtoms;
+    const atomsStudied = Math.min(atomsPerWeek, remaining);
+    const newMastered = atomsStudied * MASTERY_RATE_PER_PASS;
+    remaining -= newMastered;
 
-    const additionalQuestions = newAtoms * questionsPerAtom;
-    cumulativeAdditionalCorrect += additionalQuestions;
+    const questionsUnlocked = newMastered * questionsPerAtom;
+    const newCorrect = questionsUnlocked * TEST_ACCURACY_ON_MASTERED;
+    cumulativeAdditionalCorrect += newCorrect;
 
     const projectedCorrect = Math.min(
       PAES_TOTAL_QUESTIONS,
