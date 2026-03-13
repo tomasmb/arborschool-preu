@@ -24,16 +24,33 @@ import type {
 // CONSTANTS
 // ============================================================================
 
-const ATOMS_STEPS = [2, 5, 10, 15, 20];
+const MIN_HOURS = 0.5;
+const MAX_HOURS = 10;
+const HOURS_STEP = 0.5;
+const DEFAULT_HOURS = 3;
 
 const HERO_GRADIENT = "linear-gradient(90deg, #0b3a5b, #134b73, #059669)";
+
+// ============================================================================
+// HOUR ↔ ATOM CONVERSIONS
+// ============================================================================
+
+function hoursToAtoms(hours: number): number {
+  return (hours * 60) / MINUTES_PER_ATOM;
+}
+
+/** Round to nearest HOURS_STEP (0.5h). */
+function atomsToHours(atoms: number): number {
+  const raw = (atoms * MINUTES_PER_ATOM) / 60;
+  return Math.round(raw / HOURS_STEP) * HOURS_STEP;
+}
 
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
 export function ProgressClient() {
-  const { data, loading, error, atomsPerWeek, setAtomsPerWeek } =
+  const { data, loading, error, hoursPerWeek, setHoursPerWeek } =
     useProgressData();
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(
     null
@@ -85,8 +102,8 @@ export function ProgressClient() {
 
           <ProjectionCard
             projection={data.projection}
-            atomsPerWeek={atomsPerWeek}
-            onChangeAtomsPerWeek={setAtomsPerWeek}
+            hoursPerWeek={hoursPerWeek}
+            onChangeHours={setHoursPerWeek}
             allAtomsMastered={
               data.masteryBreakdown.mastered >= data.masteryBreakdown.total
             }
@@ -110,7 +127,7 @@ function useProgressData() {
   const [data, setData] = useState<ProgressData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [atomsPerWeek, setAtomsPerWeek] = useState<number | null>(null);
+  const [hoursPerWeek, setHoursPerWeek] = useState<number | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const mountedRef = useRef(true);
   const initializedRef = useRef(false);
@@ -129,10 +146,8 @@ function useProgressData() {
       if (mountedRef.current) {
         setData(payload.data);
 
-        // Use planning profile default on first load
         if (!initializedRef.current && payload.data.defaultAtomsPerWeek) {
-          const closest = findClosestStep(payload.data.defaultAtomsPerWeek);
-          setAtomsPerWeek(closest);
+          setHoursPerWeek(atomsToHours(payload.data.defaultAtomsPerWeek));
           initializedRef.current = true;
         }
       }
@@ -148,17 +163,21 @@ function useProgressData() {
 
   useEffect(() => {
     mountedRef.current = true;
-    fetchData(atomsPerWeek ?? 10);
+    fetchData(hoursToAtoms(hoursPerWeek ?? DEFAULT_HOURS));
     return () => {
       mountedRef.current = false;
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleAtomsChange = useCallback(
-    (value: number) => {
-      setAtomsPerWeek(value);
+  const handleHoursChange = useCallback(
+    (hours: number) => {
+      const clamped = Math.min(MAX_HOURS, Math.max(MIN_HOURS, hours));
+      setHoursPerWeek(clamped);
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => fetchData(value), 400);
+      debounceRef.current = setTimeout(
+        () => fetchData(hoursToAtoms(clamped)),
+        400
+      );
     },
     [fetchData]
   );
@@ -167,23 +186,9 @@ function useProgressData() {
     data,
     loading,
     error,
-    atomsPerWeek: atomsPerWeek ?? 10,
-    setAtomsPerWeek: handleAtomsChange,
+    hoursPerWeek: hoursPerWeek ?? DEFAULT_HOURS,
+    setHoursPerWeek: handleHoursChange,
   };
-}
-
-/** Snap an arbitrary atoms-per-week value to the nearest ATOMS_STEPS. */
-function findClosestStep(value: number): number {
-  let best = ATOMS_STEPS[0];
-  let bestDist = Math.abs(value - best);
-  for (const step of ATOMS_STEPS) {
-    const dist = Math.abs(value - step);
-    if (dist < bestDist) {
-      best = step;
-      bestDist = dist;
-    }
-  }
-  return best;
 }
 
 // ============================================================================
@@ -340,24 +345,27 @@ function StatusBadge({
 
 function ProjectionCard({
   projection,
-  atomsPerWeek,
-  onChangeAtomsPerWeek,
+  hoursPerWeek,
+  onChangeHours,
   allAtomsMastered,
   selectedMeta,
 }: {
   projection: ProjectionResult;
-  atomsPerWeek: number;
-  onChangeAtomsPerWeek: (value: number) => void;
+  hoursPerWeek: number;
+  onChangeHours: (value: number) => void;
   allAtomsMastered: boolean;
   selectedMeta: number | null;
 }) {
-  const minutesPerWeek = atomsPerWeek * MINUTES_PER_ATOM;
-  const hoursPerWeek = (minutesPerWeek / 60).toFixed(1);
+  const atoms = hoursToAtoms(hoursPerWeek);
+  const minutesPerWeek = Math.round(hoursPerWeek * 60);
   const displayMeta = selectedMeta ?? projection.targetScore;
   const n = projection.weeksToTarget;
   const lastPoint = projection.points[projection.points.length - 1];
   const projectedScore = lastPoint?.projectedScoreMid ?? null;
   const hasProjection = projection.points.length > 0;
+
+  const atMin = hoursPerWeek <= MIN_HOURS;
+  const atMax = hoursPerWeek >= MAX_HOURS;
 
   return (
     <section className="card-section space-y-4">
@@ -367,32 +375,50 @@ function ProjectionCard({
 
       <div className="space-y-2">
         <label className="block text-sm text-gray-700">
-          Si estudias <span className="font-semibold">{hoursPerWeek}h</span> por
-          semana
-          <span className="text-gray-400 text-xs ml-1">
-            ({atomsPerWeek} conceptos · {minutesPerWeek} min)
-          </span>
+          Horas por semana
         </label>
-        <div className="flex items-center gap-2">
-          {ATOMS_STEPS.map((step) => {
-            const h = ((step * MINUTES_PER_ATOM) / 60).toFixed(1);
-            return (
-              <button
-                key={step}
-                type="button"
-                onClick={() => onChangeAtomsPerWeek(step)}
-                className={[
-                  "rounded-lg px-3 py-1.5 text-sm font-medium transition",
-                  step === atomsPerWeek
-                    ? "bg-primary text-white"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200",
-                ].join(" ")}
-              >
-                {h}h
-              </button>
-            );
-          })}
+
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            disabled={atMin}
+            onClick={() => onChangeHours(hoursPerWeek - HOURS_STEP)}
+            className={[
+              "flex h-9 w-9 items-center justify-center rounded-lg",
+              "text-lg font-semibold transition",
+              atMin
+                ? "bg-gray-100 text-gray-300 cursor-not-allowed"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200",
+            ].join(" ")}
+            aria-label="Reducir horas"
+          >
+            −
+          </button>
+
+          <span className="min-w-[3.5rem] text-center text-lg font-semibold">
+            {hoursPerWeek.toFixed(1)}h
+          </span>
+
+          <button
+            type="button"
+            disabled={atMax}
+            onClick={() => onChangeHours(hoursPerWeek + HOURS_STEP)}
+            className={[
+              "flex h-9 w-9 items-center justify-center rounded-lg",
+              "text-lg font-semibold transition",
+              atMax
+                ? "bg-gray-100 text-gray-300 cursor-not-allowed"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200",
+            ].join(" ")}
+            aria-label="Aumentar horas"
+          >
+            +
+          </button>
         </div>
+
+        <p className="text-xs text-gray-400">
+          {Math.round(atoms)} conceptos · {minutesPerWeek} min
+        </p>
       </div>
 
       {allAtomsMastered ? (
@@ -413,7 +439,8 @@ function ProjectionCard({
             px-4 py-3"
         >
           <p className="text-sm font-medium text-emerald-800">
-            Alcanzas tu meta más alta en ~{n} {n === 1 ? "semana" : "semanas"}
+            Alcanzas tu meta más alta en ~{n}{" "}
+            {n === 1 ? "semana" : "semanas"}
           </p>
           {displayMeta && projectedScore && (
             <p className="text-xs text-emerald-600 mt-0.5">
