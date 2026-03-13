@@ -15,6 +15,7 @@ import {
   PORTAL_CONTEXT_BANNER_PARAM,
   resolveStudyEntryRoute,
 } from "@/lib/student/journeyRouting";
+import { hasVerificationDue } from "@/lib/student/verificationQuiz";
 import { PageShell } from "../components";
 import { StudyClient } from "./study-client";
 
@@ -39,8 +40,19 @@ export default async function StudyPage({ searchParams }: StudyPageProps) {
     redirect(signInUrl);
   }
 
-  const journey = await getStudentJourneySnapshot(user.id);
   const deepLinkParams = toUrlSearchParams(queryParams);
+  const mode = deepLinkParams.get("mode");
+
+  // Verification gate: block all study/review/scan unless already in
+  // verification mode. Forces student to resolve flagged atoms first.
+  if (mode !== "verification") {
+    const verificationDue = await hasVerificationDue(user.id);
+    if (verificationDue) {
+      redirect("/portal/study?mode=verification");
+    }
+  }
+
+  const journey = await getStudentJourneySnapshot(user.id);
   const studyEntry = resolveStudyEntryRoute({
     journeySnapshot: journey,
     isEmailLink:

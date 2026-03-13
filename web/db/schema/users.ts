@@ -20,6 +20,7 @@ import {
 } from "./enums";
 import { atoms } from "./content";
 import { questions, tests } from "./content";
+import { schools } from "./access";
 
 /**
  * User tables: Users, Atom Mastery, Test Attempts, Student Responses
@@ -36,7 +37,12 @@ export const users = pgTable("users", {
   role: userRoleEnum("role").notNull().default("student"),
   firstName: varchar("first_name", { length: 100 }),
   lastName: varchar("last_name", { length: 100 }),
-  subscriptionStatus: varchar("subscription_status", { length: 50 }),
+  schoolId: uuid("school_id").references(() => schools.id, {
+    onDelete: "set null",
+  }),
+  subscriptionStatus: varchar("subscription_status", { length: 50 })
+    .notNull()
+    .default("free"),
   subscriptionExpiresAt: timestamp("subscription_expires_at", {
     withTimezone: true,
   }),

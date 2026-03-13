@@ -7,7 +7,7 @@ import type {
 } from "@/lib/student/atomMasteryAlgorithm";
 import { MathContent } from "@/lib/qti/MathRenderer";
 import { FeedbackCard } from "@/lib/qti/FeedbackCard";
-import { ErrorStatePanel } from "../components";
+import { ErrorStatePanel, UpgradePrompt } from "../components";
 import { AtomLessonView } from "./AtomLessonView";
 import { AtomResultPanel } from "./AtomResultPanel";
 import { MasteryMeter } from "./MasteryMeter";
@@ -318,6 +318,10 @@ function OptionCircle({
 
 export function AtomStudyView({ ctrl }: { ctrl: Controller }) {
   if (ctrl.phase === "loading") return <AtomStudySkeleton />;
+
+  if (ctrl.phase === "access_required") {
+    return <UpgradePrompt variant="card" />;
+  }
 
   if (ctrl.phase === "error") {
     return <ErrorStatePanel message={ctrl.error ?? "Algo salió mal"} />;

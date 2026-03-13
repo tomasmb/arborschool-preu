@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { trackStudentNextActionClicked } from "@/lib/analytics";
-import { InlineRecoveryPanel } from "./components";
+import { InlineRecoveryPanel, UpgradePrompt } from "./components";
 import { ReviewSuggestionBanner } from "./components/ReviewSuggestionBanner";
 import { formatMinutes } from "./formatters";
 import type {
@@ -16,6 +16,7 @@ type LearningPathSectionProps = {
   loading: boolean;
   error: string | null;
   data: NextActionPayload | null;
+  subscriptionStatus: string;
 };
 
 type PathAtom = { atomId: string; title: string };
@@ -389,7 +390,13 @@ function ArrowIcon() {
   );
 }
 
-function LearningPathContent({ data }: { data: NextActionPayload }) {
+function LearningPathContent({
+  data,
+  subscriptionStatus,
+}: {
+  data: NextActionPayload;
+  subscriptionStatus: string;
+}) {
   const routes = data.competitiveRoutes ?? [];
   const action = data.nextAction;
   const reviewItems = data.reviewItems ?? [];
@@ -478,6 +485,8 @@ function LearningPathContent({ data }: { data: NextActionPayload }) {
           />
         ))}
       </div>
+
+      {subscriptionStatus !== "active" && <UpgradePrompt variant="inline" />}
     </section>
   );
 }
@@ -486,6 +495,7 @@ export function LearningPathSection({
   loading,
   error,
   data,
+  subscriptionStatus,
 }: LearningPathSectionProps) {
   if (loading) return <LoadingSkeleton />;
 
@@ -517,5 +527,7 @@ export function LearningPathSection({
   }
 
   if (!data) return null;
-  return <LearningPathContent data={data} />;
+  return (
+    <LearningPathContent data={data} subscriptionStatus={subscriptionStatus} />
+  );
 }

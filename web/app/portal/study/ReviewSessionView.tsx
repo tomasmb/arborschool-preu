@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 import { MathContent } from "@/lib/qti/MathRenderer";
-import { ErrorStatePanel, QuestionSkeleton } from "../components";
+import {
+  ErrorStatePanel,
+  QuestionSkeleton,
+  UpgradePrompt,
+} from "../components";
 import type { useReviewSessionController } from "./useReviewSessionController";
 
 type Controller = ReturnType<typeof useReviewSessionController>;
@@ -318,6 +322,7 @@ function ReviewResultPanel({ ctrl }: { ctrl: Controller }) {
 
 export function ReviewSessionView({ ctrl }: { ctrl: Controller }) {
   if (ctrl.phase === "loading") return <QuestionSkeleton />;
+  if (ctrl.phase === "access_required") return <UpgradePrompt variant="card" />;
   if (ctrl.phase === "empty") return <EmptyReviewState />;
   if (ctrl.phase === "error") {
     return (

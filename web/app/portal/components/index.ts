@@ -7,3 +7,4 @@ export { PageShell } from "./PageShell";
 export { PortalTopNav, PortalBottomNav } from "./PortalNav";
 export { QuestionSkeleton } from "./QuestionSkeleton";
 export { StreakBadge } from "./StreakBadge";
+export { UpgradePrompt } from "./UpgradePrompt";

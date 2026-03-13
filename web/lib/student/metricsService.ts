@@ -19,6 +19,36 @@ export type StudentMetrics = {
   totalOfficialQuestions: number;
 };
 
+export type MasteryStatusBreakdown = {
+  mastered: number;
+  inProgress: number;
+  needsVerification: number;
+  notStarted: number;
+  total: number;
+};
+
+export type AxisMasteryItem = {
+  axis: string;
+  axisCode: string;
+  label: string;
+  mastered: number;
+  total: number;
+};
+
+const AXIS_DISPLAY_NAMES: Record<string, string> = {
+  algebra_y_funciones: "Álgebra y Funciones",
+  numeros: "Números",
+  geometria: "Geometría",
+  probabilidad_y_estadistica: "Probabilidad y Estadística",
+};
+
+const AXIS_SHORT_CODES: Record<string, string> = {
+  algebra_y_funciones: "ALG",
+  numeros: "NUM",
+  geometria: "GEO",
+  probabilidad_y_estadistica: "PROB",
+};
+
 /**
  * Computes core student metrics scoped to goal-relevant atoms.
  *
@@ -105,4 +135,102 @@ export async function getStudentMetrics(
     questionsUnlocked,
     totalOfficialQuestions,
   };
+}
+
+/** CTE fragment for the ~205 goal-relevant atoms (reused across queries). */
+const RELEVANT_ATOMS_CTE = sql`
+  WITH directly_linked AS (
+    SELECT DISTINCT qa.atom_id AS id
+    FROM question_atoms qa
+    JOIN questions q ON q.id = qa.question_id
+    WHERE q.source = 'official'
+  ),
+  prereqs AS (
+    SELECT DISTINCT unnest(a.prerequisite_ids) AS id
+    FROM atoms a
+    WHERE a.id IN (SELECT id FROM directly_linked)
+      AND a.prerequisite_ids IS NOT NULL
+  ),
+  relevant AS (
+    SELECT id FROM directly_linked
+    UNION
+    SELECT id FROM prereqs
+  )
+`;
+
+/**
+ * Counts relevant atoms grouped by mastery status.
+ * Atoms without an atom_mastery row are counted as "not_started".
+ */
+export async function getMasteryStatusBreakdown(
+  userId: string
+): Promise<MasteryStatusBreakdown> {
+  const rows = await db.execute(sql`
+    ${RELEVANT_ATOMS_CTE}
+    SELECT
+      count(*) FILTER (
+        WHERE am.status = 'mastered'
+      ) AS mastered,
+      count(*) FILTER (
+        WHERE am.status = 'in_progress'
+      ) AS in_progress,
+      count(*) FILTER (
+        WHERE am.status = 'needs_verification'
+      ) AS needs_verification,
+      count(*) FILTER (
+        WHERE am.status IS NULL
+          OR am.status = 'not_started'
+      ) AS not_started,
+      count(*) AS total
+    FROM relevant r
+    JOIN atoms a ON a.id = r.id
+    LEFT JOIN atom_mastery am
+      ON am.atom_id = r.id AND am.user_id = ${userId}
+  `);
+
+  type Row = Record<string, string | number>;
+  const row = (rows as unknown as Row[])[0] ?? {};
+  return {
+    mastered: Number(row.mastered ?? 0),
+    inProgress: Number(row.in_progress ?? 0),
+    needsVerification: Number(row.needs_verification ?? 0),
+    notStarted: Number(row.not_started ?? 0),
+    total: Number(row.total ?? 0),
+  };
+}
+
+/**
+ * Returns mastery counts for each axis, scoped to relevant atoms.
+ * Sorted by axis display order (ALG, NUM, GEO, PROB).
+ */
+export async function getAxisMasteryBreakdown(
+  userId: string
+): Promise<AxisMasteryItem[]> {
+  const rows = await db.execute(sql`
+    ${RELEVANT_ATOMS_CTE}
+    SELECT
+      a.axis,
+      count(*) AS total,
+      count(*) FILTER (
+        WHERE am.is_mastered = true
+      ) AS mastered
+    FROM relevant r
+    JOIN atoms a ON a.id = r.id
+    LEFT JOIN atom_mastery am
+      ON am.atom_id = r.id AND am.user_id = ${userId}
+    GROUP BY a.axis
+    ORDER BY a.axis
+  `);
+
+  type Row = Record<string, string | number>;
+  return (rows as unknown as Row[]).map((r) => {
+    const axis = String(r.axis);
+    return {
+      axis,
+      axisCode: AXIS_SHORT_CODES[axis] ?? axis,
+      label: AXIS_DISPLAY_NAMES[axis] ?? axis,
+      mastered: Number(r.mastered ?? 0),
+      total: Number(r.total ?? 0),
+    };
+  });
 }

@@ -58,7 +58,8 @@
 | `web/app/portal/test/useFullTestFlow.ts` | 2 | State management hook |
 | `web/app/portal/test/useFullTestTimer.ts` | 2 | Timer hook (adapted from diagnostic) |
 | `web/app/portal/progress/page.tsx` | 3 | Server component for progress page |
-| `web/app/portal/progress/ProgressClient.tsx` | 3 | Client component — graph + projection |
+| `web/app/portal/progress/ProgressClient.tsx` | 3 | Client component — mastery metrics + projection |
+| `web/app/portal/progress/ProgressSections.tsx` | 3 | Retest CTA + test history table |
 
 ### Modified Files
 
@@ -309,8 +310,6 @@ type ProjectionParams = {
 type ProjectionPoint = {
   week: number;
   projectedScoreMid: number;
-  projectedScoreMin: number;
-  projectedScoreMax: number;
 };
 
 type ProjectionResult = {
@@ -336,7 +335,6 @@ Algorithm:
    - Convert to PAES score improvement via `calculateImprovement()` from `paesScoreTable.ts`
    - Apply governance cap: `min(projection, currentDiagnosticMax)` — until a
      new full test recalibrates, projection cannot exceed diagnostic ceiling
-   - Apply ±15% uncertainty for min/max (`IMPROVEMENT_UNCERTAINTY` from `scoringConstants.ts`)
 6. Find `weeksToTarget`: first week where `projectedScoreMid >= targetScore`
 7. Return projection points + metadata
 
@@ -682,32 +680,21 @@ export default function ProgressPage() {
 
 Fetches from `GET /api/student/progress?atomsPerWeek=10`.
 
-**Section 1: Score History Graph**
-- X axis: dates of each completed test
-- Y axis: PAES score (100-1000)
-- Each data point = one test, showing `paesScoreMid` with error bars for min/max
-- Points styled differently by type:
-  - Circle for `short_diagnostic`, label "Diagnóstico corto"
-  - Diamond/star for `full_test`, label "Test completo"
-- Horizontal dashed line: target score (from goals)
-- If only 1 data point, show it centered with context text
-- **Chart library**: use a simple SVG implementation or Chart.js via CDN.
-  Keep it lightweight — this is a simple line/scatter chart.
+**Section 1: Mastery Hero**
+- Circular SVG progress ring showing overall mastery percentage
+- Status badges: Dominados, En progreso, Por verificar, Sin iniciar
+- Current PAES score (mid ± range) and personal best
 
-**Section 2: Projection Curve**
-- Atoms-per-week slider: discrete steps [2, 5, 10, 15, 20]
-- Below slider: `"= ${atomsPerWeek * 20} minutos por semana"` (uses `MINUTES_PER_ATOM = 20`)
-- Chart: projected score over N weeks
-  - Solid line for `projectedScoreMid`
-  - Shaded band for min/max
-  - Horizontal dashed line: target score
-  - If `weeksToTarget` exists: vertical marker at intersection,
-    label "Alcanzas tu meta en ~X semanas"
-- Governance note (small text): "Proyección limitada por tu último test.
-  Un test completo puede subir el techo."
-- Re-fetches from API when slider changes (with debounce)
+**Section 2: Axis Breakdown**
+- Grid of 4 cards (ALG, NUM, GEO, PROB) with mastered/total counts and bars
 
-**Section 3: Retest CTA**
+**Section 3: Projection Card**
+- Atoms-per-week selector: discrete buttons [2, 5, 10, 15, 20]
+- Shows estimated minutes/week (`atomsPerWeek * MINUTES_PER_ATOM`)
+- Simple text result: "Alcanzas tu meta en ~N semanas" with projected score
+- Re-fetches from API when selector changes (with debounce)
+
+**Section 4: Retest CTA**
 - Uses `retestStatus` from the progress API response
 - If `eligible && recommended`:
   - Green banner: "Te recomendamos hacer un test completo — has dominado Y conceptos nuevos"
@@ -720,7 +707,7 @@ Fetches from `GET /api/student/progress?atomsPerWeek=10`.
   - Progress bar: `atomsMasteredSinceLastTest / 18 * 100`
   - If `blockedReason` is spacing/cap-related, show the reason text
 
-**Section 4: Test History Table**
+**Section 5: Test History Table**
 - List of all completed tests from `scoreHistory`
 - Columns: Fecha, Tipo, Puntaje, Correctas, Total
 - Most recent first
@@ -901,8 +888,8 @@ After each pass, verify manually:
 - Refresh during test → crash recovery from localStorage
 
 **Pass 3:**
-- `/portal/progress` shows score graph with test data points
-- Projection curve responds to atoms-per-week slider
+- `/portal/progress` shows mastery hero, axis breakdown, projection card
+- Projection card responds to atoms-per-week selector
 - Dashboard shows retest CTA when eligible
 - Dashboard effort slider is gone, replaced by progress link
 - "Progreso" appears in nav bar

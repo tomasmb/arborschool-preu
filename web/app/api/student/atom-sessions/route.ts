@@ -1,6 +1,8 @@
 import { createAtomSession } from "@/lib/student/atomMasteryEngine";
 import { studentApiError, studentApiSuccess } from "@/lib/student/apiEnvelope";
 import { getAuthenticatedStudentUserId } from "@/lib/student/auth";
+import { canStudyNewAtom } from "@/lib/student/accessControl";
+import { hasVerificationDue } from "@/lib/student/verificationQuiz";
 
 export async function POST(request: Request) {
   const userId = await getAuthenticatedStudentUserId();
@@ -17,6 +19,24 @@ export async function POST(request: Request) {
 
   if (!body.atomId) {
     return studentApiError("MISSING_FIELDS", "atomId is required", 400);
+  }
+
+  const verificationBlocking = await hasVerificationDue(userId);
+  if (verificationBlocking) {
+    return studentApiError(
+      "VERIFICATION_REQUIRED",
+      "Tienes conceptos pendientes de verificación. Completa la verificación antes de continuar estudiando.",
+      403
+    );
+  }
+
+  const canStudy = await canStudyNewAtom(userId);
+  if (!canStudy) {
+    return studentApiError(
+      "ACCESS_REQUIRED",
+      "Has alcanzado el límite del plan gratuito. Contacta a tu colegio o solicita acceso completo.",
+      403
+    );
   }
 
   try {

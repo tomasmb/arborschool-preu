@@ -36,6 +36,7 @@ type ReviewCompletionPayload = {
 export type ReviewPhase =
   | "loading"
   | "error"
+  | "access_required"
   | "empty"
   | "question"
   | "feedback"
@@ -72,6 +73,11 @@ export function useReviewSessionController() {
         if (!mounted) return;
 
         if (!data.success) {
+          const err = data as { error?: { code?: string } };
+          if (err.error?.code === "ACCESS_REQUIRED") {
+            setPhase("access_required");
+            return;
+          }
           throw new Error("No pudimos crear la sesión de repaso");
         }
 

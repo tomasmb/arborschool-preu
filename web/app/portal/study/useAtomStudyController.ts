@@ -17,6 +17,7 @@ import type {
 export type Phase =
   | "loading"
   | "error"
+  | "access_required"
   | "lesson"
   | "question"
   | "feedback"
@@ -26,23 +27,18 @@ export function useAtomStudyController(atomIdFromUrl: string | null) {
   const [phase, setPhase] = useState<Phase>("loading");
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<AtomSessionPayload | null>(null);
-  const [question, setQuestion] = useState<NextQuestionPayload | null>(
+  const [question, setQuestion] = useState<NextQuestionPayload | null>(null);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [answerResult, setAnswerResult] = useState<AnswerResultPayload | null>(
     null
   );
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(
-    null
-  );
-  const [answerResult, setAnswerResult] =
-    useState<AnswerResultPayload | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   // Running stats — updated from answer results
   const [totalAnswered, setTotalAnswered] = useState(0);
   const [totalCorrect, setTotalCorrect] = useState(0);
   const [difficulty, setDifficulty] = useState<SessionDifficulty>("easy");
-  const [finalStatus, setFinalStatus] = useState<SessionStatus | null>(
-    null
-  );
+  const [finalStatus, setFinalStatus] = useState<SessionStatus | null>(null);
 
   // Tracks whether the student has viewed the full explanation (forced on wrong)
   const [hasViewedExplanation, setHasViewedExplanation] = useState(false);
@@ -55,9 +51,7 @@ export function useAtomStudyController(atomIdFromUrl: string | null) {
       );
       const data = await res.json();
       if (!data.success) {
-        throw new Error(
-          data.error?.message ?? "Error al cargar pregunta"
-        );
+        throw new Error(data.error?.message ?? "Error al cargar pregunta");
       }
 
       const q = data.data as NextQuestionPayload;
@@ -69,9 +63,7 @@ export function useAtomStudyController(atomIdFromUrl: string | null) {
       setHasViewedExplanation(false);
       setPhase("question");
     } catch (err) {
-      setError(
-        toErrorMessage(err, "No pudimos cargar la siguiente pregunta")
-      );
+      setError(toErrorMessage(err, "No pudimos cargar la siguiente pregunta"));
       setPhase("error");
     }
   }
@@ -96,9 +88,12 @@ export function useAtomStudyController(atomIdFromUrl: string | null) {
         });
         const data = await res.json();
         if (!data.success) {
-          throw new Error(
-            data.error?.message ?? "Error al crear sesión"
-          );
+          if (data.error?.code === "ACCESS_REQUIRED") {
+            if (!mounted) return;
+            setPhase("access_required");
+            return;
+          }
+          throw new Error(data.error?.message ?? "Error al crear sesión");
         }
         if (!mounted) return;
 
@@ -107,10 +102,7 @@ export function useAtomStudyController(atomIdFromUrl: string | null) {
 
         if (sess.status === "lesson" && sess.hasLesson) {
           setPhase("lesson");
-        } else if (
-          sess.status === "mastered" ||
-          sess.status === "failed"
-        ) {
+        } else if (sess.status === "mastered" || sess.status === "failed") {
           setFinalStatus(sess.status);
           setPhase("result");
         } else {
@@ -118,9 +110,7 @@ export function useAtomStudyController(atomIdFromUrl: string | null) {
         }
       } catch (err) {
         if (!mounted) return;
-        setError(
-          toErrorMessage(err, "No pudimos iniciar la mini-clase")
-        );
+        setError(toErrorMessage(err, "No pudimos iniciar la mini-clase"));
         setPhase("error");
       }
     }
@@ -138,9 +128,7 @@ export function useAtomStudyController(atomIdFromUrl: string | null) {
         `/api/student/atom-sessions/${session.sessionId}/lesson-viewed`,
         { method: "POST", credentials: "include" }
       );
-      setSession((prev) =>
-        prev ? { ...prev, status: "in_progress" } : null
-      );
+      setSession((prev) => (prev ? { ...prev, status: "in_progress" } : null));
       await fetchNextQuestion(session.sessionId);
     } catch (err) {
       setError(toErrorMessage(err, "Error al marcar lección"));
@@ -166,9 +154,7 @@ export function useAtomStudyController(atomIdFromUrl: string | null) {
       );
       const data = await res.json();
       if (!data.success) {
-        throw new Error(
-          data.error?.message ?? "Error al enviar respuesta"
-        );
+        throw new Error(data.error?.message ?? "Error al enviar respuesta");
       }
 
       const result = data.data as AnswerResultPayload;
@@ -179,9 +165,7 @@ export function useAtomStudyController(atomIdFromUrl: string | null) {
       setHasViewedExplanation(false);
       setPhase("feedback");
     } catch (err) {
-      setError(
-        toErrorMessage(err, "No pudimos guardar tu respuesta")
-      );
+      setError(toErrorMessage(err, "No pudimos guardar tu respuesta"));
     } finally {
       setSubmitting(false);
     }

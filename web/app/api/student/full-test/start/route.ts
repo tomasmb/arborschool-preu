@@ -1,21 +1,28 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { testAttempts } from "@/db/schema";
+import { testAttempts, tests as testsTable } from "@/db/schema";
 import { requireAuthenticatedStudentUser } from "@/lib/student/apiAuth";
 import { getRetestStatus } from "@/lib/student/retestGating";
 import {
-  getAvailableFullTests,
   getInProgressAttempt,
   resolveTestQuestions,
 } from "@/lib/student/fullTest";
+import {
+  assembleMaxCoverageQuestions,
+  getOrCreateCompositeTest,
+} from "@/lib/student/fullTestAssembly";
+import { getUserAccessStatus } from "@/lib/student/accessControl";
+import { eq } from "drizzle-orm";
+
+const DEFAULT_SUBJECT = "paes_m1";
 
 /**
  * POST /api/student/full-test/start
  * Starts a new full timed test — or resumes an in-progress one.
  *
- * If the student has an unfinished attempt (started but not completed),
- * returns that attempt's data so the client can resume from localStorage.
- * Otherwise creates a new attempt.
+ * New tests use pool-based assembly (greedy set-cover) to maximise atom
+ * coverage across the full ~205 M1 concept set. In-progress attempts use
+ * the original per-test resolution for crash-recovery consistency.
  */
 export async function POST() {
   try {
@@ -25,46 +32,22 @@ export async function POST() {
     }
     const userId = authResult.userId;
 
-    // Check for an unfinished attempt first (crash recovery)
+    const access = await getUserAccessStatus(userId);
+    if (access.subscriptionStatus !== "active") {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Los tests completos requieren acceso completo.",
+          code: "ACCESS_REQUIRED",
+        },
+        { status: 403 }
+      );
+    }
+
+    // Crash recovery: resume an unfinished attempt (uses original resolution)
     const inProgress = await getInProgressAttempt(userId);
     if (inProgress) {
-      const questions = await resolveTestQuestions(
-        inProgress.testId,
-        userId,
-        inProgress.attemptId
-      );
-      const elapsed = Date.now() - inProgress.startedAt.getTime();
-      const elapsedMinutes = elapsed / 60_000;
-      const totalMinutes = inProgress.timeLimitMinutes ?? 150;
-      const remainingMinutes = Math.max(0, totalMinutes - elapsedMinutes);
-
-      if (remainingMinutes <= 0) {
-        // Time expired while away — auto-complete with 0 correct
-        return NextResponse.json({
-          success: true,
-          data: {
-            attemptId: inProgress.attemptId,
-            testName: inProgress.testName,
-            timeLimitMinutes: 0,
-            totalQuestions: questions.length,
-            questions,
-            resumed: true,
-            expired: true,
-          },
-        });
-      }
-
-      return NextResponse.json({
-        success: true,
-        data: {
-          attemptId: inProgress.attemptId,
-          testName: inProgress.testName,
-          timeLimitMinutes: remainingMinutes,
-          totalQuestions: questions.length,
-          questions,
-          resumed: true,
-        },
-      });
+      return handleResumedAttempt(inProgress, userId);
     }
 
     const retestStatus = await getRetestStatus(userId);
@@ -78,25 +61,32 @@ export async function POST() {
       );
     }
 
-    const available = await getAvailableFullTests(userId);
-    if (available.length === 0) {
+    // Pool-based assembly: pick 60 questions maximising atom coverage
+    const compositeTestId =
+      await getOrCreateCompositeTest(DEFAULT_SUBJECT);
+    const resolvedQuestions = await assembleMaxCoverageQuestions(
+      userId,
+      DEFAULT_SUBJECT
+    );
+
+    if (resolvedQuestions.length === 0) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "No hay tests completos disponibles",
-        },
+        { success: false, error: "No hay preguntas disponibles" },
         { status: 404 }
       );
     }
 
-    const test = available[0];
-    const resolvedQuestions = await resolveTestQuestions(test.id, userId);
+    const [compositeTest] = await db
+      .select({ timeLimitMinutes: testsTable.timeLimitMinutes })
+      .from(testsTable)
+      .where(eq(testsTable.id, compositeTestId))
+      .limit(1);
 
     const [attempt] = await db
       .insert(testAttempts)
       .values({
         userId,
-        testId: test.id,
+        testId: compositeTestId,
         startedAt: new Date(),
         totalQuestions: resolvedQuestions.length,
       })
@@ -106,8 +96,8 @@ export async function POST() {
       success: true,
       data: {
         attemptId: attempt.id,
-        testName: test.name,
-        timeLimitMinutes: test.timeLimitMinutes,
+        testName: "PAES M1 — Test Completo",
+        timeLimitMinutes: compositeTest?.timeLimitMinutes ?? 135,
         totalQuestions: resolvedQuestions.length,
         questions: resolvedQuestions,
       },
@@ -119,4 +109,55 @@ export async function POST() {
       { status: 500 }
     );
   }
+}
+
+// ============================================================================
+// CRASH RECOVERY — RESUME IN-PROGRESS ATTEMPT
+// ============================================================================
+
+type InProgressData = Awaited<
+  ReturnType<typeof getInProgressAttempt>
+> & {};
+
+async function handleResumedAttempt(
+  inProgress: NonNullable<InProgressData>,
+  userId: string
+) {
+  const questions = await resolveTestQuestions(
+    inProgress.testId,
+    userId,
+    inProgress.attemptId
+  );
+
+  const elapsed = Date.now() - inProgress.startedAt.getTime();
+  const elapsedMinutes = elapsed / 60_000;
+  const totalMinutes = inProgress.timeLimitMinutes ?? 150;
+  const remainingMinutes = Math.max(0, totalMinutes - elapsedMinutes);
+
+  if (remainingMinutes <= 0) {
+    return NextResponse.json({
+      success: true,
+      data: {
+        attemptId: inProgress.attemptId,
+        testName: inProgress.testName,
+        timeLimitMinutes: 0,
+        totalQuestions: questions.length,
+        questions,
+        resumed: true,
+        expired: true,
+      },
+    });
+  }
+
+  return NextResponse.json({
+    success: true,
+    data: {
+      attemptId: inProgress.attemptId,
+      testName: inProgress.testName,
+      timeLimitMinutes: remainingMinutes,
+      totalQuestions: questions.length,
+      questions,
+      resumed: true,
+    },
+  });
 }

@@ -6,10 +6,15 @@ import {
 } from "@/lib/student/scoreHistory";
 import { getRetestStatus } from "@/lib/student/retestGating";
 import { getUserDiagnosticSnapshot } from "@/lib/student/userQueries";
+import {
+  getMasteryStatusBreakdown,
+  getAxisMasteryBreakdown,
+} from "@/lib/student/metricsService";
 
 /**
  * GET /api/student/progress
- * Returns score history, projection curve, retest status, and current score.
+ * Returns mastery breakdown, axis mastery, score history, projection,
+ * retest status, and current/target scores.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -23,13 +28,21 @@ export async function GET(request: NextRequest) {
       request.nextUrl.searchParams.get("atomsPerWeek") ?? 10
     );
 
-    const [scoreHistory, projection, retestStatus, snapshot] =
-      await Promise.all([
-        getScoreHistory(userId),
-        buildProjectionCurve({ userId, atomsPerWeek }),
-        getRetestStatus(userId),
-        getUserDiagnosticSnapshot(userId),
-      ]);
+    const [
+      scoreHistory,
+      projection,
+      retestStatus,
+      snapshot,
+      masteryBreakdown,
+      axisMastery,
+    ] = await Promise.all([
+      getScoreHistory(userId),
+      buildProjectionCurve({ userId, atomsPerWeek }),
+      getRetestStatus(userId),
+      getUserDiagnosticSnapshot(userId),
+      getMasteryStatusBreakdown(userId),
+      getAxisMasteryBreakdown(userId),
+    ]);
 
     const currentScore =
       snapshot?.paesScoreMin != null && snapshot?.paesScoreMax != null
@@ -42,9 +55,17 @@ export async function GET(request: NextRequest) {
           }
         : null;
 
+    const personalBest =
+      scoreHistory.length > 0
+        ? Math.max(...scoreHistory.map((s) => s.paesScoreMid))
+        : null;
+
     return NextResponse.json({
       success: true,
       data: {
+        masteryBreakdown,
+        axisMastery,
+        personalBest,
         scoreHistory,
         projection,
         retestStatus,

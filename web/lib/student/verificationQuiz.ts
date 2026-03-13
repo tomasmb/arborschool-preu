@@ -25,6 +25,7 @@ import {
   normalizeAnswer,
 } from "./questionQueries";
 import { startPrereqScan } from "./prerequisiteScan";
+import { computeGrowthFactor } from "./spacedRepetition";
 
 /**
  * Hours after flagging before verification becomes active.
@@ -105,6 +106,31 @@ export async function getVerificationDueItems(
     atomId: r.atomId,
     atomTitle: r.atomTitle,
   }));
+}
+
+/**
+ * Lightweight check: returns true if the student has any verification-due
+ * atoms past the grace period. Use to gate study/review routes.
+ */
+export async function hasVerificationDue(
+  userId: string
+): Promise<boolean> {
+  const graceCutoff = new Date(
+    Date.now() - VERIFICATION_GRACE_HOURS * 60 * 60 * 1000
+  );
+
+  const [row] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(atomMastery)
+    .where(
+      and(
+        eq(atomMastery.userId, userId),
+        eq(atomMastery.status, "needs_verification"),
+        lt(atomMastery.updatedAt, graceCutoff)
+      )
+    );
+
+  return Number(row?.count ?? 0) > 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -241,12 +267,40 @@ export async function submitVerificationAnswer(params: {
   let prereqScan: { sessionId: string } | null = null;
 
   if (isCorrect) {
+    // Verification counts as spaced repetition: advance the SR interval
+    const [mastery] = await db
+      .select({
+        reviewIntervalSessions: atomMastery.reviewIntervalSessions,
+        correctAttempts: atomMastery.correctAttempts,
+        totalAttempts: atomMastery.totalAttempts,
+        totalReviews: atomMastery.totalReviews,
+      })
+      .from(atomMastery)
+      .where(
+        and(
+          eq(atomMastery.userId, params.userId),
+          eq(atomMastery.atomId, atomId)
+        )
+      )
+      .limit(1);
+
+    const curInterval = mastery?.reviewIntervalSessions ?? 3;
+    const factor = computeGrowthFactor(
+      mastery?.correctAttempts ?? 0,
+      mastery?.totalAttempts ?? 0
+    );
+    const newInterval = Math.round(curInterval * factor);
+    const calendarHintMs = newInterval * 2 * 24 * 60 * 60 * 1000;
+
     await db
       .update(atomMastery)
       .set({
         status: "mastered",
         sessionsSinceLastReview: 0,
+        reviewIntervalSessions: newInterval,
+        totalReviews: (mastery?.totalReviews ?? 0) + 1,
         lastDemonstratedAt: now,
+        nextReviewAt: new Date(Date.now() + calendarHintMs),
         updatedAt: now,
       })
       .where(
