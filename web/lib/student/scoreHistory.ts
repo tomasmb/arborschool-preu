@@ -6,7 +6,7 @@
  * until a new full test recalibrates.
  */
 
-import { and, eq, isNotNull, sql } from "drizzle-orm";
+import { and, eq, isNotNull } from "drizzle-orm";
 import { db } from "@/db";
 import { testAttempts, tests } from "@/db/schema";
 import {

@@ -40,6 +40,7 @@ export type StudentApiErrorCode =
   | "VERIFICATION_SESSION_FAILED"
   | "VERIFICATION_ANSWER_FAILED"
   | "ACCESS_REQUIRED"
+  | "VERIFICATION_REQUIRED"
   | "UNKNOWN";
 
 type ErrorDetails = Record<string, unknown> | undefined;
