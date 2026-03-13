@@ -8,11 +8,5 @@ const nextConfig: NextConfig = {
 };
 
 export default withSentryConfig(nextConfig, {
-  // Suppresses source map uploading logs during build
   silent: true,
-
-  // Automatically instrument server functions and app directory
-  autoInstrumentServerFunctions: true,
-  autoInstrumentMiddleware: true,
-  autoInstrumentAppDirectory: true,
 });
