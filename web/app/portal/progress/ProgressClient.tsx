@@ -50,7 +50,7 @@ function atomsToHours(atoms: number): number {
 // ============================================================================
 
 export function ProgressClient() {
-  const { data, loading, error, hoursPerWeek, setHoursPerWeek } =
+  const { data, loading, error, refreshing, hoursPerWeek, setHoursPerWeek } =
     useProgressData();
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(
     null
@@ -92,13 +92,19 @@ export function ProgressClient() {
             onSelectGoal={setSelectedGoalId}
           />
 
-          <ScoreJourneyChart
-            history={data.scoreHistory}
-            projection={data.projection.points}
-            milestones={selectedMilestones}
-            currentScore={data.currentScore}
-            diagnosticCeiling={data.projection.diagnosticCeiling}
-          />
+          <div
+            className={`transition-opacity duration-300 ${
+              refreshing ? "opacity-40 pointer-events-none" : ""
+            }`}
+          >
+            <ScoreJourneyChart
+              history={data.scoreHistory}
+              projection={data.projection.points}
+              milestones={selectedMilestones}
+              currentScore={data.currentScore}
+              diagnosticCeiling={data.projection.diagnosticCeiling}
+            />
+          </div>
 
           <ProjectionCard
             projection={data.projection}
@@ -108,6 +114,7 @@ export function ProgressClient() {
               data.masteryBreakdown.mastered >= data.masteryBreakdown.total
             }
             selectedMeta={selectedMeta}
+            refreshing={refreshing}
           />
 
           <AxisBreakdownSection axisMastery={data.axisMastery} />
@@ -128,6 +135,7 @@ function useProgressData() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hoursPerWeek, setHoursPerWeek] = useState<number | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const mountedRef = useRef(true);
   const initializedRef = useRef(false);
@@ -157,7 +165,10 @@ function useProgressData() {
         err instanceof Error ? err.message : "Error al cargar progreso";
       setError(msg);
     } finally {
-      if (mountedRef.current) setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, []);
 
@@ -173,10 +184,11 @@ function useProgressData() {
     (hours: number) => {
       const clamped = Math.min(MAX_HOURS, Math.max(MIN_HOURS, hours));
       setHoursPerWeek(clamped);
+      setRefreshing(true);
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(
         () => fetchData(hoursToAtoms(clamped)),
-        400
+        1000
       );
     },
     [fetchData]
@@ -186,6 +198,7 @@ function useProgressData() {
     data,
     loading,
     error,
+    refreshing,
     hoursPerWeek: hoursPerWeek ?? DEFAULT_HOURS,
     setHoursPerWeek: handleHoursChange,
   };
@@ -349,12 +362,14 @@ function ProjectionCard({
   onChangeHours,
   allAtomsMastered,
   selectedMeta,
+  refreshing,
 }: {
   projection: ProjectionResult;
   hoursPerWeek: number;
   onChangeHours: (value: number) => void;
   allAtomsMastered: boolean;
   selectedMeta: number | null;
+  refreshing: boolean;
 }) {
   const atoms = hoursToAtoms(hoursPerWeek);
   const minutesPerWeek = Math.round(hoursPerWeek * 60);
@@ -421,6 +436,11 @@ function ProjectionCard({
         </p>
       </div>
 
+      <div
+        className={`transition-opacity duration-300 space-y-4 ${
+          refreshing ? "opacity-40" : ""
+        }`}
+      >
       {allAtomsMastered ? (
         <div
           className="rounded-xl bg-emerald-50 border border-emerald-100
@@ -459,6 +479,7 @@ function ProjectionCard({
           Completa un diagnóstico para ver tu proyección.
         </p>
       )}
+      </div>
     </section>
   );
 }
