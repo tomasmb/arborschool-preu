@@ -48,7 +48,6 @@ export function ProgressClient() {
         <div className="space-y-6">
           <MasteryHeroSection
             breakdown={data.masteryBreakdown}
-            personalBest={data.personalBest}
             currentScore={data.currentScore}
           />
 
@@ -173,11 +172,9 @@ function findClosestStep(value: number): number {
 
 function MasteryHeroSection({
   breakdown,
-  personalBest,
   currentScore,
 }: {
   breakdown: MasteryBreakdown;
-  personalBest: number | null;
   currentScore: CurrentScore | null;
 }) {
   const pct =

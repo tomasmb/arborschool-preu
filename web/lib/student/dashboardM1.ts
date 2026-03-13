@@ -8,7 +8,7 @@ import {
   universities,
 } from "@/db/schema";
 import { getUserDiagnosticSnapshot, getMasteryRows } from "./userQueries";
-import { getScoreHistory, type ScoreDataPoint } from "./scoreHistory";
+import { getScoreHistory } from "./scoreHistory";
 import { resolveDisplayScore } from "./scoreDisplay";
 import {
   analyzeLearningPotential,
@@ -417,6 +417,8 @@ export async function getM1Dashboard(userId: string): Promise<M1DashboardData> {
       bandWidth: null,
     });
   }
+
+  const latestScore = Math.round((latestMin + latestMax) / 2);
 
   const display = resolveDisplayScore(
     { paesScoreMin: latestMin, paesScoreMax: latestMax },
