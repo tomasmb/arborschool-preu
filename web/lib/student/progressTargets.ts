@@ -21,6 +21,7 @@ export type GoalMilestone = {
   universityName: string;
   isPrimary: boolean;
   neededM1Score: number | null;
+  userM1Target: number | null;
   lastCutoff: number | null;
   bufferPoints: number;
   missingNonM1Tests: string[];
@@ -30,6 +31,7 @@ export type ProgressTargets = {
   milestones: GoalMilestone[];
   primaryTargetM1: number | null;
   highestTargetM1: number | null;
+  highestUserM1: number | null;
   defaultAtomsPerWeek: number | null;
 };
 
@@ -62,6 +64,7 @@ export async function getProgressTargets(
       milestones: [],
       primaryTargetM1: null,
       highestTargetM1: null,
+      highestUserM1: null,
       defaultAtomsPerWeek,
     };
   }
@@ -85,6 +88,11 @@ export async function getProgressTargets(
       (w) => normalizeTestCode(w.testCode) === M1_TEST_CODE
     );
 
+    const goalScores = new Map(
+      goal.scores.map((s) => [normalizeTestCode(s.testCode), s.score])
+    );
+    const userM1Target = goalScores.get(M1_TEST_CODE) ?? null;
+
     if (!m1Weight || !bufferedTarget) {
       milestones.push({
         goalId: goal.id,
@@ -93,16 +101,13 @@ export async function getProgressTargets(
         universityName: option.universityName,
         isPrimary: goal.isPrimary,
         neededM1Score: null,
+        userM1Target,
         lastCutoff: goal.lastCutoff,
         bufferPoints,
         missingNonM1Tests: [],
       });
       continue;
     }
-
-    const goalScores = new Map(
-      goal.scores.map((s) => [normalizeTestCode(s.testCode), s.score])
-    );
 
     let nonM1Sum = 0;
     const missingNonM1Tests: string[] = [];
@@ -133,6 +138,7 @@ export async function getProgressTargets(
       universityName: option.universityName,
       isPrimary: goal.isPrimary,
       neededM1Score,
+      userM1Target,
       lastCutoff: goal.lastCutoff,
       bufferPoints,
       missingNonM1Tests,
@@ -148,10 +154,17 @@ export async function getProgressTargets(
   const highestTargetM1 =
     validTargets.length > 0 ? Math.max(...validTargets) : null;
 
+  const userM1Values = milestones
+    .filter((m) => m.userM1Target !== null)
+    .map((m) => m.userM1Target!);
+  const highestUserM1 =
+    userM1Values.length > 0 ? Math.max(...userM1Values) : null;
+
   return {
     milestones,
     primaryTargetM1,
     highestTargetM1,
+    highestUserM1,
     defaultAtomsPerWeek,
   };
 }

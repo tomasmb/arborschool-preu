@@ -34,6 +34,7 @@ export type GoalMilestone = {
   universityName: string;
   isPrimary: boolean;
   neededM1Score: number | null;
+  userM1Target: number | null;
   weeksToReach: number | null;
   lastCutoff: number | null;
   bufferPoints: number;
@@ -65,6 +66,13 @@ export type AxisMasteryItem = {
   total: number;
 };
 
+export type CurrentScore = {
+  min: number;
+  max: number;
+  mid: number;
+  isPersonalBest: boolean;
+};
+
 export type ProgressData = {
   masteryBreakdown: MasteryBreakdown;
   axisMastery: AxisMasteryItem[];
@@ -72,7 +80,7 @@ export type ProgressData = {
   scoreHistory: ScoreDataPoint[];
   projection: ProjectionResult;
   retestStatus: RetestStatus;
-  currentScore: { min: number; max: number; mid: number } | null;
+  currentScore: CurrentScore | null;
   goalMilestones: GoalMilestone[];
   defaultAtomsPerWeek: number | null;
 };

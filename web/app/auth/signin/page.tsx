@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
-import { auth, signIn } from "@/auth";
+import { auth, signIn, hasMicrosoftAuth } from "@/auth";
 import { resolveSafeCallbackUrl } from "@/lib/auth/callbackUrl";
 
 interface SignInPageProps {
@@ -91,33 +91,35 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
               </button>
             </form>
 
-            {/* Microsoft */}
-            <form
-              action={async () => {
-                "use server";
-                await signIn("microsoft-entra-id", {
-                  redirectTo: callbackUrl,
-                });
-              }}
-            >
-              <button
-                type="submit"
-                className="w-full h-12 rounded-xl border border-gray-300
-                  bg-white text-gray-700 font-medium
-                  flex items-center justify-center gap-3
-                  hover:bg-gray-50 hover:shadow-md hover:border-gray-400
-                  active:scale-[0.98]
-                  transition-all duration-200"
+            {/* Microsoft — only shown when env vars are configured */}
+            {hasMicrosoftAuth && (
+              <form
+                action={async () => {
+                  "use server";
+                  await signIn("microsoft-entra-id", {
+                    redirectTo: callbackUrl,
+                  });
+                }}
               >
-                <svg className="w-5 h-5" viewBox="0 0 21 21">
-                  <rect x="1" y="1" width="9" height="9" fill="#F25022" />
-                  <rect x="11" y="1" width="9" height="9" fill="#7FBA00" />
-                  <rect x="1" y="11" width="9" height="9" fill="#00A4EF" />
-                  <rect x="11" y="11" width="9" height="9" fill="#FFB900" />
-                </svg>
-                Continuar con Microsoft
-              </button>
-            </form>
+                <button
+                  type="submit"
+                  className="w-full h-12 rounded-xl border border-gray-300
+                    bg-white text-gray-700 font-medium
+                    flex items-center justify-center gap-3
+                    hover:bg-gray-50 hover:shadow-md hover:border-gray-400
+                    active:scale-[0.98]
+                    transition-all duration-200"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 21 21">
+                    <rect x="1" y="1" width="9" height="9" fill="#F25022" />
+                    <rect x="11" y="1" width="9" height="9" fill="#7FBA00" />
+                    <rect x="1" y="11" width="9" height="9" fill="#00A4EF" />
+                    <rect x="11" y="11" width="9" height="9" fill="#FFB900" />
+                  </svg>
+                  Continuar con Microsoft
+                </button>
+              </form>
+            )}
           </div>
 
           <p className="text-xs text-gray-400 text-center">

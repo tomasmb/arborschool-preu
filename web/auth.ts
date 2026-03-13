@@ -1,19 +1,31 @@
 import NextAuth from "next-auth";
+import type { Provider } from "@auth/core/providers";
 import Google from "next-auth/providers/google";
 import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
 import { upsertUserFromOAuth } from "@/lib/auth/users";
 
+export const hasMicrosoftAuth = !!(
+  process.env.AUTH_MICROSOFT_ENTRA_ID_ID &&
+  process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET
+);
+
+const providers: Provider[] = [
+  Google({
+    clientId: process.env.AUTH_GOOGLE_ID,
+    clientSecret: process.env.AUTH_GOOGLE_SECRET,
+  }),
+  ...(hasMicrosoftAuth
+    ? [
+        MicrosoftEntraID({
+          clientId: process.env.AUTH_MICROSOFT_ENTRA_ID_ID!,
+          clientSecret: process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET!,
+        }),
+      ]
+    : []),
+];
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  providers: [
-    Google({
-      clientId: process.env.AUTH_GOOGLE_ID,
-      clientSecret: process.env.AUTH_GOOGLE_SECRET,
-    }),
-    MicrosoftEntraID({
-      clientId: process.env.AUTH_MICROSOFT_ENTRA_ID_ID,
-      clientSecret: process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET,
-    }),
-  ],
+  providers,
   session: {
     strategy: "jwt",
   },

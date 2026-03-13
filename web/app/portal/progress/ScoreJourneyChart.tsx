@@ -7,7 +7,12 @@ type Props = {
   history: ScoreDataPoint[];
   projection: ProjectionPoint[];
   milestones: GoalMilestone[];
-  currentScore: { min: number; max: number; mid: number } | null;
+  currentScore: {
+    min: number;
+    max: number;
+    mid: number;
+    isPersonalBest?: boolean;
+  } | null;
   diagnosticCeiling: number | null;
 };
 
@@ -130,9 +135,21 @@ export function ScoreJourneyChart({
               fill={COLORS.axisText}
               fontSize={10}
             >
-              {tick <= 0 ? formatWeekLabel(tick) : `+${tick}s`}
+              {tick <= 0 ? formatWeekLabel(tick) : `+${tick} sem`}
             </text>
           ))}
+
+          {/* X axis title */}
+          <text
+            x={PAD.left + CHART_W / 2}
+            y={H - 0}
+            textAnchor="middle"
+            fill={COLORS.axisText}
+            fontSize={9}
+            opacity={0.7}
+          >
+            semanas
+          </text>
 
           {/* Confidence band */}
           {bandPath && <path d={bandPath} fill={COLORS.band} opacity={0.6} />}
@@ -472,5 +489,5 @@ function buildXTicks([min, max]: [number, number]): number[] {
 function formatWeekLabel(weeksAgo: number): string {
   if (weeksAgo === 0) return "Hoy";
   const abs = Math.abs(Math.round(weeksAgo));
-  return `-${abs}s`;
+  return `-${abs} sem`;
 }

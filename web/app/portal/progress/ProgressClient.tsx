@@ -12,7 +12,12 @@ import {
   TestHistoryTable,
 } from "./ProgressSections";
 import { ScoreJourneyChart } from "./ScoreJourneyChart";
-import type { MasteryBreakdown, ProgressData, ProjectionResult } from "./types";
+import type {
+  CurrentScore,
+  MasteryBreakdown,
+  ProgressData,
+  ProjectionResult,
+} from "./types";
 
 // ============================================================================
 // CONSTANTS
@@ -43,7 +48,6 @@ export function ProgressClient() {
         <div className="space-y-6">
           <MasteryHeroSection
             breakdown={data.masteryBreakdown}
-            personalBest={data.personalBest}
             currentScore={data.currentScore}
           />
 
@@ -168,12 +172,10 @@ function findClosestStep(value: number): number {
 
 function MasteryHeroSection({
   breakdown,
-  personalBest,
   currentScore,
 }: {
   breakdown: MasteryBreakdown;
-  personalBest: number | null;
-  currentScore: { min: number; max: number; mid: number } | null;
+  currentScore: CurrentScore | null;
 }) {
   const pct =
     breakdown.total > 0
@@ -263,21 +265,18 @@ function MasteryHeroSection({
             >
               {currentScore && (
                 <p>
-                  Puntaje actual:{" "}
+                  Tu puntaje demostrado:{" "}
                   <span className="font-semibold text-primary">
                     {currentScore.mid}
                   </span>
                   <span className="text-xs text-gray-400 ml-1">
                     ({currentScore.min}–{currentScore.max})
                   </span>
-                </p>
-              )}
-              {personalBest != null && (
-                <p>
-                  Mejor:{" "}
-                  <span className="font-semibold text-primary">
-                    {personalBest}
-                  </span>
+                  {currentScore.isPersonalBest && (
+                    <span className="text-xs text-emerald-600 ml-1">
+                      (mejor resultado)
+                    </span>
+                  )}
                 </p>
               )}
             </div>

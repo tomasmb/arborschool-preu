@@ -8,7 +8,8 @@ import {
   universities,
 } from "@/db/schema";
 import { getUserDiagnosticSnapshot, getMasteryRows } from "./userQueries";
-import { getScoreHistory, type ScoreDataPoint } from "./scoreHistory";
+import { getScoreHistory } from "./scoreHistory";
+import { resolveDisplayScore } from "./scoreDisplay";
 import {
   analyzeLearningPotential,
   calculatePAESImprovement,
@@ -391,14 +392,6 @@ function buildReadyDashboard(params: {
   };
 }
 
-/** Finds the score history entry with the highest mid score. */
-function findPersonalBest(history: ScoreDataPoint[]): ScoreDataPoint | null {
-  if (history.length === 0) return null;
-  return history.reduce((best, entry) =>
-    entry.paesScoreMid > best.paesScoreMid ? entry : best
-  );
-}
-
 export async function getM1Dashboard(userId: string): Promise<M1DashboardData> {
   const [snapshot, target, masteryRows, scoreHistory] = await Promise.all([
     getUserDiagnosticSnapshot(userId),
@@ -427,12 +420,14 @@ export async function getM1Dashboard(userId: string): Promise<M1DashboardData> {
 
   const latestScore = Math.round((latestMin + latestMax) / 2);
 
-  // Personal best: highest mid score from test history, fallback to latest
-  const best = findPersonalBest(scoreHistory);
-  const isPersonalBest = best !== null && best.paesScoreMid > latestScore;
-  const displayScore = isPersonalBest ? best.paesScoreMid : latestScore;
-  const displayMin = isPersonalBest ? best.paesScoreMin : latestMin;
-  const displayMax = isPersonalBest ? best.paesScoreMax : latestMax;
+  const display = resolveDisplayScore(
+    { paesScoreMin: latestMin, paesScoreMax: latestMax },
+    scoreHistory
+  );
+  const displayScore = display.score;
+  const displayMin = display.min;
+  const displayMax = display.max;
+  const isPersonalBest = display.isPersonalBest;
 
   if (!target) {
     return buildMissingDashboard({
