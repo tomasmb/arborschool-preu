@@ -15,10 +15,10 @@ import {
 import { parseQtiXml } from "@/lib/qti/serverParser";
 import { startPrereqScan } from "./prerequisiteScan";
 import {
-  findGeneratedQuestions,
+  findBatchReviewQuestions,
+  getBatchSeenQuestionIds,
   getQuestionAtomId,
   getQuestionContent,
-  getSeenQuestionIds,
   normalizeAnswer,
 } from "./questionQueries";
 
@@ -98,17 +98,6 @@ export function computeGrowthFactor(correct: number, total: number): number {
   if (acc > 0.85) return 2.5;
   if (acc > 0.7) return 2.0;
   return 1.5;
-}
-
-/** Finds one hard generated question for an atom */
-async function findReviewQuestion(atomId: string, excludeIds: string[]) {
-  const rows = await findGeneratedQuestions({
-    atomId,
-    difficulty: "high",
-    excludeIds,
-    limit: 1,
-  });
-  return rows[0] ?? null;
 }
 
 /** Builds a WHERE clause targeting a user+atom in atomMastery */
@@ -198,31 +187,40 @@ export async function createReviewSession(
 ): Promise<ReviewSession | null> {
   const dueItems = await getReviewDueItems(userId);
   if (dueItems.length === 0) return null;
-  const [session] = await db
-    .insert(atomStudySessions)
-    .values({
-      userId,
-      atomId: dueItems[0].atomId,
-      sessionType: "review",
-      attemptNumber: 1,
-      status: "in_progress",
-      currentDifficulty: "hard",
-    })
-    .returning({ id: atomStudySessions.id });
+
+  const dueAtomIds = dueItems.map((d) => d.atomId);
+
+  const [session, seenMap] = await Promise.all([
+    db
+      .insert(atomStudySessions)
+      .values({
+        userId,
+        atomId: dueItems[0].atomId,
+        sessionType: "review",
+        attemptNumber: 1,
+        status: "in_progress",
+        currentDifficulty: "hard",
+      })
+      .returning({ id: atomStudySessions.id })
+      .then((rows) => rows[0]),
+    getBatchSeenQuestionIds(userId, dueAtomIds),
+  ]);
+  const questionMap = await findBatchReviewQuestions(dueAtomIds, seenMap);
+
   const items: ReviewSession["items"] = [];
-  for (let i = 0; i < dueItems.length; i++) {
-    const due = dueItems[i];
-    const seenIds = await getSeenQuestionIds(userId, due.atomId);
-    const q = await findReviewQuestion(due.atomId, seenIds);
+  let position = 0;
+  for (const due of dueItems) {
+    const q = questionMap.get(due.atomId);
     if (!q) continue;
 
+    position++;
     const parsed = parseQtiXml(q.qtiXml);
     const [response] = await db
       .insert(atomStudyResponses)
       .values({
         sessionId: session.id,
         questionId: q.id,
-        position: i + 1,
+        position,
         difficultyLevel: "hard",
       })
       .returning({ id: atomStudyResponses.id });
@@ -376,33 +374,42 @@ export async function handleReviewFailures(
   userId: string,
   failedAtomIds: string[]
 ): Promise<ReviewFailureResult> {
+  if (failedAtomIds.length === 0) return { halvedIntervals: [], pendingScans: [] };
+
+  const [atomRows, masteryRows] = await Promise.all([
+    db
+      .select({ id: atoms.id, prerequisiteIds: atoms.prerequisiteIds })
+      .from(atoms)
+      .where(inArray(atoms.id, failedAtomIds)),
+    db
+      .select({
+        atomId: atomMastery.atomId,
+        interval: atomMastery.reviewIntervalSessions,
+      })
+      .from(atomMastery)
+      .where(
+        and(
+          eq(atomMastery.userId, userId),
+          inArray(atomMastery.atomId, failedAtomIds)
+        )
+      ),
+  ]);
+
+  const prereqMap = new Map(atomRows.map((a) => [a.id, a.prerequisiteIds]));
+  const intervalMap = new Map(masteryRows.map((m) => [m.atomId, m.interval]));
+
   const halvedIntervals: ReviewFailureResult["halvedIntervals"] = [];
   const pendingScans: ReviewFailureResult["pendingScans"] = [];
+  const now = new Date();
+
+  const noPrereqUpdates: Array<{ atomId: string; newInterval: number }> = [];
 
   for (const atomId of failedAtomIds) {
-    const [atom] = await db
-      .select({ prerequisiteIds: atoms.prerequisiteIds })
-      .from(atoms)
-      .where(eq(atoms.id, atomId))
-      .limit(1);
-
-    const hasPrereqs = (atom?.prerequisiteIds ?? []).filter(Boolean).length > 0;
-
-    if (!hasPrereqs) {
-      const [m] = await db
-        .select({ interval: atomMastery.reviewIntervalSessions })
-        .from(atomMastery)
-        .where(masteryWhere(userId, atomId))
-        .limit(1);
-      const newInterval = Math.max(1, Math.floor((m?.interval ?? 3) / 2));
-      await db
-        .update(atomMastery)
-        .set({
-          reviewIntervalSessions: newInterval,
-          sessionsSinceLastReview: 0,
-          updatedAt: new Date(),
-        })
-        .where(masteryWhere(userId, atomId));
+    const prereqs = (prereqMap.get(atomId) ?? []).filter(Boolean);
+    if (prereqs.length === 0) {
+      const cur = intervalMap.get(atomId) ?? 3;
+      const newInterval = Math.max(1, Math.floor(cur / 2));
+      noPrereqUpdates.push({ atomId, newInterval });
       halvedIntervals.push({ atomId, newInterval });
     } else {
       const scan = await startPrereqScan(userId, atomId);
@@ -411,6 +418,20 @@ export async function handleReviewFailures(
       }
     }
   }
+
+  await Promise.all(
+    noPrereqUpdates.map(({ atomId, newInterval }) =>
+      db
+        .update(atomMastery)
+        .set({
+          reviewIntervalSessions: newInterval,
+          sessionsSinceLastReview: 0,
+          updatedAt: now,
+        })
+        .where(masteryWhere(userId, atomId))
+    )
+  );
+
   return { halvedIntervals, pendingScans };
 }
 
@@ -425,12 +446,45 @@ export async function incrementSessionCounters(userId: string) {
   `);
 }
 
+/** Collects next-hop prereq IDs, excluding already-visited nodes. */
+async function collectNextHop(
+  currentIds: string[],
+  visited: Set<string>
+): Promise<string[]> {
+  if (currentIds.length === 0) return [];
+  const rows = await db
+    .select({ prerequisiteIds: atoms.prerequisiteIds })
+    .from(atoms)
+    .where(inArray(atoms.id, currentIds));
+  const nextIds: string[] = [];
+  for (const a of rows) {
+    for (const id of (a.prerequisiteIds ?? []).filter(Boolean)) {
+      if (!visited.has(id)) { nextIds.push(id); visited.add(id); }
+    }
+  }
+  return nextIds;
+}
+
+/** Reduces sessions_since_last_review for a set of atoms by a divisor. */
+async function reduceReviewCounter(
+  userId: string,
+  atomIds: string[],
+  divisor: number
+) {
+  if (atomIds.length === 0) return;
+  await db.execute(sql`
+    UPDATE atom_mastery
+    SET sessions_since_last_review = GREATEST(0,
+      sessions_since_last_review
+        - GREATEST(1, sessions_since_last_review / ${divisor}))
+    WHERE user_id = ${userId}
+      AND atom_id = ANY(${atomIds}) AND is_mastered = true
+  `);
+}
+
 /**
  * Implicit repetition: prereqs get partial review credit when an advanced
- * atom is mastered/reviewed.
- *   1-hop (direct prereqs): full credit (reset to 0)
- *   2-hop: half credit (reduce by 50%)
- *   3-hop: quarter credit (reduce by 25%)
+ * atom is mastered/reviewed. 1-hop: full, 2-hop: 50%, 3-hop: 25%.
  * Spec ref: Section 7.6
  */
 export async function applyImplicitRepetition(userId: string, atomId: string) {
@@ -443,7 +497,6 @@ export async function applyImplicitRepetition(userId: string, atomId: string) {
   const hop1Ids = (atom?.prerequisiteIds ?? []).filter(Boolean);
   if (hop1Ids.length === 0) return;
 
-  // 1-hop: full credit — reset sessions_since_last_review to 0
   await db
     .update(atomMastery)
     .set({ sessionsSinceLastReview: 0, updatedAt: new Date() })
@@ -456,61 +509,10 @@ export async function applyImplicitRepetition(userId: string, atomId: string) {
     );
 
   const visited = new Set<string>([atomId, ...hop1Ids]);
-
-  // 2-hop: collect prereqs of hop-1 atoms (excluding visited)
-  const hop1Atoms = await db
-    .select({ prerequisiteIds: atoms.prerequisiteIds })
-    .from(atoms)
-    .where(inArray(atoms.id, hop1Ids));
-  const hop2Ids: string[] = [];
-  for (const a of hop1Atoms) {
-    for (const id of (a.prerequisiteIds ?? []).filter(Boolean)) {
-      if (!visited.has(id)) {
-        hop2Ids.push(id);
-        visited.add(id);
-      }
-    }
-  }
-
-  // 2-hop: half credit — reduce by 50%
-  for (const hop2Id of hop2Ids) {
-    await db.execute(sql`
-      UPDATE atom_mastery
-      SET sessions_since_last_review = GREATEST(0,
-        sessions_since_last_review
-          - GREATEST(1, sessions_since_last_review / 2))
-      WHERE user_id = ${userId}
-        AND atom_id = ${hop2Id} AND is_mastered = true
-    `);
-  }
-
-  // 3-hop: collect prereqs of hop-2 atoms (excluding visited)
-  if (hop2Ids.length === 0) return;
-  const hop2Atoms = await db
-    .select({ prerequisiteIds: atoms.prerequisiteIds })
-    .from(atoms)
-    .where(inArray(atoms.id, hop2Ids));
-  const hop3Ids: string[] = [];
-  for (const a of hop2Atoms) {
-    for (const id of (a.prerequisiteIds ?? []).filter(Boolean)) {
-      if (!visited.has(id)) {
-        hop3Ids.push(id);
-        visited.add(id);
-      }
-    }
-  }
-
-  // 3-hop: quarter credit — reduce by 25%
-  for (const hop3Id of hop3Ids) {
-    await db.execute(sql`
-      UPDATE atom_mastery
-      SET sessions_since_last_review = GREATEST(0,
-        sessions_since_last_review
-          - GREATEST(1, sessions_since_last_review / 4))
-      WHERE user_id = ${userId}
-        AND atom_id = ${hop3Id} AND is_mastered = true
-    `);
-  }
+  const hop2Ids = await collectNextHop(hop1Ids, visited);
+  await reduceReviewCounter(userId, hop2Ids, 2);
+  const hop3Ids = await collectNextHop(hop2Ids, visited);
+  await reduceReviewCounter(userId, hop3Ids, 4);
 }
 
 /** Decays intervals after >14 days inactivity. 2%/day, floored at 50%. */

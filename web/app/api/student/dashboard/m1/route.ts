@@ -34,6 +34,7 @@ export async function GET() {
         estimatedMinutes: nextAction.nextAction?.studyMinutes ?? null,
         pointsGain: nextAction.nextAction?.pointsGain ?? null,
       },
+      nextActionFull: nextAction,
     });
   } catch (error) {
     const message =

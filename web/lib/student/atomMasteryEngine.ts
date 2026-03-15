@@ -51,6 +51,7 @@ import {
 } from "./masteryLifecycle";
 import { updateDailyStreak } from "./streakTracker";
 import { incrementMissionProgress } from "./missions";
+import { NUM_OFFICIAL_TESTS } from "@/lib/diagnostic/scoringConstants";
 import { normalizeAnswer, getSeenQuestionIds } from "./questionQueries";
 import { verifySessionOwnership } from "./sessionQueries";
 
@@ -455,10 +456,14 @@ export async function submitAnswer(params: {
     await updateDailyStreak(params.userId);
     await incrementMissionProgress(params.userId);
 
-    [questionsUnlocked, nextAtom] = await Promise.all([
+    const [rawUnlocked, nextAtomResult] = await Promise.all([
       countNewlyUnlockedQuestions(params.userId, session.atomId),
       getNextStudyAtom(params.userId, session.atomId),
     ]);
+    questionsUnlocked = rawUnlocked > 0
+      ? Math.max(1, Math.round(rawUnlocked / NUM_OFFICIAL_TESTS))
+      : 0;
+    nextAtom = nextAtomResult;
   }
 
   if (updated.status === "failed") {
