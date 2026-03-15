@@ -86,13 +86,11 @@ export type DashboardPayload = {
     ctaLabel: string;
     ctaHref: string;
   } | null;
+  nextActionFull: NextActionPayload | null;
 };
 
 export type DashboardViewModel = {
   loading: boolean;
   error: string | null;
   data: DashboardPayload | null;
-  nextActionLoading: boolean;
-  nextActionError: string | null;
-  nextActionData: NextActionPayload | null;
 };

@@ -99,6 +99,93 @@ export async function getSeenQuestionIds(
   return [...new Set(rows.map((r) => r.questionId))];
 }
 
+/**
+ * Batch variant: returns a map of atomId → seen question IDs for
+ * multiple atoms in two queries instead of 2N.
+ */
+export async function getBatchSeenQuestionIds(
+  userId: string,
+  atomIds: string[]
+): Promise<Map<string, string[]>> {
+  const result = new Map<string, string[]>();
+  for (const id of atomIds) result.set(id, []);
+  if (atomIds.length === 0) return result;
+
+  const sessions = await db
+    .select({
+      id: atomStudySessions.id,
+      atomId: atomStudySessions.atomId,
+    })
+    .from(atomStudySessions)
+    .where(
+      and(
+        eq(atomStudySessions.userId, userId),
+        inArray(atomStudySessions.atomId, atomIds)
+      )
+    );
+  if (sessions.length === 0) return result;
+
+  const sessionAtomMap = new Map<string, string>();
+  for (const s of sessions) sessionAtomMap.set(s.id, s.atomId);
+
+  const rows = await db
+    .select({
+      sessionId: atomStudyResponses.sessionId,
+      questionId: atomStudyResponses.questionId,
+    })
+    .from(atomStudyResponses)
+    .where(
+      inArray(
+        atomStudyResponses.sessionId,
+        sessions.map((s) => s.id)
+      )
+    );
+
+  for (const r of rows) {
+    const atomId = sessionAtomMap.get(r.sessionId);
+    if (atomId) result.get(atomId)!.push(r.questionId);
+  }
+
+  for (const [k, v] of result) result.set(k, [...new Set(v)]);
+  return result;
+}
+
+/**
+ * Batch variant: fetches one high-difficulty question per atom,
+ * respecting per-atom exclusion lists, in a single query.
+ */
+export async function findBatchReviewQuestions(
+  atomIds: string[],
+  excludeMap: Map<string, string[]>
+): Promise<Map<string, GeneratedQuestionRow>> {
+  const result = new Map<string, GeneratedQuestionRow>();
+  if (atomIds.length === 0) return result;
+
+  const rows = await db
+    .select({
+      id: generatedQuestions.id,
+      qtiXml: generatedQuestions.qtiXml,
+      atomId: generatedQuestions.atomId,
+      createdAt: generatedQuestions.createdAt,
+    })
+    .from(generatedQuestions)
+    .where(
+      and(
+        inArray(generatedQuestions.atomId, atomIds),
+        eq(generatedQuestions.difficultyLevel, "high")
+      )
+    )
+    .orderBy(desc(generatedQuestions.createdAt));
+
+  for (const row of rows) {
+    if (result.has(row.atomId)) continue;
+    const excluded = excludeMap.get(row.atomId) ?? [];
+    if (excluded.includes(row.id)) continue;
+    result.set(row.atomId, { id: row.id, qtiXml: row.qtiXml });
+  }
+  return result;
+}
+
 /** Trims and uppercases a student answer for comparison. */
 export function normalizeAnswer(v: string): string {
   return v.trim().toUpperCase();

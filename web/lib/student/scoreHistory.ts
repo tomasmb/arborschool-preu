@@ -111,32 +111,40 @@ export async function getScoreHistory(
 // ============================================================================
 
 const UNCERTAINTY_WITHIN_CEILING = IMPROVEMENT_UNCERTAINTY;
-const UNCERTAINTY_BEYOND_CEILING = 0.22;
+const UNCERTAINTY_BEYOND_CEILING = 0.25;
+
+/** Base mastery rate for easy/early atoms (~65%). */
+const BASE_MASTERY_RATE = 0.65;
+
+/** Base test-day accuracy on mastered atoms (~80%). */
+const BASE_TEST_ACCURACY = 0.80;
+
+/** Minimum floor for accuracy decay (doesn't drop below 68%). */
+const MIN_TEST_ACCURACY = 0.68;
 
 /**
- * Not all atoms studied in a week get mastered on the first pass.
- * Some need multiple sessions. Conservative estimate: ~65%.
+ * Controls how steeply efficiency drops as mastery fraction grows.
+ * Higher = steeper drop near the end; 1.8 gives a natural curve:
+ *   0% mastered → factor 1.0
+ *  50% mastered → factor ~0.87
+ *  80% mastered → factor ~0.63
+ *  95% mastered → factor ~0.36
  */
-const MASTERY_RATE_PER_PASS = 0.65;
+const DECAY_EXPONENT = 1.8;
 
 /**
- * Even for mastered atoms, test-day accuracy isn't 100%.
- * Time pressure, wording variations, etc. Conservative: ~80%.
- */
-const TEST_ACCURACY_ON_MASTERED = 0.80;
-
-/**
- * Builds a conservative projection curve based on real question
- * unlocks from mastered atoms.
+ * Builds a conservative projection curve with diminishing returns.
  *
- * Algorithm:
+ * The learning path prioritizes high-impact atoms first, so later
+ * atoms are harder, contribute fewer questions, and take longer to
+ * master. The model reflects this through a progress-based decay:
+ *
  * 1. Start from current PAES score (best demonstrated score)
- * 2. Each week the student covers `atomsPerWeek` atoms, but only
- *    ~65% are mastered per pass (rest return to the pool)
- * 3. Mastered atoms unlock PAES questions, but test-day accuracy
- *    is ~80%, not 100%
- * 4. Net effect: each studied atom contributes ~52% of its
- *    theoretical maximum score improvement
+ * 2. Each week the student covers `atomsPerWeek` atoms
+ * 3. Mastery rate and test accuracy decay as mastery fraction grows
+ *    (remaining atoms are harder, less familiar material)
+ * 4. Net effect: early atoms contribute ~52% of theoretical max,
+ *    late atoms contribute ~25-30%
  * 5. Apply confidence band (tighter within ceiling, wider beyond)
  * 6. Track when projection reaches the real goal target
  */
@@ -167,6 +175,7 @@ export async function buildProjectionCurve(
 
   const { totalRelevantAtoms, masteredAtoms, totalOfficialQuestions } = metrics;
   let remaining = totalRelevantAtoms - masteredAtoms;
+  const totalToMaster = remaining;
 
   const questionsPerAtom =
     totalRelevantAtoms > 0 ? totalOfficialQuestions / totalRelevantAtoms : 0;
@@ -176,12 +185,26 @@ export async function buildProjectionCurve(
   const points: ProjectionPoint[] = [];
 
   for (let week = 1; week <= maxWeeks; week++) {
+    const fractionMastered =
+      totalToMaster > 0 ? 1 - remaining / totalToMaster : 1;
+
+    // Remaining atoms are progressively harder and less impactful
+    const difficultyFactor = Math.pow(
+      1 - fractionMastered,
+      DECAY_EXPONENT / 2
+    );
+    const effectiveMastery = BASE_MASTERY_RATE * difficultyFactor;
+    const effectiveAccuracy = Math.max(
+      MIN_TEST_ACCURACY,
+      BASE_TEST_ACCURACY * (0.85 + 0.15 * (1 - fractionMastered))
+    );
+
     const atomsStudied = Math.min(atomsPerWeek, remaining);
-    const newMastered = atomsStudied * MASTERY_RATE_PER_PASS;
+    const newMastered = atomsStudied * effectiveMastery;
     remaining -= newMastered;
 
     const questionsUnlocked = newMastered * questionsPerAtom;
-    const newCorrect = questionsUnlocked * TEST_ACCURACY_ON_MASTERED;
+    const newCorrect = questionsUnlocked * effectiveAccuracy;
     cumulativeAdditionalCorrect += newCorrect;
 
     const projectedCorrect = Math.min(

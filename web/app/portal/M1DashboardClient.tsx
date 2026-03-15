@@ -61,14 +61,7 @@ export function M1DashboardClient({
   contextBanner,
   subscriptionStatus,
 }: M1DashboardClientProps) {
-  const {
-    loading,
-    error,
-    data,
-    nextActionLoading,
-    nextActionError,
-    nextActionData,
-  } = usePortalDashboard();
+  const { loading, error, data } = usePortalDashboard();
 
   if (loading) return <DashboardSkeleton />;
 
@@ -104,9 +97,9 @@ export function M1DashboardClient({
       />
       <DashboardHeroSection data={data} />
       <LearningPathSection
-        loading={nextActionLoading}
-        error={nextActionError}
-        data={nextActionData}
+        loading={false}
+        error={null}
+        data={data.nextActionFull}
         subscriptionStatus={subscriptionStatus}
       />
       <DashboardMissionSection data={data} />
