@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { testAttempts, tests as testsTable } from "@/db/schema";
 import { requireAuthenticatedStudentUser } from "@/lib/student/apiAuth";
-import { getRetestStatus } from "@/lib/student/retestGating";
+import {
+  getRetestStatus,
+  hasCompletedFullTest,
+} from "@/lib/student/retestGating";
 import {
   getInProgressAttempt,
   resolveTestQuestions,
@@ -32,22 +35,28 @@ export async function POST() {
     }
     const userId = authResult.userId;
 
-    const access = await getUserAccessStatus(userId);
-    if (access.subscriptionStatus !== "active") {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Los tests completos requieren acceso completo.",
-          code: "ACCESS_REQUIRED",
-        },
-        { status: 403 }
-      );
-    }
-
     // Crash recovery: resume an unfinished attempt (uses original resolution)
     const inProgress = await getInProgressAttempt(userId);
     if (inProgress) {
       return handleResumedAttempt(inProgress, userId);
+    }
+
+    // Free users get one full test; after that, require active subscription
+    const access = await getUserAccessStatus(userId);
+    if (access.subscriptionStatus !== "active") {
+      const alreadyTested = await hasCompletedFullTest(userId);
+      if (alreadyTested) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              "Ya completaste tu test gratuito. " +
+              "Contacta a tu colegio o solicita acceso completo.",
+            code: "ACCESS_REQUIRED",
+          },
+          { status: 403 }
+        );
+      }
     }
 
     const retestStatus = await getRetestStatus(userId);

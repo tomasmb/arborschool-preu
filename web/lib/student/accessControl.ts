@@ -1,6 +1,7 @@
 import { eq, and, count } from "drizzle-orm";
 import { db } from "@/db";
 import { users, atomMastery } from "@/db/schema";
+import { resolveAccessGrant } from "@/lib/auth/accessGrants";
 
 const FREE_TIER_ATOM_LIMIT = 1;
 
@@ -17,6 +18,36 @@ export function hasFullAccess(user: {
 }
 
 /**
+ * For "free" users, re-check access_grants in case a grant was added
+ * after their last sign-in. If a match is found, upgrade the user
+ * record in place (self-healing) so subsequent calls skip re-check.
+ */
+async function refreshAccessIfStale(
+  userId: string,
+  current: { role: string; subscriptionStatus: string; email: string }
+): Promise<string> {
+  if (current.role === "admin" || current.subscriptionStatus === "active") {
+    return current.subscriptionStatus;
+  }
+
+  const grant = await resolveAccessGrant(current.email);
+  if (grant.status !== "active") {
+    return current.subscriptionStatus;
+  }
+
+  await db
+    .update(users)
+    .set({
+      subscriptionStatus: "active",
+      schoolId: grant.schoolId,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId));
+
+  return "active";
+}
+
+/**
  * Check if a free-tier user can still study a new atom.
  * Free users get 1 atom before being gated.
  */
@@ -25,6 +56,7 @@ export async function canStudyNewAtom(userId: string): Promise<boolean> {
     .select({
       role: users.role,
       subscriptionStatus: users.subscriptionStatus,
+      email: users.email,
     })
     .from(users)
     .where(eq(users.id, userId))
@@ -32,7 +64,10 @@ export async function canStudyNewAtom(userId: string): Promise<boolean> {
 
   if (user.length === 0) return false;
 
-  if (hasFullAccess(user[0])) return true;
+  const resolvedStatus = await refreshAccessIfStale(userId, user[0]);
+  const effective = { ...user[0], subscriptionStatus: resolvedStatus };
+
+  if (hasFullAccess(effective)) return true;
 
   const [result] = await db
     .select({ masteredCount: count() })
@@ -46,6 +81,8 @@ export async function canStudyNewAtom(userId: string): Promise<boolean> {
 
 /**
  * Get the user's access status for use in API responses and UI.
+ * Re-checks access grants for free users so admin-added grants
+ * take effect without requiring a re-login.
  */
 export async function getUserAccessStatus(userId: string): Promise<{
   hasAccess: boolean;
@@ -57,6 +94,7 @@ export async function getUserAccessStatus(userId: string): Promise<{
     .select({
       role: users.role,
       subscriptionStatus: users.subscriptionStatus,
+      email: users.email,
     })
     .from(users)
     .where(eq(users.id, userId))
@@ -71,7 +109,9 @@ export async function getUserAccessStatus(userId: string): Promise<{
     };
   }
 
-  const isFullAccess = hasFullAccess(user[0]);
+  const resolvedStatus = await refreshAccessIfStale(userId, user[0]);
+  const effective = { ...user[0], subscriptionStatus: resolvedStatus };
+  const isFullAccess = hasFullAccess(effective);
 
   const [result] = await db
     .select({ masteredCount: count() })
@@ -84,7 +124,7 @@ export async function getUserAccessStatus(userId: string): Promise<{
 
   return {
     hasAccess: isFullAccess || masteredCount < FREE_TIER_ATOM_LIMIT,
-    subscriptionStatus: user[0].subscriptionStatus,
+    subscriptionStatus: resolvedStatus,
     masteredAtomCount: masteredCount,
     freeAtomLimit: FREE_TIER_ATOM_LIMIT,
   };
