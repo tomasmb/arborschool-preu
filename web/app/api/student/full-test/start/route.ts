@@ -13,6 +13,7 @@ import {
 import {
   assembleMaxCoverageQuestions,
   getOrCreateCompositeTest,
+  DEFAULT_QUESTION_COUNT,
 } from "@/lib/student/fullTestAssembly";
 import { getUserAccessStatus } from "@/lib/student/accessControl";
 import { eq } from "drizzle-orm";
@@ -98,6 +99,7 @@ export async function POST() {
         testId: compositeTestId,
         startedAt: new Date(),
         totalQuestions: resolvedQuestions.length,
+        resolvedQuestions: resolvedQuestions,
       })
       .returning({ id: testAttempts.id });
 
@@ -132,11 +134,23 @@ async function handleResumedAttempt(
   inProgress: NonNullable<InProgressData>,
   userId: string
 ) {
-  const questions = await resolveTestQuestions(
-    inProgress.testId,
-    userId,
-    inProgress.attemptId
-  );
+  // 1. Stored snapshot (primary — guaranteed identical to original)
+  // 2. Deterministic re-assembly for composite tests (fallback for old attempts)
+  // 3. test_questions resolution for legacy fixed tests
+  const questions = inProgress.resolvedQuestions
+    ? inProgress.resolvedQuestions
+    : inProgress.testId.endsWith("-composite")
+      ? await assembleMaxCoverageQuestions(
+          userId,
+          inProgress.testId.replace("-composite", ""),
+          DEFAULT_QUESTION_COUNT,
+          inProgress.attemptId
+        )
+      : await resolveTestQuestions(
+          inProgress.testId,
+          userId,
+          inProgress.attemptId
+        );
 
   const elapsed = Date.now() - inProgress.startedAt.getTime();
   const elapsedMinutes = elapsed / 60_000;

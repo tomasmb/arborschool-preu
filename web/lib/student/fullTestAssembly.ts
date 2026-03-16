@@ -27,7 +27,7 @@ import type { ResolvedQuestion } from "./fullTest";
 // ============================================================================
 
 const COMPOSITE_TIME_LIMIT = 135;
-const DEFAULT_QUESTION_COUNT = 60;
+export const DEFAULT_QUESTION_COUNT = 60;
 
 // ============================================================================
 // TYPES
@@ -88,15 +88,19 @@ export async function getOrCreateCompositeTest(
  * 3. Computes effective coverage per question (direct + transitive prereqs)
  * 4. Greedy picks questions covering the most uncovered atoms
  * 5. After full coverage, picks questions that re-test the most atoms
+ *
+ * @param excludeAttemptId - ignore responses from this attempt when
+ *   computing seen IDs (resume: re-produces the same assembly)
  */
 export async function assembleMaxCoverageQuestions(
   userId: string,
   subjectId: string,
-  targetCount: number = DEFAULT_QUESTION_COUNT
+  targetCount: number = DEFAULT_QUESTION_COUNT,
+  excludeAttemptId?: string
 ): Promise<ResolvedQuestion[]> {
   const [pool, seenIds] = await Promise.all([
     buildQuestionPool(subjectId),
-    getSeenQuestionIds(userId),
+    getSeenQuestionIds(userId, excludeAttemptId),
   ]);
 
   if (pool.length === 0) return [];
@@ -331,6 +335,7 @@ async function fetchRawQuestions(
         WHERE t.subject_id = ${subjectId}
           AND t.test_type = 'official'
       )
+    ORDER BY q.id, qa.atom_id
   `)) as unknown as {
     id: string;
     qti_xml: string;
@@ -353,6 +358,7 @@ async function fetchRawQuestions(
               officialIds.map((id) => sql`${id}`),
               sql`, `
             )})
+          ORDER BY q.id, qa.atom_id
         `)) as unknown as typeof rows)
       : [];
 
