@@ -349,7 +349,10 @@ async function fetchRawQuestions(
           JOIN question_atoms qa
             ON qa.question_id = q.id AND qa.relevance = 'primary'
           WHERE q.source = 'alternate'
-            AND q.parent_question_id = ANY(${officialIds})
+            AND q.parent_question_id IN (${sql.join(
+              officialIds.map((id) => sql`${id}`),
+              sql`, `
+            )})
         `)) as unknown as typeof rows)
       : [];
 
