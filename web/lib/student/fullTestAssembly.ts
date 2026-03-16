@@ -105,7 +105,8 @@ export async function assembleMaxCoverageQuestions(
 
   if (pool.length === 0) return [];
 
-  const selected = greedySelect(pool, seenIds, targetCount);
+  const expandedSeenIds = expandSeenIds(pool, seenIds);
+  const selected = greedySelect(pool, expandedSeenIds, targetCount);
 
   return selected.map((q, i) => {
     const parsed = parseQtiXml(q.qtiXml);
@@ -128,6 +129,52 @@ export async function assembleMaxCoverageQuestions(
 }
 
 // ============================================================================
+// SEEN-ID EXPANSION — family + content deduplication
+// ============================================================================
+
+/**
+ * Expands the raw set of seen question IDs so that "seen" propagates to:
+ *  1. All questions in the same original-family (siblings & parent)
+ *  2. All questions with identical QTI XML content (cross-exam duplicates)
+ *
+ * This ensures that if a student saw an alternate in the diagnostic, the
+ * original and its other alternates are also deprioritised, and if the same
+ * question was imported under a different exam ID it is treated as seen too.
+ */
+function expandSeenIds(
+  pool: PoolQuestion[],
+  seenIds: Set<string>
+): Set<string> {
+  const byOriginal = new Map<string, string[]>();
+  const byContent = new Map<string, string[]>();
+
+  for (const q of pool) {
+    const origGroup = byOriginal.get(q.originalId) ?? [];
+    origGroup.push(q.id);
+    byOriginal.set(q.originalId, origGroup);
+
+    const contentGroup = byContent.get(q.qtiXml) ?? [];
+    contentGroup.push(q.id);
+    byContent.set(q.qtiXml, contentGroup);
+  }
+
+  const expanded = new Set(seenIds);
+
+  for (const q of pool) {
+    if (!seenIds.has(q.id)) continue;
+
+    for (const siblingId of byOriginal.get(q.originalId) ?? []) {
+      expanded.add(siblingId);
+    }
+    for (const dupId of byContent.get(q.qtiXml) ?? []) {
+      expanded.add(dupId);
+    }
+  }
+
+  return expanded;
+}
+
+// ============================================================================
 // GREEDY SET-COVER SELECTION (uses effectiveCoverage for transitivity)
 // ============================================================================
 
@@ -140,6 +187,7 @@ function greedySelect(
   const coveredAtoms = new Set<string>();
   const usedIds = new Set<string>();
   const usedOriginals = new Set<string>();
+  const usedContent = new Set<string>();
 
   for (let slot = 0; slot < targetCount && pool.length > 0; slot++) {
     let bestIdx = -1;
@@ -149,7 +197,11 @@ function greedySelect(
 
     for (let i = 0; i < pool.length; i++) {
       const q = pool[i];
-      if (usedIds.has(q.id) || usedOriginals.has(q.originalId)) continue;
+      if (
+        usedIds.has(q.id) ||
+        usedOriginals.has(q.originalId) ||
+        usedContent.has(q.qtiXml)
+      ) continue;
 
       // Count uncovered atoms using transitive effective coverage
       let newAtoms = 0;
@@ -186,7 +238,7 @@ function greedySelect(
     selected.push(picked);
     usedIds.add(picked.id);
     usedOriginals.add(picked.originalId);
-    // Mark all transitively covered atoms
+    usedContent.add(picked.qtiXml);
     for (const a of picked.effectiveCoverage) coveredAtoms.add(a);
 
     pool.splice(bestIdx, 1);
@@ -364,7 +416,6 @@ async function fetchRawQuestions(
 
   const allRows = [...rows, ...altRows];
 
-  // First pass: group rows by question ID to merge multi-atom rows
   const map = new Map<string, PoolQuestion>();
   for (const r of allRows) {
     const existing = map.get(r.id);
@@ -382,25 +433,6 @@ async function fetchRawQuestions(
     }
   }
 
-  // Second pass: deduplicate by content so the same question imported
-  // from different exams (different IDs, identical qtiXml) only
-  // appears once. Keep the version with more primary atoms, then
-  // prefer alternates over originals.
-  const byContent = new Map<string, PoolQuestion>();
-  for (const q of map.values()) {
-    const existing = byContent.get(q.qtiXml);
-    if (!existing) {
-      byContent.set(q.qtiXml, q);
-      continue;
-    }
-    const replace =
-      q.primaryAtoms.size > existing.primaryAtoms.size ||
-      (q.primaryAtoms.size === existing.primaryAtoms.size &&
-        q.isAlternate &&
-        !existing.isAlternate);
-    if (replace) byContent.set(q.qtiXml, q);
-  }
-
-  return [...byContent.values()];
+  return [...map.values()];
 }
 
