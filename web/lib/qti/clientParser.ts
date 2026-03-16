@@ -117,7 +117,7 @@ function serializeNodeToHtml(node: Node): string {
   if (tagName === "img") {
     const src = el.getAttribute("src") || "";
     const alt = el.getAttribute("alt") || "Imagen";
-    return `<img src="${src}" alt="${alt}" class="max-w-full rounded-lg my-2" />`;
+    return `<img src="${src}" alt="${alt}" class="max-w-full my-2" />`;
   }
 
   // Tables

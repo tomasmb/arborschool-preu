@@ -666,7 +666,7 @@ math * {
    ============================================================================ */
 
 .prose img {
-  @apply rounded-lg shadow-md my-6;
+  @apply shadow-md my-6;
 }
 
 .prose p {
