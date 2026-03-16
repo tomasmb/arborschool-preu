@@ -8,6 +8,7 @@ import {
   timestamp,
   date,
   decimal,
+  jsonb,
   primaryKey,
   index,
   uniqueIndex,
@@ -152,6 +153,7 @@ export const testAttempts = pgTable(
     stage2Difficulty: varchar("stage_2_difficulty", { length: 20 }),
     paesScoreMin: integer("paes_score_min"),
     paesScoreMax: integer("paes_score_max"),
+    resolvedQuestions: jsonb("resolved_questions"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   },
   (table) => [index("idx_test_attempts_user").on(table.userId)]

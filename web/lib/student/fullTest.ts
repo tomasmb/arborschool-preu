@@ -52,11 +52,13 @@ type InProgressAttempt = {
   testName: string;
   timeLimitMinutes: number | null;
   startedAt: Date;
+  resolvedQuestions: ResolvedQuestion[] | null;
 };
 
 /**
  * Finds an unfinished full-test attempt (started but not completed).
  * Returns null if no in-progress attempt exists.
+ * Includes the stored question snapshot when available (composite tests).
  */
 export async function getInProgressAttempt(
   userId: string
@@ -68,6 +70,7 @@ export async function getInProgressAttempt(
       testName: tests.name,
       timeLimitMinutes: tests.timeLimitMinutes,
       startedAt: testAttempts.startedAt,
+      resolvedQuestions: testAttempts.resolvedQuestions,
     })
     .from(testAttempts)
     .innerJoin(tests, eq(tests.id, testAttempts.testId))
@@ -83,12 +86,17 @@ export async function getInProgressAttempt(
 
   if (!row || !row.testId) return null;
 
+  const stored = Array.isArray(row.resolvedQuestions)
+    ? (row.resolvedQuestions as ResolvedQuestion[])
+    : null;
+
   return {
     attemptId: row.attemptId,
     testId: row.testId,
     testName: row.testName,
     timeLimitMinutes: row.timeLimitMinutes,
     startedAt: row.startedAt,
+    resolvedQuestions: stored,
   };
 }
 
