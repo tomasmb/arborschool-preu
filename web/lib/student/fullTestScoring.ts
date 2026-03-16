@@ -230,7 +230,6 @@ async function creditSpacedRepetitionFromTest(
   if (atomIds.length === 0) return;
 
   const now = new Date();
-  const BOOST = 1.5;
   for (const atomId of atomIds) {
     await tx
       .update(atomMastery)
@@ -239,12 +238,12 @@ async function creditSpacedRepetitionFromTest(
         lastDemonstratedAt: now,
         reviewIntervalSessions: sql`CASE
           WHEN ${atomMastery.reviewIntervalSessions} IS NOT NULL
-          THEN LEAST(CEIL(${atomMastery.reviewIntervalSessions} * ${BOOST}), 20)
+          THEN LEAST(CEIL(${atomMastery.reviewIntervalSessions} * 1.5)::int, 20)
           ELSE ${atomMastery.reviewIntervalSessions}
         END`,
         nextReviewAt: sql`CASE
           WHEN ${atomMastery.reviewIntervalSessions} IS NOT NULL
-          THEN NOW() + (LEAST(CEIL(${atomMastery.reviewIntervalSessions} * ${BOOST}), 20) * INTERVAL '2 days')
+          THEN NOW() + (LEAST(CEIL(${atomMastery.reviewIntervalSessions} * 1.5)::int, 20) * INTERVAL '2 days')
           ELSE ${atomMastery.nextReviewAt}
         END`,
         updatedAt: now,

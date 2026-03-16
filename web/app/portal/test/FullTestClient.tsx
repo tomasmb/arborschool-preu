@@ -224,16 +224,25 @@ function InProgressScreen({ flow, timer }: InProgressProps) {
             <span className="text-sm text-gray-500">
               {flow.answeredCount}/{flow.questions.length} respondidas
             </span>
-            <button
-              type="button"
-              onClick={flow.goNext}
-              disabled={flow.currentPosition >= flow.questions.length}
-              className="rounded-lg bg-primary/10 px-4 py-2 text-sm
-                font-medium text-primary hover:bg-primary/20 transition
-                disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              Siguiente
-            </button>
+            {flow.currentPosition >= flow.questions.length ? (
+              <button
+                type="button"
+                onClick={() => setShowConfirm(true)}
+                className="rounded-lg bg-primary px-4 py-2 text-sm
+                  font-medium text-white hover:bg-primary-dark transition"
+              >
+                Enviar test
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={flow.goNext}
+                className="rounded-lg bg-primary/10 px-4 py-2 text-sm
+                  font-medium text-primary hover:bg-primary/20 transition"
+              >
+                Siguiente
+              </button>
+            )}
           </div>
 
           {flow.error ? (
