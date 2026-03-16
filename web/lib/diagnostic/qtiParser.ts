@@ -30,6 +30,52 @@ export interface QuestionAtom {
 }
 
 // ============================================================================
+// MATHML NORMALIZATION
+// ============================================================================
+
+/**
+ * Convert deprecated `<mfenced>` elements to `<mrow>` + `<mo>`.
+ * `<mfenced>` is not part of MathML Core and modern browsers do not render
+ * its fences natively. Expanding it ensures correct display with or without
+ * MathJax.
+ *
+ * Uses linkedom-compatible DOM APIs (no createElementNS).
+ */
+function expandMfenced(mathEl: Element): void {
+  const mfencedEls = mathEl.querySelectorAll("mfenced");
+  for (const mfenced of Array.from(mfencedEls)) {
+    const open = mfenced.getAttribute("open") ?? "(";
+    const close = mfenced.getAttribute("close") ?? ")";
+    const sepsRaw = mfenced.getAttribute("separators") ?? ",";
+    const seps = sepsRaw.replace(/\s/g, "");
+
+    const doc = (mfenced as unknown as { ownerDocument: Document })
+      .ownerDocument;
+    const mrow = doc.createElement("mrow");
+
+    const openMo = doc.createElement("mo");
+    openMo.textContent = open;
+    mrow.appendChild(openMo);
+
+    const children = Array.from(mfenced.children);
+    children.forEach((child, i) => {
+      mrow.appendChild(child.cloneNode(true));
+      if (i < children.length - 1 && seps.length > 0) {
+        const sepMo = doc.createElement("mo");
+        sepMo.textContent = seps.charAt(Math.min(i, seps.length - 1));
+        mrow.appendChild(sepMo);
+      }
+    });
+
+    const closeMo = doc.createElement("mo");
+    closeMo.textContent = close;
+    mrow.appendChild(closeMo);
+
+    mfenced.parentNode!.replaceChild(mrow, mfenced);
+  }
+}
+
+// ============================================================================
 // DOM SERIALIZATION
 // ============================================================================
 
@@ -46,11 +92,12 @@ function serializeNodeToHtml(node: Node): string {
     const el = node as Element;
     const tagName = el.localName || el.tagName.toLowerCase();
 
-    // Preserve MathML elements as-is (use outerHTML for linkedom compatibility)
+    // Preserve MathML (expand deprecated <mfenced> first)
     if (
       tagName === "math" ||
       el.namespaceURI === "http://www.w3.org/1998/Math/MathML"
     ) {
+      if (tagName === "math") expandMfenced(el);
       return (el as unknown as { outerHTML: string }).outerHTML;
     }
 

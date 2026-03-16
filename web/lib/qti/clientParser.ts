@@ -49,6 +49,51 @@ function isFeedbackBlockElement(tagName: string): boolean {
 }
 
 // ============================================================================
+// MATHML NORMALIZATION
+// ============================================================================
+
+const MATHML_NS = "http://www.w3.org/1998/Math/MathML";
+
+/**
+ * Convert deprecated `<mfenced>` elements to `<mrow>` + `<mo>`.
+ * `<mfenced>` is not part of MathML Core and modern browsers do not render
+ * its fences natively. Expanding it ensures correct display with or without
+ * MathJax.
+ */
+function expandMfenced(mathEl: Element): void {
+  const mfencedEls = mathEl.querySelectorAll("mfenced");
+  for (const mfenced of Array.from(mfencedEls)) {
+    const open = mfenced.getAttribute("open") ?? "(";
+    const close = mfenced.getAttribute("close") ?? ")";
+    const sepsRaw = mfenced.getAttribute("separators") ?? ",";
+    const seps = sepsRaw.replace(/\s/g, "");
+
+    const doc = mfenced.ownerDocument!;
+    const mrow = doc.createElementNS(MATHML_NS, "mrow");
+
+    const openMo = doc.createElementNS(MATHML_NS, "mo");
+    openMo.textContent = open;
+    mrow.appendChild(openMo);
+
+    const children = Array.from(mfenced.children);
+    children.forEach((child, i) => {
+      mrow.appendChild(child.cloneNode(true));
+      if (i < children.length - 1 && seps.length > 0) {
+        const sepMo = doc.createElementNS(MATHML_NS, "mo");
+        sepMo.textContent = seps.charAt(Math.min(i, seps.length - 1));
+        mrow.appendChild(sepMo);
+      }
+    });
+
+    const closeMo = doc.createElementNS(MATHML_NS, "mo");
+    closeMo.textContent = close;
+    mrow.appendChild(closeMo);
+
+    mfenced.parentNode!.replaceChild(mrow, mfenced);
+  }
+}
+
+// ============================================================================
 // DOM SERIALIZATION
 // ============================================================================
 
@@ -59,11 +104,12 @@ function serializeNodeToHtml(node: Node): string {
   const el = node as Element;
   const tagName = el.localName || el.tagName.toLowerCase();
 
-  // Preserve MathML
+  // Preserve MathML (expand deprecated <mfenced> first)
   if (
     tagName === "math" ||
     el.namespaceURI === "http://www.w3.org/1998/Math/MathML"
   ) {
+    if (tagName === "math") expandMfenced(el);
     return new XMLSerializer().serializeToString(el);
   }
 
