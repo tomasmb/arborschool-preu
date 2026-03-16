@@ -27,7 +27,7 @@
 - **Reuse existing modules** — never duplicate:
   - `retestGating.ts` — gating checks
   - `paesScoreTable.ts` — PAES score conversion (`getPaesScore`, `estimateCorrectFromScore`, `calculateImprovement`)
-  - `scoringConstants.ts` — `MINUTES_PER_ATOM` (20), `NUM_OFFICIAL_TESTS` (4)
+  - `scoringConstants.ts` — `EFFECTIVE_MINUTES_PER_ATOM` (38), `NUM_OFFICIAL_TESTS` (4)
   - `questionQueries.ts` — `normalizeAnswer()`
   - `userQueries.ts` — `getUserDiagnosticSnapshot()`, `getMasteryRows()`
   - `metricsService.ts` — `getStudentMetrics()`
@@ -48,17 +48,17 @@
 | File | Pass | Purpose |
 |------|------|---------|
 | `web/lib/student/fullTest.ts` | 1 | Test selection, question resolution, score recalibration |
-| `web/lib/student/scoreHistory.ts` | 1 | Score history query, projection curve builder |
+| `web/lib/student/scoreHistory.ts` | 1 | Score history query, projection metadata builder |
 | `web/app/api/student/full-test/start/route.ts` | 1 | Start full test API |
 | `web/app/api/student/full-test/answer/route.ts` | 1 | Record answer API |
 | `web/app/api/student/full-test/complete/route.ts` | 1 | Complete + recalibrate API |
-| `web/app/api/student/progress/route.ts` | 1 | Score history + projection API |
+| `web/app/api/student/progress/route.ts` | 1 | Score history + projection metadata API |
 | `web/app/portal/test/page.tsx` | 2 | Server component for test page |
 | `web/app/portal/test/FullTestClient.tsx` | 2 | Client component — test state machine |
 | `web/app/portal/test/useFullTestFlow.ts` | 2 | State management hook |
 | `web/app/portal/test/useFullTestTimer.ts` | 2 | Timer hook (adapted from diagnostic) |
 | `web/app/portal/progress/page.tsx` | 3 | Server component for progress page |
-| `web/app/portal/progress/ProgressClient.tsx` | 3 | Client component — mastery metrics + projection |
+| `web/app/portal/progress/ProgressClient.tsx` | 3 | Client component — mastery metrics + client-side projection |
 | `web/app/portal/progress/ProgressSections.tsx` | 3 | Retest CTA + test history table |
 
 ### Modified Files
@@ -256,7 +256,7 @@ import { testAttempts, users } from "@/db/schema";
 import {
   getPaesScore, estimateCorrectFromScore, PAES_TOTAL_QUESTIONS,
 } from "@/lib/diagnostic/paesScoreTable";
-import { MINUTES_PER_ATOM } from "@/lib/diagnostic/scoringConstants";
+import { EFFECTIVE_MINUTES_PER_ATOM } from "@/lib/diagnostic/scoringConstants";
 import { getStudentMetrics } from "./metricsService";
 import { getUserDiagnosticSnapshot } from "./userQueries";
 ```
@@ -298,48 +298,42 @@ ORDER BY ta.completed_at ASC
 Derive `type`: if `test_id IS NULL` → `"short_diagnostic"`, else `"full_test"`.
 Derive `paesScoreMid = Math.round((min + max) / 2)`.
 
-#### `buildProjectionCurve(params)`
+#### `buildProjectionMetadata(params)` (server-side)
 
 ```typescript
-type ProjectionParams = {
-  userId: string;
-  atomsPerWeek: number;   // from client slider (default 10)
-  maxWeeks?: number;       // default 20
-};
-
-type ProjectionPoint = {
-  week: number;
-  projectedScoreMid: number;
-};
-
-type ProjectionResult = {
-  points: ProjectionPoint[];
-  weeksToTarget: number | null;
+type ProjectionMetadata = {
+  unlockCurve: { atomsMastered: number; questionsUnlocked: number }[];
+  accUnlocked: number;
+  accLocked: number;
+  effectiveMinPerAtom: number;  // EFFECTIVE_MINUTES_PER_ATOM (38)
+  totalRemainingAtoms: number;
+  currentCorrect: number;
+  currentScore: number;
+  diagnosticCeiling: number | null;
   targetScore: number | null;
-  studyMinutesPerWeek: number;  // atomsPerWeek * MINUTES_PER_ATOM
 };
 ```
 
 Algorithm:
 
-1. Get current state: `getUserDiagnosticSnapshot(userId)` → current PAES score
-2. Get current metrics: `getStudentMetrics(userId)` → `masteredAtoms`, `totalRelevantAtoms`
-3. `remainingAtoms = totalRelevantAtoms - masteredAtoms`
-4. `studyMinutesPerWeek = atomsPerWeek * MINUTES_PER_ATOM`
-5. For each week 1..maxWeeks:
-   - `newAtoms = min(atomsPerWeek, remainingAtoms)`
-   - `remainingAtoms -= newAtoms`
-   - Estimate additional questions unlocked: rough heuristic
-     `additionalQuestions ≈ newAtoms * (totalOfficialQuestions / totalRelevantAtoms)`
-     (proportional estimate — each atom unlocks roughly proportional questions)
-   - Convert to PAES score improvement via `calculateImprovement()` from `paesScoreTable.ts`
-   - Apply governance cap: `min(projection, currentDiagnosticMax)` — until a
-     new full test recalibrates, projection cannot exceed diagnostic ceiling
-6. Find `weeksToTarget`: first week where `projectedScoreMid >= targetScore`
-7. Return projection points + metadata
+1. Build unlock curve via `buildUnlockCurve(userId)`:
+   - Load atom-question graph, student mastery state
+   - Sort non-mastered atoms by marginal efficiency (prereqs first)
+   - Simulate atom-by-atom unlocks → `[atomsMastered → questionsUnlocked]`
+2. Derive accuracy model from student's current performance:
+   - `ACC_UNLOCKED`: accuracy on unlocked questions (clamped 0.5–0.95)
+   - `ACC_LOCKED`: accuracy on locked questions (baseline 0.20)
+3. Return metadata — projection computation happens client-side
 
-Note: the governance cap (`scenario_score = min(effort_projection, diagnostic_prediction_max)`)
-matches spec §9.3. After a full test recalibrates the score, the ceiling rises accordingly.
+#### Client-side projection (`computeProjection` in ProgressClient.tsx)
+
+For each week 1..20:
+1. `atomsMastered = min(effectiveAtomsPerWeek × week, totalRemaining)`
+2. `questionsUnlocked = interpolate(unlockCurve, atomsMastered)`
+3. `expectedCorrect = ACC_UNLOCKED × (unlocked/4) + ACC_LOCKED × (60 - unlocked/4)`
+4. `projectedScore = PAES_TABLE[round(expectedCorrect)]`
+
+No API calls on slider change — projection is instant.
 
 ---
 
@@ -463,14 +457,14 @@ Steps:
 
 - [x] Create `web/app/api/student/progress/route.ts`
 
-Query params: `?atomsPerWeek=10` (optional, default 10)
+No query params — projection metadata is user-specific, not slider-dependent.
 
 Steps:
 
 1. Auth check
 2. Parallel fetch:
    - `getScoreHistory(userId)`
-   - `buildProjectionCurve({ userId, atomsPerWeek })`
+   - `buildProjectionMetadata({ userId })`
    - `getRetestStatus(userId)`
    - `getUserDiagnosticSnapshot(userId)` → current score
 3. Return:
@@ -479,7 +473,7 @@ Steps:
      success: true,
      data: {
        scoreHistory: ScoreDataPoint[],
-       projection: ProjectionResult,
+       projectionMetadata: ProjectionMetadata,
        retestStatus: RetestStatus,
        currentScore: { min: number, max: number, mid: number } | null,
        targetScore: number | null,
@@ -678,7 +672,7 @@ export default function ProgressPage() {
 
 - [x] Create `web/app/portal/progress/ProgressClient.tsx`
 
-Fetches from `GET /api/student/progress?atomsPerWeek=10`.
+Fetches from `GET /api/student/progress` (one call on load; slider is client-side).
 
 **Section 1: Mastery Hero**
 - Circular SVG progress ring showing overall mastery percentage
@@ -690,9 +684,9 @@ Fetches from `GET /api/student/progress?atomsPerWeek=10`.
 
 **Section 3: Projection Card**
 - Atoms-per-week selector: discrete buttons [2, 5, 10, 15, 20]
-- Shows estimated minutes/week (`atomsPerWeek * MINUTES_PER_ATOM`)
+- Shows estimated minutes/week (from slider hours)
 - Simple text result: "Alcanzas tu meta en ~N semanas" with projected score
-- Re-fetches from API when selector changes (with debounce)
+- Computes projection client-side instantly from unlock curve metadata
 
 **Section 4: Retest CTA**
 - Uses `retestStatus` from the progress API response
@@ -877,7 +871,7 @@ After each pass, verify manually:
 - `POST /api/student/full-test/answer` records to `student_responses`
 - `POST /api/student/full-test/complete` recalibrates score on `users` and
   writes `paes_score_min`/`max` on `test_attempts`
-- `GET /api/student/progress` returns history + projection
+- `GET /api/student/progress` returns history + projection metadata
 - Verify alternate-first resolution: questions should be alternates where available
 
 **Pass 2:**
@@ -889,7 +883,7 @@ After each pass, verify manually:
 
 **Pass 3:**
 - `/portal/progress` shows mastery hero, axis breakdown, projection card
-- Projection card responds to atoms-per-week selector
+- Projection card computes projection client-side from unlock curve metadata
 - Dashboard shows retest CTA when eligible
 - Dashboard effort slider is gone, replaced by progress link
 - "Progreso" appears in nav bar

@@ -96,31 +96,16 @@ const NAV_ITEMS: NavItem[] = [
     label: "Progreso",
     icon: (active) => (
       <svg className="w-6 h-6" viewBox="0 0 24 24">
-        {active ? (
-          <path
-            fill="currentColor"
-            fillRule="evenodd"
-            clipRule="evenodd"
-            d="M15.22 6.268a.75.75 0 0 1 .968-.432l5.942
-              2.28a.75.75 0 0 1 .431.97l-2.28 5.941a.75.75
-              0 1 1-1.4-.537l1.48-3.856-6.398 5.89a.75.75 0
-              0 1-1.056-.036L9.47 13.052l-6.22 6.22a.75.75 0
-              0 1-1.06-1.06l6.75-6.75a.75.75 0 0 1 1.07.02
-              l3.358 3.446 5.782-5.327-1.005 2.622a.75.75 0
-              1 1-1.4-.536l.455-1.188Z"
-          />
-        ) : (
-          <path
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M2.25 18L9 11.25l4.306 4.306a11.95 11.95 0
-              015.814-5.518l2.74-1.22m0 0l-5.94-2.281m5.94
-              2.28l-2.28 5.941"
-          />
-        )}
+        <path
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={active ? 2.2 : 1.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M2.25 18L9 11.25l4.306 4.306a11.95 11.95 0
+            015.814-5.518l2.74-1.22m0 0l-5.94-2.281m5.94
+            2.28l-2.28 5.941"
+        />
       </svg>
     ),
   },

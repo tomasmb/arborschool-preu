@@ -98,8 +98,42 @@ export const UNLOCK_WEIGHTS = {
   primaryRelevanceMultiplier: 2.0,
 } as const;
 
-/** Estimated minutes to master one atom */
+/** Estimated minutes to master one atom (mini-clase only). */
 export const MINUTES_PER_ATOM = 20;
+
+/**
+ * SR review balance threshold — review suggested after this many new
+ * masteries. Mirrors SR_BALANCE_THRESHOLD in nextAction.ts.
+ */
+const SR_BALANCE_THRESHOLD = 3;
+
+/**
+ * Full-test gating threshold — test unlocks after this many study-mastered
+ * atoms. Mirrors UNLOCK_THRESHOLD in retestGating.ts.
+ */
+const RETEST_ATOM_THRESHOLD = 18;
+
+/** Approximate duration of one full PAES timed test in minutes. */
+const FULL_TEST_DURATION_MIN = 150;
+
+/** Approximate minutes spent on verification quizzes per test cycle. */
+const VERIFICATION_OVERHEAD_MIN = 30;
+
+/**
+ * Effective minutes per new atom mastered, including all system overhead:
+ *  - Mini-clase learning: MINUTES_PER_ATOM (20 min)
+ *  - SR review: ~1 review block every SR_BALANCE_THRESHOLD atoms (~7 min)
+ *  - Full test: FULL_TEST_DURATION_MIN every RETEST_ATOM_THRESHOLD atoms (~9 min)
+ *  - Verification quizzes after each test cycle (~2 min)
+ *
+ * Used for any user-facing "time to goal" estimate so all surfaces are
+ * consistent (progress projection, route estimates, dashboard effort, emails).
+ */
+export const EFFECTIVE_MINUTES_PER_ATOM =
+  MINUTES_PER_ATOM +
+  Math.ceil(MINUTES_PER_ATOM / SR_BALANCE_THRESHOLD) +
+  Math.ceil(FULL_TEST_DURATION_MIN / RETEST_ATOM_THRESHOLD) +
+  Math.ceil(VERIFICATION_OVERHEAD_MIN / RETEST_ATOM_THRESHOLD);
 
 // ============================================================================
 // SCORE CALCULATION UTILITIES

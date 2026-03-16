@@ -9,7 +9,7 @@
 
 import {
   UNLOCK_WEIGHTS,
-  MINUTES_PER_ATOM,
+  EFFECTIVE_MINUTES_PER_ATOM,
   NUM_OFFICIAL_TESTS,
 } from "../scoringConstants";
 
@@ -189,6 +189,6 @@ export const DEFAULT_SCORING_CONFIG: ScoringConfig = {
   twoAwayWeight: UNLOCK_WEIGHTS.twoAway,
   threeOrMoreWeight: UNLOCK_WEIGHTS.threeOrMore,
   primaryRelevanceMultiplier: UNLOCK_WEIGHTS.primaryRelevanceMultiplier,
-  minutesPerAtom: MINUTES_PER_ATOM,
+  minutesPerAtom: EFFECTIVE_MINUTES_PER_ATOM,
   numOfficialTests: NUM_OFFICIAL_TESTS,
 };

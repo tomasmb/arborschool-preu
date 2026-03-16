@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { trackStudentNextActionClicked } from "@/lib/analytics";
+import { MINUTES_PER_ATOM } from "@/lib/diagnostic/scoringConstants";
 import { InlineRecoveryPanel, UpgradePrompt } from "./components";
 import { ReviewSuggestionBanner } from "./components/ReviewSuggestionBanner";
 import { formatMinutes } from "./formatters";
@@ -469,7 +470,7 @@ function LearningPathContent({
             atom={currentAtom}
             axisLabel={axisLabel}
             axisCode={axisCode}
-            studyMinutes={25}
+            studyMinutes={MINUTES_PER_ATOM}
             pointsGain={pointsGain}
           />
         ) : null}

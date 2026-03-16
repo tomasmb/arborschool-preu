@@ -363,6 +363,16 @@ CREATE TABLE student_planning_profiles (
     UNIQUE(user_id)
 );
 
+CREATE TABLE student_test_hours (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    test_code VARCHAR(10) NOT NULL,        -- e.g. 'M1'
+    weekly_minutes INTEGER NOT NULL DEFAULT 180,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id, test_code)
+);
+
 CREATE TABLE student_weekly_missions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
@@ -484,6 +494,7 @@ CREATE INDEX idx_student_responses_question ON student_responses(question_id);
 CREATE INDEX idx_admissions_datasets_active ON admissions_datasets(is_active);
 CREATE INDEX idx_student_goals_user ON student_goals(user_id);
 CREATE INDEX idx_student_planning_profiles_user ON student_planning_profiles(user_id);
+CREATE INDEX idx_student_test_hours_user ON student_test_hours(user_id);
 CREATE INDEX idx_student_weekly_missions_user ON student_weekly_missions(user_id);
 CREATE INDEX idx_student_weekly_missions_status ON student_weekly_missions(status);
 CREATE INDEX idx_student_study_sprints_user ON student_study_sprints(user_id);

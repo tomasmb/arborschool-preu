@@ -11,8 +11,9 @@ import {
   listAdmissionsOptions,
   listStudentGoals,
   getStudentPlanningProfile,
+  getStudentTestHours,
 } from "./goals.read";
-import { MINUTES_PER_ATOM } from "@/lib/diagnostic/scoringConstants";
+import { EFFECTIVE_MINUTES_PER_ATOM } from "@/lib/diagnostic/scoringConstants";
 
 export type GoalMilestone = {
   goalId: string;
@@ -53,10 +54,15 @@ export async function getProgressTargets(
   userId: string
 ): Promise<ProgressTargets> {
   const dataset = await listActiveAdmissionsDataset();
-  const planningProfile = await getStudentPlanningProfile(userId);
+  const [planningProfile, m1Minutes] = await Promise.all([
+    getStudentPlanningProfile(userId),
+    getStudentTestHours(userId, M1_TEST_CODE),
+  ]);
 
-  const defaultAtomsPerWeek = planningProfile?.weeklyMinutesTarget
-    ? Math.round(planningProfile.weeklyMinutesTarget / MINUTES_PER_ATOM)
+  const effectiveMinutes =
+    m1Minutes ?? planningProfile?.weeklyMinutesTarget ?? null;
+  const defaultAtomsPerWeek = effectiveMinutes
+    ? Math.round(effectiveMinutes / EFFECTIVE_MINUTES_PER_ATOM)
     : null;
 
   if (!dataset) {

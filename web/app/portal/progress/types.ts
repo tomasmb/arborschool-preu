@@ -27,6 +27,24 @@ export type ProjectionResult = {
   studyMinutesPerWeek: number;
 };
 
+export type UnlockCurveEntry = {
+  atomsMastered: number;
+  questionsUnlocked: number;
+};
+
+/** Server-computed metadata the client uses to build projections locally. */
+export type ProjectionMetadata = {
+  unlockCurve: UnlockCurveEntry[];
+  accUnlocked: number;
+  accLocked: number;
+  effectiveMinPerAtom: number;
+  totalRemainingAtoms: number;
+  currentCorrect: number;
+  currentScore: number;
+  diagnosticCeiling: number | null;
+  targetScore: number | null;
+};
+
 export type GoalMilestone = {
   goalId: string;
   label: string;
@@ -78,7 +96,7 @@ export type ProgressData = {
   axisMastery: AxisMasteryItem[];
   personalBest: number | null;
   scoreHistory: ScoreDataPoint[];
-  projection: ProjectionResult;
+  projectionMetadata: ProjectionMetadata | null;
   retestStatus: RetestStatus;
   currentScore: CurrentScore | null;
   goalMilestones: GoalMilestone[];

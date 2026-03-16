@@ -190,7 +190,7 @@ expressions with exponents, multi-paragraph word problems.
 | E6 | Mobile dashboard | PASS | Browser verified responsive |
 | E7 | Mission ring | PASS | Shows 3/5 with "2 sesiones más para completar" |
 | E8 | Streak data | PASS | API: currentStreak=5, maxStreak=5 |
-| E9 | Next action CTA | PASS | "Comenzar mini-clase ~20 min" visible |
+| E9 | Next action CTA | PASS | "Comenzar mini-clase ~X min" visible (time uses EFFECTIVE_MINUTES_PER_ATOM=38) |
 
 ## Section F: Study Flow (14/15 PASS, 1 SKIP)
 

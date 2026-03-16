@@ -221,7 +221,8 @@ must teach/master all prerequisites BEFORE attempting an advanced atom.
 | `UNLOCK_WEIGHTS.immediateUnlock` | 10.0 | `scoringConstants.ts` |
 | `UNLOCK_WEIGHTS.twoAway` | 3.0 | `scoringConstants.ts` |
 | `UNLOCK_WEIGHTS.threeOrMore` | 1.0 | `scoringConstants.ts` |
-| `MINUTES_PER_ATOM` | 20 | `scoringConstants.ts` |
+| `MINUTES_PER_ATOM` | 20 | `scoringConstants.ts` (mini-clase only) |
+| `EFFECTIVE_MINUTES_PER_ATOM` | 38 | `scoringConstants.ts` (includes SR, test, verification overhead) |
 | `NUM_OFFICIAL_TESTS` | 4 | `scoringConstants.ts` |
 | `COMPETITIVE_THRESHOLD` | 0.8 | `nextAction.ts` |
 | `ROUTE_ATOM_PREVIEW_COUNT` | 3 | `nextAction.ts` |
@@ -644,7 +645,64 @@ Range: +/-5 questions using PAES score table.
   until new evidence (retest).
 - **Cap formula**: `scenario_score = min(effort_projection, diagnostic_prediction_max)`
 
-### 9.4 Conservative Claims
+### 9.4 Simulation-Based Projection Model
+
+The progress page projects score growth over 20 weeks using a
+simulation-based model derived entirely from the system's atom-question
+graph. No guessed constants — all inputs are system-derived.
+
+**Architecture** (client-side for performance):
+
+1. **Server** (one call on page load): builds the unlock curve + accuracy
+   metadata via `buildProjectionMetadata()` in `scoreHistory.ts`.
+2. **Client** (`ProgressClient.tsx`): walks the curve at slider speed,
+   computing projections instantly without API calls.
+
+**Component 1 — Unlock Curve** (`buildUnlockCurve`):
+
+Maps `[atomsMastered → questionsUnlocked]` using the actual atom-question
+graph scoped to ~205 M1-relevant atoms and 202 official questions. Atoms
+are ordered by marginal efficiency (high-impact first), respecting
+prerequisite chains via DFS topological insertion.
+
+Natural diminishing returns emerge from the graph structure:
+- Prereq-only atoms → curve is flat (unlock 0 questions directly)
+- High-value gating atoms → curve jumps
+- Most impactful atoms are learned first → steeper early, flatter later
+
+**Component 2 — Effective Throughput** (`EFFECTIVE_MINUTES_PER_ATOM`):
+
+| Component | Minutes | Source |
+|---|---|---|
+| Mini-clase learning | 20 | `MINUTES_PER_ATOM` |
+| SR review overhead | ~7 | `ceil(20 / SR_BALANCE_THRESHOLD=3)` |
+| Full test overhead | ~9 | `ceil(150 / RETEST_ATOM_THRESHOLD=18)` |
+| Verification overhead | ~2 | `ceil(30 / RETEST_ATOM_THRESHOLD=18)` |
+| **Total** | **38** | Single constant for all surfaces |
+
+`effectiveAtomsPerWeek = weeklyMinutes / EFFECTIVE_MINUTES_PER_ATOM`
+
+**Component 3 — Accuracy Model** (`deriveAccuracy`):
+
+Two-tier model derived from the student's actual performance:
+- `ACC_UNLOCKED`: accuracy on questions where all primary atoms mastered
+- `ACC_LOCKED`: accuracy on locked questions (baseline = 0.20 for 5-option MCQ)
+
+Derived from: `currentCorrect = ACC_UNLOCKED × unlockedPerTest + ACC_LOCKED × lockedPerTest`
+
+At each projected week:
+`expectedCorrect = ACC_UNLOCKED × (unlockedPerTest) + ACC_LOCKED × (lockedPerTest)`
+→ lookup in PAES score table for the projected PAES score.
+
+### 9.5 Per-Test Study Hours
+
+Study hour commitments are stored per test code in `student_test_hours`.
+When computing `defaultAtomsPerWeek`, the system prefers the M1-specific
+entry over the global `student_planning_profiles.weekly_minutes_target`.
+The progress page slider persists changes to `student_test_hours` via
+`PATCH /api/student/progress`.
+
+### 9.6 Conservative Claims
 
 Short diagnostics (16 questions) provide useful direction but not full graph
 certainty. The product should prefer conservative score claims and strong
