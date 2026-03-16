@@ -364,6 +364,7 @@ async function fetchRawQuestions(
 
   const allRows = [...rows, ...altRows];
 
+  // First pass: group rows by question ID to merge multi-atom rows
   const map = new Map<string, PoolQuestion>();
   for (const r of allRows) {
     const existing = map.get(r.id);
@@ -381,6 +382,25 @@ async function fetchRawQuestions(
     }
   }
 
-  return [...map.values()];
+  // Second pass: deduplicate by content so the same question imported
+  // from different exams (different IDs, identical qtiXml) only
+  // appears once. Keep the version with more primary atoms, then
+  // prefer alternates over originals.
+  const byContent = new Map<string, PoolQuestion>();
+  for (const q of map.values()) {
+    const existing = byContent.get(q.qtiXml);
+    if (!existing) {
+      byContent.set(q.qtiXml, q);
+      continue;
+    }
+    const replace =
+      q.primaryAtoms.size > existing.primaryAtoms.size ||
+      (q.primaryAtoms.size === existing.primaryAtoms.size &&
+        q.isAlternate &&
+        !existing.isAlternate);
+    if (replace) byContent.set(q.qtiXml, q);
+  }
+
+  return [...byContent.values()];
 }
 
