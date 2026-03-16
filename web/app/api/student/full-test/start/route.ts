@@ -28,6 +28,7 @@ const DEFAULT_SUBJECT = "paes_m1";
  * the original per-test resolution for crash-recovery consistency.
  */
 export async function POST() {
+  let step = "auth";
   try {
     const authResult = await requireAuthenticatedStudentUser();
     if (authResult.unauthorizedResponse) {
@@ -36,14 +37,17 @@ export async function POST() {
     const userId = authResult.userId;
 
     // Crash recovery: resume an unfinished attempt (uses original resolution)
+    step = "getInProgressAttempt";
     const inProgress = await getInProgressAttempt(userId);
     if (inProgress) {
       return handleResumedAttempt(inProgress, userId);
     }
 
     // Free users get one full test; after that, require active subscription
+    step = "getUserAccessStatus";
     const access = await getUserAccessStatus(userId);
     if (access.subscriptionStatus !== "active") {
+      step = "hasCompletedFullTest";
       const alreadyTested = await hasCompletedFullTest(userId);
       if (alreadyTested) {
         return NextResponse.json(
@@ -59,6 +63,7 @@ export async function POST() {
       }
     }
 
+    step = "getRetestStatus";
     const retestStatus = await getRetestStatus(userId);
     if (!retestStatus.eligible) {
       return NextResponse.json(
@@ -71,8 +76,10 @@ export async function POST() {
     }
 
     // Pool-based assembly: pick 60 questions maximising atom coverage
+    step = "getOrCreateCompositeTest";
     const compositeTestId =
       await getOrCreateCompositeTest(DEFAULT_SUBJECT);
+    step = "assembleMaxCoverageQuestions";
     const resolvedQuestions = await assembleMaxCoverageQuestions(
       userId,
       DEFAULT_SUBJECT
@@ -85,6 +92,7 @@ export async function POST() {
       );
     }
 
+    step = "fetchCompositeTimeLimitAndInsertAttempt";
     const [compositeTest] = await db
       .select({ timeLimitMinutes: testsTable.timeLimitMinutes })
       .from(testsTable)
@@ -112,9 +120,10 @@ export async function POST() {
       },
     });
   } catch (error) {
-    console.error("Failed to start full test:", error);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error(`Failed to start full test [${step}]:`, msg, error);
     return NextResponse.json(
-      { success: false, error: "Error al iniciar el test" },
+      { success: false, error: `Error al iniciar el test (${step})` },
       { status: 500 }
     );
   }
