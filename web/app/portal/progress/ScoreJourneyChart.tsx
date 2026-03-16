@@ -395,7 +395,6 @@ function buildChartData(
       mid: currentScore.mid,
       min: currentScore.mid,
       max: currentScore.mid,
-      beyond: false,
     });
   }
 
