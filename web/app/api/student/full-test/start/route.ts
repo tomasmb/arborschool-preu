@@ -16,6 +16,7 @@ import {
   DEFAULT_QUESTION_COUNT,
 } from "@/lib/student/fullTestAssembly";
 import { getUserAccessStatus } from "@/lib/student/accessControl";
+import { FULL_TEST_DURATION_MIN } from "@/lib/diagnostic/scoringConstants";
 import { eq } from "drizzle-orm";
 
 const DEFAULT_SUBJECT = "paes_m1";
@@ -154,7 +155,7 @@ async function handleResumedAttempt(
 
   const elapsed = Date.now() - inProgress.startedAt.getTime();
   const elapsedMinutes = elapsed / 60_000;
-  const totalMinutes = inProgress.timeLimitMinutes ?? 150;
+  const totalMinutes = inProgress.timeLimitMinutes ?? FULL_TEST_DURATION_MIN;
   const remainingMinutes = Math.max(0, totalMinutes - elapsedMinutes);
 
   if (remainingMinutes <= 0) {

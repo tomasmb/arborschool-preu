@@ -472,11 +472,15 @@ Steps:
    {
      success: true,
      data: {
+       masteryBreakdown: MasteryBreakdown,
+       axisMastery: AxisMasteryItem[],
+       personalBest: ScoreDataPoint | null,
        scoreHistory: ScoreDataPoint[],
-       projectionMetadata: ProjectionMetadata,
+       projectionMetadata: ProjectionMetadata | null,
        retestStatus: RetestStatus,
-       currentScore: { min: number, max: number, mid: number } | null,
-       targetScore: number | null,
+       currentScore: CurrentScore | null,
+       goalMilestones: GoalMilestone[],
+       defaultAtomsPerWeek: number,
      }
    }
    ```
@@ -683,8 +687,8 @@ Fetches from `GET /api/student/progress` (one call on load; slider is client-sid
 - Grid of 4 cards (ALG, NUM, GEO, PROB) with mastered/total counts and bars
 
 **Section 3: Projection Card**
-- Atoms-per-week selector: discrete buttons [2, 5, 10, 15, 20]
-- Shows estimated minutes/week (from slider hours)
+- Hours-per-week slider: 0.5–10 hrs in 0.5 hr steps (default 3)
+- Shows estimated atoms/week derived from EFFECTIVE_MINUTES_PER_ATOM
 - Simple text result: "Alcanzas tu meta en ~N semanas" with projected score
 - Computes projection client-side instantly from unlock curve metadata
 

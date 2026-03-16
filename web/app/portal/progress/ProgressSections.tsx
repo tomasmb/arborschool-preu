@@ -1,6 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import {
+  PAES_TOTAL_QUESTIONS,
+  RETEST_ATOM_THRESHOLD,
+} from "@/lib/diagnostic/scoringConstants";
 import type {
   AxisMasteryItem,
   RetestStatus,
@@ -257,9 +261,9 @@ export function RetestCTASection({
           Calibra tu puntaje real
         </h2>
         <p className="text-sm text-gray-700">
-          El diagnóstico solo cubrió 16 preguntas. Un test completo (60
-          preguntas) mide tu nivel real y evita que estudies cosas que ya
-          dominas.
+          El diagnóstico solo cubrió 16 preguntas. Un test completo (
+          {PAES_TOTAL_QUESTIONS} preguntas) mide tu nivel real y evita que
+          estudies cosas que ya dominas.
         </p>
         <Link href="/portal/test" className="btn-primary inline-block text-sm">
           Tomar test completo
@@ -289,7 +293,7 @@ export function RetestCTASection({
     );
   }
 
-  // Retest: eligible (18+ atoms)
+  // Retest: eligible (threshold met)
   if (retestStatus.eligible) {
     return (
       <section className="card-section space-y-3">
@@ -310,7 +314,7 @@ export function RetestCTASection({
   }
 
   // Atoms met but blocked by time/monthly cap
-  if (retestStatus.atomsMasteredSinceLastTest >= 18) {
+  if (retestStatus.atomsMasteredSinceLastTest >= RETEST_ATOM_THRESHOLD) {
     return (
       <section className="card-section space-y-3">
         <div className="flex items-center gap-2">
@@ -341,7 +345,9 @@ export function RetestCTASection({
   // Progress toward unlock (post-first-test)
   const progress = Math.min(
     100,
-    Math.round((retestStatus.atomsMasteredSinceLastTest / 18) * 100)
+    Math.round(
+      (retestStatus.atomsMasteredSinceLastTest / RETEST_ATOM_THRESHOLD) * 100
+    )
   );
 
   return (
@@ -350,7 +356,8 @@ export function RetestCTASection({
         Desbloquear test completo
       </h2>
       <p className="text-sm text-gray-600">
-        {retestStatus.atomsMasteredSinceLastTest}/18 conceptos para desbloquear
+        {retestStatus.atomsMasteredSinceLastTest}/{RETEST_ATOM_THRESHOLD}{" "}
+        conceptos para desbloquear
       </p>
       <div className="h-2.5 rounded-full bg-gray-100 overflow-hidden">
         <div

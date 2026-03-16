@@ -86,7 +86,10 @@ export const PAES_MAX_SCORE = 1000;
  * Interpolates for values not in the table.
  */
 export function getPaesScore(correctAnswers: number): number {
-  const clamped = Math.max(0, Math.min(60, Math.round(correctAnswers)));
+  const clamped = Math.max(
+    0,
+    Math.min(PAES_TOTAL_QUESTIONS, Math.round(correctAnswers))
+  );
   const score = PAES_SCORE_TABLE[clamped];
   if (score === undefined) {
     throw new Error(`No PAES score entry for ${clamped} correct answers`);

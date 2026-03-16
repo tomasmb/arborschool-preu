@@ -48,9 +48,12 @@ const HERO_GRADIENT = "linear-gradient(90deg, #0b3a5b, #134b73, #059669)";
 // CLIENT-SIDE PROJECTION
 // ============================================================================
 
-/** Look up the PAES score for a given number of correct answers (0–60). */
+/** Look up the PAES score for a given number of correct answers. */
 function getPaesScoreLocal(correctAnswers: number): number {
-  const clamped = Math.max(0, Math.min(60, Math.round(correctAnswers)));
+  const clamped = Math.max(
+    0,
+    Math.min(PAES_TOTAL_QUESTIONS, Math.round(correctAnswers))
+  );
   return PAES_SCORE_TABLE[clamped] ?? 100;
 }
 
