@@ -362,25 +362,30 @@ Allow:
 
 Do not present "true global prediction" unless diagnostics for all required tests are available.
 
-### Model Governance (Locked for v1)
+### Model Governance
 
-To avoid contradictory projections in early evidence states:
+Knowledge-based projection model:
 
-- Score prediction authority:
-  - Use the diagnostic score model as the only source of truth for `prediction min/max`.
-  - Confidence band must come from diagnostic uncertainty handling, not atom-only extrapolation.
+- Projection mid-line:
+  - Purely knowledge-based. Questions whose atoms are mastered count as
+    correct; locked questions use random-guess baseline (0.2 for 5-option MCQ).
+  - No accuracy modeling in the projected score — knowledge determines it.
+  - Atom mastery IS the authoritative projection driver.
+- Diagnostic ceiling:
+  - Displayed as a visual reference line on the chart.
+  - Does NOT cap or gate the projection. As the student masters atoms,
+    the projection rises above the ceiling.
+- Confidence band:
+  - Accuracy-derived uncertainty (gap between demonstrated performance
+    and perfect knowledge) sets the band width (5–20% of projected score).
+  - Short diagnostics (16 questions) produce wider bands; full tests
+    narrow the band.
 - Atom model role:
-  - Use atom mastery and route optimizer for `next best action` ranking and ROI estimation.
-  - Use atom-derived effort as study-planning signal, not as authoritative score forecast.
-- Forecast UX rules:
-  - Display effort in minutes-based units (`minutes per point` or `minutes per +10 points`).
-  - Label slider output as effort scenario, not core prediction.
-  - Cap scenario projection to the diagnostic prediction ceiling until new evidence
-    (new diagnostic/retest) is collected.
-  - v1 cap formula: `scenario_score = min(effort_scenario_projection, diagnostic_prediction_max)`.
+  - Use atom mastery and route optimizer for next-best-action ranking
+    and ROI estimation.
 - Evidence constraint:
-  - Short diagnostics (v1: 16 questions) provide useful direction but not full graph certainty.
-  - Product should prefer conservative score claims and strong actionability over overconfident precision.
+  - Product should prefer conservative band claims and strong
+    actionability over overconfident precision.
 
 ## Main Dashboard Architecture
 

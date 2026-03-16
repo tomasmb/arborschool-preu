@@ -17,7 +17,7 @@
 | Mini-clase mastery (`?atom=`) | Done | Done | Done | **Working** |
 | Mastery algorithm (streaks, difficulty ladder) | Done | — | — | **Working** |
 | Score prediction (dynamic recomputation) | Done | Done | Done | **Working** |
-| Score prediction governance (diagnostic cap) | Done | — | — | **Working** |
+| Score prediction governance (knowledge-based) | Done | — | — | **Working** |
 | Diagnostic source banner (honest copy) | Done | Done | Done | **Working** |
 | Streak badge (daily streak + max streak) | Done | Done | Done | **Working** |
 | Rich feedback (questionsUnlocked, nextAtom) | Done | Done | Done | **Working** |

@@ -26,9 +26,7 @@ const COLORS = {
   historyLine: "#0b3a5b",
   historyDot: "#0b3a5b",
   projLine: "#059669",
-  projBeyond: "#059669",
   band: "#05966920",
-  bandBeyond: "#05966912",
   ceiling: "#f59e0b",
   goalLine: "#e11d48",
   grid: "#e5e7eb",
@@ -91,8 +89,6 @@ export function ScoreJourneyChart({
     xScale,
     yScale
   );
-
-  const ceilingBoundaryIdx = projPoints.findIndex((p) => p.beyond);
 
   return (
     <section className="card-section space-y-2">
@@ -232,8 +228,8 @@ export function ScoreJourneyChart({
             />
           )}
 
-          {/* Projection line — within ceiling */}
-          {projMidPath && ceilingBoundaryIdx !== 0 && (
+          {/* Projection line */}
+          {projMidPath && (
             <path
               d={projMidPath}
               fill="none"
@@ -360,7 +356,6 @@ type ProjPoint = {
   mid: number;
   min: number;
   max: number;
-  beyond: boolean;
 };
 type GoalLine = {
   goalId: string;
@@ -391,7 +386,6 @@ function buildChartData(
     mid: p.projectedScoreMid,
     min: p.projectedScoreMin,
     max: p.projectedScoreMax,
-    beyond: p.beyondCeiling,
   }));
 
   // Add current score as week-0 start of projection

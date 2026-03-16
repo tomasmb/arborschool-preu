@@ -2,12 +2,13 @@
  * Score History & Projection — query historical scores, build projection
  * metadata for client-side rendering.
  *
- * The projection uses a simulation-based model derived from the actual
- * atom-question unlock graph, the student's real learning route order, and
- * system-derived overhead constants. No guessed constants.
+ * Knowledge-based projection model: the projected score reflects atoms
+ * mastered (knowledge). The unlock curve maps atoms → questions; questions
+ * you know count as correct, unknown questions use random-guess baseline.
+ * Accuracy-derived uncertainty only informs the confidence band width.
  *
  * Architecture:
- *   Server → builds unlock curve + metadata (one API call on page load)
+ *   Server → builds unlock curve + uncertainty metadata (one API call)
  *   Client → walks curve at slider speed (instant, no API calls)
  */
 
@@ -68,11 +69,10 @@ export type UnlockCurveEntry = {
  */
 export type ProjectionMetadata = {
   unlockCurve: UnlockCurveEntry[];
-  accUnlocked: number;
-  accLocked: number;
+  /** Accuracy-derived uncertainty factor for confidence band (0.05–0.20). */
+  accuracyUncertainty: number;
   effectiveMinPerAtom: number;
   totalRemainingAtoms: number;
-  currentCorrect: number;
   currentScore: number;
   diagnosticCeiling: number | null;
   targetScore: number | null;
@@ -254,66 +254,59 @@ async function buildUnlockCurve(
 }
 
 // ============================================================================
-// ACCURACY DERIVATION
+// ACCURACY DERIVATION (for confidence band only)
 // ============================================================================
 
 /**
- * Derives ACC_UNLOCKED and ACC_LOCKED from the student's actual performance.
+ * Derives the student's accuracy on unlocked questions from their
+ * diagnostic performance. Used only to compute the confidence band
+ * width — NOT the projected score mid-line.
  *
- * Two-tier model:
- *   ACC_UNLOCKED — accuracy on questions where all primary atoms mastered
- *   ACC_LOCKED   — accuracy on questions where some primary atoms missing
+ * Solves: currentCorrect = accUnlocked × unlockedPerTest
+ *                        + 0.2 × lockedPerTest
  *
- * Uses the relationship:
- *   currentCorrect = ACC_UNLOCKED × unlockedPerTest
- *                   + ACC_LOCKED × lockedPerTest
+ * Returns accUnlocked clamped to [0.5, 0.95].
  */
-function deriveAccuracy(
+function deriveUnlockedAccuracy(
   currentCorrect: number,
   questionsUnlocked: number
-): { accUnlocked: number; accLocked: number } {
+): number {
   const unlockedPerTest = questionsUnlocked / NUM_OFFICIAL_TESTS;
   const lockedPerTest = PAES_TOTAL_QUESTIONS - unlockedPerTest;
 
-  if (unlockedPerTest < 1) {
-    return { accUnlocked: FALLBACK_ACC_UNLOCKED, accLocked: DEFAULT_ACC_LOCKED };
-  }
+  if (unlockedPerTest < 1) return FALLBACK_ACC_UNLOCKED;
 
   if (lockedPerTest < 1) {
-    const accUnlocked = Math.min(
+    return Math.min(
       MAX_ACC_UNLOCKED,
       currentCorrect / PAES_TOTAL_QUESTIONS
     );
-    return { accUnlocked, accLocked: DEFAULT_ACC_LOCKED };
   }
 
-  let accLocked = DEFAULT_ACC_LOCKED;
-  let accUnlocked =
-    (currentCorrect - accLocked * lockedPerTest) / unlockedPerTest;
+  const raw =
+    (currentCorrect - DEFAULT_ACC_LOCKED * lockedPerTest) / unlockedPerTest;
 
-  if (accUnlocked > MAX_ACC_UNLOCKED) {
-    accUnlocked = MAX_ACC_UNLOCKED;
-    accLocked = (currentCorrect - accUnlocked * unlockedPerTest) / lockedPerTest;
-    accLocked = Math.max(0, Math.min(0.8, accLocked));
-  } else if (accUnlocked < MIN_ACC_UNLOCKED) {
-    accUnlocked = MIN_ACC_UNLOCKED;
-    accLocked = (currentCorrect - accUnlocked * unlockedPerTest) / lockedPerTest;
-    accLocked = Math.max(0, Math.min(DEFAULT_ACC_LOCKED, accLocked));
-  }
-
-  return { accUnlocked, accLocked };
+  return Math.min(MAX_ACC_UNLOCKED, Math.max(MIN_ACC_UNLOCKED, raw));
 }
 
 // ============================================================================
 // PROJECTION METADATA (server-side entry point)
 // ============================================================================
 
+/** Clamp a value between min and max inclusive. */
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
 /**
  * Computes everything the client needs to render projections locally.
  *
- * Called once on page load. Returns the unlock curve and accuracy
- * metadata so the client can walk the curve at any slider speed
- * without additional API calls.
+ * Called once on page load. Returns the unlock curve and an
+ * accuracy-derived uncertainty factor so the client can walk the
+ * curve at any slider speed without additional API calls.
+ *
+ * The projected score is knowledge-based (atoms mastered = questions
+ * known). Accuracy only determines the confidence band width.
  */
 export async function buildProjectionMetadata(params: {
   userId: string;
@@ -340,23 +333,21 @@ export async function buildProjectionMetadata(params: {
   const currentCorrect = estimateCorrectFromScore(currentScore);
   const ceiling = Math.max(snapshot.paesScoreMax, currentScore);
 
-  // Use the curve's initial unlocked count (derived from the same
-  // transitivity-based mastery model as the curve itself) so accuracy
-  // derivation and unlock simulation share the same source of truth.
-  const initialQuestionsUnlocked = curveData.curve[0]?.questionsUnlocked ?? 0;
+  const initialQuestionsUnlocked =
+    curveData.curve[0]?.questionsUnlocked ?? 0;
 
-  const { accUnlocked, accLocked } = deriveAccuracy(
+  const accUnlocked = deriveUnlockedAccuracy(
     currentCorrect,
     initialQuestionsUnlocked
   );
 
+  const accuracyUncertainty = clamp(1 - accUnlocked, 0.05, 0.20);
+
   return {
     unlockCurve: curveData.curve,
-    accUnlocked,
-    accLocked,
+    accuracyUncertainty,
     effectiveMinPerAtom: EFFECTIVE_MINUTES_PER_ATOM,
     totalRemainingAtoms: curveData.totalRemainingAtoms,
-    currentCorrect,
     currentScore,
     diagnosticCeiling: ceiling,
     targetScore: params.targetScore ?? null,

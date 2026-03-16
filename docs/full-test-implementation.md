@@ -303,11 +303,9 @@ Derive `paesScoreMid = Math.round((min + max) / 2)`.
 ```typescript
 type ProjectionMetadata = {
   unlockCurve: { atomsMastered: number; questionsUnlocked: number }[];
-  accUnlocked: number;
-  accLocked: number;
+  accuracyUncertainty: number;  // 0.05–0.20, for confidence band
   effectiveMinPerAtom: number;  // EFFECTIVE_MINUTES_PER_ATOM (38)
   totalRemainingAtoms: number;
-  currentCorrect: number;
   currentScore: number;
   diagnosticCeiling: number | null;
   targetScore: number | null;
@@ -320,18 +318,22 @@ Algorithm:
    - Load atom-question graph, student mastery state
    - Sort non-mastered atoms by marginal efficiency (prereqs first)
    - Simulate atom-by-atom unlocks → `[atomsMastered → questionsUnlocked]`
-2. Derive accuracy model from student's current performance:
-   - `ACC_UNLOCKED`: accuracy on unlocked questions (clamped 0.5–0.95)
-   - `ACC_LOCKED`: accuracy on locked questions (baseline 0.20)
+2. Compute accuracy-derived uncertainty for the confidence band:
+   - Derive `accUnlocked` from student's diagnostic performance
+   - `accuracyUncertainty = clamp(1 - accUnlocked, 0.05, 0.20)`
 3. Return metadata — projection computation happens client-side
 
 #### Client-side projection (`computeProjection` in ProgressClient.tsx)
 
+Knowledge-based model: questions you know count as correct, unknown
+questions use random-guess baseline.
+
 For each week 1..20:
 1. `atomsMastered = min(effectiveAtomsPerWeek × week, totalRemaining)`
 2. `questionsUnlocked = interpolate(unlockCurve, atomsMastered)`
-3. `expectedCorrect = ACC_UNLOCKED × (unlocked/4) + ACC_LOCKED × (60 - unlocked/4)`
+3. `expectedCorrect = unlocked/4 + 0.2 × (65 - unlocked/4)`
 4. `projectedScore = PAES_TABLE[round(expectedCorrect)]`
+5. `band = projectedScore × accuracyUncertainty`
 
 No API calls on slider change — projection is instant.
 

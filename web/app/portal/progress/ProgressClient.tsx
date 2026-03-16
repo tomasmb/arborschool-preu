@@ -6,7 +6,6 @@ import type { ApiEnvelope } from "@/lib/student/apiClientEnvelope";
 import { resolveApiErrorMessage } from "@/lib/student/apiClientEnvelope";
 import {
   EFFECTIVE_MINUTES_PER_ATOM,
-  IMPROVEMENT_UNCERTAINTY,
   NUM_OFFICIAL_TESTS,
 } from "@/lib/diagnostic/scoringConstants";
 import {
@@ -39,8 +38,9 @@ const MAX_HOURS = 10;
 const HOURS_STEP = 0.5;
 const DEFAULT_HOURS = 3;
 const MAX_PROJECTION_WEEKS = 20;
-const UNCERTAINTY_WITHIN_CEILING = IMPROVEMENT_UNCERTAINTY;
-const UNCERTAINTY_BEYOND_CEILING = 0.25;
+
+/** Baseline accuracy for 5-option PAES MCQ random guessing. */
+const RANDOM_GUESS_ACC = 0.2;
 
 const HERO_GRADIENT = "linear-gradient(90deg, #0b3a5b, #134b73, #059669)";
 
@@ -60,11 +60,10 @@ function getPaesScoreLocal(correctAnswers: number): number {
 /**
  * Computes the full projection curve locally from server-provided metadata.
  *
- * Walks the unlock curve at the pace determined by hoursPerWeek:
- *   effectiveAtomsPerWeek = (hoursPerWeek × 60) / effectiveMinPerAtom
- *
- * At each week, interpolates along the unlock curve to find total
- * questions unlocked, then maps to PAES score via the accuracy model.
+ * Knowledge-based model: walks the unlock curve at the pace determined
+ * by hoursPerWeek. Questions you know (unlocked) count as correct;
+ * unknown questions use random-guess baseline (0.2 for 5-option MCQ).
+ * The confidence band uses accuracy-derived uncertainty from the server.
  */
 function computeProjection(
   meta: ProjectionMetadata,
@@ -72,7 +71,6 @@ function computeProjection(
 ): ProjectionResult {
   const weeklyMinutes = hoursPerWeek * 60;
   const effectiveAtomsPerWeek = weeklyMinutes / meta.effectiveMinPerAtom;
-  const ceiling = meta.diagnosticCeiling ?? meta.currentScore;
 
   const points: ProjectionPoint[] = [];
   let weeksToTarget: number | null = null;
@@ -96,24 +94,17 @@ function computeProjection(
 
     const expectedCorrect = Math.min(
       PAES_TOTAL_QUESTIONS,
-      meta.accUnlocked * unlockedPerTest +
-        meta.accLocked * lockedPerTest
+      unlockedPerTest + RANDOM_GUESS_ACC * lockedPerTest
     );
 
     const projectedMid = getPaesScoreLocal(Math.round(expectedCorrect));
-    const beyondCeiling = projectedMid > ceiling;
-
-    const uncertainty = beyondCeiling
-      ? UNCERTAINTY_BEYOND_CEILING
-      : UNCERTAINTY_WITHIN_CEILING;
-    const band = Math.round(projectedMid * uncertainty);
+    const band = Math.round(projectedMid * meta.accuracyUncertainty);
 
     points.push({
       week,
       projectedScoreMid: projectedMid,
       projectedScoreMin: Math.max(100, projectedMid - band),
       projectedScoreMax: Math.min(1000, projectedMid + band),
-      beyondCeiling,
     });
 
     if (
