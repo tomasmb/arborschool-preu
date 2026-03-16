@@ -5,6 +5,7 @@ import {
   getInProgressAttempt,
   resolveTestQuestions,
 } from "@/lib/student/fullTest";
+import { FULL_TEST_DURATION_MIN } from "@/lib/diagnostic/scoringConstants";
 
 /**
  * GET /api/student/full-test/info
@@ -31,7 +32,8 @@ export async function GET() {
         data: {
           testName: inProgress.testName,
           questionCount: questions.length,
-          timeLimitMinutes: inProgress.timeLimitMinutes ?? 150,
+          timeLimitMinutes:
+            inProgress.timeLimitMinutes ?? FULL_TEST_DURATION_MIN,
         },
       });
     }
@@ -40,7 +42,11 @@ export async function GET() {
     if (available.length === 0) {
       return NextResponse.json({
         success: true,
-        data: { testName: null, questionCount: 0, timeLimitMinutes: 150 },
+        data: {
+          testName: null,
+          questionCount: 0,
+          timeLimitMinutes: FULL_TEST_DURATION_MIN,
+        },
       });
     }
 
@@ -52,7 +58,7 @@ export async function GET() {
       data: {
         testName: test.name,
         questionCount: questions.length,
-        timeLimitMinutes: test.timeLimitMinutes ?? 150,
+        timeLimitMinutes: test.timeLimitMinutes ?? FULL_TEST_DURATION_MIN,
       },
     });
   } catch (error) {

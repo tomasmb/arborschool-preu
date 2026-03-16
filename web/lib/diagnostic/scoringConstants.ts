@@ -103,18 +103,18 @@ export const MINUTES_PER_ATOM = 20;
 
 /**
  * SR review balance threshold — review suggested after this many new
- * masteries. Mirrors SR_BALANCE_THRESHOLD in nextAction.ts.
+ * masteries. Single source of truth; used by nextAction.ts.
  */
-const SR_BALANCE_THRESHOLD = 3;
+export const SR_BALANCE_THRESHOLD = 3;
 
 /**
  * Full-test gating threshold — test unlocks after this many study-mastered
- * atoms. Mirrors UNLOCK_THRESHOLD in retestGating.ts.
+ * atoms. Single source of truth; used by retestGating.ts.
  */
-const RETEST_ATOM_THRESHOLD = 18;
+export const RETEST_ATOM_THRESHOLD = 18;
 
 /** Approximate duration of one full PAES timed test in minutes. */
-const FULL_TEST_DURATION_MIN = 150;
+export const FULL_TEST_DURATION_MIN = 150;
 
 /** Approximate minutes spent on verification quizzes per test cycle. */
 const VERIFICATION_OVERHEAD_MIN = 30;

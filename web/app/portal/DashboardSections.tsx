@@ -6,6 +6,10 @@ import { ConfidenceBadge, StreakBadge } from "./components";
 import { EditableMetaScore } from "./EditableMetaScore";
 import { formatScore } from "./formatters";
 import { useAnimatedMount, useCountUp } from "./hooks";
+import {
+  RETEST_ATOM_THRESHOLD,
+  PAES_TOTAL_QUESTIONS,
+} from "@/lib/diagnostic/scoringConstants";
 import type { DashboardPayload } from "./types";
 
 function DiagnosticSourceBanner({
@@ -35,8 +39,8 @@ function DiagnosticSourceBanner({
           Calibra tu puntaje con un test completo
         </p>
         <p className="text-xs text-gray-600">
-          El diagnóstico cubrió solo 16 preguntas. Un test de 60 mide tu nivel
-          real.
+          El diagnóstico cubrió solo 16 preguntas. Un test de{" "}
+          {PAES_TOTAL_QUESTIONS} mide tu nivel real.
         </p>
       </Link>
     );
@@ -71,7 +75,7 @@ function DiagnosticSourceBanner({
           Ya puedes tomar un test completo
         </p>
         <p className="text-xs text-amber-600">
-          Mejora tu estimación con un test de 60 preguntas.
+          Mejora tu estimación con un test de {PAES_TOTAL_QUESTIONS} preguntas.
         </p>
       </Link>
     );
@@ -84,8 +88,8 @@ function DiagnosticSourceBanner({
           Estimado desde diagnóstico corto (16 preguntas).
         </p>
         <p className="text-xs text-amber-600">
-          {retestStatus.atomsMasteredSinceLastTest}/18 conceptos para
-          desbloquear test completo.
+          {retestStatus.atomsMasteredSinceLastTest}/{RETEST_ATOM_THRESHOLD}{" "}
+          conceptos para desbloquear test completo.
         </p>
       </div>
     );

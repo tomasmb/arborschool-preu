@@ -86,8 +86,8 @@ QTI rendering with MathJax, confirm dialog, time-up modal, and results
 screen with per-axis breakdown.
 
 **Pass 3 (Progress + Dashboard):** `/portal/progress` page with mastery
-hero ring, axis breakdown cards, projection card with atoms-per-week
-selector, retest CTA section, and test history table. Dashboard updated: removed
+hero ring, axis breakdown cards, projection card with hours-per-week
+slider (client-side computation), retest CTA section, and test history table. Dashboard updated: removed
 effort slider and details section, added progress link card. Updated
 `DiagnosticSourceBanner` to show actionable retest CTAs based on
 `retestStatus`. Added "Progreso" to portal navigation.

@@ -249,10 +249,10 @@ Deletes the user and all associated data (cascading through all related tables):
 |---|-----------|-------|----------|
 | K1 | Score history chart | As user with multiple test points | Chart renders with correct data points |
 | K2 | Score history — diagnostic vs full test markers | As user with both types | Different markers for each type |
-| K3 | Projection section | Open progress page | Projection chart renders with atoms-per-week slider |
+| K3 | Projection section | Open progress page | Projection chart renders with hours-per-week slider |
 | K4 | Projection note — after short diagnostic | Latest test is short diagnostic | Note says "Un test completo puede subir el techo" |
 | K5 | Projection note — after full test | Latest test is full test | Note is hidden (Issue 6 regression) |
-| K6 | Atoms-per-week slider | Click different atom counts | Projection updates with debounce |
+| K6 | Hours-per-week slider | Adjust hours | Projection recomputes instantly (client-side) |
 | K7 | Retest CTA section | As user with 18+ atoms | Retest CTA visible |
 | K8 | Test history table | As user with multiple tests | Table with dates, types, scores, correctas |
 | K9 | Empty state | As user with no completed tests | "Aún no tienes tests completados" message |

@@ -1,6 +1,7 @@
 import { and, desc, eq, gt, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { atomStudySessions } from "@/db/schema";
+import { SR_BALANCE_THRESHOLD } from "@/lib/diagnostic/scoringConstants";
 import {
   analyzeLearningPotential,
   type StudentLearningAnalysis,
@@ -220,8 +221,7 @@ function buildEmptyState(status: Exclude<NextActionStatus, "ready">) {
   };
 }
 
-/** Suggest review block after this many new masteries (spec 7.10). */
-const SR_BALANCE_THRESHOLD = 3;
+// SR_BALANCE_THRESHOLD imported from scoringConstants.ts (single source of truth)
 
 /**
  * Counts mastery sessions completed since the user's last review session.

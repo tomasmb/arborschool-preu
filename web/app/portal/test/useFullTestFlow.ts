@@ -5,6 +5,7 @@ import type { ResolvedQuestion } from "@/lib/student/fullTest";
 import type { Axis } from "@/lib/diagnostic/config";
 import { resolveApiErrorMessage } from "@/lib/student/apiClientEnvelope";
 import type { ApiEnvelope } from "@/lib/student/apiClientEnvelope";
+import { FULL_TEST_DURATION_MIN } from "@/lib/diagnostic/scoringConstants";
 
 // ============================================================================
 // TYPES
@@ -165,7 +166,7 @@ export function useFullTestFlow() {
     screen: "pre-test",
     attemptId: null,
     testName: null,
-    timeLimitMinutes: 150,
+    timeLimitMinutes: FULL_TEST_DURATION_MIN,
     questions: [],
     answers: new Map(),
     currentPosition: 1,
@@ -223,7 +224,7 @@ export function useFullTestFlow() {
         screen: "in-progress",
         attemptId: data.attemptId,
         testName: data.testName,
-        timeLimitMinutes: data.timeLimitMinutes ?? 150,
+        timeLimitMinutes: data.timeLimitMinutes ?? FULL_TEST_DURATION_MIN,
         questions: data.questions,
         answers: saved?.answers ?? new Map(),
         currentPosition: saved?.currentPosition ?? 1,

@@ -16,7 +16,10 @@ import {
   atomMastery,
   users,
 } from "@/db/schema";
-import { getPaesScore } from "@/lib/diagnostic/paesScoreTable";
+import {
+  getPaesScore,
+  PAES_TOTAL_QUESTIONS,
+} from "@/lib/diagnostic/paesScoreTable";
 import { getLevel } from "@/lib/diagnostic/config";
 
 // ============================================================================
@@ -67,7 +70,7 @@ export async function recalibrateScore(
 
   const paesScore = getPaesScore(correctAnswers);
   const minCorrect = Math.max(0, correctAnswers - 2);
-  const maxCorrect = Math.min(60, correctAnswers + 2);
+  const maxCorrect = Math.min(PAES_TOTAL_QUESTIONS, correctAnswers + 2);
   const paesScoreMin = getPaesScore(minCorrect);
   const paesScoreMax = getPaesScore(maxCorrect);
   const level = getLevel(paesScore);

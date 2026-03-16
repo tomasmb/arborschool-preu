@@ -12,8 +12,9 @@
 import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { atomMastery, testAttempts, users } from "@/db/schema";
+import { RETEST_ATOM_THRESHOLD } from "@/lib/diagnostic/scoringConstants";
 
-const UNLOCK_THRESHOLD = 18;
+const UNLOCK_THRESHOLD = RETEST_ATOM_THRESHOLD;
 const RECOMMEND_THRESHOLD = 30;
 const MIN_SPACING_DAYS = 7;
 const MAX_TESTS_PER_MONTH = 3;
