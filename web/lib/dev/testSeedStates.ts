@@ -8,6 +8,7 @@
 
 import { eq, asc } from "drizzle-orm";
 import { db } from "@/db";
+import { RETEST_ATOM_THRESHOLD } from "@/lib/diagnostic/scoringConstants";
 import {
   users,
   atomMastery,
@@ -239,7 +240,7 @@ export async function applySeedState(
 ): Promise<void> {
   switch (seed) {
     case "mastery_atoms_18":
-      await seedMasteredAtoms(userId, 18);
+      await seedMasteredAtoms(userId, RETEST_ATOM_THRESHOLD);
       break;
     case "mastery_atoms_30":
       await seedMasteredAtoms(userId, 30);
