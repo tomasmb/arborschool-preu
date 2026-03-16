@@ -114,8 +114,11 @@ export function calculateImprovement(
   improvement: number;
   newCorrect: number;
 } {
-  const current = Math.max(0, Math.min(60, Math.round(currentCorrect)));
-  const newCorrect = Math.min(60, current + additionalCorrect);
+  const current = Math.max(
+    0,
+    Math.min(PAES_TOTAL_QUESTIONS, Math.round(currentCorrect))
+  );
+  const newCorrect = Math.min(PAES_TOTAL_QUESTIONS, current + additionalCorrect);
 
   const currentScore = getPaesScore(current);
   const newScore = getPaesScore(newCorrect);
@@ -137,7 +140,7 @@ export function estimateCorrectFromScore(paesScore: number): number {
   let closest = 0;
   let minDiff = Math.abs(PAES_SCORE_TABLE[0] - paesScore);
 
-  for (let i = 1; i <= 60; i++) {
+  for (let i = 1; i <= PAES_TOTAL_QUESTIONS; i++) {
     const diff = Math.abs(PAES_SCORE_TABLE[i] - paesScore);
     if (diff < minDiff) {
       minDiff = diff;

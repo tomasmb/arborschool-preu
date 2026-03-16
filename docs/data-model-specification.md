@@ -53,6 +53,7 @@ CREATE TYPE session_type AS ENUM ('mastery', 'prereq_scan', 'review', 'verificat
 CREATE TYPE session_status AS ENUM ('lesson', 'in_progress', 'mastered', 'failed', 'abandoned');
 CREATE TYPE session_difficulty AS ENUM ('easy', 'medium', 'hard');
 CREATE TYPE review_result AS ENUM ('pass', 'fail');
+CREATE TYPE access_grant_type AS ENUM ('email', 'domain');
 ```
 
 ---
@@ -197,6 +198,8 @@ CREATE TABLE users (
     paes_date VARCHAR(20),
     in_preu BOOLEAN,
     school_type VARCHAR(30),
+    -- Access control
+    school_id UUID REFERENCES schools(id) ON DELETE SET NULL,
     -- Notification tracking
     notified_platform_launch BOOLEAN NOT NULL DEFAULT FALSE,
     notified_platform_launch_at TIMESTAMPTZ,
@@ -260,6 +263,30 @@ CREATE TABLE student_responses (
     question_index INTEGER,
     answered_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE(test_attempt_id, question_id)
+);
+```
+
+### Access Control Tables
+
+```sql
+CREATE TABLE schools (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(100) UNIQUE NOT NULL,
+    contact_email VARCHAR(255),
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE access_grants (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    type access_grant_type NOT NULL,
+    value VARCHAR(255) NOT NULL,
+    school_id UUID REFERENCES schools(id) ON DELETE CASCADE,
+    granted_by UUID REFERENCES users(id) NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(type, value)
 );
 ```
 

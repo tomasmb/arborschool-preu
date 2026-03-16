@@ -2,7 +2,7 @@
  * Pool-Based Full Test Assembly — greedy set-cover for maximum atom coverage.
  *
  * Instead of selecting questions from a single fixed test, this module
- * pools ALL official questions + alternates and picks 60 that cover the
+ * pools ALL official questions + alternates and picks PAES_TOTAL_QUESTIONS that cover the
  * most atoms. Coverage is computed with TRANSITIVITY: if a question
  * tests atom B whose prerequisite is A, then both B and A are covered.
  *
@@ -21,13 +21,14 @@ import {
   getSeenQuestionIds,
 } from "./questionHelpers";
 import type { ResolvedQuestion } from "./fullTest";
+import { PAES_TOTAL_QUESTIONS } from "@/lib/diagnostic/paesScoreTable";
 
 // ============================================================================
 // CONSTANTS
 // ============================================================================
 
 const COMPOSITE_TIME_LIMIT = 135;
-export const DEFAULT_QUESTION_COUNT = 60;
+export const DEFAULT_QUESTION_COUNT = PAES_TOTAL_QUESTIONS;
 
 // ============================================================================
 // TYPES

@@ -3,8 +3,8 @@
  *
  * Policy:
  * - First test after diagnostic: available immediately (no atom gate)
- * - Subsequent tests: 18 atoms since last test to unlock
- * - 30 atoms to actively recommend retest
+ * - Subsequent tests: RETEST_ATOM_THRESHOLD atoms since last test to unlock
+ * - RECOMMEND_THRESHOLD atoms to actively recommend retest
  * - Minimum 7 day spacing between full tests
  * - Max 3 full tests per month
  */

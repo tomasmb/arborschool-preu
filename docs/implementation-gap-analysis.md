@@ -343,7 +343,8 @@ barrel. Both views now import from `../components`.
 **Problem:** `NextActionSection.tsx` declared `SESSION_MINUTES = 25` and
 immediately assigned it to `minutes`, adding indirection with no value.
 
-**Resolution:** Replaced with inline literal `const minutes = 25`.
+**Resolution:** Removed the constant; `studyMinutes` is now passed as a prop
+from `LearningPathSection`, sourced from `MINUTES_PER_ATOM` (20 min).
 
 **Files changed:**
 - `web/app/portal/NextActionSection.tsx`
