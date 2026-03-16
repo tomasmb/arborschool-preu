@@ -472,13 +472,17 @@ async function reduceReviewCounter(
   divisor: number
 ) {
   if (atomIds.length === 0) return;
+  const idList = sql.join(
+    atomIds.map((id) => sql`${id}`),
+    sql`, `
+  );
   await db.execute(sql`
     UPDATE atom_mastery
     SET sessions_since_last_review = GREATEST(0,
       sessions_since_last_review
         - GREATEST(1, sessions_since_last_review / ${divisor}))
     WHERE user_id = ${userId}
-      AND atom_id = ANY(${atomIds}) AND is_mastered = true
+      AND atom_id IN (${idList}) AND is_mastered = true
   `);
 }
 

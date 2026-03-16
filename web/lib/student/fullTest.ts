@@ -237,6 +237,10 @@ async function resolveQuestionRows(
     `) as unknown as QuestionRow[];
   }
 
+  const seenList = sql.join(
+    seenArray.map((id) => sql`${id}`),
+    sql`, `
+  );
   return db.execute(sql`
     SELECT DISTINCT ON (tq.position)
       tq.position,
@@ -251,7 +255,10 @@ async function resolveQuestionRows(
     WHERE tq.test_id = ${testId}
     ORDER BY
       tq.position,
-      CASE WHEN COALESCE(alt.id, q.id) = ANY(${seenArray}) THEN 1 ELSE 0 END,
+      CASE
+        WHEN COALESCE(alt.id, q.id) IN (${seenList}) THEN 1
+        ELSE 0
+      END,
       CASE WHEN alt.id IS NOT NULL THEN 0 ELSE 1 END,
       alt.id NULLS LAST
   `) as unknown as QuestionRow[];
@@ -326,16 +333,25 @@ async function substituteSeenPositions(
   ];
 
   // Find unseen official questions covering any of these atoms
+  const seenArray = [...seenIds];
   const candidates = (await db.execute(sql`
     SELECT q.id, q.qti_xml, qa.atom_id, qa.relevance
     FROM questions q
-    JOIN question_atoms qa ON qa.question_id = q.id AND qa.relevance = 'primary'
+    JOIN question_atoms qa
+      ON qa.question_id = q.id AND qa.relevance = 'primary'
     WHERE q.source = 'official'
       AND q.id NOT IN (
-        SELECT question_id FROM test_questions WHERE test_id = ${testId}
+        SELECT question_id FROM test_questions
+        WHERE test_id = ${testId}
       )
-      AND qa.atom_id = ANY(${allTargetAtoms})
-      AND q.id != ALL(${[...seenIds]})
+      AND qa.atom_id IN (${sql.join(
+        allTargetAtoms.map((a) => sql`${a}`),
+        sql`, `
+      )})
+      AND q.id NOT IN (${sql.join(
+        seenArray.map((id) => sql`${id}`),
+        sql`, `
+      )})
   `)) as unknown as {
     id: string;
     qti_xml: string;
