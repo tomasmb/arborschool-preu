@@ -18,8 +18,9 @@ import { upsertStudentTestHours } from "@/lib/student/goals.write";
  * GET /api/student/progress
  *
  * Returns mastery breakdown, axis mastery, score history, projection
- * metadata (unlock curve + accuracy), retest status, goal milestones,
- * and current scores. The client builds projections locally from metadata.
+ * metadata (unlock curve + uncertainty), retest status, goal milestones,
+ * and current scores. The client builds knowledge-based projections
+ * locally from metadata.
  */
 export async function GET() {
   try {

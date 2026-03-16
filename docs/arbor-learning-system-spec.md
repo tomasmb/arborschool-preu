@@ -632,18 +632,25 @@ Where:
 
 Range: +/-5 questions using PAES score table.
 
-### 9.3 Model Governance (Locked for v1)
+### 9.3 Model Governance
 
-- **Score prediction authority**: Use the diagnostic score model as the only
-  source of truth for `prediction min/max`. Confidence band comes from
-  diagnostic uncertainty, not atom extrapolation.
-- **Atom model role**: Use atom mastery and route optimizer for next-best-action
-  ranking and ROI estimation. Use atom-derived effort as a study-planning
-  signal, NOT as authoritative score forecast.
-- **Effort scenarios**: Label slider output as "escenario de esfuerzo", not
-  core prediction. Cap scenario projection to diagnostic prediction ceiling
-  until new evidence (retest).
-- **Cap formula**: `scenario_score = min(effort_projection, diagnostic_prediction_max)`
+- **Knowledge-based projection**: The projected score mid-line is purely
+  knowledge-based. Questions whose atoms are mastered count as correct;
+  locked questions use random-guess baseline (0.2). No accuracy modeling
+  in the mid-line — knowledge determines the score.
+- **Diagnostic ceiling role**: The diagnostic ceiling is displayed as a
+  visual reference line on the chart but does NOT cap or gate the
+  projection. As the student masters more atoms, the projection rises
+  above the ceiling.
+- **Confidence band**: Accuracy-derived uncertainty (from the student's
+  demonstrated gap between knowledge and test performance) informs the
+  band width only. Band range: 5–20% of projected score.
+- **Atom model role**: Use atom mastery and route optimizer for
+  next-best-action ranking and ROI estimation. Atom-derived knowledge
+  IS the authoritative projection driver.
+- **Evidence constraint**: Short diagnostics (16 questions) produce wider
+  confidence bands. Full tests narrow the band. The product should prefer
+  conservative band claims and strong actionability.
 
 ### 9.4 Simulation-Based Projection Model
 
@@ -653,7 +660,7 @@ graph. No guessed constants — all inputs are system-derived.
 
 **Architecture** (client-side for performance):
 
-1. **Server** (one call on page load): builds the unlock curve + accuracy
+1. **Server** (one call on page load): builds the unlock curve + uncertainty
    metadata via `buildProjectionMetadata()` in `scoreHistory.ts`.
 2. **Client** (`ProgressClient.tsx`): walks the curve at slider speed,
    computing projections instantly without API calls.
@@ -682,17 +689,21 @@ Natural diminishing returns emerge from the graph structure:
 
 `effectiveAtomsPerWeek = weeklyMinutes / EFFECTIVE_MINUTES_PER_ATOM`
 
-**Component 3 — Accuracy Model** (`deriveAccuracy`):
+**Component 3 — Knowledge-Based Score Model**:
 
-Two-tier model derived from the student's actual performance:
-- `ACC_UNLOCKED`: accuracy on questions where all primary atoms mastered
-- `ACC_LOCKED`: accuracy on locked questions (baseline = 0.20 for 5-option MCQ)
-
-Derived from: `currentCorrect = ACC_UNLOCKED × unlockedPerTest + ACC_LOCKED × lockedPerTest`
+Pure knowledge model — the projected score reflects what the student
+knows, not test-day accuracy:
+- Unlocked questions (all atoms mastered) = correct
+- Locked questions (missing atoms) = random guess (0.20 for 5-option MCQ)
 
 At each projected week:
-`expectedCorrect = ACC_UNLOCKED × (unlockedPerTest) + ACC_LOCKED × (lockedPerTest)`
+`expectedCorrect = unlockedPerTest + 0.2 × lockedPerTest`
 → lookup in PAES score table for the projected PAES score.
+
+**Confidence band** uses accuracy-derived uncertainty computed server-side:
+`accuracyUncertainty = clamp(1 - accUnlocked, 0.05, 0.20)` where
+`accUnlocked` is derived from the student's diagnostic performance via
+`deriveUnlockedAccuracy()`. The band is `projectedMid ± projectedMid × uncertainty`.
 
 ### 9.5 Per-Test Study Hours
 

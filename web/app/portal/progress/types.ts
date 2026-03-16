@@ -16,7 +16,6 @@ export type ProjectionPoint = {
   projectedScoreMid: number;
   projectedScoreMin: number;
   projectedScoreMax: number;
-  beyondCeiling: boolean;
 };
 
 export type ProjectionResult = {
@@ -35,11 +34,9 @@ export type UnlockCurveEntry = {
 /** Server-computed metadata the client uses to build projections locally. */
 export type ProjectionMetadata = {
   unlockCurve: UnlockCurveEntry[];
-  accUnlocked: number;
-  accLocked: number;
+  accuracyUncertainty: number;
   effectiveMinPerAtom: number;
   totalRemainingAtoms: number;
-  currentCorrect: number;
   currentScore: number;
   diagnosticCeiling: number | null;
   targetScore: number | null;
