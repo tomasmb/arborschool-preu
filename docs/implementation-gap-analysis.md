@@ -74,8 +74,7 @@ Full implementation across three passes:
 **Pass 1 (Backend):** Schema change (`paesScoreMin`/`paesScoreMax` on
 `testAttempts`), `fullTest.ts` (test selection, question resolution with
 alternate-first logic, score recalibration + atom mastery upsert),
-`scoreHistory.ts` (score history query, projection curve with governance
-cap). Four API routes: `POST /api/student/full-test/start`,
+`scoreHistory.ts` (score history query, simulation-based projection metadata). Four API routes: `POST /api/student/full-test/start`,
 `POST /api/student/full-test/answer`, `POST /api/student/full-test/complete`,
 `GET /api/student/progress`.
 

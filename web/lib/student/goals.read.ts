@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import {
   admissionsDatasets,
@@ -10,6 +10,7 @@ import {
   studentGoalScores,
   studentGoals,
   studentPlanningProfiles,
+  studentTestHours,
   universities,
 } from "@/db/schema";
 import { normalizeWeightOrScore } from "./goals.types";
@@ -261,4 +262,23 @@ export async function getStudentPlanningProfile(userId: string) {
     reminderEmail: row.reminderEmail,
     updatedAt: row.updatedAt,
   };
+}
+
+/** Returns the per-test weekly minutes for a given user + test code. */
+export async function getStudentTestHours(
+  userId: string,
+  testCode: string
+): Promise<number | null> {
+  const rows = await db
+    .select({ weeklyMinutes: studentTestHours.weeklyMinutes })
+    .from(studentTestHours)
+    .where(
+      and(
+        eq(studentTestHours.userId, userId),
+        eq(studentTestHours.testCode, testCode.trim().toUpperCase())
+      )
+    )
+    .limit(1);
+
+  return rows[0]?.weeklyMinutes ?? null;
 }

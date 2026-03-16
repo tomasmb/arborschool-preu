@@ -1,10 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PageShell, ErrorStatePanel } from "@/app/portal/components";
 import type { ApiEnvelope } from "@/lib/student/apiClientEnvelope";
 import { resolveApiErrorMessage } from "@/lib/student/apiClientEnvelope";
-import { MINUTES_PER_ATOM } from "@/lib/diagnostic/scoringConstants";
+import {
+  EFFECTIVE_MINUTES_PER_ATOM,
+  IMPROVEMENT_UNCERTAINTY,
+  NUM_OFFICIAL_TESTS,
+} from "@/lib/diagnostic/scoringConstants";
+import {
+  PAES_SCORE_TABLE,
+  PAES_TOTAL_QUESTIONS,
+} from "@/lib/diagnostic/paesScoreTable";
 import {
   AxisBreakdownSection,
   GoalMilestonesSection,
@@ -17,6 +25,8 @@ import type {
   GoalMilestone,
   MasteryBreakdown,
   ProgressData,
+  ProjectionMetadata,
+  ProjectionPoint,
   ProjectionResult,
 } from "./types";
 
@@ -28,21 +38,125 @@ const MIN_HOURS = 0.5;
 const MAX_HOURS = 10;
 const HOURS_STEP = 0.5;
 const DEFAULT_HOURS = 3;
+const MAX_PROJECTION_WEEKS = 20;
+const UNCERTAINTY_WITHIN_CEILING = IMPROVEMENT_UNCERTAINTY;
+const UNCERTAINTY_BEYOND_CEILING = 0.25;
 
 const HERO_GRADIENT = "linear-gradient(90deg, #0b3a5b, #134b73, #059669)";
 
 // ============================================================================
-// HOUR ↔ ATOM CONVERSIONS
+// CLIENT-SIDE PROJECTION
 // ============================================================================
 
-function hoursToAtoms(hours: number): number {
-  return (hours * 60) / MINUTES_PER_ATOM;
+/** Look up the PAES score for a given number of correct answers (0–60). */
+function getPaesScoreLocal(correctAnswers: number): number {
+  const clamped = Math.max(0, Math.min(60, Math.round(correctAnswers)));
+  return PAES_SCORE_TABLE[clamped] ?? 100;
 }
 
-/** Round to nearest HOURS_STEP (0.5h). */
-function atomsToHours(atoms: number): number {
-  const raw = (atoms * MINUTES_PER_ATOM) / 60;
-  return Math.round(raw / HOURS_STEP) * HOURS_STEP;
+/**
+ * Computes the full projection curve locally from server-provided metadata.
+ *
+ * Walks the unlock curve at the pace determined by hoursPerWeek:
+ *   effectiveAtomsPerWeek = (hoursPerWeek × 60) / effectiveMinPerAtom
+ *
+ * At each week, interpolates along the unlock curve to find total
+ * questions unlocked, then maps to PAES score via the accuracy model.
+ */
+function computeProjection(
+  meta: ProjectionMetadata,
+  hoursPerWeek: number
+): ProjectionResult {
+  const weeklyMinutes = hoursPerWeek * 60;
+  const effectiveAtomsPerWeek = weeklyMinutes / meta.effectiveMinPerAtom;
+  const ceiling = meta.diagnosticCeiling ?? meta.currentScore;
+
+  const points: ProjectionPoint[] = [];
+  let weeksToTarget: number | null = null;
+
+  for (let week = 1; week <= MAX_PROJECTION_WEEKS; week++) {
+    const atomsMasteredSoFar = Math.min(
+      effectiveAtomsPerWeek * week,
+      meta.totalRemainingAtoms
+    );
+
+    const questionsUnlocked = interpolateCurve(
+      meta.unlockCurve,
+      atomsMasteredSoFar
+    );
+
+    const unlockedPerTest = questionsUnlocked / NUM_OFFICIAL_TESTS;
+    const lockedPerTest = Math.max(
+      0,
+      PAES_TOTAL_QUESTIONS - unlockedPerTest
+    );
+
+    const expectedCorrect = Math.min(
+      PAES_TOTAL_QUESTIONS,
+      meta.accUnlocked * unlockedPerTest +
+        meta.accLocked * lockedPerTest
+    );
+
+    const projectedMid = getPaesScoreLocal(Math.round(expectedCorrect));
+    const beyondCeiling = projectedMid > ceiling;
+
+    const uncertainty = beyondCeiling
+      ? UNCERTAINTY_BEYOND_CEILING
+      : UNCERTAINTY_WITHIN_CEILING;
+    const band = Math.round(projectedMid * uncertainty);
+
+    points.push({
+      week,
+      projectedScoreMid: projectedMid,
+      projectedScoreMin: Math.max(100, projectedMid - band),
+      projectedScoreMax: Math.min(1000, projectedMid + band),
+      beyondCeiling,
+    });
+
+    if (
+      meta.targetScore &&
+      weeksToTarget === null &&
+      projectedMid >= meta.targetScore
+    ) {
+      weeksToTarget = week;
+    }
+  }
+
+  return {
+    points,
+    weeksToTarget,
+    targetScore: meta.targetScore,
+    diagnosticCeiling: meta.diagnosticCeiling,
+    studyMinutesPerWeek: weeklyMinutes,
+  };
+}
+
+/**
+ * Linearly interpolates the unlock curve at a fractional atom count.
+ * The curve maps integer atom counts to questions unlocked; this
+ * returns a smooth value for non-integer positions.
+ */
+function interpolateCurve(
+  curve: ProjectionMetadata["unlockCurve"],
+  atomsMastered: number
+): number {
+  if (curve.length === 0) return 0;
+  if (atomsMastered <= 0) return curve[0].questionsUnlocked;
+  if (atomsMastered >= curve[curve.length - 1].atomsMastered) {
+    return curve[curve.length - 1].questionsUnlocked;
+  }
+
+  const floor = Math.floor(atomsMastered);
+  const ceil = Math.ceil(atomsMastered);
+  const fraction = atomsMastered - floor;
+
+  const floorEntry = curve[floor] ?? curve[curve.length - 1];
+  const ceilEntry = curve[ceil] ?? curve[curve.length - 1];
+
+  return (
+    floorEntry.questionsUnlocked +
+    fraction * (ceilEntry.questionsUnlocked - floorEntry.questionsUnlocked)
+  );
 }
 
 // ============================================================================
@@ -50,13 +164,22 @@ function atomsToHours(atoms: number): number {
 // ============================================================================
 
 export function ProgressClient() {
-  const { data, loading, error, refreshing, hoursPerWeek, setHoursPerWeek } =
+  const { data, loading, error, hoursPerWeek, setHoursPerWeek } =
     useProgressData();
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(
     null
   );
 
-  const milestones = data?.goalMilestones ?? [];
+  const projection = useMemo(() => {
+    if (!data?.projectionMetadata) return null;
+    return computeProjection(data.projectionMetadata, hoursPerWeek);
+  }, [data?.projectionMetadata, hoursPerWeek]);
+
+  const milestones = useMemo(() => {
+    if (!data || !projection) return data?.goalMilestones ?? [];
+    return enrichMilestonesWithWeeks(data.goalMilestones, projection.points);
+  }, [data, projection]);
+
   const effectiveGoalId =
     selectedGoalId ??
     milestones.find((m) => m.isPrimary)?.goalId ??
@@ -92,30 +215,28 @@ export function ProgressClient() {
             onSelectGoal={setSelectedGoalId}
           />
 
-          <div
-            className={`transition-opacity duration-300 ${
-              refreshing ? "opacity-40 pointer-events-none" : ""
-            }`}
-          >
+          {projection && (
             <ScoreJourneyChart
               history={data.scoreHistory}
-              projection={data.projection.points}
+              projection={projection.points}
               milestones={selectedMilestones}
               currentScore={data.currentScore}
-              diagnosticCeiling={data.projection.diagnosticCeiling}
+              diagnosticCeiling={projection.diagnosticCeiling}
             />
-          </div>
+          )}
 
-          <ProjectionCard
-            projection={data.projection}
-            hoursPerWeek={hoursPerWeek}
-            onChangeHours={setHoursPerWeek}
-            allAtomsMastered={
-              data.masteryBreakdown.mastered >= data.masteryBreakdown.total
-            }
-            selectedMeta={selectedMeta}
-            refreshing={refreshing}
-          />
+          {projection && (
+            <ProjectionCard
+              projection={projection}
+              hoursPerWeek={hoursPerWeek}
+              onChangeHours={setHoursPerWeek}
+              allAtomsMastered={
+                data.masteryBreakdown.mastered >=
+                data.masteryBreakdown.total
+              }
+              selectedMeta={selectedMeta}
+            />
+          )}
 
           <AxisBreakdownSection axisMastery={data.axisMastery} />
           <RetestCTASection retestStatus={data.retestStatus} />
@@ -127,81 +248,106 @@ export function ProgressClient() {
 }
 
 // ============================================================================
+// HELPERS
+// ============================================================================
+
+function enrichMilestonesWithWeeks(
+  milestones: GoalMilestone[],
+  points: ProjectionPoint[]
+): GoalMilestone[] {
+  return milestones.map((m) => {
+    const target = m.userM1Target;
+    if (target === null) return { ...m, weeksToReach: null };
+    const point = points.find((p) => p.projectedScoreMid >= target);
+    return { ...m, weeksToReach: point?.week ?? null };
+  });
+}
+
+// ============================================================================
 // DATA HOOK
 // ============================================================================
+
+/** Fire-and-forget PATCH to persist the student's M1 study hours. */
+async function persistHours(weeklyMinutes: number) {
+  try {
+    await fetch("/api/student/progress", {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ testCode: "M1", weeklyMinutes }),
+    });
+  } catch {
+    // Best-effort — slider still works locally even if persist fails.
+  }
+}
 
 function useProgressData() {
   const [data, setData] = useState<ProgressData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [hoursPerWeek, setHoursPerWeek] = useState<number | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const [hoursPerWeek, setHoursRaw] = useState(DEFAULT_HOURS);
   const mountedRef = useRef(true);
-  const initializedRef = useRef(false);
-
-  const fetchData = useCallback(async (atoms: number) => {
-    try {
-      const res = await fetch(`/api/student/progress?atomsPerWeek=${atoms}`, {
-        credentials: "include",
-      });
-      const payload = (await res.json()) as ApiEnvelope<ProgressData>;
-      if (!res.ok || !payload.success) {
-        throw new Error(
-          resolveApiErrorMessage(payload, "Error al cargar progreso")
-        );
-      }
-      if (mountedRef.current) {
-        setData(payload.data);
-
-        if (!initializedRef.current && payload.data.defaultAtomsPerWeek) {
-          setHoursPerWeek(atomsToHours(payload.data.defaultAtomsPerWeek));
-          initializedRef.current = true;
-        }
-      }
-    } catch (err) {
-      if (!mountedRef.current) return;
-      const msg =
-        err instanceof Error ? err.message : "Error al cargar progreso";
-      setError(msg);
-    } finally {
-      if (mountedRef.current) {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    }
-  }, []);
+  const persistRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     mountedRef.current = true;
-    fetchData(hoursToAtoms(hoursPerWeek ?? DEFAULT_HOURS));
+
+    (async () => {
+      try {
+        const res = await fetch("/api/student/progress", {
+          credentials: "include",
+        });
+        const payload = (await res.json()) as ApiEnvelope<ProgressData>;
+        if (!res.ok || !payload.success) {
+          throw new Error(
+            resolveApiErrorMessage(payload, "Error al cargar progreso")
+          );
+        }
+        if (!mountedRef.current) return;
+
+        setData(payload.data);
+
+        const profileAtoms = payload.data.defaultAtomsPerWeek;
+        if (profileAtoms) {
+          const profileHours = atomsToHours(profileAtoms);
+          setHoursRaw(profileHours);
+        }
+      } catch (err) {
+        if (!mountedRef.current) return;
+        setError(
+          err instanceof Error ? err.message : "Error al cargar progreso"
+        );
+      } finally {
+        if (mountedRef.current) setLoading(false);
+      }
+    })();
+
     return () => {
       mountedRef.current = false;
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
-  const handleHoursChange = useCallback(
-    (hours: number) => {
-      const clamped = Math.min(MAX_HOURS, Math.max(MIN_HOURS, hours));
-      setHoursPerWeek(clamped);
-      setRefreshing(true);
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(
-        () => fetchData(hoursToAtoms(clamped)),
-        1000
-      );
-    },
-    [fetchData]
-  );
+  const handleHoursChange = useCallback((hours: number) => {
+    const clamped = Math.min(MAX_HOURS, Math.max(MIN_HOURS, hours));
+    setHoursRaw(clamped);
+    if (persistRef.current) clearTimeout(persistRef.current);
+    persistRef.current = setTimeout(() => {
+      void persistHours(Math.round(clamped * 60));
+    }, 1000);
+  }, []);
 
   return {
     data,
     loading,
     error,
-    refreshing,
-    hoursPerWeek: hoursPerWeek ?? DEFAULT_HOURS,
+    hoursPerWeek,
     setHoursPerWeek: handleHoursChange,
   };
+}
+
+function atomsToHours(atoms: number): number {
+  const raw = (atoms * EFFECTIVE_MINUTES_PER_ATOM) / 60;
+  return Math.round(raw / HOURS_STEP) * HOURS_STEP;
 }
 
 // ============================================================================
@@ -259,7 +405,9 @@ function MasteryHeroSection({
               className="absolute inset-0 flex flex-col items-center
                 justify-center"
             >
-              <span className="text-2xl font-bold text-gray-900">{pct}%</span>
+              <span className="text-2xl font-bold text-gray-900">
+                {pct}%
+              </span>
               <span className="text-[11px] text-gray-500">dominado</span>
             </div>
           </div>
@@ -362,16 +510,13 @@ function ProjectionCard({
   onChangeHours,
   allAtomsMastered,
   selectedMeta,
-  refreshing,
 }: {
   projection: ProjectionResult;
   hoursPerWeek: number;
   onChangeHours: (value: number) => void;
   allAtomsMastered: boolean;
   selectedMeta: number | null;
-  refreshing: boolean;
 }) {
-  const atoms = hoursToAtoms(hoursPerWeek);
   const minutesPerWeek = Math.round(hoursPerWeek * 60);
   const displayMeta = selectedMeta ?? projection.targetScore;
   const n = projection.weeksToTarget;
@@ -431,54 +576,48 @@ function ProjectionCard({
           </button>
         </div>
 
-        <p className="text-xs text-gray-400">
-          {Math.round(atoms)} conceptos · {minutesPerWeek} min
-        </p>
+        <p className="text-xs text-gray-400">{minutesPerWeek} min/semana</p>
       </div>
 
-      <div
-        className={`transition-opacity duration-300 space-y-4 ${
-          refreshing ? "opacity-40" : ""
-        }`}
-      >
-      {allAtomsMastered ? (
-        <div
-          className="rounded-xl bg-emerald-50 border border-emerald-100
-            px-4 py-3"
-        >
-          <p className="text-sm font-medium text-emerald-800">
-            ¡Has dominado todos los conceptos!
-          </p>
-          <p className="text-xs text-emerald-600 mt-0.5">
-            Toma un test completo para validar tu puntaje final.
-          </p>
-        </div>
-      ) : n ? (
-        <div
-          className="rounded-xl bg-emerald-50 border border-emerald-100
-            px-4 py-3"
-        >
-          <p className="text-sm font-medium text-emerald-800">
-            Alcanzas tu meta más alta en ~{n}{" "}
-            {n === 1 ? "semana" : "semanas"}
-          </p>
-          {displayMeta && projectedScore && (
-            <p className="text-xs text-emerald-600 mt-0.5">
-              Puntaje proyectado a {projection.points.length} semanas:{" "}
-              {projectedScore} (meta: {displayMeta})
+      <div className="space-y-4">
+        {allAtomsMastered ? (
+          <div
+            className="rounded-xl bg-emerald-50 border border-emerald-100
+              px-4 py-3"
+          >
+            <p className="text-sm font-medium text-emerald-800">
+              ¡Has dominado todos los conceptos!
             </p>
-          )}
-        </div>
-      ) : hasProjection && projectedScore ? (
-        <p className="text-sm text-gray-600">
-          Puntaje proyectado a {projection.points.length} semanas:{" "}
-          <span className="font-semibold">{projectedScore}</span>
-        </p>
-      ) : (
-        <p className="text-sm text-gray-500">
-          Completa un diagnóstico para ver tu proyección.
-        </p>
-      )}
+            <p className="text-xs text-emerald-600 mt-0.5">
+              Toma un test completo para validar tu puntaje final.
+            </p>
+          </div>
+        ) : n ? (
+          <div
+            className="rounded-xl bg-emerald-50 border border-emerald-100
+              px-4 py-3"
+          >
+            <p className="text-sm font-medium text-emerald-800">
+              Alcanzas tu meta más alta en ~{n}{" "}
+              {n === 1 ? "semana" : "semanas"}
+            </p>
+            {displayMeta && projectedScore && (
+              <p className="text-xs text-emerald-600 mt-0.5">
+                Puntaje proyectado a {projection.points.length} semanas:{" "}
+                {projectedScore} (meta: {displayMeta})
+              </p>
+            )}
+          </div>
+        ) : hasProjection && projectedScore ? (
+          <p className="text-sm text-gray-600">
+            Puntaje proyectado a {projection.points.length} semanas:{" "}
+            <span className="font-semibold">{projectedScore}</span>
+          </p>
+        ) : (
+          <p className="text-sm text-gray-500">
+            Completa un diagnóstico para ver tu proyección.
+          </p>
+        )}
       </div>
     </section>
   );

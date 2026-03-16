@@ -218,6 +218,27 @@ export const studentPlanningProfiles = pgTable(
   ]
 );
 
+export const studentTestHours = pgTable(
+  "student_test_hours",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    testCode: varchar("test_code", { length: 10 }).notNull(),
+    weeklyMinutes: integer("weekly_minutes").notNull().default(180),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("ux_student_test_hours_user_test").on(
+      table.userId,
+      table.testCode
+    ),
+    index("idx_student_test_hours_user").on(table.userId),
+  ]
+);
+
 export const studentWeeklyMissions = pgTable(
   "student_weekly_missions",
   {

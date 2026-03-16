@@ -142,7 +142,7 @@ function LearningPathPreview() {
                 rounded-xl shadow-md"
             >
               Comenzar mini-clase
-              <span className="text-xs opacity-80">~25 min</span>
+              <span className="text-xs opacity-80">~20 min</span>
               <ArrowRightIcon />
             </div>
           </div>

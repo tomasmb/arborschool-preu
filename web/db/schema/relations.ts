@@ -23,6 +23,7 @@ import {
   studentGoalScores,
   studentGoalBuffers,
   studentPlanningProfiles,
+  studentTestHours,
   studentWeeklyMissions,
   studentStudySprints,
   studentStudySprintItems,
@@ -137,6 +138,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   studentResponses: many(studentResponses),
   studentGoals: many(studentGoals),
   planningProfiles: many(studentPlanningProfiles),
+  testHours: many(studentTestHours),
   weeklyMissions: many(studentWeeklyMissions),
   studySprints: many(studentStudySprints),
   studySprintResponses: many(studentStudySprintResponses),
@@ -288,6 +290,16 @@ export const studentPlanningProfilesRelations = relations(
   ({ one }) => ({
     user: one(users, {
       fields: [studentPlanningProfiles.userId],
+      references: [users.id],
+    }),
+  })
+);
+
+export const studentTestHoursRelations = relations(
+  studentTestHours,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [studentTestHours.userId],
       references: [users.id],
     }),
   })

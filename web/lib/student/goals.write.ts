@@ -6,6 +6,7 @@ import {
   studentGoals,
   studentGoalScores,
   studentPlanningProfiles,
+  studentTestHours,
 } from "@/db/schema";
 import {
   normalizePlanningProfileInput,
@@ -143,10 +144,42 @@ async function upsertPlanningProfile(
       .update(studentPlanningProfiles)
       .set(values)
       .where(eq(studentPlanningProfiles.userId, userId));
-    return;
+  } else {
+    await tx.insert(studentPlanningProfiles).values({ userId, ...values });
   }
 
-  await tx.insert(studentPlanningProfiles).values({ userId, ...values });
+  await upsertTestHoursInTx(
+    tx, userId, "M1", planningProfile.weeklyMinutesTarget
+  );
+}
+
+async function upsertTestHoursInTx(
+  tx: DbTx,
+  userId: string,
+  testCode: string,
+  weeklyMinutes: number
+) {
+  const [existing] = await tx
+    .select({ id: studentTestHours.id })
+    .from(studentTestHours)
+    .where(
+      and(
+        eq(studentTestHours.userId, userId),
+        eq(studentTestHours.testCode, testCode)
+      )
+    )
+    .limit(1);
+
+  if (existing) {
+    await tx
+      .update(studentTestHours)
+      .set({ weeklyMinutes, updatedAt: new Date() })
+      .where(eq(studentTestHours.id, existing.id));
+  } else {
+    await tx
+      .insert(studentTestHours)
+      .values({ userId, testCode, weeklyMinutes });
+  }
 }
 
 export async function replaceStudentGoals(
@@ -230,4 +263,40 @@ export async function updatePrimaryGoalScore(
   }
 
   return { testCode: normalized, score };
+}
+
+/** Creates or updates the per-test weekly minutes for a student. */
+export async function upsertStudentTestHours(
+  userId: string,
+  testCode: string,
+  weeklyMinutes: number
+) {
+  const normalized = testCode.trim().toUpperCase();
+  const clamped = Math.max(30, Math.min(2400, Math.round(weeklyMinutes)));
+
+  const [existing] = await db
+    .select({ id: studentTestHours.id })
+    .from(studentTestHours)
+    .where(
+      and(
+        eq(studentTestHours.userId, userId),
+        eq(studentTestHours.testCode, normalized)
+      )
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(studentTestHours)
+      .set({ weeklyMinutes: clamped, updatedAt: new Date() })
+      .where(eq(studentTestHours.id, existing.id));
+  } else {
+    await db.insert(studentTestHours).values({
+      userId,
+      testCode: normalized,
+      weeklyMinutes: clamped,
+    });
+  }
+
+  return { testCode: normalized, weeklyMinutes: clamped };
 }

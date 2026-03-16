@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuthenticatedStudentUser } from "@/lib/student/apiAuth";
 import {
   getScoreHistory,
-  buildProjectionCurve,
+  buildProjectionMetadata,
 } from "@/lib/student/scoreHistory";
 import { getRetestStatus } from "@/lib/student/retestGating";
 import { getUserDiagnosticSnapshot } from "@/lib/student/userQueries";
@@ -12,44 +12,22 @@ import {
 } from "@/lib/student/metricsService";
 import { getProgressTargets } from "@/lib/student/progressTargets";
 import { resolveDisplayScore } from "@/lib/student/scoreDisplay";
-import type { GoalMilestone } from "@/lib/student/progressTargets";
-import type { ProjectionPoint } from "@/lib/student/scoreHistory";
-
-/**
- * Computes weeksToReach for each milestone by scanning projection points.
- */
-function enrichMilestonesWithWeeks(
-  milestones: GoalMilestone[],
-  points: ProjectionPoint[]
-): Array<GoalMilestone & { weeksToReach: number | null }> {
-  return milestones.map((m) => {
-    const target = m.userM1Target;
-    if (target === null) {
-      return { ...m, weeksToReach: null };
-    }
-    const point = points.find((p) => p.projectedScoreMid >= target);
-    return { ...m, weeksToReach: point?.week ?? null };
-  });
-}
+import { upsertStudentTestHours } from "@/lib/student/goals.write";
 
 /**
  * GET /api/student/progress
  *
  * Returns mastery breakdown, axis mastery, score history, projection
- * (toward real career goals), retest status, goal milestones, and
- * current scores.
+ * metadata (unlock curve + accuracy), retest status, goal milestones,
+ * and current scores. The client builds projections locally from metadata.
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const authResult = await requireAuthenticatedStudentUser();
     if (authResult.unauthorizedResponse) {
       return authResult.unauthorizedResponse;
     }
     const userId = authResult.userId;
-
-    const atomsPerWeek = Number(
-      request.nextUrl.searchParams.get("atomsPerWeek") ?? 10
-    );
 
     const [
       scoreHistory,
@@ -83,17 +61,11 @@ export async function GET(request: NextRequest) {
     const projectionTarget =
       targets.highestUserM1 ?? targets.highestTargetM1;
 
-    const projection = await buildProjectionCurve({
+    const projectionMetadata = await buildProjectionMetadata({
       userId,
-      atomsPerWeek,
       targetScore: projectionTarget,
       startingScore: display?.score ?? null,
     });
-
-    const goalMilestones = enrichMilestonesWithWeeks(
-      targets.milestones,
-      projection.points
-    );
 
     const currentScore = display
       ? {
@@ -109,9 +81,7 @@ export async function GET(request: NextRequest) {
         ? Math.max(...scoreHistory.map((s) => s.paesScoreMid))
         : null;
 
-    const hasFullTests = scoreHistory.some(
-      (s) => s.type === "full_test"
-    );
+    const hasFullTests = scoreHistory.some((s) => s.type === "full_test");
     const displayHistory = hasFullTests
       ? scoreHistory.filter((s) => s.type === "full_test")
       : scoreHistory;
@@ -123,10 +93,13 @@ export async function GET(request: NextRequest) {
         axisMastery,
         personalBest,
         scoreHistory: displayHistory,
-        projection,
+        projectionMetadata,
         retestStatus,
         currentScore,
-        goalMilestones,
+        goalMilestones: targets.milestones.map((m) => ({
+          ...m,
+          weeksToReach: null as number | null,
+        })),
         defaultAtomsPerWeek: targets.defaultAtomsPerWeek,
       },
     });
@@ -134,6 +107,46 @@ export async function GET(request: NextRequest) {
     console.error("Failed to fetch progress:", error);
     return NextResponse.json(
       { success: false, error: "Error al cargar progreso" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * PATCH /api/student/progress
+ *
+ * Persists the per-test weekly minutes when the user adjusts the
+ * hours slider on the progress page.
+ */
+export async function PATCH(request: NextRequest) {
+  try {
+    const authResult = await requireAuthenticatedStudentUser();
+    if (authResult.unauthorizedResponse) {
+      return authResult.unauthorizedResponse;
+    }
+
+    const body = (await request.json()) as {
+      testCode?: string;
+      weeklyMinutes?: number;
+    };
+
+    const testCode = body.testCode ?? "M1";
+    const weeklyMinutes = Number(body.weeklyMinutes);
+
+    if (!Number.isFinite(weeklyMinutes) || weeklyMinutes < 30) {
+      return NextResponse.json(
+        { success: false, error: "weeklyMinutes must be >= 30" },
+        { status: 400 }
+      );
+    }
+
+    await upsertStudentTestHours(authResult.userId, testCode, weeklyMinutes);
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Failed to save study hours:", error);
+    return NextResponse.json(
+      { success: false, error: "Error al guardar horas" },
       { status: 500 }
     );
   }
