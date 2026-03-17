@@ -306,8 +306,8 @@ type ProjectionMetadata = {
   accuracyUncertainty: number;  // 0.05–0.20, for confidence band
   effectiveMinPerAtom: number;  // EFFECTIVE_MINUTES_PER_ATOM (38)
   totalRemainingAtoms: number;
+  totalOfficialQuestions: number;  // pool size for normalizeToTestSize()
   currentScore: number;
-  diagnosticCeiling: number | null;
   targetScore: number | null;
 };
 ```
@@ -331,9 +331,11 @@ questions use random-guess baseline.
 For each week 1..20:
 1. `atomsMastered = min(effectiveAtomsPerWeek × week, totalRemaining)`
 2. `questionsUnlocked = interpolate(unlockCurve, atomsMastered)`
-3. `expectedCorrect = unlocked/4 + 0.2 × (65 - unlocked/4)`
-4. `projectedScore = PAES_TABLE[round(expectedCorrect)]`
-5. `band = projectedScore × accuracyUncertainty`
+3. `unlockedPerTest = normalizeToTestSize(questionsUnlocked, totalPool)`
+4. `lockedPerTest = 60 - unlockedPerTest`
+5. `expectedCorrect = unlockedPerTest + 0.2 × lockedPerTest`
+6. `projectedScore = PAES_TABLE[round(expectedCorrect)]`
+7. `band = projectedScore × accuracyUncertainty`
 
 No API calls on slider change — projection is instant.
 

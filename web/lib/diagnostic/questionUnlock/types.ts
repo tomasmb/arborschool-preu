@@ -10,7 +10,6 @@
 import {
   UNLOCK_WEIGHTS,
   EFFECTIVE_MINUTES_PER_ATOM,
-  NUM_OFFICIAL_TESTS,
 } from "../scoringConstants";
 
 // Re-export shared mastery types from the canonical source
@@ -171,12 +170,6 @@ export interface ScoringConfig {
   /** Estimated minutes to master one atom */
   minutesPerAtom: number;
   /**
-   * Number of official tests in database.
-   * Used to convert total questions unlocked to per-test improvement.
-   * Questions are spread across tests, so real improvement = total / numTests
-   */
-  numOfficialTests: number;
-  /**
    * Student's current PAES score from diagnostic formula.
    * Used to calculate and cap improvements so total never exceeds 1000.
    */
@@ -190,5 +183,4 @@ export const DEFAULT_SCORING_CONFIG: ScoringConfig = {
   threeOrMoreWeight: UNLOCK_WEIGHTS.threeOrMore,
   primaryRelevanceMultiplier: UNLOCK_WEIGHTS.primaryRelevanceMultiplier,
   minutesPerAtom: EFFECTIVE_MINUTES_PER_ATOM,
-  numOfficialTests: NUM_OFFICIAL_TESTS,
 };

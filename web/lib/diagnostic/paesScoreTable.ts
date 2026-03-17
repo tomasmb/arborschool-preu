@@ -166,3 +166,21 @@ export function capImprovementToMax(
   const maxPossibleImprovement = PAES_MAX_SCORE - currentScore;
   return Math.max(0, Math.min(improvement, maxPossibleImprovement));
 }
+
+/**
+ * Normalizes a raw question count from the official pool to the
+ * equivalent count on a standard 60-question PAES test.
+ *
+ * Example: 10 questions out of a 202-question pool
+ *   → 10 × 60 / 202 ≈ 2.97 on a 60-question test.
+ *
+ * The old approach (÷ NUM_OFFICIAL_TESTS) assumed equal test sizes and
+ * didn't scale to the 60-question table correctly.
+ */
+export function normalizeToTestSize(
+  questionsFromPool: number,
+  totalPoolSize: number
+): number {
+  if (totalPoolSize <= 0) return 0;
+  return (questionsFromPool * PAES_TOTAL_QUESTIONS) / totalPoolSize;
+}

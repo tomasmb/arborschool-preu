@@ -130,13 +130,13 @@ A question is "unlocked" when the student has mastered ALL its primary atoms.
 
 ### Option A: Pure Atom-Based (PAES Table Direct)
 
-**Method:** Count unlocked questions → divide by tests → lookup PAES score
+**Method:** Count unlocked questions → normalize to 60-question test → lookup PAES score
 
 ```
 masteredAtoms = applyTransitivity(primaryAtoms + secondaryAtoms)  // 30 → 125
 unlockedQuestions = countWhereAllAtomsAreMastered(masteredAtoms)  // 128
-correctPerTest = unlockedQuestions / 4  // 32
-score = PAES_TABLE[correctPerTest]  // 587
+correctPerTest = normalizeToTestSize(unlockedQuestions, totalPool)  // 128 × 60 / 202 ≈ 38
+score = PAES_TABLE[correctPerTest]  // 652
 ```
 
 **Example (Route C 16/16 correct):**
@@ -272,10 +272,11 @@ newUnlocked = countUnlocked(newMastered);
 // Step 3: Calculate gain
 atomsGained = newMastered.size - currentMastered.size;
 questionsGained = newUnlocked - currentUnlocked;
-questionsPerTest = questionsGained / 4;
+questionsPerTest = normalizeToTestSize(questionsGained, totalOfficialQuestions);
+effectiveAdditional = questionsPerTest * (1 - RANDOM_GUESS_ACC);
 
 // Step 4: Convert to PAES points
-pointsGain = PAES_TABLE[currentCorrect + questionsPerTest] - currentScore;
+pointsGain = PAES_TABLE[currentCorrect + effectiveAdditional] - currentScore;
 ```
 
 **Key insight:** When LEARNING (not proving), student must master prerequisites FIRST. No shortcuts to advanced atoms.
@@ -431,14 +432,17 @@ function calculateImprovement(currentMastered, routeAtoms, currentPaesScore) {
     newMastered.add(atom);
   }
 
-  // Step 3: Count newly unlocked questions
+  // Step 3: Count newly unlocked questions, normalize to 60-question test
   const newUnlocked = countUnlockedQuestions(newMastered);
   const questionsGained = newUnlocked - currentUnlocked;
-  const questionsPerTest = Math.round(questionsGained / 4);
+  const questionsPerTest = Math.round(
+    normalizeToTestSize(questionsGained, totalOfficialQuestions)
+  );
+  const effectiveAdditional = questionsPerTest * (1 - RANDOM_GUESS_ACC);
 
   // Step 4: Convert to PAES points using table
   const currentCorrect = estimateCorrectFromScore(currentPaesScore);
-  const newCorrect = Math.min(60, currentCorrect + questionsPerTest);
+  const newCorrect = Math.min(60, currentCorrect + effectiveAdditional);
   const newScore = PAES_TABLE[newCorrect];
   const pointsGain = Math.min(
     newScore - currentPaesScore,
@@ -522,7 +526,7 @@ function calculateImprovement(currentMastered, routeAtoms, currentPaesScore) {
 - [x] Question unlock counting (all primary atoms mastered)
 - [x] PAES table lookup for point conversion
 - [x] Capping to 1000 max
-- [x] Per-test averaging (÷4)
+- [x] Pool-to-test normalization via `normalizeToTestSize(X, totalPool)`
 - [x] Route builder iterates step-by-step with `simulateQuestionUnlocks`
 
 ### Route Optimization (Verified ✅)

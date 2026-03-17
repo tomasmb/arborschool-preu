@@ -19,10 +19,11 @@ import type {
 import { DEFAULT_SCORING_CONFIG } from "./types";
 import { getMasteredAtomIds } from "./masteryAnalyzer";
 import { simulateQuestionUnlocks } from "./unlockCalculator";
-import { calculateImprovement } from "../paesScoreTable";
+import { calculateImprovement, normalizeToTestSize } from "../paesScoreTable";
 import {
   capImprovementToMax,
   estimateCorrectFromScore,
+  RANDOM_GUESS_ACC,
 } from "../scoringConstants";
 
 // ============================================================================
@@ -192,12 +193,14 @@ function buildAxisRoute(
   const finalUnlocked = cumulativeUnlocked;
   const totalQuestionsUnlocked = finalUnlocked - initialUnlocked;
 
-  // Calculate per-test values (questions are spread across multiple tests)
-  // Use Math.max(1, ...) when there ARE questions to unlock to avoid showing
-  // 0 improvement due to rounding (e.g., 1 question / 4 tests = 0.25 → rounds to 0)
-  const rawPerTest = totalQuestionsUnlocked / config.numOfficialTests;
+  // Normalize pool-level unlocks to a 60-question PAES test.
+  // Math.max(1, ...) avoids showing 0 when there IS improvement.
+  const rawNormalized = normalizeToTestSize(
+    totalQuestionsUnlocked,
+    questions.size
+  );
   const additionalPerTest =
-    totalQuestionsUnlocked > 0 ? Math.max(1, Math.round(rawPerTest)) : 0;
+    totalQuestionsUnlocked > 0 ? Math.max(1, Math.round(rawNormalized)) : 0;
 
   // Use diagnostic score as baseline (more accurate than unlocked questions)
   // Default to 460 (~20 correct) if not provided
@@ -207,8 +210,10 @@ function buildAxisRoute(
   const currentScore = config.currentPaesScore;
   const currentCorrect = estimateCorrectFromScore(currentScore);
 
-  // Use actual PAES table for accurate point estimation
-  const improvement = calculateImprovement(currentCorrect, additionalPerTest);
+  // Net gain accounts for guessing baseline: unlocked questions move from
+  // 20% accuracy (random guess) to ~100%, so the net improvement is 80%.
+  const effectiveAdditional = additionalPerTest * (1 - RANDOM_GUESS_ACC);
+  const improvement = calculateImprovement(currentCorrect, effectiveAdditional);
 
   // Cap improvement to ensure we never promise exceeding 1000 points
   const estimatedPointsGain = capImprovementToMax(
@@ -275,7 +280,7 @@ export function buildAllRoutes(
   }
 
   // Sort by estimated PAES improvement (descending), which already accounts
-  // for per-test normalization (totalQuestionsUnlocked / NUM_OFFICIAL_TESTS).
+  // for normalization to a 60-question test (via normalizeToTestSize).
   // Fall back to estimated minutes (ascending) for ties.
   routes.sort((a, b) => {
     const pointsDiff = b.estimatedPointsGain - a.estimatedPointsGain;

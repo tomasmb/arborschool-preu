@@ -138,9 +138,12 @@ export async function analyzeLearningPotential(
 
 /**
  * Formats a learning route for display in the UI.
- * Questions shown are per-test average (total / 4 tests).
+ * Questions shown are normalized to a 60-question PAES test.
  */
-export function formatRouteForDisplay(route: LearningRoute): {
+export function formatRouteForDisplay(
+  route: LearningRoute,
+  totalOfficialQuestions: number
+): {
   title: string;
   subtitle: string;
   atomCount: number;
@@ -172,14 +175,14 @@ export function formatRouteForDisplay(route: LearningRoute): {
     throw new Error(`Unknown axis: ${route.axis}`);
   }
 
-  // Show questions per test (average), not total across all tests
-  const numTests = DEFAULT_SCORING_CONFIG.numOfficialTests;
-  const questionsPerTest = Math.round(route.totalQuestionsUnlocked / numTests);
+  const questionsOnTest = Math.round(
+    normalizeToTestSize(route.totalQuestionsUnlocked, totalOfficialQuestions)
+  );
 
   return {
     ...display,
     atomCount: route.atoms.length,
-    questionsUnlocked: questionsPerTest,
+    questionsUnlocked: questionsOnTest,
     pointsGain: route.estimatedPointsGain,
     studyHours: Math.round((route.estimatedMinutes / 60) * 10) / 10,
   };
@@ -190,48 +193,57 @@ import {
   estimateCorrectFromScore,
   PAES_TOTAL_QUESTIONS,
   IMPROVEMENT_UNCERTAINTY,
-  NUM_OFFICIAL_TESTS,
+  RANDOM_GUESS_ACC,
 } from "../scoringConstants";
-import { calculateImprovement as calcPaesImprovement } from "../paesScoreTable";
+import {
+  calculateImprovement as calcPaesImprovement,
+  normalizeToTestSize,
+} from "../paesScoreTable";
 
 /**
  * Calculates realistic PAES improvement projection based on questions unlocked.
  *
  * Takes into account (per methodology section 6.2):
- * - Questions are spread across multiple tests (÷4)
+ * - Normalization from pool size to a 60-question PAES test
  * - The official PAES conversion table (non-linear)
  * - Student's current PAES score (from diagnostic)
  * - Caps improvement to never exceed max PAES score (1000)
  * - Uncertainty factor (±15%) for question selection variance
  *
  * @param currentPaesScore - Current PAES score from diagnostic formula
- * @param additionalQuestionsUnlocked - Additional questions unlocked (total across tests)
- * @param numTests - Number of tests (default from constants)
+ * @param additionalQuestionsUnlocked - Raw pool count (before normalization)
+ * @param totalOfficialQuestions - Total official questions in the pool
  * @see docs/diagnostic-score-methodology.md section 6.2
  */
 export function calculatePAESImprovement(
   currentPaesScore: number,
   additionalQuestionsUnlocked: number,
-  numTests: number = NUM_OFFICIAL_TESTS
+  totalOfficialQuestions: number
 ): {
   minPoints: number;
   maxPoints: number;
   questionsPerTest: number;
   percentageOfTest: number;
 } {
-  // Convert current PAES score to estimated correct answers
   const currentCorrect = estimateCorrectFromScore(currentPaesScore);
 
-  // Additional questions are spread across tests
-  // Use Math.max(1, ...) when there ARE questions to avoid 0 improvement due to rounding
-  const rawPerTest = additionalQuestionsUnlocked / numTests;
+  // Normalize pool-level unlocks → equivalent on a 60-question PAES test.
+  // Math.max(1, ...) avoids showing 0 when there IS improvement.
+  const rawNormalized = normalizeToTestSize(
+    additionalQuestionsUnlocked,
+    totalOfficialQuestions
+  );
   const additionalPerTest =
-    additionalQuestionsUnlocked > 0 ? Math.max(1, Math.round(rawPerTest)) : 0;
+    additionalQuestionsUnlocked > 0
+      ? Math.max(1, Math.round(rawNormalized))
+      : 0;
 
-  // Use actual PAES table for accurate point calculation
-  const improvement = calcPaesImprovement(currentCorrect, additionalPerTest);
+  // Net gain accounts for guessing baseline: unlocked questions move from
+  // 20% accuracy (random guess) to ~100%, so the net improvement is 80%.
+  const effectiveAdditional = additionalPerTest * (1 - RANDOM_GUESS_ACC);
+  const improvement = calcPaesImprovement(currentCorrect, effectiveAdditional);
 
-  // Add uncertainty range (±15%) since question selection varies
+  // ±15% uncertainty since question selection varies across tests
   const rawMin = Math.round(
     improvement.improvement * (1 - IMPROVEMENT_UNCERTAINTY)
   );
@@ -239,11 +251,9 @@ export function calculatePAESImprovement(
     improvement.improvement * (1 + IMPROVEMENT_UNCERTAINTY)
   );
 
-  // Cap improvements to never exceed 1000 from CURRENT score
   const minPoints = capImprovementToMax(currentPaesScore, rawMin);
   const maxPoints = capImprovementToMax(currentPaesScore, rawMax);
 
-  // Percentage of a single test this represents
   const percentageOfTest = Math.round(
     (additionalPerTest / PAES_TOTAL_QUESTIONS) * 100
   );

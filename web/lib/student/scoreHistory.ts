@@ -18,10 +18,11 @@ import { testAttempts, tests } from "@/db/schema";
 import {
   estimateCorrectFromScore,
   PAES_TOTAL_QUESTIONS,
+  normalizeToTestSize,
 } from "@/lib/diagnostic/paesScoreTable";
 import {
   EFFECTIVE_MINUTES_PER_ATOM,
-  NUM_OFFICIAL_TESTS,
+  RANDOM_GUESS_ACC,
 } from "@/lib/diagnostic/scoringConstants";
 import {
   loadAllAtoms,
@@ -73,8 +74,9 @@ export type ProjectionMetadata = {
   accuracyUncertainty: number;
   effectiveMinPerAtom: number;
   totalRemainingAtoms: number;
+  /** Total official questions in the pool; client uses for normalization. */
+  totalOfficialQuestions: number;
   currentScore: number;
-  diagnosticCeiling: number | null;
   targetScore: number | null;
 };
 
@@ -126,9 +128,6 @@ export async function getScoreHistory(
 // ============================================================================
 // UNLOCK CURVE
 // ============================================================================
-
-/** Random chance on a 5-option PAES MCQ (baseline for locked questions). */
-const DEFAULT_ACC_LOCKED = 0.2;
 
 /** Upper clamp for derived ACC_UNLOCKED. */
 const MAX_ACC_UNLOCKED = 0.95;
@@ -186,6 +185,7 @@ async function buildUnlockCurve(
   curve: UnlockCurveEntry[];
   initialUnlocked: number;
   totalRemainingAtoms: number;
+  totalOfficialQuestions: number;
 }> {
   const [allAtoms, questions, masteryRows] = await Promise.all([
     loadAllAtoms(),
@@ -250,6 +250,7 @@ async function buildUnlockCurve(
     curve,
     initialUnlocked,
     totalRemainingAtoms: learningOrder.length,
+    totalOfficialQuestions: questions.size,
   };
 }
 
@@ -263,15 +264,19 @@ async function buildUnlockCurve(
  * width — NOT the projected score mid-line.
  *
  * Solves: currentCorrect = accUnlocked × unlockedPerTest
- *                        + 0.2 × lockedPerTest
+ *                        + RANDOM_GUESS_ACC × lockedPerTest
  *
  * Returns accUnlocked clamped to [0.5, 0.95].
  */
 function deriveUnlockedAccuracy(
   currentCorrect: number,
-  questionsUnlocked: number
+  questionsUnlocked: number,
+  totalOfficialQuestions: number
 ): number {
-  const unlockedPerTest = questionsUnlocked / NUM_OFFICIAL_TESTS;
+  const unlockedPerTest = normalizeToTestSize(
+    questionsUnlocked,
+    totalOfficialQuestions
+  );
   const lockedPerTest = PAES_TOTAL_QUESTIONS - unlockedPerTest;
 
   if (unlockedPerTest < 1) return FALLBACK_ACC_UNLOCKED;
@@ -284,7 +289,7 @@ function deriveUnlockedAccuracy(
   }
 
   const raw =
-    (currentCorrect - DEFAULT_ACC_LOCKED * lockedPerTest) / unlockedPerTest;
+    (currentCorrect - RANDOM_GUESS_ACC * lockedPerTest) / unlockedPerTest;
 
   return Math.min(MAX_ACC_UNLOCKED, Math.max(MIN_ACC_UNLOCKED, raw));
 }
@@ -331,14 +336,14 @@ export async function buildProjectionMetadata(params: {
     ? Math.max(params.startingScore, snapshotMid)
     : snapshotMid;
   const currentCorrect = estimateCorrectFromScore(currentScore);
-  const ceiling = Math.max(snapshot.paesScoreMax, currentScore);
 
   const initialQuestionsUnlocked =
     curveData.curve[0]?.questionsUnlocked ?? 0;
 
   const accUnlocked = deriveUnlockedAccuracy(
     currentCorrect,
-    initialQuestionsUnlocked
+    initialQuestionsUnlocked,
+    curveData.totalOfficialQuestions
   );
 
   const accuracyUncertainty = clamp(1 - accUnlocked, 0.05, 0.20);
@@ -348,8 +353,8 @@ export async function buildProjectionMetadata(params: {
     accuracyUncertainty,
     effectiveMinPerAtom: EFFECTIVE_MINUTES_PER_ATOM,
     totalRemainingAtoms: curveData.totalRemainingAtoms,
+    totalOfficialQuestions: curveData.totalOfficialQuestions,
     currentScore,
-    diagnosticCeiling: ceiling,
     targetScore: params.targetScore ?? null,
   };
 }

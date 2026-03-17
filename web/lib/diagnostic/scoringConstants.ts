@@ -19,6 +19,7 @@ import {
   getPaesScore,
   estimateCorrectFromScore,
   capImprovementToMax,
+  normalizeToTestSize,
 } from "./paesScoreTable";
 
 // Re-export PAES table utilities for convenience
@@ -30,6 +31,7 @@ export {
   getPaesScore,
   estimateCorrectFromScore,
   capImprovementToMax,
+  normalizeToTestSize,
 };
 
 // ============================================================================
@@ -81,6 +83,14 @@ export const IMPROVEMENT_UNCERTAINTY = 0.15;
 
 /** Number of official PAES tests in the database */
 export const NUM_OFFICIAL_TESTS = 4;
+
+/**
+ * Baseline accuracy for 5-option PAES MCQ random guessing (1/5 = 0.2).
+ * Used in both the progress chart projection and the route optimizer so
+ * all surfaces agree on the net gain from unlocking a question:
+ *   net gain = 1.0 - RANDOM_GUESS_ACC = 0.8 per question
+ */
+export const RANDOM_GUESS_ACC = 0.2;
 
 // ============================================================================
 // SCORING CONFIG (for unlock calculator)

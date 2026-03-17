@@ -15,7 +15,10 @@ import {
   calculatePAESImprovement,
   type StudentLearningAnalysis,
 } from "@/lib/diagnostic/questionUnlock";
-import { PAES_TOTAL_QUESTIONS } from "@/lib/diagnostic/paesScoreTable";
+import {
+  PAES_TOTAL_QUESTIONS,
+  normalizeToTestSize,
+} from "@/lib/diagnostic/paesScoreTable";
 import { buildNextActionInsights } from "@/lib/student/nextAction";
 import {
   getRetestStatus,
@@ -237,7 +240,6 @@ function buildMissingDashboard(params: {
 function computeEffortMetrics(params: {
   currentScore: number;
   targetScore: number;
-  diagnosticMax: number;
   analysis: StudentLearningAnalysis;
 }) {
   const insights = buildNextActionInsights(params.analysis);
@@ -248,7 +250,8 @@ function computeEffortMetrics(params: {
   );
   const improvement = calculatePAESImprovement(
     params.currentScore,
-    totalPotentialUnlocks
+    totalPotentialUnlocks,
+    params.analysis.summary.totalQuestions
   );
   const topRoute = insights.nextAction;
   const gapPoints = Math.max(
@@ -275,18 +278,10 @@ function computeEffortMetrics(params: {
       : minutesPerPointRaw !== null
         ? Math.round(gapPoints * minutesPerPointRaw)
         : null;
-  const ceiling = clampScore(params.diagnosticMax);
-
   return {
     prediction: {
-      min: Math.min(
-        clampScore(params.currentScore + improvement.minPoints),
-        ceiling
-      ),
-      max: Math.min(
-        clampScore(params.currentScore + improvement.maxPoints),
-        ceiling
-      ),
+      min: clampScore(params.currentScore + improvement.minPoints),
+      max: clampScore(params.currentScore + improvement.maxPoints),
     },
     estimatedMinutesToTarget,
     minutesPerPoint,
@@ -319,7 +314,6 @@ function buildReadyDashboard(params: {
   const effortMetrics = computeEffortMetrics({
     currentScore: params.latestScore,
     targetScore: params.target.score,
-    diagnosticMax: params.latestMax,
     analysis: params.analysis,
   });
 
@@ -361,13 +355,12 @@ function buildReadyDashboard(params: {
       masteredAtoms: params.metrics.masteredAtoms,
       totalAtoms: params.metrics.totalRelevantAtoms,
       masteryPercentage: params.metrics.masteryPercentage,
-      questionsUnlocked:
-        params.metrics.totalOfficialQuestions > 0
-          ? Math.round(
-              (params.metrics.questionsUnlocked * PAES_TOTAL_QUESTIONS) /
-                params.metrics.totalOfficialQuestions
-            )
-          : 0,
+      questionsUnlocked: Math.round(
+        normalizeToTestSize(
+          params.metrics.questionsUnlocked,
+          params.metrics.totalOfficialQuestions
+        )
+      ),
       totalOfficialQuestions: PAES_TOTAL_QUESTIONS,
     },
     effort: {
