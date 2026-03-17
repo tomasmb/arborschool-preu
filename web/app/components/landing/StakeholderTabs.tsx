@@ -20,10 +20,10 @@ const TABS: Tab[] = [
     id: "directors",
     label: "Directores",
     headline:
-      "Posiciona tu colegio con resultados PAES verificables",
+      "Preparación PAES personalizada sin depender de preuniversitarios externos",
     bullets: [
-      "Cada alumno recibe preparación personalizada — sin depender de preuniversitarios externos.",
-      "Datos concretos de avance para reportar a apoderados y al consejo directivo.",
+      "Cada alumno recibe su propia ruta de aprendizaje adaptativa según sus vacíos.",
+      "Acceso gestionado por dominio de email institucional — alta masiva sin fricciones.",
       "Herramienta de equidad: cierra la brecha de preparación dentro de tu propia cohorte.",
     ],
   },
@@ -33,20 +33,20 @@ const TABS: Tab[] = [
     headline:
       "Implementación simple, cobertura curricular completa",
     bullets: [
-      "Alineado al temario DEMRE. 83% de cobertura de átomos en el diagnóstico.",
+      "Alineado al temario DEMRE. 83% de cobertura de conceptos en el diagnóstico.",
       "Implementación en un día — los alumnos solo necesitan un navegador.",
-      "229 conceptos organizados por eje y prerequisitos. Sin duplicar trabajo con tu planificación.",
+      "205 conceptos organizados por eje y prerequisitos. Sin duplicar trabajo con tu planificación.",
     ],
   },
   {
     id: "teachers",
     label: "Profesores",
     headline:
-      "Ve exactamente dónde cada alumno se traba",
+      "El sistema hace el refuerzo individualizado por ti",
     bullets: [
-      "La detección de vacíos te dice qué prerequisito falta — sin adivinar.",
-      "Dashboard por alumno: conceptos dominados, puntaje proyectado, sesiones completadas.",
-      "El sistema hace el refuerzo individualizado. Tú te enfocas en la clase.",
+      "Cada alumno estudia exactamente lo que le falta — la detección de vacíos redirige su ruta automáticamente.",
+      "Mini-clases con ejemplos resueltos y preguntas adaptativas que escalan de fácil a difícil.",
+      "Repaso espaciado automático: el sistema programa repasos según la calidad de dominio de cada alumno.",
     ],
   },
 ];

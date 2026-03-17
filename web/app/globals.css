@@ -896,15 +896,3 @@ math * {
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
-
-/* ============================================================================
-   CAROUSEL — hide scrollbar but keep scroll functionality
-   ============================================================================ */
-
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}

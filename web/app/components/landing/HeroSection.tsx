@@ -10,9 +10,8 @@ interface HeroSectionProps {
 }
 
 const STATS = [
-  { value: "229", label: "conceptos" },
+  { value: "205", label: "conceptos M1" },
   { value: "4", label: "ejes PAES" },
-  { value: "202", label: "preguntas oficiales" },
 ] as const;
 
 export function HeroSection({

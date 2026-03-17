@@ -7,7 +7,6 @@ export { HeroSection } from "./HeroSection";
 export { ProblemSection } from "./ProblemSection";
 export { HowItWorksSection } from "./HowItWorksSection";
 export { MasterySection } from "./MasterySection";
-export { AppScreensCarousel } from "./AppScreensCarousel";
 export { ProgressSection } from "./ProgressSection";
 export { StakeholderTabs } from "./StakeholderTabs";
 export { CtaSection } from "./CtaSection";
