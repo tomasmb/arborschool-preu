@@ -1,77 +1,90 @@
 /**
- * Intelligent Learning section — showcases how the system discovers and
- * fills knowledge gaps dynamically via prereq scanning, spaced repetition,
- * and verification loops.
+ * Learning Science section — research-backed pillars that differentiate
+ * Arbor from PDF-based preuniversitarios. Reframed for institutional
+ * buyers (coordinators, directors) who care about pedagogical rigor.
  */
-import { BrowserFrame } from "./BrowserFrame";
 import { ScrollReveal } from "./ScrollReveal";
+import { BrowserFrame } from "./BrowserFrame";
+import { GapDetectionMockup } from "./MockupScreens";
+
+const PILLARS = [
+  {
+    icon: <CheckBadgeIcon />,
+    title: "Dominio basado en evidencia",
+    text:
+      "3 respuestas consecutivas correctas, mínimo 2 en nivel difícil. " +
+      "El alumno demuestra que sabe antes de avanzar.",
+    citation: "ASSISTments, ALEKS, Direct Instruction",
+    color: "accent" as const,
+  },
+  {
+    icon: <SearchIcon />,
+    title: "Detección automática de vacíos",
+    text:
+      "Cuando un alumno falla, el sistema escanea prerequisitos " +
+      "y encuentra el vacío exacto. Redirige la ruta antes de " +
+      "seguir avanzando.",
+    citation: "Prerequisite-based remediation",
+    color: "primary" as const,
+  },
+  {
+    icon: <RefreshIcon />,
+    title: "Repaso espaciado adaptativo",
+    text:
+      "Intervalos basados en la calidad de dominio. Dominar " +
+      "conceptos avanzados refuerza automáticamente los básicos.",
+    citation: "Math Academy FIRe, spaced repetition research",
+    color: "success" as const,
+  },
+  {
+    icon: <ShieldIcon />,
+    title: "Dificultad progresiva",
+    text:
+      "Las preguntas escalan de fácil a difícil. Quizzes de " +
+      "verificación distinguen deslices puntuales de vacíos reales.",
+    citation: "Adaptive difficulty progression",
+    color: "amber" as const,
+  },
+] as const;
 
 export function MasterySection() {
   return (
-    <section className="py-16 sm:py-24 bg-white relative overflow-hidden">
-      <div
-        className="absolute top-0 right-0 w-full sm:w-1/2
-          h-1/2 sm:h-full bg-gradient-to-l from-accent/5 to-transparent"
-      />
+    <section className="py-16 sm:py-24 bg-off-white relative overflow-hidden">
+      <div className="absolute inset-0 dot-pattern" />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
-          {/* Left: features */}
-          <ScrollReveal className="text-center lg:text-left">
-            <h2
-              className="text-3xl sm:text-4xl lg:text-5xl
-                font-serif font-bold text-charcoal mb-4 sm:mb-6"
-            >
-              Un sistema que{" "}
-              <span className="text-accent">aprende contigo</span>
-            </h2>
-            <p className="text-base sm:text-lg text-cool-gray mb-8">
-              Cada interacción — mini-clase, repaso, ensayo — alimenta el mapa
-              de lo que sabes y lo que te falta.
-            </p>
+        <ScrollReveal className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
+          <h2
+            className="text-3xl sm:text-4xl lg:text-5xl font-serif
+              font-bold text-charcoal mb-4 sm:mb-6"
+          >
+            Metodología basada en{" "}
+            <span className="text-accent">ciencia del aprendizaje</span>
+          </h2>
+          <p className="text-base sm:text-lg text-cool-gray leading-relaxed">
+            No es un banco de preguntas. Es un sistema inteligente
+            respaldado por investigación en aprendizaje adaptativo.
+          </p>
+        </ScrollReveal>
 
-            <div className="space-y-5 sm:space-y-6 inline-flex flex-col items-start">
-              <FeatureRow
-                icon={<SearchIcon />}
-                title="Descubre vacíos automáticamente"
-                text={
-                  "Cuando no dominas un concepto, Arbor escanea " +
-                  "tus prerequisitos para encontrar el vacío exacto."
-                }
-                color="accent"
-              />
-              <FeatureRow
-                icon={<RefreshIcon />}
-                title="Repaso que se adapta a ti"
-                text={
-                  "Programa repasos según qué tan rápido y bien " +
-                  "respondiste. Dominar conceptos avanzados refuerza " +
-                  "los básicos automáticamente."
-                }
-                color="success"
-              />
-              <FeatureRow
-                icon={<ShieldCheckIcon />}
-                title="Distingue deslices de vacíos reales"
-                text={
-                  "Si fallas en un ensayo, un quiz de verificación " +
-                  "confirma si realmente olvidaste o fue un error puntual."
-                }
-                color="primary"
-              />
-            </div>
-          </ScrollReveal>
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-start">
+          <div className="space-y-5 sm:space-y-6">
+            {PILLARS.map((p, i) => (
+              <ScrollReveal key={p.title} delay={i * 100}>
+                <PillarCard {...p} />
+              </ScrollReveal>
+            ))}
+          </div>
 
-          {/* Right: prereq scan / gap discovery mockup */}
-          <ScrollReveal delay={150}>
+          <ScrollReveal delay={200}>
             <p
-              className="text-sm font-semibold text-primary/80 mb-3 sm:mb-4
+              className="text-sm font-semibold text-primary/80 mb-3
                 text-center uppercase tracking-wide"
             >
-              Así detectamos tus vacíos
+              Así detectamos vacíos automáticamente
             </p>
             <BrowserFrame>
-              <GapDiscoveryPreview />
+              <GapDetectionMockup />
             </BrowserFrame>
           </ScrollReveal>
         </div>
@@ -80,21 +93,24 @@ export function MasterySection() {
   );
 }
 
-function FeatureRow({
+function PillarCard({
   icon,
   title,
   text,
+  citation,
   color,
 }: {
   icon: React.ReactNode;
   title: string;
   text: string;
-  color: "accent" | "primary" | "success";
+  citation: string;
+  color: "accent" | "primary" | "success" | "amber";
 }) {
   const bgClass = {
     accent: "bg-accent/10",
     primary: "bg-primary/10",
     success: "bg-success/10",
+    amber: "bg-amber-100",
   }[color];
 
   return (
@@ -109,177 +125,43 @@ function FeatureRow({
         <p className="text-charcoal font-semibold text-sm sm:text-base">
           {title}
         </p>
-        <p className="text-cool-gray text-xs sm:text-sm mt-0.5 max-w-sm">
+        <p className="text-cool-gray text-xs sm:text-sm mt-0.5 max-w-md">
           {text}
+        </p>
+        <p className="text-[10px] sm:text-xs text-cool-gray/70 mt-1 italic">
+          {citation}
         </p>
       </div>
     </div>
   );
 }
 
-/**
- * Mockup showing a prereq scan in action:
- * 1. Failed atom at top
- * 2. Scanning prereqs
- * 3. Gap found — path rerouted
- */
-function GapDiscoveryPreview() {
+/* ------------------------------------------------------------------ */
+/* Icons                                                               */
+/* ------------------------------------------------------------------ */
+
+function CheckBadgeIcon() {
   return (
-    <div className="p-4 sm:p-6 md:p-8">
-      {/* Failure trigger */}
-      <div
-        className="flex items-center gap-2 text-xs font-semibold
-          px-3 py-1.5 rounded-full bg-red-50 text-red-600
-          border border-red-200 w-fit mb-5"
-      >
-        <XCircleIcon />
-        No dominaste Factorización
-      </div>
-
-      {/* Scan header */}
-      <div
-        className="flex items-center gap-2 mb-4 text-sm
-          font-semibold text-charcoal"
-      >
-        <span
-          className="w-6 h-6 rounded-full bg-gradient-to-br
-            from-amber-400 to-amber-500 flex items-center
-            justify-center"
-        >
-          <ScanIconSmall />
-        </span>
-        Escaneando prerequisitos...
-      </div>
-
-      {/* Scan results */}
-      <div className="space-y-2 mb-5">
-        <ScanRow label="Operaciones con fracciones" result="pass" />
-        <ScanRow label="Productos notables" result="fail" />
-      </div>
-
-      {/* Result banner */}
-      <div
-        className="flex items-start gap-2.5 p-3 rounded-xl
-          bg-emerald-50 border border-emerald-200"
-      >
-        <CheckCircleIcon />
-        <div>
-          <p className="text-sm font-semibold text-emerald-800">
-            Vacío encontrado — camino actualizado
-          </p>
-          <p className="text-xs text-emerald-600 mt-0.5">
-            Primero dominas Productos notables, luego vuelves a Factorización.
-          </p>
-        </div>
-      </div>
-
-      {/* Rerouted mini-path */}
-      <div className="mt-5 pl-1">
-        <MiniPathNode
-          status="gap"
-          label="Productos notables"
-          detail="Prerequisito — tu siguiente mini-clase"
-          showLine
-        />
-        <MiniPathNode
-          status="locked"
-          label="Factorización"
-          detail="Desbloqueado después"
-          showLine={false}
-        />
-      </div>
-    </div>
-  );
-}
-
-function ScanRow({
-  label,
-  result,
-}: {
-  label: string;
-  result: "pass" | "fail";
-}) {
-  const isPass = result === "pass";
-  return (
-    <div
-      className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg border
-        ${
-          isPass
-            ? "bg-emerald-50/60 border-emerald-200"
-            : "bg-red-50 border-red-200"
-        }`}
+    <svg
+      className="w-4 h-4 sm:w-5 sm:h-5 text-accent"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
     >
-      <span className="text-sm">
-        {isPass ? (
-          <span className="text-emerald-500">✓</span>
-        ) : (
-          <span className="text-red-500">✗</span>
-        )}
-      </span>
-      <span
-        className={`text-sm font-medium
-          ${isPass ? "text-emerald-700" : "text-red-700"}`}
-      >
-        {label}
-      </span>
-      <span
-        className={`ml-auto text-[10px] font-bold uppercase tracking-wider
-          px-1.5 py-0.5 rounded-full
-          ${
-            isPass
-              ? "bg-emerald-100 text-emerald-600"
-              : "bg-red-100 text-red-600"
-          }`}
-      >
-        {isPass ? "Sólido" : "Vacío"}
-      </span>
-    </div>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+      />
+    </svg>
   );
 }
-
-function MiniPathNode({
-  status,
-  label,
-  detail,
-  showLine,
-}: {
-  status: "gap" | "locked";
-  label: string;
-  detail: string;
-  showLine: boolean;
-}) {
-  const dotClass =
-    status === "gap"
-      ? "bg-red-500 ring-4 ring-red-100"
-      : "border-2 border-gray-300 bg-white";
-
-  return (
-    <div className="flex gap-3">
-      <div className="flex flex-col items-center">
-        <div className={`w-4 h-4 rounded-full ${dotClass} shrink-0 mt-0.5`} />
-        {showLine && <div className="w-0.5 flex-1 bg-gray-200 mt-1" />}
-      </div>
-      <div className={showLine ? "pb-3" : ""}>
-        <span
-          className={`text-sm font-medium
-            ${status === "gap" ? "text-red-700" : "text-cool-gray"}`}
-        >
-          {label}
-        </span>
-        <p className="text-xs text-cool-gray mt-0.5">{detail}</p>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
-// ICONS
-// ============================================================================
 
 function SearchIcon() {
   return (
     <svg
-      className="w-4 h-4 sm:w-5 sm:h-5 text-accent"
+      className="w-4 h-4 sm:w-5 sm:h-5 text-primary"
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
@@ -312,10 +194,10 @@ function RefreshIcon() {
   );
 }
 
-function ShieldCheckIcon() {
+function ShieldIcon() {
   return (
     <svg
-      className="w-4 h-4 sm:w-5 sm:h-5 text-primary"
+      className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600"
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
@@ -325,56 +207,6 @@ function ShieldCheckIcon() {
         strokeLinejoin="round"
         strokeWidth={2}
         d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-      />
-    </svg>
-  );
-}
-
-function XCircleIcon() {
-  return (
-    <svg
-      className="w-3.5 h-3.5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-    </svg>
-  );
-}
-
-function ScanIconSmall() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-        stroke="white"
-        strokeWidth={2.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function CheckCircleIcon() {
-  return (
-    <svg
-      className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
       />
     </svg>
   );

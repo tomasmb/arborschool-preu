@@ -1,34 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 import Image from "next/image";
-import { LoadingButton } from "@/app/components/ui";
-import {
-  trackLandingPageViewed,
-  trackLandingCtaClicked,
-} from "@/lib/analytics";
-import type { LandingPrimaryAction } from "@/lib/student/journeyRouting";
-import { ExampleResultsModal } from "@/app/diagnostico/components";
+import { trackLandingPageViewed } from "@/lib/analytics";
 import {
   HeroSection,
+  ProblemSection,
   HowItWorksSection,
   MasterySection,
+  AppScreensCarousel,
   ProgressSection,
+  StakeholderTabs,
   CtaSection,
   Footer,
 } from "@/app/components/landing";
 
+function smoothScrollTo(id: string) {
+  document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+}
+
 function Navigation({
-  ctaLabel,
-  onPrimaryAction,
-  isNavigating,
+  onRequestDemo,
 }: {
-  ctaLabel: string;
-  onPrimaryAction: () => void;
-  isNavigating: boolean;
+  onRequestDemo: () => void;
 }) {
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-100">
+    <nav
+      className="fixed top-0 left-0 right-0 z-50
+        bg-white/80 backdrop-blur-lg border-b border-gray-100"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center gap-3">
@@ -42,14 +42,20 @@ function Navigation({
               Arbor PreU
             </span>
           </div>
-          <div className="flex items-center gap-4">
-            <LoadingButton
-              onClick={onPrimaryAction}
-              isLoading={isNavigating}
+          <div className="flex items-center gap-3">
+            <a
+              href="/estudiantes"
+              className="hidden sm:inline-flex text-sm text-cool-gray
+                hover:text-charcoal transition-colors"
+            >
+              Para estudiantes
+            </a>
+            <button
+              onClick={onRequestDemo}
               className="btn-cta text-sm px-3 sm:px-4 py-2"
             >
-              {ctaLabel}
-            </LoadingButton>
+              Solicitar demo
+            </button>
           </div>
         </div>
       </div>
@@ -57,68 +63,34 @@ function Navigation({
   );
 }
 
-export function LandingPageClient({
-  primaryAction,
-}: {
-  primaryAction: LandingPrimaryAction;
-}) {
-  const [isNavigating, setIsNavigating] = useState(false);
-  const [showExampleModal, setShowExampleModal] = useState(false);
-
+export function LandingPageClient() {
   useEffect(() => {
     trackLandingPageViewed();
   }, []);
 
-  const goToPrimaryAction = (
-    ctaLocation: "hero" | "navbar" | "bottom" | "other" = "other"
-  ) => {
-    trackLandingCtaClicked(ctaLocation, {
-      destination: primaryAction.href,
-      entryPoint: "/",
-      journeyState: primaryAction.journeyState,
-    });
-    setIsNavigating(true);
-    window.location.href = primaryAction.href;
-  };
-
-  const handleExampleModalStart = () => {
-    setShowExampleModal(false);
-    goToPrimaryAction("hero");
-  };
+  const scrollToDemo = useCallback(
+    () => smoothScrollTo("demo"),
+    []
+  );
+  const scrollToPlatform = useCallback(
+    () => smoothScrollTo("plataforma"),
+    []
+  );
 
   return (
     <main className="min-h-screen overflow-hidden">
-      <Navigation
-        ctaLabel={primaryAction.label}
-        onPrimaryAction={() => goToPrimaryAction("navbar")}
-        isNavigating={isNavigating}
-      />
-
+      <Navigation onRequestDemo={scrollToDemo} />
       <HeroSection
-        onStartDiagnostic={() => goToPrimaryAction("hero")}
-        onShowExample={() => setShowExampleModal(true)}
-        isNavigating={isNavigating}
-        ctaLabel={primaryAction.label}
-        ctaSupportingText={primaryAction.supportingText}
+        onRequestDemo={scrollToDemo}
+        onViewPlatform={scrollToPlatform}
       />
-
+      <ProblemSection />
       <HowItWorksSection />
       <MasterySection />
+      <AppScreensCarousel />
       <ProgressSection />
-
-      <CtaSection
-        onStartDiagnostic={() => goToPrimaryAction("bottom")}
-        isNavigating={isNavigating}
-        ctaLabel={primaryAction.label}
-        ctaSupportingText={primaryAction.supportingText}
-      />
-
-      <ExampleResultsModal
-        isOpen={showExampleModal}
-        onClose={() => setShowExampleModal(false)}
-        onStartDiagnostic={handleExampleModalStart}
-      />
-
+      <StakeholderTabs />
+      <CtaSection />
       <Footer />
     </main>
   );
