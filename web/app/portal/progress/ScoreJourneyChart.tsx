@@ -13,7 +13,6 @@ type Props = {
     mid: number;
     isPersonalBest?: boolean;
   } | null;
-  diagnosticCeiling: number | null;
 };
 
 const W = 600;
@@ -27,7 +26,6 @@ const COLORS = {
   historyDot: "#0b3a5b",
   projLine: "#059669",
   band: "#05966920",
-  ceiling: "#f59e0b",
   goalLine: "#e11d48",
   grid: "#e5e7eb",
   todayLine: "#94a3b8",
@@ -36,14 +34,13 @@ const COLORS = {
 
 /**
  * SVG line chart showing score history, projection curve, confidence band,
- * diagnostic ceiling, and goal target lines.
+ * and goal target lines.
  */
 export function ScoreJourneyChart({
   history,
   projection,
   milestones,
   currentScore,
-  diagnosticCeiling,
 }: Props) {
   const {
     xDomain,
@@ -157,20 +154,6 @@ export function ScoreJourneyChart({
           {/* Confidence band */}
           {bandPath && <path d={bandPath} fill={COLORS.band} opacity={0.6} />}
 
-          {/* Diagnostic ceiling */}
-          {diagnosticCeiling && (
-            <line
-              x1={PAD.left}
-              x2={W - PAD.right}
-              y1={yScale(diagnosticCeiling)}
-              y2={yScale(diagnosticCeiling)}
-              stroke={COLORS.ceiling}
-              strokeWidth={1}
-              strokeDasharray="6 4"
-              opacity={0.6}
-            />
-          )}
-
           {/* Goal target lines */}
           {goalLines.map((g) => (
             <g key={g.goalId}>
@@ -282,7 +265,6 @@ export function ScoreJourneyChart({
       <ChartLegend
         hasHistory={histPoints.length > 0}
         hasProjection={projPoints.length > 0}
-        hasCeiling={diagnosticCeiling !== null}
         hasGoals={goalLines.length > 0 || farGoals.length > 0}
       />
     </section>
@@ -296,12 +278,10 @@ export function ScoreJourneyChart({
 function ChartLegend({
   hasHistory,
   hasProjection,
-  hasCeiling,
   hasGoals,
 }: {
   hasHistory: boolean;
   hasProjection: boolean;
-  hasCeiling: boolean;
   hasGoals: boolean;
 }) {
   return (
@@ -322,15 +302,6 @@ function ChartLegend({
             style={{ background: COLORS.projLine }}
           />
           Proyección
-        </span>
-      )}
-      {hasCeiling && (
-        <span className="flex items-center gap-1.5">
-          <span
-            className="w-3 h-[1px] border-t border-dashed"
-            style={{ borderColor: COLORS.ceiling }}
-          />
-          Techo diagnóstico
         </span>
       )}
       {hasGoals && (

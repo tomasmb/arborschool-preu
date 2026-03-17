@@ -6,11 +6,12 @@ import type { ApiEnvelope } from "@/lib/student/apiClientEnvelope";
 import { resolveApiErrorMessage } from "@/lib/student/apiClientEnvelope";
 import {
   EFFECTIVE_MINUTES_PER_ATOM,
-  NUM_OFFICIAL_TESTS,
+  RANDOM_GUESS_ACC,
 } from "@/lib/diagnostic/scoringConstants";
 import {
-  PAES_SCORE_TABLE,
   PAES_TOTAL_QUESTIONS,
+  normalizeToTestSize,
+  getPaesScore,
 } from "@/lib/diagnostic/paesScoreTable";
 import {
   AxisBreakdownSection,
@@ -39,8 +40,6 @@ const HOURS_STEP = 0.5;
 const DEFAULT_HOURS = 3;
 const MAX_PROJECTION_WEEKS = 20;
 
-/** Baseline accuracy for 5-option PAES MCQ random guessing. */
-const RANDOM_GUESS_ACC = 0.2;
 
 const HERO_GRADIENT = "linear-gradient(90deg, #0b3a5b, #134b73, #059669)";
 
@@ -48,14 +47,6 @@ const HERO_GRADIENT = "linear-gradient(90deg, #0b3a5b, #134b73, #059669)";
 // CLIENT-SIDE PROJECTION
 // ============================================================================
 
-/** Look up the PAES score for a given number of correct answers. */
-function getPaesScoreLocal(correctAnswers: number): number {
-  const clamped = Math.max(
-    0,
-    Math.min(PAES_TOTAL_QUESTIONS, Math.round(correctAnswers))
-  );
-  return PAES_SCORE_TABLE[clamped] ?? 100;
-}
 
 /**
  * Computes the full projection curve locally from server-provided metadata.
@@ -86,7 +77,10 @@ function computeProjection(
       atomsMasteredSoFar
     );
 
-    const unlockedPerTest = questionsUnlocked / NUM_OFFICIAL_TESTS;
+    const unlockedPerTest = normalizeToTestSize(
+      questionsUnlocked,
+      meta.totalOfficialQuestions
+    );
     const lockedPerTest = Math.max(
       0,
       PAES_TOTAL_QUESTIONS - unlockedPerTest
@@ -97,7 +91,7 @@ function computeProjection(
       unlockedPerTest + RANDOM_GUESS_ACC * lockedPerTest
     );
 
-    const projectedMid = getPaesScoreLocal(Math.round(expectedCorrect));
+    const projectedMid = getPaesScore(Math.round(expectedCorrect));
     const band = Math.round(projectedMid * meta.accuracyUncertainty);
 
     points.push({
@@ -120,7 +114,6 @@ function computeProjection(
     points,
     weeksToTarget,
     targetScore: meta.targetScore,
-    diagnosticCeiling: meta.diagnosticCeiling,
     studyMinutesPerWeek: weeklyMinutes,
   };
 }
@@ -215,7 +208,6 @@ export function ProgressClient() {
               projection={projection.points}
               milestones={selectedMilestones}
               currentScore={data.currentScore}
-              diagnosticCeiling={projection.diagnosticCeiling}
             />
           )}
 

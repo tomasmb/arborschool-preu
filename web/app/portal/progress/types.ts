@@ -22,7 +22,6 @@ export type ProjectionResult = {
   points: ProjectionPoint[];
   weeksToTarget: number | null;
   targetScore: number | null;
-  diagnosticCeiling: number | null;
   studyMinutesPerWeek: number;
 };
 
@@ -37,8 +36,9 @@ export type ProjectionMetadata = {
   accuracyUncertainty: number;
   effectiveMinPerAtom: number;
   totalRemainingAtoms: number;
+  /** Total official questions in the pool; used for normalization to 60. */
+  totalOfficialQuestions: number;
   currentScore: number;
-  diagnosticCeiling: number | null;
   targetScore: number | null;
 };
 

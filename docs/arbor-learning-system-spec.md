@@ -128,14 +128,19 @@ Each question maps to atoms via `question_atoms` with a relevance field:
 A question is **unlocked** when ALL its primary atoms are mastered.
 Secondary atoms do not affect unlock status.
 
-### 3.2 Per-Test Normalization
+### 3.2 Pool-to-Test Normalization
 
-Questions appear across the 4 official PAES tests. When ranking routes:
+Questions in the official pool (~202) represent the knowledge tested on a
+60-question PAES M1 exam. To estimate PAES improvement, raw pool-level
+unlock counts are normalized to a 60-question test:
 
-- 1 question that appears across all 4 tests counts as **1/4 question per test**
-  for route ranking purposes
-- `additionalPerTest = totalQuestionsUnlocked / NUM_OFFICIAL_TESTS`
-- PAES improvement is calculated from `additionalPerTest` via the PAES score table
+- `additionalOnTest = normalizeToTestSize(totalQuestionsUnlocked, totalOfficialQuestions)`
+  i.e. `totalQuestionsUnlocked × 60 / totalOfficialQuestions`
+- Net gain accounts for guessing baseline:
+  `effectiveAdditional = additionalOnTest × (1 - RANDOM_GUESS_ACC)`
+  (unlocking a question moves it from 20% guess accuracy to ~100%)
+- PAES improvement is calculated from `effectiveAdditional` via the PAES
+  score table
 
 ### 3.3 Unlock Scoring (Per Atom)
 
@@ -194,7 +199,7 @@ time on things the student already knows but we could not verify.
    `maxAtoms = 10` per route)
 4. Topologically sort so prerequisites come first
 5. Simulate mastery step-by-step, counting questions unlocked at each step
-6. Rank routes by total questions unlocked (descending)
+6. Rank routes by estimated PAES improvement (descending)
 
 ### 3.7 Competitive Routes
 
@@ -638,10 +643,9 @@ Range: +/-5 questions using PAES score table.
   knowledge-based. Questions whose atoms are mastered count as correct;
   locked questions use random-guess baseline (0.2). No accuracy modeling
   in the mid-line — knowledge determines the score.
-- **Diagnostic ceiling role**: The diagnostic ceiling is displayed as a
-  visual reference line on the chart but does NOT cap or gate the
-  projection. As the student masters more atoms, the projection rises
-  above the ceiling.
+- **No diagnostic ceiling**: The diagnostic ceiling has been removed from the
+  progress chart. It was a rough initial estimate that added no value to the
+  projection. The projection is driven purely by atom mastery and knowledge.
 - **Confidence band**: Accuracy-derived uncertainty (from the student's
   demonstrated gap between knowledge and test performance) informs the
   band width only. Band range: 5–20% of projected score.

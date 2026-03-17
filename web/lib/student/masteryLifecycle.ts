@@ -6,13 +6,22 @@
 
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { atomMastery, atoms } from "@/db/schema";
+import { atomMastery, atoms, questions as questionsTable } from "@/db/schema";
 import {
   evaluateSessionFatigue,
   getDailyMasteryCount,
   type HabitGuardSignal,
 } from "./habitGuard";
 import { getReviewDueItems } from "./spacedRepetition";
+
+/** Total count of official questions in the pool (for normalization). */
+export async function getTotalOfficialQuestionCount(): Promise<number> {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(questionsTable)
+    .where(eq(questionsTable.source, "official"));
+  return Number(row?.count ?? 0);
+}
 
 /**
  * Counts PAES questions that just became fully answerable because atomId

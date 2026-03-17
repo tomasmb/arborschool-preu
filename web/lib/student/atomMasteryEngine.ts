@@ -46,12 +46,13 @@ import type { HabitGuardSignal } from "./habitGuard";
 import {
   syncAtomMasteryOnMastered,
   countNewlyUnlockedQuestions,
+  getTotalOfficialQuestionCount,
   getNextStudyAtom,
   evaluateHabitGuard,
 } from "./masteryLifecycle";
 import { updateDailyStreak } from "./streakTracker";
 import { incrementMissionProgress } from "./missions";
-import { NUM_OFFICIAL_TESTS } from "@/lib/diagnostic/scoringConstants";
+import { normalizeToTestSize } from "@/lib/diagnostic/scoringConstants";
 import { normalizeAnswer, getSeenQuestionIds } from "./questionQueries";
 import { verifySessionOwnership } from "./sessionQueries";
 
@@ -456,12 +457,13 @@ export async function submitAnswer(params: {
     await updateDailyStreak(params.userId);
     await incrementMissionProgress(params.userId);
 
-    const [rawUnlocked, nextAtomResult] = await Promise.all([
+    const [rawUnlocked, totalQ, nextAtomResult] = await Promise.all([
       countNewlyUnlockedQuestions(params.userId, session.atomId),
+      getTotalOfficialQuestionCount(),
       getNextStudyAtom(params.userId, session.atomId),
     ]);
     questionsUnlocked = rawUnlocked > 0
-      ? Math.max(1, Math.round(rawUnlocked / NUM_OFFICIAL_TESTS))
+      ? Math.max(1, Math.round(normalizeToTestSize(rawUnlocked, totalQ)))
       : 0;
     nextAtom = nextAtomResult;
   }

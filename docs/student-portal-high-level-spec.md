@@ -371,10 +371,9 @@ Knowledge-based projection model:
     correct; locked questions use random-guess baseline (0.2 for 5-option MCQ).
   - No accuracy modeling in the projected score — knowledge determines it.
   - Atom mastery IS the authoritative projection driver.
-- Diagnostic ceiling:
-  - Displayed as a visual reference line on the chart.
-  - Does NOT cap or gate the projection. As the student masters atoms,
-    the projection rises above the ceiling.
+- No diagnostic ceiling:
+  - The diagnostic ceiling has been removed from the chart. It was a rough
+    initial estimate that added no value to the projection.
 - Confidence band:
   - Accuracy-derived uncertainty (gap between demonstrated performance
     and perfect knowledge) sets the band width (5–20% of projected score).

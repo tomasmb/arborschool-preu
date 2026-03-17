@@ -27,9 +27,11 @@ import {
   analyzeLearningPotential,
   formatRouteForDisplay,
   calculatePAESImprovement,
-  DEFAULT_SCORING_CONFIG,
 } from "@/lib/diagnostic/questionUnlock";
-import { calculateScoreRange } from "@/lib/diagnostic/scoringConstants";
+import {
+  calculateScoreRange,
+  normalizeToTestSize,
+} from "@/lib/diagnostic/scoringConstants";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -182,7 +184,7 @@ async function generateExampleData() {
     currentPaesScore: EXAMPLE_CONFIG.targetScore,
   });
 
-  const numTests = DEFAULT_SCORING_CONFIG.numOfficialTests;
+  const totalQ = analysis.summary.totalQuestions;
   const topRoutes = analysis.routes.slice(0, 4);
 
   // Calculate total questions that could be unlocked
@@ -193,12 +195,14 @@ async function generateExampleData() {
 
   // Format routes for frontend display
   const formattedRoutes = topRoutes.map((route) => ({
-    ...formatRouteForDisplay(route),
+    ...formatRouteForDisplay(route, totalQ),
     axis: route.axis,
     atoms: route.atoms.map((a) => ({
       id: a.atomId,
       title: a.title,
-      questionsUnlocked: Math.round(a.questionsUnlockedHere / numTests),
+      questionsUnlocked: Math.round(
+        normalizeToTestSize(a.questionsUnlockedHere, totalQ)
+      ),
       isPrerequisite: a.isPrerequisite,
     })),
   }));
@@ -207,7 +211,7 @@ async function generateExampleData() {
   const improvement = calculatePAESImprovement(
     EXAMPLE_CONFIG.targetScore,
     totalPotentialUnlocks,
-    numTests
+    totalQ
   );
 
   // Build the final data structure
@@ -222,17 +226,23 @@ async function generateExampleData() {
         atomId: a.atomId,
         title: a.axis,
         axis: a.axis,
-        questionsUnlocked: Math.round(a.immediateUnlocks.length / numTests),
+        questionsUnlocked: Math.round(
+          normalizeToTestSize(a.immediateUnlocks.length, totalQ)
+        ),
       })),
     improvement,
     lowHangingFruit: {
       oneAway: Math.round(
-        analysis.lowHangingFruit.filter((q) => q.atomsToUnlock === 1).length /
-          numTests
+        normalizeToTestSize(
+          analysis.lowHangingFruit.filter((q) => q.atomsToUnlock === 1).length,
+          totalQ
+        )
       ),
       twoAway: Math.round(
-        analysis.lowHangingFruit.filter((q) => q.atomsToUnlock === 2).length /
-          numTests
+        normalizeToTestSize(
+          analysis.lowHangingFruit.filter((q) => q.atomsToUnlock === 2).length,
+          totalQ
+        )
       ),
     },
   };

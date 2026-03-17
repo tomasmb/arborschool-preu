@@ -3,8 +3,8 @@ import {
   analyzeLearningPotential,
   formatRouteForDisplay,
   calculatePAESImprovement,
-  DEFAULT_SCORING_CONFIG,
 } from "@/lib/diagnostic/questionUnlock";
+import { normalizeToTestSize } from "@/lib/diagnostic/scoringConstants";
 import { requireAuthenticatedStudentUser } from "@/lib/student/apiAuth";
 
 /**
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       currentPaesScore: diagnosticScore,
     });
 
-    const numTests = DEFAULT_SCORING_CONFIG.numOfficialTests;
+    const totalQ = analysis.summary.totalQuestions;
 
     // Get routes to process (limit to top 4)
     const topRoutes = analysis.routes.slice(0, 4);
@@ -75,20 +75,20 @@ export async function POST(request: NextRequest) {
       0
     );
 
-    // Format routes for frontend display (all questionsUnlocked are per-test average)
+    // All questionsUnlocked values are normalized to a 60-question PAES test
     const formattedRoutes = topRoutes.map((route) => ({
-      ...formatRouteForDisplay(route),
+      ...formatRouteForDisplay(route, totalQ),
       axis: route.axis,
       atoms: route.atoms.map((a) => ({
         id: a.atomId,
         title: a.title,
-        questionsUnlocked: Math.round(a.questionsUnlockedHere / numTests),
+        questionsUnlocked: Math.round(
+          normalizeToTestSize(a.questionsUnlockedHere, totalQ)
+        ),
         isPrerequisite: a.isPrerequisite,
       })),
     }));
 
-    // Get quick wins (atoms with immediate impact and no prereqs)
-    // questionsUnlocked is per-test average for consistency
     const quickWins = analysis.topAtomsByEfficiency
       .filter((a) => a.immediateUnlocks.length > 0 && a.totalCost === 1)
       .slice(0, 5)
@@ -96,15 +96,15 @@ export async function POST(request: NextRequest) {
         atomId: a.atomId,
         title: a.title,
         axis: a.axis,
-        questionsUnlocked: Math.round(a.immediateUnlocks.length / numTests),
+        questionsUnlocked: Math.round(
+          normalizeToTestSize(a.immediateUnlocks.length, totalQ)
+        ),
       }));
 
-    // Calculate overall improvement using diagnostic score as baseline
-    // This ensures improvement + current score doesn't exceed 1000
     const improvement = calculatePAESImprovement(
       diagnosticScore,
       totalPotentialUnlocks,
-      numTests
+      totalQ
     );
 
     return NextResponse.json({
@@ -115,15 +115,20 @@ export async function POST(request: NextRequest) {
         routes: formattedRoutes,
         quickWins,
         improvement,
-        // Convert to per-test average (consistent with route questionsUnlocked)
         lowHangingFruit: {
           oneAway: Math.round(
-            analysis.lowHangingFruit.filter((q) => q.atomsToUnlock === 1)
-              .length / numTests
+            normalizeToTestSize(
+              analysis.lowHangingFruit.filter((q) => q.atomsToUnlock === 1)
+                .length,
+              totalQ
+            )
           ),
           twoAway: Math.round(
-            analysis.lowHangingFruit.filter((q) => q.atomsToUnlock === 2)
-              .length / numTests
+            normalizeToTestSize(
+              analysis.lowHangingFruit.filter((q) => q.atomsToUnlock === 2)
+                .length,
+              totalQ
+            )
           ),
         },
       },
