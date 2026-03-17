@@ -1,10 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {
-  PAES_TOTAL_QUESTIONS,
-  RETEST_ATOM_THRESHOLD,
-} from "@/lib/diagnostic/scoringConstants";
+import { RETEST_ATOM_THRESHOLD } from "@/lib/diagnostic/scoringConstants";
 import type {
   AxisMasteryItem,
   RetestStatus,
@@ -21,11 +18,13 @@ export function GoalMilestonesSection({
   currentScore,
   selectedGoalId,
   onSelectGoal,
+  chartVisible = true,
 }: {
   milestones: GoalMilestone[];
   currentScore: { mid: number } | null;
   selectedGoalId: string | null;
   onSelectGoal: (goalId: string) => void;
+  chartVisible?: boolean;
 }) {
   if (milestones.length === 0) {
     return (
@@ -52,9 +51,11 @@ export function GoalMilestonesSection({
       <h2 className="text-lg font-serif font-semibold text-primary">
         Metas por carrera
       </h2>
-      <p className="text-xs text-gray-400 -mt-2">
-        Selecciona una carrera para ver su meta en el gráfico
-      </p>
+      {chartVisible && (
+        <p className="text-xs text-gray-400 -mt-2">
+          Selecciona una carrera para ver su meta en el gráfico
+        </p>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {milestones.map((m) => (
           <MilestoneCard
@@ -84,9 +85,7 @@ function MilestoneCard({
   const { userM1Target, weeksToReach, isPrimary } = milestone;
 
   const reachedGoal =
-    userM1Target !== null &&
-    currentMid !== null &&
-    currentMid >= userM1Target;
+    userM1Target !== null && currentMid !== null && currentMid >= userM1Target;
 
   const borderColor = isSelected
     ? "ring-2 ring-primary border-primary/30 bg-primary/5"
@@ -131,10 +130,7 @@ function MilestoneCard({
           </div>
 
           {currentMid !== null && (
-            <MilestoneProgressBar
-              current={currentMid}
-              target={userM1Target}
-            />
+            <MilestoneProgressBar current={currentMid} target={userM1Target} />
           )}
 
           {reachedGoal ? (
@@ -245,33 +241,16 @@ export function AxisBreakdownSection({
 // RETEST CTA SECTION
 // ============================================================================
 
+/**
+ * Post-full-test retest gating UI. The first-test CTA (pre-full-test)
+ * is handled by LockedProjectionSection; this component only renders
+ * for subsequent retest cycles.
+ */
 export function RetestCTASection({
   retestStatus,
 }: {
   retestStatus: RetestStatus;
 }) {
-  // First test after diagnostic — strong calibration CTA
-  if (retestStatus.isFirstTest && retestStatus.eligible) {
-    return (
-      <section
-        className="rounded-2xl border border-primary/20 bg-primary/5
-          p-5 sm:p-6 space-y-3"
-      >
-        <h2 className="text-base font-semibold text-primary">
-          Calibra tu puntaje real
-        </h2>
-        <p className="text-sm text-gray-700">
-          El diagnóstico solo cubrió 16 preguntas. Un test completo (
-          {PAES_TOTAL_QUESTIONS} preguntas) mide tu nivel real y evita que
-          estudies cosas que ya dominas.
-        </p>
-        <Link href="/portal/test" className="btn-primary inline-block text-sm">
-          Tomar test completo
-        </Link>
-      </section>
-    );
-  }
-
   // Retest: eligible + recommended (30+ atoms)
   if (retestStatus.eligible && retestStatus.recommended) {
     return (
