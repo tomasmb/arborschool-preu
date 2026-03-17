@@ -1,6 +1,7 @@
 /**
- * Mastery section - learning method + learning path preview
- * Combines the "how you learn" message with a real portal mockup
+ * Intelligent Learning section — showcases how the system discovers and
+ * fills knowledge gaps dynamically via prereq scanning, spaced repetition,
+ * and verification loops.
  */
 import { BrowserFrame } from "./BrowserFrame";
 import { ScrollReveal } from "./ScrollReveal";
@@ -8,47 +9,69 @@ import { ScrollReveal } from "./ScrollReveal";
 export function MasterySection() {
   return (
     <section className="py-16 sm:py-24 bg-white relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-full sm:w-1/2 h-1/2 sm:h-full bg-gradient-to-l from-accent/5 to-transparent"></div>
+      <div
+        className="absolute top-0 right-0 w-full sm:w-1/2
+          h-1/2 sm:h-full bg-gradient-to-l from-accent/5 to-transparent"
+      />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
-          {/* Left: method + features */}
+          {/* Left: features */}
           <ScrollReveal className="text-center lg:text-left">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold text-charcoal mb-4 sm:mb-6">
-              Aprendes de verdad,{" "}
-              <span className="text-accent">no de memoria</span>
+            <h2
+              className="text-3xl sm:text-4xl lg:text-5xl
+                font-serif font-bold text-charcoal mb-4 sm:mb-6"
+            >
+              Un sistema que{" "}
+              <span className="text-accent">aprende contigo</span>
             </h2>
             <p className="text-base sm:text-lg text-cool-gray mb-8">
-              Arbor arma tu camino personalizado por eje matemático
-              y te dice exactamente qué estudiar primero.
+              Cada interacción — mini-clase, repaso, ensayo — alimenta el mapa
+              de lo que sabes y lo que te falta.
             </p>
 
-            <div className="space-y-4 sm:space-y-5 inline-flex flex-col items-start">
+            <div className="space-y-5 sm:space-y-6 inline-flex flex-col items-start">
               <FeatureRow
-                icon={<BookOpenIcon />}
-                text="Mini-clase con teoría y ejemplos antes de practicar"
+                icon={<SearchIcon />}
+                title="Descubre vacíos automáticamente"
+                text={
+                  "Cuando no dominas un concepto, Arbor escanea " +
+                  "tus prerequisitos para encontrar el vacío exacto."
+                }
                 color="accent"
               />
               <FeatureRow
-                icon={<ShieldIcon />}
-                text="Práctica adaptativa con feedback inmediato"
-                color="primary"
+                icon={<RefreshIcon />}
+                title="Repaso que se adapta a ti"
+                text={
+                  "Programa repasos según qué tan rápido y bien " +
+                  "respondiste. Dominar conceptos avanzados refuerza " +
+                  "los básicos automáticamente."
+                }
+                color="success"
               />
               <FeatureRow
-                icon={<RefreshIcon />}
-                text="Repaso espaciado justo antes de que se te olvide"
-                color="success"
+                icon={<ShieldCheckIcon />}
+                title="Distingue deslices de vacíos reales"
+                text={
+                  "Si fallas en un ensayo, un quiz de verificación " +
+                  "confirma si realmente olvidaste o fue un error puntual."
+                }
+                color="primary"
               />
             </div>
           </ScrollReveal>
 
-          {/* Right: learning path browser mockup */}
+          {/* Right: prereq scan / gap discovery mockup */}
           <ScrollReveal delay={150}>
-            <p className="text-sm font-semibold text-primary/80 mb-3 sm:mb-4 text-center uppercase tracking-wide">
-              Así se ve tu camino de aprendizaje
+            <p
+              className="text-sm font-semibold text-primary/80 mb-3 sm:mb-4
+                text-center uppercase tracking-wide"
+            >
+              Así detectamos tus vacíos
             </p>
             <BrowserFrame>
-              <LearningPathPreview />
+              <GapDiscoveryPreview />
             </BrowserFrame>
           </ScrollReveal>
         </div>
@@ -57,14 +80,14 @@ export function MasterySection() {
   );
 }
 
-// -- Compact feature row (icon + single line of text) --
-
 function FeatureRow({
   icon,
+  title,
   text,
   color,
 }: {
   icon: React.ReactNode;
+  title: string;
   text: string;
   color: "accent" | "primary" | "success";
 }) {
@@ -75,89 +98,93 @@ function FeatureRow({
   }[color];
 
   return (
-    <div className="flex items-center gap-3 sm:gap-4 text-left">
+    <div className="flex items-start gap-3 sm:gap-4 text-left">
       <div
-        className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl ${bgClass} flex items-center justify-center shrink-0`}
+        className={`w-9 h-9 sm:w-10 sm:h-10 mt-0.5 rounded-xl
+          ${bgClass} flex items-center justify-center shrink-0`}
       >
         {icon}
       </div>
-      <p className="text-charcoal font-medium text-sm sm:text-base">{text}</p>
+      <div>
+        <p className="text-charcoal font-semibold text-sm sm:text-base">
+          {title}
+        </p>
+        <p className="text-cool-gray text-xs sm:text-sm mt-0.5 max-w-sm">
+          {text}
+        </p>
+      </div>
     </div>
   );
 }
 
-// -- Learning path preview (mirrors real portal LearningPathSection) --
-
-function LearningPathPreview() {
+/**
+ * Mockup showing a prereq scan in action:
+ * 1. Failed atom at top
+ * 2. Scanning prereqs
+ * 3. Gap found — path rerouted
+ */
+function GapDiscoveryPreview() {
   return (
     <div className="p-4 sm:p-6 md:p-8">
-      <div className="flex items-center justify-between mb-5 sm:mb-6">
-        <h3 className="text-base sm:text-lg font-serif font-semibold text-charcoal">
-          Tu camino recomendado
-        </h3>
-        <span
-          className="inline-flex items-center gap-1.5 text-xs font-medium
-            px-2.5 py-1 rounded-full bg-amber-50 text-amber-700"
-        >
-          <ClockIcon />
-          1 repaso pendiente
-        </span>
+      {/* Failure trigger */}
+      <div
+        className="flex items-center gap-2 text-xs font-semibold
+          px-3 py-1.5 rounded-full bg-red-50 text-red-600
+          border border-red-200 w-fit mb-5"
+      >
+        <XCircleIcon />
+        No dominaste Factorización
       </div>
 
-      <div>
-        {/* Review node */}
-        <PathNode
-          dotClass="border-2 border-amber-400 bg-amber-50"
-          title="Ecuaciones lineales"
-          badge={{ label: "Repaso", bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-200" }}
+      {/* Scan header */}
+      <div
+        className="flex items-center gap-2 mb-4 text-sm
+          font-semibold text-charcoal"
+      >
+        <span
+          className="w-6 h-6 rounded-full bg-gradient-to-br
+            from-amber-400 to-amber-500 flex items-center
+            justify-center"
+        >
+          <ScanIconSmall />
+        </span>
+        Escaneando prerequisitos...
+      </div>
+
+      {/* Scan results */}
+      <div className="space-y-2 mb-5">
+        <ScanRow label="Operaciones con fracciones" result="pass" />
+        <ScanRow label="Productos notables" result="fail" />
+      </div>
+
+      {/* Result banner */}
+      <div
+        className="flex items-start gap-2.5 p-3 rounded-xl
+          bg-emerald-50 border border-emerald-200"
+      >
+        <CheckCircleIcon />
+        <div>
+          <p className="text-sm font-semibold text-emerald-800">
+            Vacío encontrado — camino actualizado
+          </p>
+          <p className="text-xs text-emerald-600 mt-0.5">
+            Primero dominas Productos notables, luego vuelves a Factorización.
+          </p>
+        </div>
+      </div>
+
+      {/* Rerouted mini-path */}
+      <div className="mt-5 pl-1">
+        <MiniPathNode
+          status="gap"
+          label="Productos notables"
+          detail="Prerequisito — tu siguiente mini-clase"
           showLine
         />
-
-        {/* Current atom — primary action */}
-        <div className="flex gap-3 sm:gap-4">
-          <div className="flex flex-col items-center">
-            <div
-              className="w-5 h-5 rounded-full bg-indigo-600 ring-4 ring-indigo-100
-                shrink-0 mt-1"
-            />
-            <div className="w-0.5 flex-1 bg-gray-200 mt-1" />
-          </div>
-          <div className="flex-1 pb-5">
-            <span
-              className="inline-block text-xs font-medium px-2 py-0.5
-                rounded-full bg-indigo-50 text-indigo-700"
-            >
-              Dominio Algebraico
-            </span>
-            <h4 className="mt-1.5 text-sm sm:text-base font-semibold text-charcoal">
-              Factorización
-            </h4>
-            <p className="text-xs text-cool-gray mt-0.5">
-              Hasta +8 pts PAES
-            </p>
-            <div
-              className="mt-3 inline-flex items-center gap-2
-                bg-gradient-to-r from-[#0b3a5b] to-[#134b73]
-                text-white text-sm font-medium py-2.5 px-5
-                rounded-xl shadow-md"
-            >
-              Comenzar mini-clase
-              <span className="text-xs opacity-80">~20 min</span>
-              <ArrowRightIcon />
-            </div>
-          </div>
-        </div>
-
-        {/* Upcoming atom */}
-        <PathNode
-          dotClass="border-2 border-gray-300 bg-white"
-          title="Productos notables"
-          axisBadge={{
-            label: "Dominio Algebraico",
-            bg: "bg-indigo-50",
-            text: "text-indigo-700",
-          }}
-          subtitle="Próximo"
+        <MiniPathNode
+          status="locked"
+          label="Factorización"
+          detail="Desbloqueado después"
           showLine={false}
         />
       </div>
@@ -165,51 +192,81 @@ function LearningPathPreview() {
   );
 }
 
-function PathNode({
-  dotClass,
-  title,
-  badge,
-  axisBadge,
-  subtitle,
+function ScanRow({
+  label,
+  result,
+}: {
+  label: string;
+  result: "pass" | "fail";
+}) {
+  const isPass = result === "pass";
+  return (
+    <div
+      className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg border
+        ${
+          isPass
+            ? "bg-emerald-50/60 border-emerald-200"
+            : "bg-red-50 border-red-200"
+        }`}
+    >
+      <span className="text-sm">
+        {isPass ? (
+          <span className="text-emerald-500">✓</span>
+        ) : (
+          <span className="text-red-500">✗</span>
+        )}
+      </span>
+      <span
+        className={`text-sm font-medium
+          ${isPass ? "text-emerald-700" : "text-red-700"}`}
+      >
+        {label}
+      </span>
+      <span
+        className={`ml-auto text-[10px] font-bold uppercase tracking-wider
+          px-1.5 py-0.5 rounded-full
+          ${
+            isPass
+              ? "bg-emerald-100 text-emerald-600"
+              : "bg-red-100 text-red-600"
+          }`}
+      >
+        {isPass ? "Sólido" : "Vacío"}
+      </span>
+    </div>
+  );
+}
+
+function MiniPathNode({
+  status,
+  label,
+  detail,
   showLine,
 }: {
-  dotClass: string;
-  title: string;
-  badge?: { label: string; bg: string; text: string; border: string };
-  axisBadge?: { label: string; bg: string; text: string };
-  subtitle?: string;
+  status: "gap" | "locked";
+  label: string;
+  detail: string;
   showLine: boolean;
 }) {
+  const dotClass =
+    status === "gap"
+      ? "bg-red-500 ring-4 ring-red-100"
+      : "border-2 border-gray-300 bg-white";
+
   return (
-    <div className="flex gap-3 sm:gap-4">
+    <div className="flex gap-3">
       <div className="flex flex-col items-center">
         <div className={`w-4 h-4 rounded-full ${dotClass} shrink-0 mt-0.5`} />
-        {showLine ? <div className="w-0.5 flex-1 bg-gray-200 mt-1" /> : null}
+        {showLine && <div className="w-0.5 flex-1 bg-gray-200 mt-1" />}
       </div>
-      <div className={`flex-1 ${showLine ? "pb-4" : ""}`}>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-charcoal">{title}</span>
-          {badge && (
-            <span
-              className={`inline-block text-[10px] font-semibold uppercase
-                tracking-wider px-1.5 py-0.5 rounded-full
-                ${badge.bg} ${badge.text} border ${badge.border}`}
-            >
-              {badge.label}
-            </span>
-          )}
-          {axisBadge && (
-            <span
-              className={`inline-block text-xs font-medium px-2 py-0.5
-                rounded-full ${axisBadge.bg} ${axisBadge.text}`}
-            >
-              {axisBadge.label}
-            </span>
-          )}
-        </div>
-        {subtitle && (
-          <p className="text-xs text-cool-gray mt-0.5">{subtitle}</p>
-        )}
+      <div className={showLine ? "pb-3" : ""}>
+        <span
+          className={`text-sm font-medium
+            ${status === "gap" ? "text-red-700" : "text-cool-gray"}`}
+        >
+          {label}
+        </span>
+        <p className="text-xs text-cool-gray mt-0.5">{detail}</p>
       </div>
     </div>
   );
@@ -219,7 +276,7 @@ function PathNode({
 // ICONS
 // ============================================================================
 
-function BookOpenIcon() {
+function SearchIcon() {
   return (
     <svg
       className="w-4 h-4 sm:w-5 sm:h-5 text-accent"
@@ -231,25 +288,7 @@ function BookOpenIcon() {
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth={2}
-        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-      />
-    </svg>
-  );
-}
-
-function ShieldIcon() {
-  return (
-    <svg
-      className="w-4 h-4 sm:w-5 sm:h-5 text-primary"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
       />
     </svg>
   );
@@ -273,7 +312,25 @@ function RefreshIcon() {
   );
 }
 
-function ClockIcon() {
+function ShieldCheckIcon() {
+  return (
+    <svg
+      className="w-4 h-4 sm:w-5 sm:h-5 text-primary"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+      />
+    </svg>
+  );
+}
+
+function XCircleIcon() {
   return (
     <svg
       className="w-3.5 h-3.5"
@@ -285,16 +342,30 @@ function ClockIcon() {
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
-        d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z"
+        d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
       />
     </svg>
   );
 }
 
-function ArrowRightIcon() {
+function ScanIconSmall() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+        stroke="white"
+        strokeWidth={2.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function CheckCircleIcon() {
   return (
     <svg
-      className="w-4 h-4"
+      className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5"
       fill="none"
       stroke="currentColor"
       strokeWidth={2}
@@ -303,7 +374,7 @@ function ArrowRightIcon() {
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
-        d="M13 7l5 5m0 0l-5 5m5-5H6"
+        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
       />
     </svg>
   );
