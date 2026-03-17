@@ -8,7 +8,6 @@ import {
   ProblemSection,
   HowItWorksSection,
   MasterySection,
-  AppScreensCarousel,
   ProgressSection,
   StakeholderTabs,
   CtaSection,
@@ -87,7 +86,6 @@ export function LandingPageClient() {
       <ProblemSection />
       <HowItWorksSection />
       <MasterySection />
-      <AppScreensCarousel />
       <ProgressSection />
       <StakeholderTabs />
       <CtaSection />

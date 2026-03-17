@@ -81,7 +81,7 @@ export function MasterySection() {
               className="text-sm font-semibold text-primary/80 mb-3
                 text-center uppercase tracking-wide"
             >
-              Así detectamos vacíos automáticamente
+              Verificación de bases en acción
             </p>
             <BrowserFrame>
               <GapDetectionMockup />

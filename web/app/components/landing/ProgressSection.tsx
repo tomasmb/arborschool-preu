@@ -13,12 +13,12 @@ const VALUE_CARDS = [
   {
     icon: <RouteIcon />,
     title: "Rutas individualizadas",
-    text: "229 conceptos organizados en un grafo de prerequisitos. Cada alumno sigue su propio camino.",
+    text: "205 conceptos organizados en un grafo de prerequisitos. Cada alumno sigue su propio camino.",
   },
   {
     icon: <ChartIcon />,
-    title: "Reportes de avance",
-    text: "Conceptos dominados, puntaje proyectado y ritmo de estudio por alumno.",
+    title: "Progreso visible por alumno",
+    text: "Cada alumno ve sus conceptos dominados, puntaje demostrado y misión semanal en su dashboard.",
   },
   {
     icon: <GridIcon />,
