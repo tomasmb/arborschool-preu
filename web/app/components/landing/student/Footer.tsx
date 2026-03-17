@@ -1,17 +1,20 @@
 import Image from "next/image";
 
+/** Legal page links — open in new tab so user never leaves the current page */
 const LEGAL_LINKS = [
   { href: "/privacidad", label: "Política de Privacidad" },
   { href: "/terminos", label: "Términos de Servicio" },
   { href: "/cookies", label: "Política de Cookies" },
 ] as const;
 
+/** Site-wide footer with branding, contact, and legal links */
 export function Footer() {
   return (
     <footer className="bg-charcoal text-white py-12 sm:py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12">
-          {/* Brand */}
+        {/* Main grid: logo | contact | legal */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-10 lg:gap-12">
+          {/* Brand column */}
           <div>
             <div className="flex items-center gap-3 mb-4">
               <Image
@@ -26,45 +29,12 @@ export function Footer() {
               </span>
             </div>
             <p className="text-white/80 max-w-sm">
-              Preparación PAES adaptativa para colegios. Basada en
-              ciencia del aprendizaje.
+              Preparación PAES basada en dominio. Aprende lo que te falta,
+              demuestra que lo sabes, avanza.
             </p>
           </div>
 
-          {/* Para colegios */}
-          <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wider mb-4">
-              Para colegios
-            </h3>
-            <ul className="space-y-2">
-              <li>
-                <a
-                  href="#demo"
-                  className="text-white/80 hover:text-white transition-colors"
-                >
-                  Solicitar demo
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#plataforma"
-                  className="text-white/80 hover:text-white transition-colors"
-                >
-                  Ver la plataforma
-                </a>
-              </li>
-              <li>
-                <a
-                  href="/estudiantes"
-                  className="text-white/80 hover:text-white transition-colors"
-                >
-                  Para estudiantes
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* Contacto */}
+          {/* Contact column */}
           <div>
             <h3 className="text-sm font-semibold uppercase tracking-wider mb-4">
               Contacto
@@ -77,7 +47,7 @@ export function Footer() {
             </a>
           </div>
 
-          {/* Legal */}
+          {/* Legal column */}
           <div>
             <h3 className="text-sm font-semibold uppercase tracking-wider mb-4">
               Legal
@@ -99,6 +69,7 @@ export function Footer() {
           </div>
         </div>
 
+        {/* Divider + copyright */}
         <div className="mt-10 pt-8 border-t border-white/10 text-center">
           <p className="text-white/70 text-sm">
             © 2026 Arbor Learning SpA. Todos los derechos reservados.
