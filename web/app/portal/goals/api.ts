@@ -21,10 +21,10 @@ export function planningProfileToApi(draft: {
   const weeklyMinutesTarget = Number(draft.weeklyMinutesTarget);
   if (
     !Number.isInteger(weeklyMinutesTarget) ||
-    weeklyMinutesTarget < 60 ||
-    weeklyMinutesTarget > 2400
+    weeklyMinutesTarget < 30 ||
+    weeklyMinutesTarget > 600
   ) {
-    throw new Error("Minutos por semana debe ser un número entre 60 y 2400");
+    throw new Error("Horas por semana debe estar entre 0.5 y 10");
   }
 
   if (draft.examDate && !/^\d{4}-\d{2}-\d{2}$/.test(draft.examDate.trim())) {

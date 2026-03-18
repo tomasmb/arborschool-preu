@@ -3,6 +3,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type KeyboardEvent,
 } from "react";
@@ -38,6 +39,7 @@ function AutocompleteField({
   const [query, setQuery] = useState(value);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const justSelectedRef = useRef(false);
 
   useEffect(() => {
     setQuery(value);
@@ -50,6 +52,7 @@ function AutocompleteField({
   }, [items, query, value]);
 
   function handleSelect(item: string) {
+    justSelectedRef.current = true;
     setQuery(item);
     onSelect(item);
     setOpen(false);
@@ -57,6 +60,10 @@ function AutocompleteField({
 
   function handleBlur() {
     setTimeout(() => {
+      if (justSelectedRef.current) {
+        justSelectedRef.current = false;
+        return;
+      }
       setOpen(false);
       if (!query.trim()) {
         if (value) onSelect("");
@@ -93,9 +100,7 @@ function AutocompleteField({
 
   const listboxId = `${id}-listbox`;
   const activeOptionId =
-    open && filtered[activeIndex]
-      ? `${id}-opt-${activeIndex}`
-      : undefined;
+    open && filtered[activeIndex] ? `${id}-opt-${activeIndex}` : undefined;
 
   return (
     <div className="relative flex-1 min-w-0">
@@ -141,11 +146,7 @@ function AutocompleteField({
             rounded-xl border border-gray-200 bg-white p-1 shadow-lg"
         >
           {filtered.map((item, index) => (
-            <li
-              key={item}
-              role="option"
-              aria-selected={index === activeIndex}
-            >
+            <li key={item} role="option" aria-selected={index === activeIndex}>
               <button
                 type="button"
                 id={`${id}-opt-${index}`}
@@ -163,9 +164,7 @@ function AutocompleteField({
             </li>
           ))}
           {filtered.length === 0 && (
-            <li className="px-3 py-2 text-sm text-gray-500">
-              Sin resultados
-            </li>
+            <li className="px-3 py-2 text-sm text-gray-500">Sin resultados</li>
           )}
         </ul>
       )}
@@ -197,7 +196,8 @@ export function OfferingAutocomplete({
       setUniversityName(opt.universityName);
       setCareerName(opt.careerName);
     } else if (!selectedOfferingId) {
-      setUniversityName("");
+      // Only clear career — university is managed by direct user interaction
+      // and should not be wiped when the offering resets mid-selection.
       setCareerName("");
     }
   }, [options, selectedOfferingId]);

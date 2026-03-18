@@ -47,11 +47,11 @@ export function normalizePlanningProfileInput(
   if (profile.weeklyMinutesTarget !== undefined) {
     if (
       !Number.isInteger(profile.weeklyMinutesTarget) ||
-      profile.weeklyMinutesTarget < 60 ||
-      profile.weeklyMinutesTarget > 2400
+      profile.weeklyMinutesTarget < 30 ||
+      profile.weeklyMinutesTarget > 600
     ) {
       throw new Error(
-        "weeklyMinutesTarget must be an integer between 60 and 2400"
+        "weeklyMinutesTarget must be an integer between 30 and 600"
       );
     }
     normalizedWeeklyMinutesTarget = profile.weeklyMinutesTarget;
