@@ -3,8 +3,15 @@ import {
   listActiveAdmissionsDataset,
   listAdmissionsOptions,
   listStudentGoals,
+  listStudentScoreTargets,
+  listStudentProfileScores,
+  listStudentCareerInterests,
 } from "./goals.read";
-import { replaceStudentGoals } from "./goals.write";
+import {
+  replaceStudentGoals,
+  saveStudentObjectives,
+  upsertStudentScoreTarget,
+} from "./goals.write";
 import {
   MAX_PRIMARY_GOALS,
   type StudentGoalInput,
@@ -18,10 +25,16 @@ export {
   listActiveAdmissionsDataset,
   listAdmissionsOptions,
   listStudentGoals,
+  listStudentScoreTargets,
+  listStudentProfileScores,
+  listStudentCareerInterests,
   getStudentPlanningProfile,
   replaceStudentGoals,
+  saveStudentObjectives,
+  upsertStudentScoreTarget,
 };
 
+/** Legacy view used by old career-centric goals page. */
 export async function getStudentGoalsView(userId: string) {
   const dataset = await listActiveAdmissionsDataset();
   const planningProfile = await getStudentPlanningProfile(userId);
@@ -53,6 +66,7 @@ export async function getStudentGoalsView(userId: string) {
   };
 }
 
+/** Legacy save used by old career-centric goals page. */
 export async function saveStudentGoalsView(
   userId: string,
   goals: StudentGoalInput[],
@@ -60,4 +74,48 @@ export async function saveStudentGoalsView(
 ) {
   await replaceStudentGoals(userId, goals, planningProfile);
   return getStudentGoalsView(userId);
+}
+
+/**
+ * Student-centric objectives view: score targets, profile scores,
+ * career interests, and admissions options for the positioning engine.
+ */
+export async function getStudentObjectivesView(userId: string) {
+  const dataset = await listActiveAdmissionsDataset();
+  const planningProfile = await getStudentPlanningProfile(userId);
+
+  const [scoreTargets, profileScores] = await Promise.all([
+    listStudentScoreTargets(userId),
+    listStudentProfileScores(userId),
+  ]);
+
+  if (!dataset) {
+    return {
+      dataset: null,
+      options: [],
+      scoreTargets,
+      profileScores,
+      careerInterests: [],
+      planningProfile,
+    };
+  }
+
+  const [options, careerInterests] = await Promise.all([
+    listAdmissionsOptions(dataset.id),
+    listStudentCareerInterests(userId),
+  ]);
+
+  return {
+    dataset: {
+      id: dataset.id,
+      version: dataset.version,
+      source: dataset.source,
+      publishedAt: dataset.publishedAt,
+    },
+    options,
+    scoreTargets,
+    profileScores,
+    careerInterests,
+    planningProfile,
+  };
 }

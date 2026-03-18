@@ -88,6 +88,14 @@ export type CurrentScore = {
   isPersonalBest: boolean;
 };
 
+export type CareerPositioningSummary = {
+  total: number;
+  above: number;
+  near: number;
+  below: number;
+  incomplete: number;
+};
+
 export type ProgressData = {
   masteryBreakdown: MasteryBreakdown;
   axisMastery: AxisMasteryItem[];
@@ -98,4 +106,6 @@ export type ProgressData = {
   currentScore: CurrentScore | null;
   goalMilestones: GoalMilestone[];
   defaultAtomsPerWeek: number | null;
+  studentM1Target: number | null;
+  careerPositioning: CareerPositioningSummary | null;
 };

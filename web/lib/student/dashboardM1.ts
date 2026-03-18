@@ -5,6 +5,7 @@ import {
   careers,
   studentGoals,
   studentGoalScores,
+  studentScoreTargets,
   universities,
 } from "@/db/schema";
 import { getUserDiagnosticSnapshot, getMasteryRows } from "./userQueries";
@@ -139,6 +140,26 @@ function computeConfidence(params: {
 async function getStudentM1Target(
   userId: string
 ): Promise<StudentM1Target | null> {
+  // Try new student-centric score targets first
+  const [targetRow] = await db
+    .select({ score: studentScoreTargets.score })
+    .from(studentScoreTargets)
+    .where(
+      and(
+        eq(studentScoreTargets.userId, userId),
+        eq(studentScoreTargets.testCode, "M1")
+      )
+    )
+    .limit(1);
+
+  if (targetRow) {
+    const parsed = Number(targetRow.score);
+    if (Number.isFinite(parsed)) {
+      return { score: parsed, goalLabel: "Tu objetivo M1" };
+    }
+  }
+
+  // Fallback to legacy per-career goal scores for existing users
   const rows = await db
     .select({
       score: studentGoalScores.score,
@@ -162,18 +183,14 @@ async function getStudentM1Target(
     .limit(1);
 
   const row = rows[0];
-  if (!row) {
-    return null;
-  }
+  if (!row) return null;
 
   const parsedScore = Number(row.score);
-  if (!Number.isFinite(parsedScore)) {
-    return null;
-  }
+  if (!Number.isFinite(parsedScore)) return null;
 
   return {
     score: parsedScore,
-    goalLabel: `Meta ${row.priority}: ${row.careerName} — ${row.universityName}`,
+    goalLabel: `${row.careerName} — ${row.universityName}`,
   };
 }
 
@@ -186,10 +203,10 @@ const EMPTY_STATES: Record<string, M1DashboardData["emptyState"]> = {
     ctaHref: "/portal/goals?mode=planning",
   },
   missing_target: {
-    title: "Define tu meta M1",
+    title: "Define tu objetivo M1",
     description:
-      "Agrega un puntaje objetivo M1 en tus metas para activar la brecha y el plan de esfuerzo.",
-    ctaLabel: "Configurar metas",
+      "Agrega un puntaje objetivo M1 en Mis Objetivos para activar la brecha y el plan de esfuerzo.",
+    ctaLabel: "Configurar objetivos",
     ctaHref: "/portal/goals",
   },
   missing_mastery: {

@@ -41,6 +41,9 @@ export type StudentApiErrorCode =
   | "VERIFICATION_ANSWER_FAILED"
   | "ACCESS_REQUIRED"
   | "VERIFICATION_REQUIRED"
+  | "OBJECTIVES_LOAD_FAILED"
+  | "OBJECTIVES_SAVE_FAILED"
+  | "SCORE_UPDATE_FAILED"
   | "UNKNOWN";
 
 type ErrorDetails = Record<string, unknown> | undefined;

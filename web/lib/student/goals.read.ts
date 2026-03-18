@@ -9,6 +9,8 @@ import {
   studentGoalBuffers,
   studentGoalScores,
   studentGoals,
+  studentScoreTargets,
+  studentProfileScores,
   studentPlanningProfiles,
   studentTestHours,
   universities,
@@ -129,6 +131,7 @@ export async function listAdmissionsOptions(datasetId: string) {
       offeringId: careerOfferings.id,
       careerName: careers.name,
       universityName: universities.name,
+      location: careerOfferings.location,
       externalCode: careerOfferings.externalCode,
       cutoffScore: offeringCutoffs.cutoffScore,
       cutoffYear: offeringCutoffs.admissionYear,
@@ -155,6 +158,7 @@ export async function listAdmissionsOptions(datasetId: string) {
       offeringId: string;
       careerName: string;
       universityName: string;
+      location: string | null;
       externalCode: string | null;
       lastCutoff: number | null;
       cutoffYear: number | null;
@@ -167,6 +171,7 @@ export async function listAdmissionsOptions(datasetId: string) {
       offeringId: row.offeringId,
       careerName: row.careerName,
       universityName: row.universityName,
+      location: row.location,
       externalCode: row.externalCode,
       lastCutoff: null,
       cutoffYear: null,
@@ -262,6 +267,122 @@ export async function getStudentPlanningProfile(userId: string) {
     reminderEmail: row.reminderEmail,
     updatedAt: row.updatedAt,
   };
+}
+
+// ---------------------------------------------------------------------------
+// STUDENT-CENTRIC SCORE TARGETS & PROFILE
+// ---------------------------------------------------------------------------
+
+export type ScoreTargetRow = {
+  testCode: string;
+  score: number;
+};
+
+export type ProfileScoreRow = {
+  scoreType: string;
+  score: number;
+};
+
+/** All PAES score targets for this student (M1, CL, CIENCIAS, etc.). */
+export async function listStudentScoreTargets(
+  userId: string
+): Promise<ScoreTargetRow[]> {
+  const rows = await db
+    .select({
+      testCode: studentScoreTargets.testCode,
+      score: studentScoreTargets.score,
+    })
+    .from(studentScoreTargets)
+    .where(eq(studentScoreTargets.userId, userId));
+
+  return rows.map((r) => ({
+    testCode: r.testCode,
+    score: normalizeWeightOrScore(r.score) ?? 0,
+  }));
+}
+
+/** Academic profile estimates (NEM, RANKING) for this student. */
+export async function listStudentProfileScores(
+  userId: string
+): Promise<ProfileScoreRow[]> {
+  const rows = await db
+    .select({
+      scoreType: studentProfileScores.scoreType,
+      score: studentProfileScores.score,
+    })
+    .from(studentProfileScores)
+    .where(eq(studentProfileScores.userId, userId));
+
+  return rows.map((r) => ({
+    scoreType: r.scoreType,
+    score: normalizeWeightOrScore(r.score) ?? 0,
+  }));
+}
+
+/** Student's career interest bookmarks (no scores, no buffers). */
+export async function listStudentCareerInterests(userId: string) {
+  const rows = await db
+    .select({
+      goalId: studentGoals.id,
+      offeringId: careerOfferings.id,
+      priority: studentGoals.priority,
+      careerName: careers.name,
+      universityName: universities.name,
+      location: careerOfferings.location,
+      cutoffScore: offeringCutoffs.cutoffScore,
+      cutoffYear: offeringCutoffs.admissionYear,
+    })
+    .from(studentGoals)
+    .innerJoin(careerOfferings, eq(studentGoals.offeringId, careerOfferings.id))
+    .innerJoin(careers, eq(careerOfferings.careerId, careers.id))
+    .innerJoin(universities, eq(careerOfferings.universityId, universities.id))
+    .leftJoin(
+      offeringCutoffs,
+      eq(offeringCutoffs.offeringId, careerOfferings.id)
+    )
+    .where(eq(studentGoals.userId, userId))
+    .orderBy(studentGoals.priority);
+
+  const byGoal = new Map<
+    string,
+    {
+      goalId: string;
+      offeringId: string;
+      priority: number;
+      careerName: string;
+      universityName: string;
+      location: string | null;
+      lastCutoff: number | null;
+      cutoffYear: number | null;
+    }
+  >();
+
+  for (const row of rows) {
+    const current = byGoal.get(row.goalId) ?? {
+      goalId: row.goalId,
+      offeringId: row.offeringId,
+      priority: row.priority,
+      careerName: row.careerName,
+      universityName: row.universityName,
+      location: row.location,
+      lastCutoff: null,
+      cutoffYear: null,
+    };
+
+    const cutoff = normalizeWeightOrScore(row.cutoffScore);
+    if (
+      cutoff !== null &&
+      (current.cutoffYear === null ||
+        (row.cutoffYear !== null && row.cutoffYear >= current.cutoffYear))
+    ) {
+      current.cutoffYear = row.cutoffYear;
+      current.lastCutoff = cutoff;
+    }
+
+    byGoal.set(row.goalId, current);
+  }
+
+  return [...byGoal.values()].sort((a, b) => a.priority - b.priority);
 }
 
 /** Returns the per-test weekly minutes for a given user + test code. */

@@ -1,8 +1,11 @@
 import {
   ELECTIVO_SUB_TESTS,
   ELECTIVO_TEST_CODE,
+  normalizeTestCode,
 } from "@/lib/student/constants";
 import { GoalDraft, GoalOption, StudentGoal } from "./types";
+
+export { normalizeTestCode };
 
 const TEST_LABELS: Record<string, string> = {
   NEM: "NEM (Notas)",
@@ -27,10 +30,6 @@ export function testLabel(code: string): string {
 
 export function isElectivoWeight(testCode: string): boolean {
   return normalizeTestCode(testCode) === ELECTIVO_TEST_CODE;
-}
-
-export function normalizeTestCode(testCode: string): string {
-  return testCode.trim().toUpperCase();
 }
 
 export function formatNumber(value: number | null): string {

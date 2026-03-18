@@ -820,36 +820,69 @@ All feedback screens should prioritize visual elements:
 
 ## 12. Goals and Objectives UX
 
-### 12.1 Layout
+### 12.1 Architecture: Student-Centric Objectives
 
-The goals page uses a **tabbed interface** with two tabs:
+The system uses a **student-centric** model for score objectives:
 
-**Tab 1: "Metas de admision"**
-- Goal editor: up to 3 career/university preferences by priority
-- Explicit "Guardar cambios" button
-- Success confirmation on save
+- **PAES score targets** (`studentScoreTargets`): the student owns one
+  target per test code (M1, CL, CIENCIAS, HISTORIA, M2). These are
+  general — not tied to any specific career.
+- **Academic profile estimates** (`studentProfileScores`): NEM and
+  Ranking estimates that evolve as the student's school year progresses.
+- **Career interests** (`studentGoals`, used as bookmarks): up to 5
+  career/university preferences. No per-career scores or buffers.
+- **Career positioning engine** (`careerPositioning.ts`): given the
+  student's targets + profile, computes how they position against any
+  career's weighted formula and cutoff.
 
-**Tab 2: "Simulador"**
-- Admission simulator: score inputs per test, buffer, results
-- Auto-computes on input change (no save button needed)
-- Clearly labeled: "Este simulador no guarda cambios — es solo para
-  explorar escenarios"
+### 12.2 "Mis Objetivos" Page Layout
 
-### 12.2 Saving Semantics
+A **unified page with no tabs**. Three flowing sections:
 
-- Goals (Tab 1): explicit save. Unsaved changes prompt a warning on
-  navigation.
-- Simulator (Tab 2): no persistence. Draft scores used for computation
-  only.
-- The two tabs are visually and functionally separated so students know
-  exactly what saves and what doesn't.
+**Section 1: "Mis objetivos de puntaje"**
+- PAES score targets: M1, Comprensión Lectora, Electivo (Ciencias /
+  Historia — system takes best), M2 (shown if any career requires it)
+- Academic profile: NEM and Ranking with quieter visual treatment,
+  framed as "tu estimación actual"
+- Explicit "Guardar" button with unsaved-changes warning on navigation
 
-### 12.3 Score Targets
+**Section 2: "¿Dónde me posiciono?"**
+- Live career positioning cards for each bookmarked career
+- Each card shows: career name, university, progress bar
+  (weighted score vs cutoff), status label, and margin
+- "Agregar carrera" button opens autocomplete search
+- Updates in real-time as score targets change
 
-- Adjustable independently per PAES test (M1, M2, etc.)
-- Safety buffer shown as a separate editable control
-- Target = last-year cutoff + buffer
-- Formula and weighting breakdown always visible for trust and transparency
+**Section 3: Career explorer** (below the fold)
+- Full-text search across all offerings
+- Inline positioning for any searched career
+- "Agregar a mis intereses" button to bookmark
+
+### 12.3 Saving Semantics
+
+- Score targets and profile estimates: explicit save. Unsaved changes
+  prompt a warning on navigation.
+- Career positioning: computed live from saved targets. Adding/removing
+  career bookmarks saves immediately.
+- No separate simulator tab — positioning IS the simulation, driven by
+  the student's own targets.
+
+### 12.4 Progress Page Integration
+
+- Single M1 target (from `studentScoreTargets`) with progress bar
+- Career positioning summary: "Con tu objetivo, calificas para X de Y
+  carreras de interés"
+- Score journey chart shows one goal line (the student's M1 target)
+
+### 12.5 Planning Mode (Onboarding)
+
+4-step flow for new students:
+
+1. **Career interest**: pick a career/university (exploratory language)
+2. **Suggested target**: system suggests M1 based on career cutoff +
+   30-pt margin; student adjusts freely
+3. **Commitment**: study hours/week, PAES date
+4. **Start diagnostic**: confirm and begin
 
 ---
 

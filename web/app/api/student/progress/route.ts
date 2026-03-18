@@ -59,7 +59,8 @@ export async function GET() {
         )
       : null;
 
-    const projectionTarget = targets.highestUserM1 ?? targets.highestTargetM1;
+    const projectionTarget =
+      targets.studentM1Target ?? targets.highestUserM1 ?? targets.highestTargetM1;
 
     const projectionMetadata = await buildProjectionMetadata({
       userId,
@@ -101,6 +102,8 @@ export async function GET() {
           weeksToReach: null as number | null,
         })),
         defaultAtomsPerWeek: targets.defaultAtomsPerWeek,
+        studentM1Target: targets.studentM1Target,
+        careerPositioning: targets.careerPositioning,
       },
     });
   } catch (error) {

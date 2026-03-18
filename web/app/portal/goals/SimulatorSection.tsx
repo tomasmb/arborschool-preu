@@ -8,12 +8,14 @@ import type {
 import {
   ELECTIVO_SUB_TESTS,
   ELECTIVO_TEST_CODE,
+  filterNumericInput,
 } from "@/lib/student/constants";
 import {
   GapIndicator,
   MissingTestsNotice,
   SimulatorFormulaTable,
 } from "./SimulatorResults";
+import { ScoreInput } from "./ScoreInput";
 import { normalizeTestCode, testLabel } from "./utils";
 
 type SimulatorSectionProps = {
@@ -126,53 +128,6 @@ function SimulatorNoGoalsNotice({
   );
 }
 
-function filterNumericInput(raw: string): string {
-  return raw.replace(/[^0-9]/g, "");
-}
-
-function ScoreInputCard({
-  testCode,
-  label,
-  weightPercent,
-  value,
-  onChange,
-}: {
-  testCode: string;
-  label: string;
-  weightPercent: number;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div
-      className="rounded-xl border border-gray-200 bg-gray-50/50 p-4
-        transition-colors hover:border-primary/20 space-y-2"
-    >
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-gray-800">{label}</span>
-        <span
-          className="text-xs font-medium text-gray-400 bg-gray-100
-            px-2 py-0.5 rounded-full"
-        >
-          {weightPercent}%
-        </span>
-      </div>
-      <input
-        type="text"
-        inputMode="numeric"
-        pattern="[0-9]*"
-        value={value}
-        onChange={(e) => onChange(filterNumericInput(e.target.value))}
-        placeholder="Ej: 700"
-        className="w-full rounded-lg border border-gray-200 bg-white px-3
-          py-2.5 text-sm font-medium tabular-nums
-          focus:border-primary focus:ring-2 focus:ring-primary/10
-          focus:outline-none transition-all placeholder:text-gray-300"
-      />
-    </div>
-  );
-}
-
 function ElectivoInputGroup({
   weightPercent,
   scores,
@@ -199,11 +154,10 @@ function ElectivoInputGroup({
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         {ELECTIVO_SUB_TESTS.map((sub) => (
-          <ScoreInputCard
+          <ScoreInput
             key={sub}
-            testCode={sub}
             label={testLabel(sub)}
-            weightPercent={weightPercent}
+            weightBadge={`${weightPercent}%`}
             value={scores[sub] ?? ""}
             onChange={(value) => onUpdateDraftScore(goalId, sub, value)}
           />
@@ -244,11 +198,10 @@ function ScoreInputs({
           }
 
           return (
-            <ScoreInputCard
+            <ScoreInput
               key={testCode}
-              testCode={testCode}
               label={testLabel(testCode)}
-              weightPercent={weight.weightPercent}
+              weightBadge={`${weight.weightPercent}%`}
               value={selectedDraft.scores[testCode] ?? ""}
               onChange={(value) =>
                 onUpdateDraftScore(selectedGoal.id, testCode, value)
