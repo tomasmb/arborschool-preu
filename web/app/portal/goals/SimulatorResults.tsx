@@ -1,3 +1,4 @@
+import { ELECTIVO_TEST_CODE } from "@/lib/student/simulator";
 import type { SimulatorPayload } from "./types";
 import { formatNumber, testLabel } from "./utils";
 
@@ -154,7 +155,11 @@ export function MissingTestsNotice({
       </svg>
       <p className="text-sm text-amber-700">
         Faltan puntajes:{" "}
-        {simulation.formula.missingTests.map(testLabel).join(", ")}
+        {simulation.formula.missingTests
+          .map((t) =>
+            t === ELECTIVO_TEST_CODE ? "Ciencias o Historia" : testLabel(t)
+          )
+          .join(", ")}
       </p>
     </div>
   );

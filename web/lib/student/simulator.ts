@@ -85,6 +85,23 @@ function normalizeTestCode(testCode: string): string {
   return testCode.trim().toUpperCase();
 }
 
+export const ELECTIVO_TEST_CODE = "ELECTIVO";
+export const ELECTIVO_SUB_TESTS = ["CIENCIAS", "HISTORIA"] as const;
+
+function resolveElectivoScore(
+  scores: Map<string, { score: number; source: ScoreSource }>
+): { score: number; source: ScoreSource; resolvedTest: string } | null {
+  let best: { score: number; source: ScoreSource; resolvedTest: string } | null =
+    null;
+  for (const sub of ELECTIVO_SUB_TESTS) {
+    const entry = scores.get(sub);
+    if (entry && (best === null || entry.score > best.score)) {
+      best = { score: entry.score, source: entry.source, resolvedTest: sub };
+    }
+  }
+  return best;
+}
+
 function mapGoalScores(goal: GoalWithScores) {
   const byTest = new Map<string, { score: number; source: ScoreSource }>();
   for (const score of goal.scores) {
@@ -129,8 +146,33 @@ function buildComponents(
 
   const components = weights.map((weight) => {
     const testCode = normalizeTestCode(weight.testCode);
-    const scoreEntry = scores.get(testCode);
 
+    if (testCode === ELECTIVO_TEST_CODE) {
+      const resolved = resolveElectivoScore(scores);
+      if (!resolved) {
+        missingTests.push(testCode);
+        return {
+          testCode,
+          weightPercent: weight.weightPercent,
+          score: null,
+          scoreSource: null,
+          contribution: null,
+        };
+      }
+      const contribution = round2(
+        resolved.score * (weight.weightPercent / 100)
+      );
+      weightedAccumulator += contribution;
+      return {
+        testCode: `${ELECTIVO_TEST_CODE}:${resolved.resolvedTest}`,
+        weightPercent: weight.weightPercent,
+        score: resolved.score,
+        scoreSource: resolved.source,
+        contribution,
+      };
+    }
+
+    const scoreEntry = scores.get(testCode);
     if (!scoreEntry) {
       missingTests.push(testCode);
       return {

@@ -6,6 +6,10 @@ import type {
   StudentGoal,
 } from "./types";
 import {
+  ELECTIVO_SUB_TESTS,
+  ELECTIVO_TEST_CODE,
+} from "@/lib/student/simulator";
+import {
   GapIndicator,
   MissingTestsNotice,
   SimulatorFormulaTable,
@@ -169,6 +173,46 @@ function ScoreInputCard({
   );
 }
 
+function ElectivoInputGroup({
+  weightPercent,
+  scores,
+  goalId,
+  onUpdateDraftScore,
+}: {
+  weightPercent: number;
+  scores: Record<string, string>;
+  goalId: string;
+  onUpdateDraftScore: (goalId: string, testCode: string, val: string) => void;
+}) {
+  return (
+    <div className="col-span-full space-y-2">
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-semibold text-gray-800">
+          Electivo (se usa el mejor)
+        </span>
+        <span
+          className="text-xs font-medium text-gray-400 bg-gray-100
+            px-2 py-0.5 rounded-full"
+        >
+          {weightPercent}%
+        </span>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {ELECTIVO_SUB_TESTS.map((sub) => (
+          <ScoreInputCard
+            key={sub}
+            testCode={sub}
+            label={testLabel(sub)}
+            weightPercent={weightPercent}
+            value={scores[sub] ?? ""}
+            onChange={(value) => onUpdateDraftScore(goalId, sub, value)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ScoreInputs({
   selectedGoal,
   selectedOption,
@@ -186,6 +230,19 @@ function ScoreInputs({
       <div className="grid gap-3 sm:grid-cols-2">
         {selectedOption.weights.map((weight) => {
           const testCode = normalizeTestCode(weight.testCode);
+
+          if (testCode === ELECTIVO_TEST_CODE) {
+            return (
+              <ElectivoInputGroup
+                key="ELECTIVO"
+                weightPercent={weight.weightPercent}
+                scores={selectedDraft.scores}
+                goalId={selectedGoal.id}
+                onUpdateDraftScore={onUpdateDraftScore}
+              />
+            );
+          }
+
           return (
             <ScoreInputCard
               key={testCode}
