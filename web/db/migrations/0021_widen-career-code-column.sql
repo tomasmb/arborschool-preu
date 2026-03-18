@@ -1,0 +1,1 @@
+ALTER TABLE "careers" ALTER COLUMN "code" SET DATA TYPE varchar(120);

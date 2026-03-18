@@ -129,6 +129,7 @@ export async function listAdmissionsOptions(datasetId: string) {
       offeringId: careerOfferings.id,
       careerName: careers.name,
       universityName: universities.name,
+      location: careerOfferings.location,
       externalCode: careerOfferings.externalCode,
       cutoffScore: offeringCutoffs.cutoffScore,
       cutoffYear: offeringCutoffs.admissionYear,
@@ -155,6 +156,7 @@ export async function listAdmissionsOptions(datasetId: string) {
       offeringId: string;
       careerName: string;
       universityName: string;
+      location: string | null;
       externalCode: string | null;
       lastCutoff: number | null;
       cutoffYear: number | null;
@@ -167,6 +169,7 @@ export async function listAdmissionsOptions(datasetId: string) {
       offeringId: row.offeringId,
       careerName: row.careerName,
       universityName: row.universityName,
+      location: row.location,
       externalCode: row.externalCode,
       lastCutoff: null,
       cutoffYear: null,

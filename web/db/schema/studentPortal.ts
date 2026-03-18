@@ -54,7 +54,7 @@ export const careers = pgTable(
   "careers",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    code: varchar("code", { length: 60 }).notNull().unique(),
+    code: varchar("code", { length: 120 }).notNull().unique(),
     name: varchar("name", { length: 180 }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   },
@@ -74,14 +74,16 @@ export const careerOfferings = pgTable(
     careerId: uuid("career_id")
       .references(() => careers.id, { onDelete: "restrict" })
       .notNull(),
+    location: varchar("location", { length: 120 }),
     externalCode: varchar("external_code", { length: 60 }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   },
   (table) => [
-    uniqueIndex("ux_career_offerings_dataset_uni_career").on(
+    uniqueIndex("ux_career_offerings_dataset_uni_career_loc").on(
       table.datasetId,
       table.universityId,
-      table.careerId
+      table.careerId,
+      table.location
     ),
     index("idx_career_offerings_dataset").on(table.datasetId),
   ]
