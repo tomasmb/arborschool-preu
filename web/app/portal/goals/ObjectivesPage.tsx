@@ -85,34 +85,31 @@ function ScoreObjectivesSection({
               onChange={(v) => onUpdateScore(tc, v)}
             />
           ))}
+          {hasM2Career && (
+            <ScoreInput
+              label={testLabel("M2")}
+              value={scoreTargets.M2 ?? ""}
+              onChange={(v) => onUpdateScore("M2", v)}
+            />
+          )}
         </div>
+      </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-gray-800">
-              Electivo
-            </span>
-            <span className="text-[10px] text-gray-400">se usa el mejor</span>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {ELECTIVO_SUB_TESTS.map((sub) => (
-              <ScoreInput
-                key={sub}
-                label={testLabel(sub)}
-                value={scoreTargets[sub] ?? ""}
-                onChange={(v) => onUpdateScore(sub, v)}
-              />
-            ))}
-          </div>
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-gray-800">Electivo</span>
+          <span className="text-[10px] text-gray-400">se usa el mejor</span>
         </div>
-
-        {hasM2Career && (
-          <ScoreInput
-            label={testLabel("M2")}
-            value={scoreTargets.M2 ?? ""}
-            onChange={(v) => onUpdateScore("M2", v)}
-          />
-        )}
+        <div className="grid gap-3 sm:grid-cols-2">
+          {ELECTIVO_SUB_TESTS.map((sub) => (
+            <ScoreInput
+              key={sub}
+              label={testLabel(sub)}
+              value={scoreTargets[sub] ?? ""}
+              onChange={(v) => onUpdateScore(sub, v)}
+            />
+          ))}
+        </div>
       </div>
 
       <div className="space-y-3 pt-2 border-t border-gray-100">
