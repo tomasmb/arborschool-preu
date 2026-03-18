@@ -68,16 +68,21 @@ export function NextMiniClaseCTA() {
         </svg>
       </div>
       <div className="flex-1 min-w-0">
+        <p className="text-xs font-medium text-primary">
+          Siguiente paso recomendado
+        </p>
         <p className="text-sm font-semibold text-gray-900 truncate">
           {action.firstAtom.title}
         </p>
-        <p className="text-xs text-gray-500">{action.axis}</p>
+        <p className="text-xs text-gray-500">
+          {action.axis} · Dominar este concepto mejora tu puntaje PAES
+        </p>
       </div>
       <Link
         href={`/portal/study?atom=${encodeURIComponent(action.firstAtom.atomId)}`}
         className="btn-primary text-xs px-4 py-2 shrink-0"
       >
-        Mini-clase
+        Comenzar
       </Link>
     </section>
   );
