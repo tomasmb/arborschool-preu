@@ -1,5 +1,19 @@
 import { GoalDraft, GoalOption, StudentGoal } from "./types";
 
+const TEST_LABELS: Record<string, string> = {
+  NEM: "NEM (Notas)",
+  RANKING: "Ranking",
+  CL: "Comprensión Lectora",
+  M1: "Matemática 1",
+  M2: "Matemática 2",
+  CIENCIAS: "Ciencias",
+  HISTORIA: "Historia y Cs. Sociales",
+};
+
+export function testLabel(code: string): string {
+  return TEST_LABELS[code.trim().toUpperCase()] ?? code;
+}
+
 export function normalizeTestCode(testCode: string): string {
   return testCode.trim().toUpperCase();
 }

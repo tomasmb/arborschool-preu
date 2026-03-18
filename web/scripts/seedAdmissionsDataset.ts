@@ -12,6 +12,10 @@ import {
 // ---------------------------------------------------------------------------
 // Reference data — universities, careers, offerings
 // Source: PreuAI / DEMRE — Admisión 2026 (verified Jan 2026)
+//
+// NOTE: Cross-check cutoff scores against latest DEMRE results. Known
+// discrepancies (as of Mar 2026): Medicina PUC seed=958.4, DEMRE=955.2.
+// Weights have been validated (all sum to 100).
 // ---------------------------------------------------------------------------
 
 const UNIVERSITIES: Record<string, { name: string; shortName: string }> = {
@@ -319,7 +323,7 @@ const OFFERINGS: Offering[] = [
     c: "ingenieria-civil",
     u: "uai",
     s: 814.95,
-    w: { NEM: 10, RANKING: 30, CL: 15, M1: 35, CIENCIAS: 10 },
+    w: { NEM: 10, RANKING: 30, CL: 10, M1: 35, M2: 5, CIENCIAS: 10 },
   },
   {
     c: "ingenieria-comercial",
@@ -1362,7 +1366,25 @@ async function replaceWeights(
 // Main
 // ---------------------------------------------------------------------------
 
+function validateOfferings() {
+  let valid = true;
+  for (const o of OFFERINGS) {
+    const sum = Object.values(o.w).reduce((acc, v) => acc + v, 0);
+    if (sum !== 100) {
+      console.error(
+        `[VALIDATION] Weights for ${o.c} @ ${o.u} sum to ${sum}, expected 100`
+      );
+      valid = false;
+    }
+  }
+  return valid;
+}
+
 async function run() {
+  if (!validateOfferings()) {
+    throw new Error("Offering weights validation failed — fix before seeding");
+  }
+
   const datasetId = await upsertDataset();
 
   for (const o of OFFERINGS) {

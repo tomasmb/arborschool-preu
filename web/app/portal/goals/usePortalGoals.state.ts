@@ -268,10 +268,11 @@ export function useGoalsSimulator(
       }
     }
 
-    runSimulator();
+    const debounceTimer = setTimeout(runSimulator, 400);
 
     return () => {
       cancelled = true;
+      clearTimeout(debounceTimer);
     };
   }, [
     selectedGoal,

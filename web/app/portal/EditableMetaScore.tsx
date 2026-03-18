@@ -29,18 +29,29 @@ export function EditableMetaScore({
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const committingRef = useRef(false);
 
   const commitEdit = useCallback(async () => {
+    if (committingRef.current) return;
+    committingRef.current = true;
+
     const raw = inputRef.current?.value ?? "";
     const parsed = Math.round(Number(raw));
     setEditing(false);
 
-    if (!Number.isFinite(parsed) || parsed < 100 || parsed > 1000) return;
-    if (parsed === target) return;
+    if (!Number.isFinite(parsed) || parsed < 100 || parsed > 1000) {
+      committingRef.current = false;
+      return;
+    }
+    if (parsed === target) {
+      committingRef.current = false;
+      return;
+    }
 
     setSaving(true);
     const ok = await patchPrimaryScore(parsed);
     setSaving(false);
+    committingRef.current = false;
 
     if (ok) {
       onTargetChange(parsed);
@@ -53,10 +64,9 @@ export function EditableMetaScore({
         <span className="text-xs text-gray-500">Meta:</span>
         <input
           ref={inputRef}
-          type="number"
-          min={100}
-          max={1000}
-          step={1}
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
           defaultValue={target}
           autoFocus
           onBlur={commitEdit}

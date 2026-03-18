@@ -48,8 +48,27 @@ async function refreshAccessIfStale(
 }
 
 /**
+ * Count atoms mastered through actual study sessions (not diagnostic).
+ * This is what the free-tier limit is based on.
+ */
+async function countStudyMasteredAtoms(userId: string): Promise<number> {
+  const [result] = await db
+    .select({ cnt: count() })
+    .from(atomMastery)
+    .where(
+      and(
+        eq(atomMastery.userId, userId),
+        eq(atomMastery.isMastered, true),
+        eq(atomMastery.masterySource, "study")
+      )
+    );
+  return result?.cnt ?? 0;
+}
+
+/**
  * Check if a free-tier user can still study a new atom.
- * Free users get 1 atom before being gated.
+ * Free users get 1 mini-clase (study session) before being gated.
+ * Diagnostic-sourced mastery does NOT count toward this limit.
  */
 export async function canStudyNewAtom(userId: string): Promise<boolean> {
   const user = await db
@@ -69,14 +88,8 @@ export async function canStudyNewAtom(userId: string): Promise<boolean> {
 
   if (hasFullAccess(effective)) return true;
 
-  const [result] = await db
-    .select({ masteredCount: count() })
-    .from(atomMastery)
-    .where(
-      and(eq(atomMastery.userId, userId), eq(atomMastery.isMastered, true))
-    );
-
-  return (result?.masteredCount ?? 0) < FREE_TIER_ATOM_LIMIT;
+  const studyMastered = await countStudyMasteredAtoms(userId);
+  return studyMastered < FREE_TIER_ATOM_LIMIT;
 }
 
 /**
@@ -113,19 +126,12 @@ export async function getUserAccessStatus(userId: string): Promise<{
   const effective = { ...user[0], subscriptionStatus: resolvedStatus };
   const isFullAccess = hasFullAccess(effective);
 
-  const [result] = await db
-    .select({ masteredCount: count() })
-    .from(atomMastery)
-    .where(
-      and(eq(atomMastery.userId, userId), eq(atomMastery.isMastered, true))
-    );
-
-  const masteredCount = result?.masteredCount ?? 0;
+  const studyMastered = await countStudyMasteredAtoms(userId);
 
   return {
-    hasAccess: isFullAccess || masteredCount < FREE_TIER_ATOM_LIMIT,
+    hasAccess: isFullAccess || studyMastered < FREE_TIER_ATOM_LIMIT,
     subscriptionStatus: resolvedStatus,
-    masteredAtomCount: masteredCount,
+    masteredAtomCount: studyMastered,
     freeAtomLimit: FREE_TIER_ATOM_LIMIT,
   };
 }

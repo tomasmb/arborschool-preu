@@ -111,6 +111,11 @@ export function useGoalDraftMutations(state: GoalsState) {
         simulatorInteractionTracked.current = true;
       }
 
+      if (value === "") {
+        updateGoalDraft(goalId, (d) => ({ ...d, bufferPoints: 0 }));
+        return;
+      }
+
       const parsed = Number(value);
       if (!Number.isFinite(parsed) || parsed < 0) {
         return;
