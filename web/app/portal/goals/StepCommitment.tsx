@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import type { PlanningProfileDraft } from "./types";
 import {
   buildExamDate,
@@ -35,12 +36,33 @@ export function StepCommitment({
     });
   }
 
-  const { year: examYear, period: examPeriod } = parseExamDate(
-    planningProfile.examDate
-  );
+  const parsed = parseExamDate(planningProfile.examDate);
+  const [examYear, setExamYear] = useState(parsed.year);
+  const [examPeriod, setExamPeriod] = useState(parsed.period);
 
-  function handleExamChange(y: string, p: string) {
-    onPlanningProfileChange({ examDate: buildExamDate(y, p) });
+  useEffect(() => {
+    const next = parseExamDate(planningProfile.examDate);
+    setExamYear(next.year);
+    setExamPeriod(next.period);
+  }, [planningProfile.examDate]);
+
+  function handleYearChange(y: string) {
+    setExamYear(y);
+    if (!y) {
+      setExamPeriod("");
+      onPlanningProfileChange({ examDate: "" });
+      return;
+    }
+    if (examPeriod) {
+      onPlanningProfileChange({ examDate: buildExamDate(y, examPeriod) });
+    }
+  }
+
+  function handlePeriodChange(p: string) {
+    setExamPeriod(p);
+    if (examYear && p) {
+      onPlanningProfileChange({ examDate: buildExamDate(examYear, p) });
+    }
   }
 
   return (
@@ -110,7 +132,7 @@ export function StepCommitment({
           <div className="grid gap-3 sm:grid-cols-2">
             <select
               value={examYear}
-              onChange={(e) => handleExamChange(e.target.value, examPeriod)}
+              onChange={(e) => handleYearChange(e.target.value)}
               className="w-full rounded-xl border border-gray-300 px-4 py-3
                 text-base focus:border-primary focus:ring-1
                 focus:ring-primary/20 bg-white"
@@ -124,7 +146,7 @@ export function StepCommitment({
             </select>
             <select
               value={examPeriod}
-              onChange={(e) => handleExamChange(examYear, e.target.value)}
+              onChange={(e) => handlePeriodChange(e.target.value)}
               disabled={!examYear}
               className={[
                 "w-full rounded-xl border border-gray-300 px-4 py-3",
