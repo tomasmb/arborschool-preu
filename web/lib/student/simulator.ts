@@ -2,6 +2,8 @@ import { getStudentGoalsView } from "@/lib/student/goals";
 import {
   ELECTIVO_TEST_CODE,
   ELECTIVO_SUB_TESTS,
+  round2,
+  normalizeTestCode,
 } from "@/lib/student/constants";
 
 type ScoreSource = "student" | "system" | "query";
@@ -81,19 +83,14 @@ export type StudentGoalSimulationResult = {
   };
 };
 
-function round2(value: number): number {
-  return Math.round(value * 100) / 100;
-}
-
-function normalizeTestCode(testCode: string): string {
-  return testCode.trim().toUpperCase();
-}
-
 function resolveElectivoScore(
   scores: Map<string, { score: number; source: ScoreSource }>
 ): { score: number; source: ScoreSource; resolvedTest: string } | null {
-  let best: { score: number; source: ScoreSource; resolvedTest: string } | null =
-    null;
+  let best: {
+    score: number;
+    source: ScoreSource;
+    resolvedTest: string;
+  } | null = null;
   for (const sub of ELECTIVO_SUB_TESTS) {
     const entry = scores.get(sub);
     if (entry && (best === null || entry.score > best.score)) {

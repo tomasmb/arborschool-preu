@@ -5,6 +5,8 @@ import {
   studentGoalBuffers,
   studentGoals,
   studentGoalScores,
+  studentScoreTargets,
+  studentProfileScores,
   studentPlanningProfiles,
   studentTestHours,
 } from "@/db/schema";
@@ -16,6 +18,12 @@ import {
   type StudentPlanningProfileInput,
   validateGoalInputs,
 } from "./goals.types";
+import {
+  SCORE_MIN,
+  SCORE_MAX,
+  isValidScore,
+  MAX_CAREER_INTERESTS,
+} from "@/lib/student/constants";
 
 type GoalIdRow = { id: string; offeringId: string };
 type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -267,6 +275,176 @@ export async function updatePrimaryGoalScore(
   }
 
   return { testCode: normalized, score: rounded };
+}
+
+// ---------------------------------------------------------------------------
+// STUDENT-CENTRIC SCORE TARGETS & PROFILE
+// ---------------------------------------------------------------------------
+
+export type ScoreTargetInput = {
+  testCode: string;
+  score: number;
+};
+
+export type ProfileScoreInput = {
+  scoreType: string;
+  score: number;
+};
+
+export type CareerInterestInput = {
+  offeringId: string;
+  priority: number;
+};
+
+function validateScoreTargetInputs(targets: ScoreTargetInput[]): string | null {
+  for (const t of targets) {
+    if (!t.testCode || typeof t.testCode !== "string") {
+      return "Each score target requires a testCode";
+    }
+    if (!isValidScore(t.score)) {
+      return `Scores must be between ${SCORE_MIN} and ${SCORE_MAX}`;
+    }
+  }
+  return null;
+}
+
+function validateProfileScoreInputs(
+  scores: ProfileScoreInput[]
+): string | null {
+  const validTypes = new Set(["NEM", "RANKING"]);
+  for (const s of scores) {
+    if (!validTypes.has(s.scoreType)) {
+      return `Invalid profile score type: ${s.scoreType}`;
+    }
+    if (!isValidScore(s.score)) {
+      return `Profile scores must be between ${SCORE_MIN} and ${SCORE_MAX}`;
+    }
+  }
+  return null;
+}
+
+/**
+ * Upserts a single PAES score target (e.g. from the dashboard M1 editor).
+ */
+export async function upsertStudentScoreTarget(
+  userId: string,
+  testCode: string,
+  score: number
+) {
+  const normalized = testCode.trim().toUpperCase();
+  const rounded = Math.round(score);
+  if (!isValidScore(rounded)) {
+    throw new Error(`Score must be between ${SCORE_MIN} and ${SCORE_MAX}`);
+  }
+
+  const scoreStr = normalizeScore(rounded);
+  const [existing] = await db
+    .select({ id: studentScoreTargets.id })
+    .from(studentScoreTargets)
+    .where(
+      and(
+        eq(studentScoreTargets.userId, userId),
+        eq(studentScoreTargets.testCode, normalized)
+      )
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(studentScoreTargets)
+      .set({ score: scoreStr, updatedAt: new Date() })
+      .where(eq(studentScoreTargets.id, existing.id));
+  } else {
+    await db.insert(studentScoreTargets).values({
+      userId,
+      testCode: normalized,
+      score: scoreStr,
+    });
+  }
+
+  return { testCode: normalized, score: rounded };
+}
+
+/**
+ * Saves all student objectives at once: score targets, profile scores,
+ * and career interests in a single transaction-safe operation.
+ */
+export async function saveStudentObjectives(
+  userId: string,
+  params: {
+    scoreTargets: ScoreTargetInput[];
+    profileScores: ProfileScoreInput[];
+    careerInterests: CareerInterestInput[];
+    planningProfile?: StudentPlanningProfileInput;
+  }
+) {
+  const scoreErr = validateScoreTargetInputs(params.scoreTargets);
+  if (scoreErr) throw new Error(scoreErr);
+
+  const profileErr = validateProfileScoreInputs(params.profileScores);
+  if (profileErr) throw new Error(profileErr);
+
+  if (params.careerInterests.length > MAX_CAREER_INTERESTS) {
+    throw new Error(`Maximum ${MAX_CAREER_INTERESTS} career interests allowed`);
+  }
+
+  const offeringIds = params.careerInterests.map((i) => i.offeringId);
+  if (offeringIds.length > 0) {
+    await assertOfferingsExist(offeringIds);
+  }
+
+  const normalizedProfile = normalizePlanningProfileInput(
+    params.planningProfile
+  );
+
+  await db.transaction(async (tx) => {
+    // Score targets
+    await tx
+      .delete(studentScoreTargets)
+      .where(eq(studentScoreTargets.userId, userId));
+    if (params.scoreTargets.length > 0) {
+      await tx.insert(studentScoreTargets).values(
+        params.scoreTargets.map((t) => ({
+          userId,
+          testCode: t.testCode.trim().toUpperCase(),
+          score: normalizeScore(Math.round(t.score)),
+          updatedAt: new Date(),
+        }))
+      );
+    }
+
+    // Profile scores
+    await tx
+      .delete(studentProfileScores)
+      .where(eq(studentProfileScores.userId, userId));
+    if (params.profileScores.length > 0) {
+      await tx.insert(studentProfileScores).values(
+        params.profileScores.map((s) => ({
+          userId,
+          scoreType: s.scoreType.trim().toUpperCase(),
+          score: normalizeScore(Math.round(s.score)),
+          updatedAt: new Date(),
+        }))
+      );
+    }
+
+    // Career interests (reuses studentGoals as bookmarks)
+    await clearExistingGoals(tx, userId);
+    if (params.careerInterests.length > 0) {
+      await tx.insert(studentGoals).values(
+        params.careerInterests.map((i) => ({
+          userId,
+          offeringId: i.offeringId,
+          priority: i.priority,
+          isPrimary: i.priority === 1,
+          updatedAt: new Date(),
+        }))
+      );
+    }
+
+    // Planning profile
+    await upsertPlanningProfile(tx, userId, normalizedProfile);
+  });
 }
 
 /** Creates or updates the per-test weekly minutes for a student. */

@@ -178,7 +178,8 @@ export function ProgressClient() {
     ? milestones.filter((m) => m.goalId === effectiveGoalId)
     : [];
 
-  const selectedMeta = selectedMilestones[0]?.userM1Target ?? null;
+  const selectedMeta =
+    data?.studentM1Target ?? selectedMilestones[0]?.userM1Target ?? null;
 
   const isPreFirstTest = data?.retestStatus.isFirstTest ?? false;
 
@@ -206,6 +207,8 @@ export function ProgressClient() {
             selectedGoalId={effectiveGoalId}
             onSelectGoal={setSelectedGoalId}
             chartVisible={!isPreFirstTest}
+            studentM1Target={data.studentM1Target}
+            careerPositioning={data.careerPositioning}
           />
 
           {isPreFirstTest ? (

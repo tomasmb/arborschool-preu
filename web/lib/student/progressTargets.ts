@@ -1,18 +1,24 @@
 /**
- * Progress Targets — computes M1 target scores from student career goals.
+ * Progress Targets — student-centric M1 objective + career context.
  *
- * For each active student goal, calculates the PAES M1 score needed
- * to reach the career's cutoff + buffer, given the student's scores
- * in non-M1 tests and the offering's weight distribution.
+ * Reads the student's own M1 target from studentScoreTargets and
+ * computes career positioning context (how many bookmarked careers
+ * the student qualifies for given their current targets).
  */
 
 import {
+  listStudentScoreTargets,
+  listStudentProfileScores,
+  listStudentCareerInterests,
   listActiveAdmissionsDataset,
   listAdmissionsOptions,
-  listStudentGoals,
   getStudentPlanningProfile,
   getStudentTestHours,
 } from "./goals.read";
+import {
+  computeInterestPositions,
+  type CareerPositionResult,
+} from "./careerPositioning";
 import { EFFECTIVE_MINUTES_PER_ATOM } from "@/lib/diagnostic/scoringConstants";
 
 export type GoalMilestone = {
@@ -28,27 +34,34 @@ export type GoalMilestone = {
   missingNonM1Tests: string[];
 };
 
+export type CareerPositioningSummary = {
+  total: number;
+  above: number;
+  near: number;
+  below: number;
+  incomplete: number;
+  positions: CareerPositionResult[];
+};
+
 export type ProgressTargets = {
   milestones: GoalMilestone[];
   primaryTargetM1: number | null;
   highestTargetM1: number | null;
   highestUserM1: number | null;
   defaultAtomsPerWeek: number | null;
+  /** Student-centric: the student's own M1 target from scoreTargets. */
+  studentM1Target: number | null;
+  /** How many bookmarked careers the student qualifies for. */
+  careerPositioning: CareerPositioningSummary | null;
 };
 
 const M1_TEST_CODE = "M1";
 
-function normalizeTestCode(testCode: string): string {
-  return testCode.trim().toUpperCase();
-}
-
 /**
- * Computes the M1 PAES score needed for each student goal.
- *
- * Formula per goal:
- *   neededM1 = (cutoff + buffer - nonM1Contributions) / (m1Weight / 100)
- *
- * If any non-M1 test score is missing, neededM1Score is null for that goal.
+ * Returns progress targets using the student-centric model:
+ * - studentM1Target: the student's own M1 objective
+ * - careerPositioning: summary of how their targets map to careers
+ * - Legacy milestones kept for backward compatibility during migration
  */
 export async function getProgressTargets(
   userId: string
@@ -65,112 +78,72 @@ export async function getProgressTargets(
     ? Math.round(effectiveMinutes / EFFECTIVE_MINUTES_PER_ATOM)
     : null;
 
+  // Load student-centric data
+  const [scoreTargets, profileScores] = await Promise.all([
+    listStudentScoreTargets(userId),
+    listStudentProfileScores(userId),
+  ]);
+
+  const m1Target =
+    scoreTargets.find((t) => t.testCode === M1_TEST_CODE)?.score ?? null;
+
   if (!dataset) {
     return {
       milestones: [],
-      primaryTargetM1: null,
-      highestTargetM1: null,
-      highestUserM1: null,
+      primaryTargetM1: m1Target,
+      highestTargetM1: m1Target,
+      highestUserM1: m1Target,
       defaultAtomsPerWeek,
+      studentM1Target: m1Target,
+      careerPositioning: null,
     };
   }
 
-  const [options, goals] = await Promise.all([
+  const [options, careerInterests] = await Promise.all([
     listAdmissionsOptions(dataset.id),
-    listStudentGoals(userId),
+    listStudentCareerInterests(userId),
   ]);
 
-  const milestones: GoalMilestone[] = [];
+  const positions = computeInterestPositions(
+    careerInterests,
+    options,
+    scoreTargets,
+    profileScores
+  );
 
-  for (const goal of goals) {
-    const option = options.find((o) => o.offeringId === goal.offeringId);
-    if (!option) continue;
+  const careerPositioning: CareerPositioningSummary = {
+    total: positions.length,
+    above: positions.filter((p) => p.status === "above").length,
+    near: positions.filter((p) => p.status === "near").length,
+    below: positions.filter((p) => p.status === "below").length,
+    incomplete: positions.filter((p) => p.status === "incomplete").length,
+    positions,
+  };
 
-    const bufferPoints = goal.buffer.points;
-    const bufferedTarget =
-      goal.lastCutoff !== null ? goal.lastCutoff + bufferPoints : null;
-
-    const m1Weight = option.weights.find(
-      (w) => normalizeTestCode(w.testCode) === M1_TEST_CODE
-    );
-
-    const goalScores = new Map(
-      goal.scores.map((s) => [normalizeTestCode(s.testCode), s.score])
-    );
-    const userM1Target = goalScores.get(M1_TEST_CODE) ?? null;
-
-    if (!m1Weight || !bufferedTarget) {
-      milestones.push({
-        goalId: goal.id,
-        label: `${option.careerName} — ${option.universityName}`,
-        careerName: option.careerName,
-        universityName: option.universityName,
-        isPrimary: goal.isPrimary,
-        neededM1Score: null,
-        userM1Target,
-        lastCutoff: goal.lastCutoff,
-        bufferPoints,
-        missingNonM1Tests: [],
-      });
-      continue;
-    }
-
-    let nonM1Sum = 0;
-    const missingNonM1Tests: string[] = [];
-
-    for (const weight of option.weights) {
-      const testCode = normalizeTestCode(weight.testCode);
-      if (testCode === M1_TEST_CODE) continue;
-
-      const score = goalScores.get(testCode);
-      if (score != null) {
-        nonM1Sum += score * (weight.weightPercent / 100);
-      } else {
-        missingNonM1Tests.push(testCode);
-      }
-    }
-
-    let neededM1Score: number | null = null;
-    if (missingNonM1Tests.length === 0) {
-      const m1Fraction = m1Weight.weightPercent / 100;
-      const rawNeeded = (bufferedTarget - nonM1Sum) / m1Fraction;
-      neededM1Score = Math.round(Math.max(100, Math.min(1000, rawNeeded)));
-    }
-
-    milestones.push({
-      goalId: goal.id,
-      label: `${option.careerName} — ${option.universityName}`,
-      careerName: option.careerName,
-      universityName: option.universityName,
-      isPrimary: goal.isPrimary,
-      neededM1Score,
-      userM1Target,
-      lastCutoff: goal.lastCutoff,
-      bufferPoints,
-      missingNonM1Tests,
-    });
-  }
-
-  const primaryGoal = milestones.find((m) => m.isPrimary);
-  const primaryTargetM1 = primaryGoal?.neededM1Score ?? null;
-
-  const validTargets = milestones
-    .filter((m) => m.neededM1Score !== null)
-    .map((m) => m.neededM1Score!);
-  const highestTargetM1 =
-    validTargets.length > 0 ? Math.max(...validTargets) : null;
-
-  const userM1Values = milestones
-    .filter((m) => m.userM1Target !== null)
-    .map((m) => m.userM1Target!);
-  const highestUserM1 =
-    userM1Values.length > 0 ? Math.max(...userM1Values) : null;
+  // Build legacy milestones from career interests for backward compat
+  const milestones: GoalMilestone[] = careerInterests.map((ci) => {
+    const position = positions.find((p) => p.offeringId === ci.offeringId);
+    return {
+      goalId: ci.goalId,
+      label: `${ci.careerName} — ${ci.universityName}`,
+      careerName: ci.careerName,
+      universityName: ci.universityName,
+      isPrimary: ci.priority === 1,
+      neededM1Score: null,
+      userM1Target: m1Target,
+      lastCutoff: position?.lastCutoff ?? ci.lastCutoff,
+      bufferPoints: 0,
+      missingNonM1Tests: position?.missingTests ?? [],
+    };
+  });
 
   return {
     milestones,
-    primaryTargetM1,
-    highestTargetM1,
-    highestUserM1,
+    primaryTargetM1: m1Target,
+    highestTargetM1: m1Target,
+    highestUserM1: m1Target,
     defaultAtomsPerWeek,
+    studentM1Target: m1Target,
+    careerPositioning,
   };
 }

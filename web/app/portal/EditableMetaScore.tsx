@@ -2,10 +2,11 @@
 
 import { useCallback, useRef, useState } from "react";
 import { formatScore } from "./formatters";
+import { isValidScore } from "@/lib/student/constants";
 
-async function patchPrimaryScore(score: number): Promise<boolean> {
+async function patchScoreTarget(score: number): Promise<boolean> {
   try {
-    const res = await fetch("/api/student/goals/primary-score", {
+    const res = await fetch("/api/student/objectives", {
       method: "PATCH",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -39,7 +40,7 @@ export function EditableMetaScore({
     const parsed = Math.round(Number(raw));
     setEditing(false);
 
-    if (!Number.isFinite(parsed) || parsed < 100 || parsed > 1000) {
+    if (!isValidScore(parsed)) {
       committingRef.current = false;
       return;
     }
@@ -49,7 +50,7 @@ export function EditableMetaScore({
     }
 
     setSaving(true);
-    const ok = await patchPrimaryScore(parsed);
+    const ok = await patchScoreTarget(parsed);
     setSaving(false);
     committingRef.current = false;
 

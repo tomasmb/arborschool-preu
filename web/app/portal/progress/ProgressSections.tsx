@@ -4,13 +4,14 @@ import Link from "next/link";
 import { RETEST_ATOM_THRESHOLD } from "@/lib/diagnostic/scoringConstants";
 import type {
   AxisMasteryItem,
+  CareerPositioningSummary,
   RetestStatus,
   ScoreDataPoint,
   GoalMilestone,
 } from "./types";
 
 // ============================================================================
-// GOAL MILESTONES SECTION
+// SCORE OBJECTIVE SECTION (student-centric: single M1 target + career context)
 // ============================================================================
 
 export function GoalMilestonesSection({
@@ -19,168 +20,123 @@ export function GoalMilestonesSection({
   selectedGoalId,
   onSelectGoal,
   chartVisible = true,
+  studentM1Target,
+  careerPositioning,
 }: {
   milestones: GoalMilestone[];
   currentScore: { mid: number } | null;
   selectedGoalId: string | null;
   onSelectGoal: (goalId: string) => void;
   chartVisible?: boolean;
+  studentM1Target?: number | null;
+  careerPositioning?: CareerPositioningSummary | null;
 }) {
-  if (milestones.length === 0) {
+  const m1Target = studentM1Target ?? null;
+
+  if (m1Target === null && milestones.length === 0) {
     return (
       <section className="card-section space-y-3">
         <h2 className="text-base font-semibold text-gray-800">
-          Metas de carrera
+          Tu objetivo M1
         </h2>
         <p className="text-sm text-gray-500">
-          Agrega tus metas en{" "}
+          Define tu objetivo de puntaje en{" "}
           <Link
             href="/portal/goals"
             className="text-primary font-medium hover:underline"
           >
-            Metas
+            Mis Objetivos
           </Link>{" "}
-          para ver cuánto necesitas en M1 para cada carrera.
+          para hacer seguimiento de tu progreso.
         </p>
       </section>
     );
   }
 
+  const currentMid = currentScore?.mid ?? null;
+  const reachedGoal =
+    m1Target !== null && currentMid !== null && currentMid >= m1Target;
+  const gap =
+    m1Target !== null && currentMid !== null ? m1Target - currentMid : null;
+  const progressPct =
+    m1Target !== null && currentMid !== null
+      ? Math.min(100, Math.round((currentMid / m1Target) * 100))
+      : null;
+
   return (
     <section className="card-section space-y-4">
       <h2 className="text-lg font-serif font-semibold text-primary">
-        Metas por carrera
+        Tu objetivo M1
       </h2>
-      {chartVisible && (
-        <p className="text-xs text-gray-400 -mt-2">
-          Selecciona una carrera para ver su meta en el gráfico
-        </p>
-      )}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {milestones.map((m) => (
-          <MilestoneCard
-            key={m.goalId}
-            milestone={m}
-            currentMid={currentScore?.mid ?? null}
-            isSelected={m.goalId === selectedGoalId}
-            onSelect={() => onSelectGoal(m.goalId)}
-          />
-        ))}
-      </div>
-    </section>
-  );
-}
 
-function MilestoneCard({
-  milestone,
-  currentMid,
-  isSelected,
-  onSelect,
-}: {
-  milestone: GoalMilestone;
-  currentMid: number | null;
-  isSelected: boolean;
-  onSelect: () => void;
-}) {
-  const { userM1Target, weeksToReach, isPrimary } = milestone;
-
-  const reachedGoal =
-    userM1Target !== null && currentMid !== null && currentMid >= userM1Target;
-
-  const borderColor = isSelected
-    ? "ring-2 ring-primary border-primary/30 bg-primary/5"
-    : reachedGoal
-      ? "border-emerald-200 bg-emerald-50/50"
-      : "border-gray-200 hover:border-gray-300";
-
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onSelect}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") onSelect();
-      }}
-      className={`rounded-xl border p-4 space-y-2 cursor-pointer
-        transition-all ${borderColor}`}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-gray-800 truncate">
-            {milestone.careerName}
-          </p>
-          <p className="text-xs text-gray-500 truncate">
-            {milestone.universityName}
-          </p>
-        </div>
-        {isPrimary && (
-          <span className="shrink-0 text-[10px] font-medium bg-primary/10 text-primary rounded-full px-2 py-0.5">
-            Principal
-          </span>
-        )}
-      </div>
-
-      {userM1Target !== null ? (
-        <div className="space-y-1">
-          <div className="flex items-baseline gap-2">
-            <span className="text-lg font-bold text-gray-900 tabular-nums">
-              {userM1Target}
+      {m1Target !== null && (
+        <div className="space-y-3">
+          <div className="flex items-baseline gap-3">
+            <span className="text-2xl font-bold text-gray-900 tabular-nums">
+              {m1Target}
             </span>
-            <span className="text-xs text-gray-500">tu meta M1</span>
+            <span className="text-sm text-gray-500">tu objetivo</span>
+            {currentMid !== null && (
+              <>
+                <span className="text-gray-300">|</span>
+                <span className="text-sm text-gray-500">
+                  Actual:{" "}
+                  <span className="font-semibold text-gray-800">
+                    {currentMid}
+                  </span>
+                </span>
+              </>
+            )}
           </div>
 
-          {currentMid !== null && (
-            <MilestoneProgressBar current={currentMid} target={userM1Target} />
+          {progressPct !== null && (
+            <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${
+                  reachedGoal ? "bg-emerald-500" : "bg-primary"
+                }`}
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
           )}
 
           {reachedGoal ? (
-            <p className="text-xs font-medium text-emerald-700">
-              Ya alcanzas tu meta
+            <p className="text-sm font-medium text-emerald-700">
+              Ya alcanzas tu objetivo
             </p>
-          ) : weeksToReach !== null ? (
-            <p className="text-xs text-gray-500">
-              ~{weeksToReach} {weeksToReach === 1 ? "semana" : "semanas"} al
-              ritmo actual
+          ) : gap !== null ? (
+            <p className="text-sm text-gray-600">
+              Te faltan{" "}
+              <span className="font-semibold">{Math.round(gap)} pts</span> para
+              tu objetivo
             </p>
-          ) : (
-            <p className="text-xs text-gray-400">
-              Fuera del rango de proyección actual
-            </p>
-          )}
+          ) : null}
         </div>
-      ) : (
-        <p className="text-xs text-amber-600">
-          Ingresa tu puntaje M1 en{" "}
-          <Link
-            href="/portal/goals?tab=simulador"
-            className="font-medium underline"
-          >
-            Simulador
-          </Link>{" "}
-          para ver tu meta.
-        </p>
       )}
-    </div>
-  );
-}
 
-function MilestoneProgressBar({
-  current,
-  target,
-}: {
-  current: number;
-  target: number;
-}) {
-  const pct = Math.min(100, Math.round((current / target) * 100));
-  const color = pct >= 100 ? "bg-emerald-500" : "bg-primary";
-
-  return (
-    <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
-      <div
-        className={`h-full rounded-full ${color} transition-all duration-500`}
-        style={{ width: `${pct}%` }}
-      />
-    </div>
+      {/* Career positioning context */}
+      {careerPositioning && careerPositioning.total > 0 && (
+        <div
+          className="rounded-xl border border-gray-100 bg-gray-50/50
+            p-3 space-y-1"
+        >
+          <p className="text-sm text-gray-700">
+            Con tus objetivos actuales, calificas para{" "}
+            <span className="font-semibold text-primary">
+              {careerPositioning.above}
+            </span>{" "}
+            de {careerPositioning.total}{" "}
+            {careerPositioning.total === 1 ? "carrera" : "carreras"} de interés
+          </p>
+          <Link
+            href="/portal/goals"
+            className="text-xs text-primary font-medium hover:underline"
+          >
+            Ver detalle en Mis Objetivos
+          </Link>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -435,4 +391,3 @@ function formatDateLong(isoDate: string): string {
     year: "numeric",
   });
 }
-

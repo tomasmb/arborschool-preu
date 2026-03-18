@@ -56,7 +56,7 @@ function MissingTargetBanner() {
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-amber-900">
-          Define tu meta M1
+          Define tu objetivo M1
         </p>
         <p className="text-xs text-amber-700">
           Agrega un puntaje objetivo para activar la brecha y el plan de
@@ -64,7 +64,7 @@ function MissingTargetBanner() {
         </p>
       </div>
       <Link
-        href="/portal/goals?tab=simulador"
+        href="/portal/goals"
         className="shrink-0 rounded-lg bg-amber-600 px-4 py-2 text-xs
           font-medium text-white hover:bg-amber-700 transition-colors"
       >

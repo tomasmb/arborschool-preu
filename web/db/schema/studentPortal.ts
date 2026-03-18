@@ -21,8 +21,8 @@ import {
 } from "./enums";
 
 /**
- * Student portal tables for admissions datasets and account-bound goals.
- * v1 scope: M1-first simulation and up to 3 primary targets per student.
+ * Student portal tables for admissions datasets, score objectives,
+ * career interests, and account-bound planning profiles.
  */
 
 export const admissionsDatasets = pgTable(
@@ -192,6 +192,63 @@ export const studentGoalBuffers = pgTable(
   (table) => [
     uniqueIndex("ux_student_goal_buffers_goal").on(table.goalId),
     index("idx_student_goal_buffers_goal").on(table.goalId),
+  ]
+);
+
+// ---------------------------------------------------------------------------
+// STUDENT-CENTRIC SCORE OBJECTIVES
+// ---------------------------------------------------------------------------
+
+/**
+ * General PAES score targets owned by the student (M1, CL, ELECTIVO, etc.).
+ * One row per user + test. These are NOT per-career -- the student sets their
+ * own objectives and the career positioning engine evaluates them against
+ * any career offering.
+ */
+export const studentScoreTargets = pgTable(
+  "student_score_targets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    testCode: varchar("test_code", { length: 20 }).notNull(),
+    score: decimal("score", { precision: 7, scale: 2 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("ux_student_score_targets_user_test").on(
+      table.userId,
+      table.testCode
+    ),
+    index("idx_student_score_targets_user").on(table.userId),
+  ]
+);
+
+/**
+ * Academic profile estimates (NEM, Ranking) that come from school
+ * performance. Evolving values the student updates as their school year
+ * progresses. Feed into career positioning formulas.
+ */
+export const studentProfileScores = pgTable(
+  "student_profile_scores",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    scoreType: varchar("score_type", { length: 20 }).notNull(),
+    score: decimal("score", { precision: 7, scale: 2 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("ux_student_profile_scores_user_type").on(
+      table.userId,
+      table.scoreType
+    ),
+    index("idx_student_profile_scores_user").on(table.userId),
   ]
 );
 
