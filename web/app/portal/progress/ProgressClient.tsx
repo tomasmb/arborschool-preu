@@ -19,6 +19,7 @@ import {
   RetestCTASection,
   TestHistoryTable,
 } from "./ProgressSections";
+import { NextMiniClaseCTA } from "./NextMiniClaseCTA";
 import { LockedProjectionSection } from "./LockedProjectionSection";
 import {
   ProjectionCard,
@@ -196,6 +197,8 @@ export function ProgressClient() {
             breakdown={data.masteryBreakdown}
             currentScore={data.currentScore}
           />
+
+          <NextMiniClaseCTA />
 
           <GoalMilestonesSection
             milestones={milestones}
