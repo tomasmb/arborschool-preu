@@ -8,7 +8,7 @@ import type {
 import {
   ELECTIVO_SUB_TESTS,
   ELECTIVO_TEST_CODE,
-} from "@/lib/student/simulator";
+} from "@/lib/student/constants";
 import {
   GapIndicator,
   MissingTestsNotice,

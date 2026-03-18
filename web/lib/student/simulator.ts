@@ -1,4 +1,8 @@
 import { getStudentGoalsView } from "@/lib/student/goals";
+import {
+  ELECTIVO_TEST_CODE,
+  ELECTIVO_SUB_TESTS,
+} from "@/lib/student/constants";
 
 type ScoreSource = "student" | "system" | "query";
 
@@ -84,9 +88,6 @@ function round2(value: number): number {
 function normalizeTestCode(testCode: string): string {
   return testCode.trim().toUpperCase();
 }
-
-export const ELECTIVO_TEST_CODE = "ELECTIVO";
-export const ELECTIVO_SUB_TESTS = ["CIENCIAS", "HISTORIA"] as const;
 
 function resolveElectivoScore(
   scores: Map<string, { score: number; source: ScoreSource }>

@@ -1,4 +1,4 @@
-import { ELECTIVO_TEST_CODE } from "@/lib/student/simulator";
+import { ELECTIVO_TEST_CODE } from "@/lib/student/constants";
 import type { SimulatorPayload } from "./types";
 import { formatNumber, testLabel } from "./utils";
 
