@@ -7,6 +7,7 @@ import {
   type QueryParamsRecord,
 } from "@/lib/auth/callbackUrl";
 import { getAuthenticatedUserById } from "@/lib/auth/users";
+import { getUserAccessStatus } from "@/lib/student/accessControl";
 import { getStudentJourneySnapshot } from "@/lib/student/journeyState";
 import {
   PORTAL_CONTEXT_BANNER_PARAM,
@@ -50,6 +51,7 @@ export default async function PortalPage({ searchParams }: PortalPageProps) {
     PORTAL_CONTEXT_BANNER_PARAM
   );
   const contextBanner = resolvePortalContextBanner(bannerCode);
+  const accessStatus = await getUserAccessStatus(user.id);
 
   return (
     <PageShell
@@ -59,6 +61,7 @@ export default async function PortalPage({ searchParams }: PortalPageProps) {
       <M1DashboardClient
         contextBanner={contextBanner}
         subscriptionStatus={user.subscriptionStatus}
+        masteredAtomCount={accessStatus.masteredAtomCount}
       />
     </PageShell>
   );

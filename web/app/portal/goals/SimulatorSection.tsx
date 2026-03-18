@@ -6,12 +6,15 @@ import type {
   StudentGoal,
 } from "./types";
 import {
+  ELECTIVO_SUB_TESTS,
+  ELECTIVO_TEST_CODE,
+} from "@/lib/student/constants";
+import {
   GapIndicator,
   MissingTestsNotice,
   SimulatorFormulaTable,
-  SimulatorSensitivity,
 } from "./SimulatorResults";
-import { normalizeTestCode } from "./utils";
+import { normalizeTestCode, testLabel } from "./utils";
 
 type SimulatorSectionProps = {
   loading: boolean;
@@ -123,13 +126,19 @@ function SimulatorNoGoalsNotice({
   );
 }
 
+function filterNumericInput(raw: string): string {
+  return raw.replace(/[^0-9]/g, "");
+}
+
 function ScoreInputCard({
   testCode,
+  label,
   weightPercent,
   value,
   onChange,
 }: {
   testCode: string;
+  label: string;
   weightPercent: number;
   value: string;
   onChange: (value: string) => void;
@@ -140,7 +149,7 @@ function ScoreInputCard({
         transition-colors hover:border-primary/20 space-y-2"
     >
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-gray-800">{testCode}</span>
+        <span className="text-sm font-semibold text-gray-800">{label}</span>
         <span
           className="text-xs font-medium text-gray-400 bg-gray-100
             px-2 py-0.5 rounded-full"
@@ -149,18 +158,57 @@ function ScoreInputCard({
         </span>
       </div>
       <input
-        type="number"
-        min={100}
-        max={1000}
-        step={1}
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(e) => onChange(filterNumericInput(e.target.value))}
         placeholder="Ej: 700"
         className="w-full rounded-lg border border-gray-200 bg-white px-3
           py-2.5 text-sm font-medium tabular-nums
           focus:border-primary focus:ring-2 focus:ring-primary/10
           focus:outline-none transition-all placeholder:text-gray-300"
       />
+    </div>
+  );
+}
+
+function ElectivoInputGroup({
+  weightPercent,
+  scores,
+  goalId,
+  onUpdateDraftScore,
+}: {
+  weightPercent: number;
+  scores: Record<string, string>;
+  goalId: string;
+  onUpdateDraftScore: (goalId: string, testCode: string, val: string) => void;
+}) {
+  return (
+    <div className="col-span-full space-y-2">
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-semibold text-gray-800">
+          Electivo (se usa el mejor)
+        </span>
+        <span
+          className="text-xs font-medium text-gray-400 bg-gray-100
+            px-2 py-0.5 rounded-full"
+        >
+          {weightPercent}%
+        </span>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {ELECTIVO_SUB_TESTS.map((sub) => (
+          <ScoreInputCard
+            key={sub}
+            testCode={sub}
+            label={testLabel(sub)}
+            weightPercent={weightPercent}
+            value={scores[sub] ?? ""}
+            onChange={(value) => onUpdateDraftScore(goalId, sub, value)}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -182,10 +230,24 @@ function ScoreInputs({
       <div className="grid gap-3 sm:grid-cols-2">
         {selectedOption.weights.map((weight) => {
           const testCode = normalizeTestCode(weight.testCode);
+
+          if (testCode === ELECTIVO_TEST_CODE) {
+            return (
+              <ElectivoInputGroup
+                key="ELECTIVO"
+                weightPercent={weight.weightPercent}
+                scores={selectedDraft.scores}
+                goalId={selectedGoal.id}
+                onUpdateDraftScore={onUpdateDraftScore}
+              />
+            );
+          }
+
           return (
             <ScoreInputCard
               key={testCode}
               testCode={testCode}
+              label={testLabel(testCode)}
               weightPercent={weight.weightPercent}
               value={selectedDraft.scores[testCode] ?? ""}
               onChange={(value) =>
@@ -221,12 +283,15 @@ function BufferInput({
         <span className="text-xs text-gray-400">puntos extra</span>
       </div>
       <input
-        type="number"
-        min={0}
-        step={1}
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
         value={selectedDraft.bufferPoints}
-        onChange={(event) =>
-          onUpdateDraftBuffer(selectedGoal.id, event.target.value)
+        onChange={(e) =>
+          onUpdateDraftBuffer(
+            selectedGoal.id,
+            filterNumericInput(e.target.value)
+          )
         }
         className="w-full rounded-lg border border-gray-200 bg-white px-3
           py-2.5 text-sm font-medium tabular-nums
@@ -329,7 +394,6 @@ function SimulatorResultsPanel({
       <GapIndicator simulation={simulation} />
       <MissingTestsNotice simulation={simulation} />
       <SimulatorFormulaTable simulation={simulation} />
-      <SimulatorSensitivity simulation={simulation} />
     </div>
   );
 }
@@ -389,9 +453,7 @@ function SimulatorWorkspace(
         className="rounded-xl border border-gray-200 bg-gray-50/30
           p-4 space-y-4"
       >
-        <p className="text-sm font-semibold text-gray-700">
-          Tus puntajes
-        </p>
+        <p className="text-sm font-semibold text-gray-700">Tus puntajes</p>
         <SimulatorInputs
           selectedGoal={props.selectedGoal}
           selectedOption={props.selectedOption}
@@ -407,14 +469,12 @@ function SimulatorWorkspace(
         />
       </div>
 
-      {/* Results: gap, formula, sensitivity */}
+      {/* Results: gap indicator + formula breakdown */}
       <div
         className="rounded-xl border border-gray-200 bg-white
           p-4 space-y-4"
       >
-        <p className="text-sm font-semibold text-gray-700">
-          Resultados
-        </p>
+        <p className="text-sm font-semibold text-gray-700">Resultados</p>
         <SimulatorStatusPanels
           simulatorError={props.simulatorError}
           onRetrySimulation={props.onRetrySimulation}

@@ -5,10 +5,8 @@ import Image from "next/image";
 import { InlineRecoveryPanel } from "../components";
 import type { GoalOption, PlanningProfileDraft } from "./types";
 import { OfferingAutocomplete } from "./OfferingAutocomplete";
-import {
-  formatPlanningCutoff,
-  selectedPlanningOption,
-} from "./goalHelpers";
+import { formatPlanningCutoff, selectedPlanningOption } from "./goalHelpers";
+import { StepCommitment } from "./StepCommitment";
 
 type PlanningModeFlowProps = {
   loading: boolean;
@@ -168,135 +166,6 @@ function StepCareer({
           </svg>
         </button>
       ) : null}
-    </div>
-  );
-}
-
-function StepCommitment({
-  planningProfile,
-  onPlanningProfileChange,
-  onNext,
-}: {
-  planningProfile: PlanningProfileDraft;
-  onPlanningProfileChange: (patch: Partial<PlanningProfileDraft>) => void;
-  onNext: () => void;
-}) {
-  return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <h2 className="text-2xl sm:text-3xl font-serif font-bold text-primary">
-          ¿Cuánto tiempo puedes dedicar?
-        </h2>
-        <p className="text-sm text-gray-600">
-          Define tu compromiso semanal y cuándo rendirás la PAES.
-        </p>
-      </div>
-
-      <div className="space-y-4">
-        <label className="block space-y-2">
-          <span className="text-sm font-medium text-gray-700">
-            Minutos de estudio por semana
-          </span>
-          <input
-            type="number"
-            min={60}
-            max={2400}
-            step={30}
-            value={planningProfile.weeklyMinutesTarget}
-            onChange={(e) =>
-              onPlanningProfileChange({
-                weeklyMinutesTarget: e.target.value,
-              })
-            }
-            className="w-full rounded-xl border border-gray-300 px-4 py-3
-              text-base focus:border-primary focus:ring-1
-              focus:ring-primary/20"
-          />
-          <p className="text-xs text-gray-500">
-            Recomendamos al menos 120 min/semana (2 horas)
-          </p>
-        </label>
-
-        <label className="block space-y-2">
-          <span className="text-sm font-medium text-gray-700">
-            ¿Cuándo rindes la PAES?
-          </span>
-          <input
-            type="date"
-            value={planningProfile.examDate}
-            onChange={(e) =>
-              onPlanningProfileChange({ examDate: e.target.value })
-            }
-            className="w-full rounded-xl border border-gray-300 px-4 py-3
-              text-base focus:border-primary focus:ring-1
-              focus:ring-primary/20"
-          />
-        </label>
-
-        <div className="space-y-2">
-          <span className="text-sm font-medium text-gray-700 block">
-            Recordatorios
-          </span>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label
-              className="flex items-center gap-3 rounded-xl border
-                border-gray-200 px-4 py-3 cursor-pointer
-                hover:bg-gray-50 transition-colors"
-            >
-              <input
-                type="checkbox"
-                checked={planningProfile.reminderInApp}
-                onChange={(e) =>
-                  onPlanningProfileChange({
-                    reminderInApp: e.target.checked,
-                  })
-                }
-                className="accent-primary w-4 h-4"
-              />
-              <span className="text-sm text-gray-700">En la app</span>
-            </label>
-            <label
-              className="flex items-center gap-3 rounded-xl border
-                border-gray-200 px-4 py-3 cursor-pointer
-                hover:bg-gray-50 transition-colors"
-            >
-              <input
-                type="checkbox"
-                checked={planningProfile.reminderEmail}
-                onChange={(e) =>
-                  onPlanningProfileChange({
-                    reminderEmail: e.target.checked,
-                  })
-                }
-                className="accent-primary w-4 h-4"
-              />
-              <span className="text-sm text-gray-700">Por email</span>
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        onClick={onNext}
-        className="btn-cta w-full sm:w-auto flex items-center
-          justify-center gap-2 py-3"
-      >
-        Continuar
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M13 7l5 5m0 0l-5 5m5-5H6"
-          />
-        </svg>
-      </button>
     </div>
   );
 }

@@ -1,5 +1,6 @@
+import { ELECTIVO_TEST_CODE } from "@/lib/student/constants";
 import type { SimulatorPayload } from "./types";
-import { formatNumber } from "./utils";
+import { formatNumber, testLabel } from "./utils";
 
 function GapProgressBar({
   weighted,
@@ -153,7 +154,12 @@ export function MissingTestsNotice({
         />
       </svg>
       <p className="text-sm text-amber-700">
-        Faltan puntajes: {simulation.formula.missingTests.join(", ")}
+        Faltan puntajes:{" "}
+        {simulation.formula.missingTests
+          .map((t) =>
+            t === ELECTIVO_TEST_CODE ? "Ciencias o Historia" : testLabel(t)
+          )
+          .join(", ")}
       </p>
     </div>
   );
@@ -165,12 +171,29 @@ export function SimulatorFormulaTable({
   simulation: SimulatorPayload;
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50/80">
+    <details className="rounded-xl border border-gray-200 overflow-hidden group">
+      <summary
+        className="px-4 py-2.5 bg-gray-50/80 cursor-pointer select-none
+          flex items-center justify-between list-none"
+      >
         <h3 className="text-sm font-semibold text-gray-700">
           Desglose de fórmula
         </h3>
-      </div>
+        <svg
+          className="w-4 h-4 text-gray-400 transition-transform
+            group-open:rotate-180"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </summary>
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-gray-100 text-xs text-gray-500">
@@ -188,7 +211,7 @@ export function SimulatorFormulaTable({
                 transition-colors"
             >
               <td className="px-4 py-2.5 font-medium text-gray-800">
-                {component.testCode}
+                {testLabel(component.testCode)}
               </td>
               <td className="px-4 py-2.5 text-gray-600">
                 {component.weightPercent}%
@@ -203,40 +226,6 @@ export function SimulatorFormulaTable({
           ))}
         </tbody>
       </table>
-    </div>
-  );
-}
-
-export function SimulatorSensitivity({
-  simulation,
-}: {
-  simulation: SimulatorPayload;
-}) {
-  return (
-    <div
-      className="rounded-xl border border-blue-100 bg-gradient-to-br
-        from-blue-50/80 to-white p-4 space-y-1"
-    >
-      <p
-        className="text-xs font-semibold uppercase tracking-wide
-          text-blue-400"
-      >
-        Tip de mejora
-      </p>
-      <p className="text-sm font-medium text-blue-800">
-        Sube {simulation.sensitivity.testCode} en +
-        {simulation.sensitivity.increment} puntos
-      </p>
-      <p className="text-sm text-blue-600">
-        Nuevo ponderado:{" "}
-        <span className="font-semibold">
-          {formatNumber(simulation.sensitivity.adjustedWeightedScore)}
-        </span>{" "}
-        · Cambio:{" "}
-        <span className="font-semibold">
-          {formatNumber(simulation.sensitivity.weightedDelta)}
-        </span>
-      </p>
-    </div>
+    </details>
   );
 }

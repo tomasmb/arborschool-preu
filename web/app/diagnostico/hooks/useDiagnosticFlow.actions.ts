@@ -415,6 +415,10 @@ export function useDiagnosticResultsActions(params: {
       journeyState: "activation_ready",
     });
 
+    // Compute PAES scores BEFORE presentCompletionResults, which
+    // clears localStorage for student portal users.
+    const { calc } = computeScoredResults(params.route);
+
     await presentCompletionResults({
       isStudentPortalUser: params.isStudentPortalUser,
       saveProfileAndShowResults,
@@ -422,7 +426,6 @@ export function useDiagnosticResultsActions(params: {
     });
 
     try {
-      const { calc } = computeScoredResults(params.route);
       await completeRemoteAttempt({
         attemptId: params.attemptId,
         correctAnswers: counts.scoredCorrect,

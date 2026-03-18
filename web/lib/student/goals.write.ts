@@ -149,7 +149,10 @@ async function upsertPlanningProfile(
   }
 
   await upsertTestHoursInTx(
-    tx, userId, "M1", planningProfile.weeklyMinutesTarget
+    tx,
+    userId,
+    "M1",
+    planningProfile.weeklyMinutesTarget
   );
 }
 
@@ -272,7 +275,7 @@ export async function upsertStudentTestHours(
   weeklyMinutes: number
 ) {
   const normalized = testCode.trim().toUpperCase();
-  const clamped = Math.max(30, Math.min(2400, Math.round(weeklyMinutes)));
+  const clamped = Math.max(30, Math.min(600, Math.round(weeklyMinutes)));
 
   const [existing] = await db
     .select({ id: studentTestHours.id })

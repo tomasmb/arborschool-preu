@@ -18,6 +18,7 @@ type LearningPathSectionProps = {
   error: string | null;
   data: NextActionPayload | null;
   subscriptionStatus: string;
+  masteredAtomCount: number;
 };
 
 type PathAtom = { atomId: string; title: string };
@@ -394,9 +395,11 @@ function ArrowIcon() {
 function LearningPathContent({
   data,
   subscriptionStatus,
+  masteredAtomCount,
 }: {
   data: NextActionPayload;
   subscriptionStatus: string;
+  masteredAtomCount: number;
 }) {
   const routes = data.competitiveRoutes ?? [];
   const action = data.nextAction;
@@ -487,7 +490,9 @@ function LearningPathContent({
         ))}
       </div>
 
-      {subscriptionStatus !== "active" && <UpgradePrompt variant="inline" />}
+      {subscriptionStatus !== "active" && masteredAtomCount >= 1 && (
+        <UpgradePrompt variant="inline" />
+      )}
     </section>
   );
 }
@@ -497,6 +502,7 @@ export function LearningPathSection({
   error,
   data,
   subscriptionStatus,
+  masteredAtomCount,
 }: LearningPathSectionProps) {
   if (loading) return <LoadingSkeleton />;
 
@@ -529,6 +535,10 @@ export function LearningPathSection({
 
   if (!data) return null;
   return (
-    <LearningPathContent data={data} subscriptionStatus={subscriptionStatus} />
+    <LearningPathContent
+      data={data}
+      subscriptionStatus={subscriptionStatus}
+      masteredAtomCount={masteredAtomCount}
+    />
   );
 }

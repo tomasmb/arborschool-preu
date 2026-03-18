@@ -11,7 +11,12 @@ import {
 
 // ---------------------------------------------------------------------------
 // Reference data — universities, careers, offerings
-// Source: PreuAI / DEMRE — Admisión 2026 (verified Jan 2026)
+// Source: DEMRE Oferta Definitiva (Sep 2025) + DEMRE post-selection results
+// Verified: Mar 2026 against official DEMRE document and university pages.
+//
+// NOTE on "electivo" weights: when DEMRE shows "HCS o Ciencias" (student
+// uses whichever score is higher), we record the most career-relevant test
+// code (CIENCIAS for science/health, HISTORIA for law/humanities).
 // ---------------------------------------------------------------------------
 
 const UNIVERSITIES: Record<string, { name: string; shortName: string }> = {
@@ -85,7 +90,8 @@ type Offering = {
   w: Record<string, number>; // test_code → weight %
 };
 
-// Weights: NEM, RANKING, CL, M1, M2, CIENCIAS, HISTORIA (must sum to 100)
+// Weights: NEM, RANKING, CL, M1, M2, CIENCIAS, HISTORIA, ELECTIVO (sum=100)
+// ELECTIVO means max(CIENCIAS, HISTORIA) — student chooses best score.
 const OFFERINGS: Offering[] = [
   // PUC
   {
@@ -110,7 +116,7 @@ const OFFERINGS: Offering[] = [
     c: "psicologia",
     u: "puc",
     s: 874.3,
-    w: { NEM: 25, RANKING: 25, CL: 10, M1: 20, CIENCIAS: 20 },
+    w: { NEM: 25, RANKING: 25, CL: 10, M1: 20, ELECTIVO: 20 },
   },
   {
     c: "derecho",
@@ -122,7 +128,7 @@ const OFFERINGS: Offering[] = [
     c: "ingenieria-comercial",
     u: "puc",
     s: 870.1,
-    w: { NEM: 20, RANKING: 20, CL: 10, M1: 30, CIENCIAS: 10, M2: 10 },
+    w: { NEM: 20, RANKING: 20, CL: 10, M1: 30, ELECTIVO: 10, M2: 10 },
   },
   {
     c: "odontologia",
@@ -134,7 +140,7 @@ const OFFERINGS: Offering[] = [
     c: "arquitectura",
     u: "puc",
     s: 855.2,
-    w: { NEM: 20, RANKING: 20, CL: 10, M1: 35, CIENCIAS: 15 },
+    w: { NEM: 20, RANKING: 20, CL: 15, M1: 35, ELECTIVO: 10 },
   },
   {
     c: "kinesiologia",
@@ -153,7 +159,7 @@ const OFFERINGS: Offering[] = [
     c: "psicologia",
     u: "uch",
     s: 866.55,
-    w: { NEM: 10, RANKING: 30, CL: 25, M1: 20, CIENCIAS: 15 },
+    w: { NEM: 10, RANKING: 30, CL: 25, M1: 20, ELECTIVO: 15 },
   },
   {
     c: "derecho",
@@ -171,7 +177,7 @@ const OFFERINGS: Offering[] = [
     c: "ingenieria-comercial",
     u: "uch",
     s: 829.6,
-    w: { NEM: 10, RANKING: 20, CL: 10, M1: 35, CIENCIAS: 10, M2: 15 },
+    w: { NEM: 10, RANKING: 20, CL: 10, M1: 35, ELECTIVO: 10, M2: 15 },
   },
   {
     c: "odontologia",
@@ -183,7 +189,7 @@ const OFFERINGS: Offering[] = [
     c: "quimica-y-farmacia",
     u: "uch",
     s: 809.1,
-    w: { NEM: 10, RANKING: 20, CL: 20, M1: 20, CIENCIAS: 30 },
+    w: { NEM: 10, RANKING: 20, CL: 10, M1: 20, M2: 10, CIENCIAS: 30 },
   },
   {
     c: "enfermeria",
@@ -226,7 +232,7 @@ const OFFERINGS: Offering[] = [
     c: "psicologia",
     u: "usach",
     s: 811.55,
-    w: { NEM: 10, RANKING: 40, CL: 25, M1: 15, CIENCIAS: 10 },
+    w: { NEM: 10, RANKING: 40, CL: 25, M1: 15, HISTORIA: 10 },
   },
   {
     c: "ingenieria-civil-industrial",
@@ -269,7 +275,7 @@ const OFFERINGS: Offering[] = [
     c: "psicologia",
     u: "udec",
     s: 806.75,
-    w: { NEM: 10, RANKING: 30, CL: 25, M1: 15, CIENCIAS: 20 },
+    w: { NEM: 15, RANKING: 25, CL: 20, M1: 30, CIENCIAS: 10 },
   },
   {
     c: "derecho",
@@ -281,57 +287,57 @@ const OFFERINGS: Offering[] = [
     c: "ingenieria-civil-industrial",
     u: "udec",
     s: 800.1,
-    w: { NEM: 20, RANKING: 15, CL: 15, M1: 25, CIENCIAS: 15, M2: 10 },
+    w: { NEM: 20, RANKING: 15, CL: 15, M1: 25, CIENCIAS: 10, M2: 15 },
   },
   {
     c: "enfermeria",
     u: "udec",
     s: 755.55,
-    w: { NEM: 15, RANKING: 25, CL: 15, M1: 25, CIENCIAS: 20 },
+    w: { NEM: 15, RANKING: 25, CL: 25, M1: 25, CIENCIAS: 10 },
   },
   {
     c: "kinesiologia",
     u: "udec",
     s: 750.25,
-    w: { NEM: 15, RANKING: 25, CL: 15, M1: 25, CIENCIAS: 20 },
+    w: { NEM: 15, RANKING: 25, CL: 20, M1: 25, CIENCIAS: 15 },
   },
   // USM
   {
     c: "ingenieria-civil-industrial",
     u: "usm",
     s: 837.4,
-    w: { NEM: 15, RANKING: 20, CL: 10, M1: 35, CIENCIAS: 10, M2: 10 },
+    w: { NEM: 15, RANKING: 20, CL: 10, M1: 35, ELECTIVO: 10, M2: 10 },
   },
   {
     c: "ingenieria-civil",
     u: "usm",
     s: 825.6,
-    w: { NEM: 15, RANKING: 20, CL: 10, M1: 35, CIENCIAS: 10, M2: 10 },
+    w: { NEM: 15, RANKING: 20, CL: 10, M1: 35, ELECTIVO: 10, M2: 10 },
   },
   {
     c: "ingenieria-comercial",
     u: "usm",
     s: 799.55,
-    w: { NEM: 15, RANKING: 25, CL: 10, M1: 40, CIENCIAS: 10 },
+    w: { NEM: 15, RANKING: 25, CL: 10, M1: 40, ELECTIVO: 10 },
   },
   // UAI
   {
     c: "ingenieria-civil",
     u: "uai",
     s: 814.95,
-    w: { NEM: 10, RANKING: 30, CL: 15, M1: 35, CIENCIAS: 10 },
+    w: { NEM: 10, RANKING: 30, CL: 10, M1: 35, M2: 5, ELECTIVO: 10 },
   },
   {
     c: "ingenieria-comercial",
     u: "uai",
     s: 811.4,
-    w: { NEM: 10, RANKING: 30, CL: 10, M1: 40, CIENCIAS: 10 },
+    w: { NEM: 10, RANKING: 30, CL: 10, M1: 40, ELECTIVO: 10 },
   },
   {
     c: "derecho",
     u: "uai",
     s: 768.7,
-    w: { NEM: 10, RANKING: 30, CL: 40, M1: 10, HISTORIA: 10 },
+    w: { NEM: 10, RANKING: 30, CL: 40, M1: 10, ELECTIVO: 10 },
   },
   // UDD
   {
@@ -344,25 +350,25 @@ const OFFERINGS: Offering[] = [
     c: "ingenieria-comercial",
     u: "udd",
     s: 772.3,
-    w: { NEM: 10, RANKING: 30, CL: 10, M1: 40, CIENCIAS: 10 },
+    w: { NEM: 10, RANKING: 30, CL: 10, M1: 40, ELECTIVO: 10 },
   },
   {
     c: "ingenieria-civil-industrial",
     u: "udd",
     s: 767.25,
-    w: { NEM: 10, RANKING: 25, CL: 15, M1: 40, CIENCIAS: 10 },
+    w: { NEM: 10, RANKING: 25, CL: 10, M1: 40, ELECTIVO: 10, M2: 5 },
   },
   {
     c: "psicologia",
     u: "udd",
     s: 752.95,
-    w: { NEM: 25, RANKING: 25, CL: 20, M1: 15, CIENCIAS: 15 },
+    w: { NEM: 25, RANKING: 25, CL: 20, M1: 20, ELECTIVO: 10 },
   },
   {
     c: "derecho",
     u: "udd",
     s: 749,
-    w: { NEM: 10, RANKING: 30, CL: 40, M1: 10, HISTORIA: 10 },
+    w: { NEM: 10, RANKING: 30, CL: 40, M1: 10, ELECTIVO: 10 },
   },
   // UDP
   {
@@ -375,19 +381,19 @@ const OFFERINGS: Offering[] = [
     c: "derecho",
     u: "udp",
     s: 772.5,
-    w: { NEM: 10, RANKING: 20, CL: 40, M1: 20, HISTORIA: 10 },
+    w: { NEM: 10, RANKING: 20, CL: 40, M1: 20, ELECTIVO: 10 },
   },
   {
     c: "psicologia",
     u: "udp",
     s: 772.15,
-    w: { NEM: 10, RANKING: 20, CL: 35, M1: 25, CIENCIAS: 10 },
+    w: { NEM: 10, RANKING: 20, CL: 35, M1: 25, ELECTIVO: 10 },
   },
   {
     c: "ingenieria-civil-industrial",
     u: "udp",
     s: 756.2,
-    w: { NEM: 10, RANKING: 30, CL: 15, M1: 35, CIENCIAS: 10 },
+    w: { NEM: 10, RANKING: 30, CL: 10, M1: 35, ELECTIVO: 10, M2: 5 },
   },
   {
     c: "enfermeria",
@@ -399,7 +405,7 @@ const OFFERINGS: Offering[] = [
     c: "ingenieria-comercial",
     u: "udp",
     s: 702.45,
-    w: { NEM: 10, RANKING: 35, CL: 10, M1: 35, CIENCIAS: 10 },
+    w: { NEM: 10, RANKING: 35, CL: 10, M1: 35, ELECTIVO: 10 },
   },
   // UAndes
   {
@@ -412,19 +418,19 @@ const OFFERINGS: Offering[] = [
     c: "ingenieria-civil",
     u: "uandes",
     s: 812.4,
-    w: { NEM: 10, RANKING: 25, CL: 15, M1: 40, CIENCIAS: 10 },
+    w: { NEM: 10, RANKING: 25, CL: 10, M1: 40, CIENCIAS: 10, M2: 5 },
   },
   {
     c: "ingenieria-comercial",
     u: "uandes",
     s: 797.4,
-    w: { NEM: 10, RANKING: 25, CL: 15, M1: 40, CIENCIAS: 10 },
+    w: { NEM: 10, RANKING: 25, CL: 10, M1: 40, ELECTIVO: 10, M2: 5 },
   },
   {
     c: "psicologia",
     u: "uandes",
     s: 793.15,
-    w: { NEM: 20, RANKING: 25, CL: 15, M1: 20, CIENCIAS: 20 },
+    w: { NEM: 20, RANKING: 25, CL: 20, M1: 20, ELECTIVO: 15 },
   },
   {
     c: "derecho",
@@ -436,7 +442,7 @@ const OFFERINGS: Offering[] = [
     c: "enfermeria",
     u: "uandes",
     s: 750.5,
-    w: { NEM: 20, RANKING: 20, CL: 15, M1: 30, CIENCIAS: 15 },
+    w: { NEM: 20, RANKING: 20, CL: 20, M1: 30, CIENCIAS: 10 },
   },
   // UNAB
   {
@@ -449,7 +455,7 @@ const OFFERINGS: Offering[] = [
     c: "ingenieria-civil-industrial",
     u: "unab",
     s: 641.25,
-    w: { NEM: 20, RANKING: 25, CL: 10, M1: 30, CIENCIAS: 15 },
+    w: { NEM: 20, RANKING: 25, CL: 10, M1: 30, CIENCIAS: 10, M2: 5 },
   },
   {
     c: "odontologia",
@@ -481,31 +487,31 @@ const OFFERINGS: Offering[] = [
     c: "quimica-y-farmacia",
     u: "pucv",
     s: 802.2,
-    w: { NEM: 20, RANKING: 20, CL: 10, M1: 30, CIENCIAS: 20 },
+    w: { NEM: 20, RANKING: 20, CL: 20, M1: 30, ELECTIVO: 10 },
   },
   {
     c: "ingenieria-civil-industrial",
     u: "pucv",
     s: 788,
-    w: { NEM: 20, RANKING: 20, CL: 10, M1: 30, CIENCIAS: 10, M2: 10 },
+    w: { NEM: 20, RANKING: 20, CL: 15, M1: 30, ELECTIVO: 10, M2: 5 },
   },
   {
     c: "derecho",
     u: "pucv",
     s: 776.9,
-    w: { NEM: 10, RANKING: 20, CL: 30, M1: 20, HISTORIA: 20 },
+    w: { NEM: 20, RANKING: 20, CL: 30, M1: 20, ELECTIVO: 10 },
   },
   {
     c: "psicologia",
     u: "pucv",
     s: 768.05,
-    w: { NEM: 10, RANKING: 20, CL: 25, M1: 25, CIENCIAS: 20 },
+    w: { NEM: 20, RANKING: 20, CL: 25, M1: 25, ELECTIVO: 10 },
   },
   {
     c: "arquitectura",
     u: "pucv",
     s: 729.95,
-    w: { NEM: 10, RANKING: 20, CL: 25, M1: 25, CIENCIAS: 20 },
+    w: { NEM: 20, RANKING: 20, CL: 25, M1: 25, ELECTIVO: 10 },
   },
   // UV
   {
@@ -518,7 +524,7 @@ const OFFERINGS: Offering[] = [
     c: "odontologia",
     u: "uv",
     s: 780,
-    w: { NEM: 25, RANKING: 25, CL: 10, M1: 20, CIENCIAS: 20 },
+    w: { NEM: 25, RANKING: 25, CL: 20, M1: 20, CIENCIAS: 10 },
   },
   {
     c: "enfermeria",
@@ -530,13 +536,13 @@ const OFFERINGS: Offering[] = [
     c: "derecho",
     u: "uv",
     s: 712.85,
-    w: { NEM: 15, RANKING: 25, CL: 25, M1: 25, HISTORIA: 10 },
+    w: { NEM: 10, RANKING: 25, CL: 25, M1: 25, ELECTIVO: 15 },
   },
   {
     c: "psicologia",
     u: "uv",
     s: 707.9,
-    w: { NEM: 10, RANKING: 30, CL: 30, M1: 20, CIENCIAS: 10 },
+    w: { NEM: 10, RANKING: 30, CL: 30, M1: 20, HISTORIA: 10 },
   },
   // USS
   {
@@ -549,7 +555,7 @@ const OFFERINGS: Offering[] = [
     c: "quimica-y-farmacia",
     u: "uss",
     s: 669.35,
-    w: { NEM: 10, RANKING: 25, CL: 25, M1: 30, CIENCIAS: 10 },
+    w: { NEM: 10, RANKING: 25, CL: 25, M1: 30, ELECTIVO: 10 },
   },
   // UFT
   {
@@ -574,7 +580,7 @@ const OFFERINGS: Offering[] = [
     c: "psicologia",
     u: "uft",
     s: 685,
-    w: { NEM: 20, RANKING: 30, CL: 10, M1: 20, CIENCIAS: 20 },
+    w: { NEM: 20, RANKING: 30, CL: 20, M1: 20, ELECTIVO: 10 },
   },
   // UFRO
   {
@@ -599,7 +605,7 @@ const OFFERINGS: Offering[] = [
     c: "psicologia",
     u: "ufro",
     s: 732.5,
-    w: { NEM: 10, RANKING: 40, CL: 20, M1: 20, CIENCIAS: 10 },
+    w: { NEM: 10, RANKING: 40, CL: 20, M1: 20, ELECTIVO: 10 },
   },
   {
     c: "ingenieria-civil-industrial",
@@ -618,7 +624,7 @@ const OFFERINGS: Offering[] = [
     c: "odontologia",
     u: "utalca",
     s: 818.7,
-    w: { NEM: 20, RANKING: 30, CL: 10, M1: 20, CIENCIAS: 20 },
+    w: { NEM: 20, RANKING: 30, CL: 15, M1: 20, CIENCIAS: 15 },
   },
   {
     c: "ingenieria-civil-industrial",
@@ -630,7 +636,7 @@ const OFFERINGS: Offering[] = [
     c: "derecho",
     u: "utalca",
     s: 751.3,
-    w: { NEM: 20, RANKING: 30, CL: 25, M1: 15, HISTORIA: 10 },
+    w: { NEM: 20, RANKING: 30, CL: 25, M1: 10, HISTORIA: 15 },
   },
   {
     c: "enfermeria",
@@ -642,7 +648,7 @@ const OFFERINGS: Offering[] = [
     c: "arquitectura",
     u: "utalca",
     s: 724.75,
-    w: { NEM: 20, RANKING: 30, CL: 10, M1: 25, CIENCIAS: 15 },
+    w: { NEM: 20, RANKING: 30, CL: 15, M1: 25, HISTORIA: 10 },
   },
   // UCentral
   {
@@ -655,20 +661,20 @@ const OFFERINGS: Offering[] = [
     c: "enfermeria",
     u: "ucentral",
     s: 644.9,
-    w: { NEM: 10, RANKING: 35, CL: 20, M1: 25, CIENCIAS: 10 },
+    w: { NEM: 10, RANKING: 35, CL: 20, M1: 25, ELECTIVO: 10 },
   },
   {
     c: "ingenieria-civil-industrial",
     u: "ucentral",
     s: 635.8,
-    w: { NEM: 10, RANKING: 40, CL: 10, M1: 25, CIENCIAS: 15 },
+    w: { NEM: 10, RANKING: 40, CL: 10, M1: 25, ELECTIVO: 10, M2: 5 },
   },
   // UAH
   {
     c: "psicologia",
     u: "uah",
     s: 705.7,
-    w: { NEM: 10, RANKING: 20, CL: 30, M1: 30, CIENCIAS: 10 },
+    w: { NEM: 10, RANKING: 20, CL: 30, M1: 30, ELECTIVO: 10 },
   },
   {
     c: "derecho",
@@ -680,7 +686,7 @@ const OFFERINGS: Offering[] = [
     c: "ingenieria-comercial",
     u: "uah",
     s: 592.7,
-    w: { NEM: 10, RANKING: 35, CL: 10, M1: 25, CIENCIAS: 20 },
+    w: { NEM: 10, RANKING: 35, CL: 10, M1: 25, ELECTIVO: 20 },
   },
   // UACh
   {
@@ -693,37 +699,37 @@ const OFFERINGS: Offering[] = [
     c: "quimica-y-farmacia",
     u: "uach",
     s: 779.9,
-    w: { NEM: 10, RANKING: 35, CL: 20, M1: 15, CIENCIAS: 20 },
+    w: { NEM: 15, RANKING: 35, CL: 15, M1: 15, CIENCIAS: 20 },
   },
   {
     c: "ingenieria-civil-industrial",
     u: "uach",
     s: 752.85,
-    w: { NEM: 10, RANKING: 30, CL: 15, M1: 35, CIENCIAS: 10 },
+    w: { NEM: 10, RANKING: 30, CL: 10, M1: 35, CIENCIAS: 10, M2: 5 },
   },
   {
     c: "odontologia",
     u: "uach",
     s: 723.2,
-    w: { NEM: 10, RANKING: 35, CL: 20, M1: 15, CIENCIAS: 20 },
+    w: { NEM: 15, RANKING: 35, CL: 20, M1: 15, CIENCIAS: 15 },
   },
   {
     c: "psicologia",
     u: "uach",
     s: 718.6,
-    w: { NEM: 20, RANKING: 30, CL: 20, M1: 20, CIENCIAS: 10 },
+    w: { NEM: 20, RANKING: 30, CL: 20, M1: 20, ELECTIVO: 10 },
   },
   {
     c: "medicina-veterinaria",
     u: "uach",
     s: 713.15,
-    w: { NEM: 10, RANKING: 30, CL: 15, M1: 25, CIENCIAS: 20 },
+    w: { NEM: 15, RANKING: 30, CL: 10, M1: 25, CIENCIAS: 20 },
   },
   {
     c: "enfermeria",
     u: "uach",
     s: 710.35,
-    w: { NEM: 20, RANKING: 30, CL: 20, M1: 20, CIENCIAS: 10 },
+    w: { NEM: 20, RANKING: 30, CL: 15, M1: 20, CIENCIAS: 15 },
   },
   {
     c: "derecho",
@@ -742,13 +748,13 @@ const OFFERINGS: Offering[] = [
     c: "enfermeria",
     u: "ucn",
     s: 746.95,
-    w: { NEM: 10, RANKING: 20, CL: 25, M1: 25, CIENCIAS: 20 },
+    w: { NEM: 15, RANKING: 20, CL: 25, M1: 25, CIENCIAS: 15 },
   },
   {
     c: "ingenieria-civil-industrial",
     u: "ucn",
     s: 745.5,
-    w: { NEM: 10, RANKING: 25, CL: 15, M1: 35, CIENCIAS: 15 },
+    w: { NEM: 10, RANKING: 25, CL: 15, M1: 35, ELECTIVO: 10, M2: 5 },
   },
   {
     c: "derecho",
@@ -760,19 +766,19 @@ const OFFERINGS: Offering[] = [
     c: "quimica-y-farmacia",
     u: "ucn",
     s: 719.65,
-    w: { NEM: 20, RANKING: 20, CL: 15, M1: 25, CIENCIAS: 20 },
+    w: { NEM: 20, RANKING: 20, CL: 20, M1: 25, CIENCIAS: 15 },
   },
   {
     c: "psicologia",
     u: "ucn",
     s: 705.45,
-    w: { NEM: 20, RANKING: 30, CL: 25, M1: 15, CIENCIAS: 10 },
+    w: { NEM: 20, RANKING: 30, CL: 25, M1: 15, ELECTIVO: 10 },
   },
   {
     c: "ingenieria-comercial",
     u: "ucn",
     s: 678.5,
-    w: { NEM: 15, RANKING: 30, CL: 15, M1: 30, CIENCIAS: 10 },
+    w: { NEM: 15, RANKING: 30, CL: 15, M1: 30, ELECTIVO: 10 },
   },
   // UCSC
   {
@@ -791,25 +797,25 @@ const OFFERINGS: Offering[] = [
     c: "odontologia",
     u: "ucsc",
     s: 758.4,
-    w: { NEM: 10, RANKING: 30, CL: 20, M1: 25, CIENCIAS: 15 },
+    w: { NEM: 15, RANKING: 30, CL: 20, M1: 25, CIENCIAS: 10 },
   },
   {
     c: "psicologia",
     u: "ucsc",
     s: 758.95,
-    w: { NEM: 20, RANKING: 35, CL: 25, M1: 10, CIENCIAS: 10 },
+    w: { NEM: 20, RANKING: 35, CL: 25, M1: 10, ELECTIVO: 10 },
   },
   {
     c: "derecho",
     u: "ucsc",
     s: 757.55,
-    w: { NEM: 10, RANKING: 40, CL: 10, M1: 20, HISTORIA: 20 },
+    w: { NEM: 15, RANKING: 40, CL: 15, M1: 10, ELECTIVO: 20 },
   },
   {
     c: "ingenieria-civil-industrial",
     u: "ucsc",
     s: 725.35,
-    w: { NEM: 10, RANKING: 40, CL: 15, M1: 25, CIENCIAS: 10 },
+    w: { NEM: 10, RANKING: 40, CL: 10, M1: 25, ELECTIVO: 10, M2: 5 },
   },
   // UCTemuco
   {
@@ -822,13 +828,13 @@ const OFFERINGS: Offering[] = [
     c: "psicologia",
     u: "uctemuco",
     s: 695.8,
-    w: { NEM: 10, RANKING: 40, CL: 10, M1: 20, CIENCIAS: 20 },
+    w: { NEM: 10, RANKING: 40, CL: 10, M1: 20, ELECTIVO: 20 },
   },
   {
     c: "derecho",
     u: "uctemuco",
     s: 666.9,
-    w: { NEM: 15, RANKING: 40, CL: 20, M1: 15, HISTORIA: 10 },
+    w: { NEM: 10, RANKING: 40, CL: 20, M1: 15, HISTORIA: 15 },
   },
   // UAntof (verified detail pages)
   {
@@ -859,7 +865,7 @@ const OFFERINGS: Offering[] = [
     c: "psicologia",
     u: "uantof",
     s: 692.1,
-    w: { NEM: 10, RANKING: 40, CL: 25, M1: 15, CIENCIAS: 10 },
+    w: { NEM: 10, RANKING: 40, CL: 25, M1: 15, ELECTIVO: 10 },
   },
   {
     c: "quimica-y-farmacia",
@@ -884,7 +890,7 @@ const OFFERINGS: Offering[] = [
     c: "psicologia",
     u: "userena",
     s: 747.15,
-    w: { NEM: 25, RANKING: 15, CL: 25, M1: 20, CIENCIAS: 15 },
+    w: { NEM: 25, RANKING: 15, CL: 25, M1: 20, ELECTIVO: 15 },
   },
   {
     c: "quimica-y-farmacia",
@@ -902,7 +908,7 @@ const OFFERINGS: Offering[] = [
     c: "ingenieria-civil-industrial",
     u: "userena",
     s: 713.35,
-    w: { NEM: 20, RANKING: 10, CL: 15, M1: 40, CIENCIAS: 15 },
+    w: { NEM: 20, RANKING: 10, CL: 15, M1: 40, CIENCIAS: 10, M2: 5 },
   },
   // UBB (verified detail pages)
   {
@@ -921,38 +927,38 @@ const OFFERINGS: Offering[] = [
     c: "ingenieria-civil-industrial",
     u: "ubb",
     s: 756.95,
-    w: { NEM: 10, RANKING: 45, CL: 15, M1: 15, CIENCIAS: 15 },
+    w: { NEM: 10, RANKING: 45, CL: 10, M1: 15, ELECTIVO: 10, M2: 10 },
   },
   {
     c: "arquitectura",
     u: "ubb",
     s: 726.5,
-    w: { NEM: 10, RANKING: 40, CL: 20, M1: 20, CIENCIAS: 10 },
+    w: { NEM: 10, RANKING: 40, CL: 20, M1: 20, ELECTIVO: 10 },
   },
   {
     c: "psicologia",
     u: "ubb",
     s: 724.55,
-    w: { NEM: 20, RANKING: 15, CL: 25, M1: 25, CIENCIAS: 15 },
+    w: { NEM: 20, RANKING: 20, CL: 25, M1: 25, ELECTIVO: 10 },
   },
   {
     c: "derecho",
     u: "ubb",
     s: 700.1,
-    w: { NEM: 20, RANKING: 20, CL: 30, M1: 10, HISTORIA: 20 },
+    w: { NEM: 20, RANKING: 20, CL: 30, M1: 15, HISTORIA: 15 },
   },
   // UMag
   {
     c: "medicina",
     u: "umag",
     s: 887.25,
-    w: { NEM: 20, RANKING: 25, CL: 10, M1: 25, CIENCIAS: 20 },
+    w: { NEM: 20, RANKING: 25, CL: 15, M1: 25, ELECTIVO: 15 },
   },
   {
     c: "psicologia",
     u: "umag",
     s: 708.75,
-    w: { NEM: 35, RANKING: 35, CL: 10, M1: 10, CIENCIAS: 10 },
+    w: { NEM: 35, RANKING: 35, CL: 10, M1: 10, ELECTIVO: 10 },
   },
   {
     c: "derecho",
@@ -964,13 +970,13 @@ const OFFERINGS: Offering[] = [
     c: "kinesiologia",
     u: "umag",
     s: 699,
-    w: { NEM: 30, RANKING: 40, CL: 10, M1: 10, CIENCIAS: 10 },
+    w: { NEM: 30, RANKING: 40, CL: 10, M1: 10, ELECTIVO: 10 },
   },
   {
     c: "enfermeria",
     u: "umag",
     s: 662.45,
-    w: { NEM: 20, RANKING: 25, CL: 15, M1: 20, CIENCIAS: 20 },
+    w: { NEM: 20, RANKING: 25, CL: 15, M1: 20, ELECTIVO: 20 },
   },
   // UTA
   {
@@ -995,7 +1001,7 @@ const OFFERINGS: Offering[] = [
     c: "psicologia",
     u: "uta",
     s: 650.4,
-    w: { NEM: 10, RANKING: 40, CL: 20, M1: 20, CIENCIAS: 10 },
+    w: { NEM: 10, RANKING: 40, CL: 20, M1: 20, ELECTIVO: 10 },
   },
   // UCM
   {
@@ -1014,19 +1020,19 @@ const OFFERINGS: Offering[] = [
     c: "enfermeria",
     u: "ucm",
     s: 750.7,
-    w: { NEM: 15, RANKING: 40, CL: 10, M1: 20, CIENCIAS: 15 },
+    w: { NEM: 10, RANKING: 40, CL: 15, M1: 20, CIENCIAS: 15 },
   },
   {
     c: "ingenieria-civil-industrial",
     u: "ucm",
     s: 717.8,
-    w: { NEM: 10, RANKING: 40, CL: 10, M1: 25, CIENCIAS: 15 },
+    w: { NEM: 10, RANKING: 40, CL: 10, M1: 25, CIENCIAS: 10, M2: 5 },
   },
   {
     c: "psicologia",
     u: "ucm",
     s: 715.6,
-    w: { NEM: 10, RANKING: 40, CL: 20, M1: 20, CIENCIAS: 10 },
+    w: { NEM: 10, RANKING: 40, CL: 20, M1: 20, ELECTIVO: 10 },
   },
   {
     c: "medicina-veterinaria",
@@ -1057,7 +1063,7 @@ const OFFERINGS: Offering[] = [
     c: "psicologia",
     u: "uoh",
     s: 699.05,
-    w: { NEM: 10, RANKING: 30, CL: 25, M1: 25, CIENCIAS: 10 },
+    w: { NEM: 10, RANKING: 30, CL: 25, M1: 25, ELECTIVO: 10 },
   },
   {
     c: "kinesiologia",
@@ -1106,14 +1112,14 @@ const OFFERINGS: Offering[] = [
     c: "psicologia",
     u: "ulagos",
     s: 585.2,
-    w: { NEM: 10, RANKING: 40, CL: 20, M1: 20, CIENCIAS: 10 },
+    w: { NEM: 10, RANKING: 40, CL: 20, M1: 20, ELECTIVO: 10 },
   },
   // UAtacama
   {
     c: "medicina",
     u: "uatacama",
     s: 875.15,
-    w: { NEM: 10, RANKING: 20, CL: 25, M1: 25, CIENCIAS: 20 },
+    w: { NEM: 15, RANKING: 20, CL: 25, M1: 25, CIENCIAS: 15 },
   },
   {
     c: "enfermeria",
@@ -1125,13 +1131,13 @@ const OFFERINGS: Offering[] = [
     c: "ingenieria-civil-industrial",
     u: "uatacama",
     s: 709.05,
-    w: { NEM: 10, RANKING: 35, CL: 15, M1: 30, CIENCIAS: 10 },
+    w: { NEM: 10, RANKING: 35, CL: 10, M1: 30, ELECTIVO: 10, M2: 5 },
   },
   {
     c: "psicologia",
     u: "uatacama",
     s: 630.4,
-    w: { NEM: 10, RANKING: 40, CL: 20, M1: 20, CIENCIAS: 10 },
+    w: { NEM: 10, RANKING: 40, CL: 20, M1: 20, ELECTIVO: 10 },
   },
   {
     c: "derecho",
@@ -1150,7 +1156,7 @@ const OFFERINGS: Offering[] = [
     c: "ingenieria-civil-industrial",
     u: "uaprat",
     s: 702.85,
-    w: { NEM: 10, RANKING: 40, CL: 15, M1: 25, CIENCIAS: 10 },
+    w: { NEM: 10, RANKING: 40, CL: 10, M1: 25, ELECTIVO: 10, M2: 5 },
   },
   {
     c: "quimica-y-farmacia",
@@ -1162,7 +1168,7 @@ const OFFERINGS: Offering[] = [
     c: "psicologia",
     u: "uaprat",
     s: 671.5,
-    w: { NEM: 25, RANKING: 40, CL: 15, M1: 10, CIENCIAS: 10 },
+    w: { NEM: 25, RANKING: 40, CL: 15, M1: 10, ELECTIVO: 10 },
   },
   {
     c: "enfermeria",
@@ -1193,7 +1199,7 @@ const OFFERINGS: Offering[] = [
     c: "ingenieria-civil-industrial",
     u: "uautonoma",
     s: 683.1,
-    w: { NEM: 10, RANKING: 30, CL: 20, M1: 25, CIENCIAS: 15 },
+    w: { NEM: 10, RANKING: 30, CL: 20, M1: 25, CIENCIAS: 10, M2: 5 },
   },
   {
     c: "psicologia",
@@ -1362,7 +1368,25 @@ async function replaceWeights(
 // Main
 // ---------------------------------------------------------------------------
 
+function validateOfferings() {
+  let valid = true;
+  for (const o of OFFERINGS) {
+    const sum = Object.values(o.w).reduce((acc, v) => acc + v, 0);
+    if (sum !== 100) {
+      console.error(
+        `[VALIDATION] Weights for ${o.c} @ ${o.u} sum to ${sum}, expected 100`
+      );
+      valid = false;
+    }
+  }
+  return valid;
+}
+
 async function run() {
+  if (!validateOfferings()) {
+    throw new Error("Offering weights validation failed — fix before seeding");
+  }
+
   const datasetId = await upsertDataset();
 
   for (const o of OFFERINGS) {

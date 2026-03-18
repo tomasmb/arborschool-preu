@@ -59,8 +59,7 @@ export async function GET() {
         )
       : null;
 
-    const projectionTarget =
-      targets.highestUserM1 ?? targets.highestTargetM1;
+    const projectionTarget = targets.highestUserM1 ?? targets.highestTargetM1;
 
     const projectionMetadata = await buildProjectionMetadata({
       userId,
@@ -85,7 +84,7 @@ export async function GET() {
     const hasFullTests = scoreHistory.some((s) => s.type === "full_test");
     const displayHistory = hasFullTests
       ? scoreHistory.filter((s) => s.type === "full_test")
-      : scoreHistory;
+      : [];
 
     return NextResponse.json({
       success: true,
