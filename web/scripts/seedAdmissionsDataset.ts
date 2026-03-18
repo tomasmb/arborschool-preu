@@ -1438,7 +1438,9 @@ async function run() {
   );
 }
 
-run().catch((error) => {
-  console.error("[seedAdmissionsDataset] Failed:", error);
-  process.exit(1);
-});
+run()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error("[seedAdmissionsDataset] Failed:", error);
+    process.exit(1);
+  });

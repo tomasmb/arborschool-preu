@@ -21,10 +21,13 @@ function getConnectionString(): string {
 // Connection pool configuration optimized for serverless (Vercel + Neon)
 // Neon auto-suspends after inactivity; cold starts can take 5-10+ seconds
 function getConnectionOptions() {
+  const url = process.env.DATABASE_URL ?? "";
+  const isPooler = url.includes("-pooler");
   return {
     max: 1, // Serverless: one connection per function instance
     idle_timeout: 20, // Close idle connections quickly
     connect_timeout: 30, // Extended for Neon cold starts (wake from suspend)
+    prepare: !isPooler, // PgBouncer (Neon pooler) doesn't support prepared statements
     connection: {
       statement_timeout: 15000, // Kill queries after 15 seconds
     },
