@@ -27,12 +27,13 @@ export async function PATCH(request: Request) {
   if (
     body.score == null ||
     typeof body.score !== "number" ||
+    !Number.isInteger(body.score) ||
     body.score < 100 ||
     body.score > 1000
   ) {
     return studentApiError(
       "MISSING_FIELDS",
-      "score must be a number between 100 and 1000",
+      "score must be an integer between 100 and 1000",
       400
     );
   }

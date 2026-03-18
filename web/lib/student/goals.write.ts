@@ -225,7 +225,8 @@ export async function updatePrimaryGoalScore(
   score: number
 ) {
   const normalized = testCode.trim().toUpperCase();
-  const scoreStr = normalizeScore(score);
+  const rounded = Math.round(score);
+  const scoreStr = normalizeScore(rounded);
 
   const [primaryGoal] = await db
     .select({ id: studentGoals.id })
@@ -265,7 +266,7 @@ export async function updatePrimaryGoalScore(
     });
   }
 
-  return { testCode: normalized, score };
+  return { testCode: normalized, score: rounded };
 }
 
 /** Creates or updates the per-test weekly minutes for a student. */
