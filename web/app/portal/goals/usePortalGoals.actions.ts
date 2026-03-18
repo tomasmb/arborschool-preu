@@ -157,7 +157,10 @@ function validateBeforeSave(state: GoalsState): string | null {
         continue;
       }
       const score = Number(rawValue);
-      if (!Number.isFinite(score) || score < 100 || score > 1000) {
+      if (!Number.isFinite(score) || !Number.isInteger(score)) {
+        return `El puntaje ${testCode} debe ser un número entero`;
+      }
+      if (score < 100 || score > 1000) {
         return `El puntaje ${testCode} debe estar entre 100 y 1000`;
       }
     }
@@ -184,7 +187,7 @@ function buildSavePayload(state: GoalsState): SaveGoalPayload[] {
         }
         return {
           testCode,
-          score: Number(raw),
+          score: Math.round(Number(raw)),
           source: "student" as const,
         };
       })
@@ -216,7 +219,7 @@ function readDraftScores(draft: GoalDraft | undefined) {
 
   return Object.entries(draft.scores)
     .map(([testCode, rawValue]) => {
-      const parsed = Number(rawValue.trim());
+      const parsed = Math.round(Number(rawValue.trim()));
       if (!Number.isFinite(parsed) || parsed < 100 || parsed > 1000) {
         return null;
       }

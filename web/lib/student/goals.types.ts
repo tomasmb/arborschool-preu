@@ -76,7 +76,7 @@ export function normalizePlanningProfileInput(
 }
 
 export function normalizeScore(value: number): string {
-  return value.toFixed(2);
+  return Math.round(value).toFixed(2);
 }
 
 export function normalizeWeightOrScore(value: string | null): number | null {
@@ -122,6 +122,9 @@ export function validateGoalInputs(goals: StudentGoalInput[]): string | null {
     for (const score of goal.scores ?? []) {
       if (!score.testCode || typeof score.testCode !== "string") {
         return "Each score requires a testCode";
+      }
+      if (!Number.isInteger(score.score)) {
+        return "Scores must be whole numbers (no decimals)";
       }
       if (score.score < 100 || score.score > 1000) {
         return "Scores must be between 100 and 1000";
