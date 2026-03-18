@@ -11,12 +11,15 @@ import {
 
 // ---------------------------------------------------------------------------
 // Reference data — universities, careers, offerings
-// Source: DEMRE Oferta Definitiva (Sep 2025) + DEMRE post-selection results
-// Verified: Mar 2026 against official DEMRE document and university pages.
+// Source: DEMRE "Oferta Definitiva de Carreras, Vacantes y Ponderaciones
+//         Proceso de Admisión 2026" (published Oct 2025, 558-page PDF)
+//         + DEMRE post-selection results ("último seleccionado", Jan 2026)
+// Verified: Mar 2026 against official DEMRE PDF, university pages
+//           (uchile.cl, admision.uc.cl, uach.cl), and filadd.cl aggregator.
 //
 // NOTE on "electivo" weights: when DEMRE shows "HCS o Ciencias" (student
-// uses whichever score is higher), we record the most career-relevant test
-// code (CIENCIAS for science/health, HISTORIA for law/humanities).
+// uses whichever score is higher), we record ELECTIVO. When only one test
+// is accepted, we record CIENCIAS or HISTORIA specifically.
 // ---------------------------------------------------------------------------
 
 const UNIVERSITIES: Record<string, { name: string; shortName: string }> = {
@@ -92,6 +95,11 @@ type Offering = {
 
 // Weights: NEM, RANKING, CL, M1, M2, CIENCIAS, HISTORIA, ELECTIVO (sum=100)
 // ELECTIVO means max(CIENCIAS, HISTORIA) — student chooses best score.
+//
+// Sources:
+//   Weights → DEMRE "Oferta Definitiva Admisión 2026" (published Oct 2025)
+//   Cutoffs → DEMRE selection results ("último seleccionado", Jan 2026)
+//             cross-checked via official university pages & filadd.cl
 const OFFERINGS: Offering[] = [
   // PUC
   {
@@ -141,6 +149,12 @@ const OFFERINGS: Offering[] = [
     u: "puc",
     s: 855.2,
     w: { NEM: 20, RANKING: 20, CL: 15, M1: 35, ELECTIVO: 10 },
+  },
+  {
+    c: "enfermeria",
+    u: "puc",
+    s: 831.25,
+    w: { NEM: 20, RANKING: 25, CL: 10, M1: 20, CIENCIAS: 25 },
   },
   {
     c: "kinesiologia",
@@ -370,6 +384,12 @@ const OFFERINGS: Offering[] = [
     s: 749,
     w: { NEM: 10, RANKING: 30, CL: 40, M1: 10, ELECTIVO: 10 },
   },
+  {
+    c: "odontologia",
+    u: "udd",
+    s: 734,
+    w: { NEM: 20, RANKING: 20, CL: 20, M1: 25, ELECTIVO: 15 },
+  },
   // UDP
   {
     c: "medicina",
@@ -396,6 +416,12 @@ const OFFERINGS: Offering[] = [
     w: { NEM: 10, RANKING: 30, CL: 10, M1: 35, ELECTIVO: 10, M2: 5 },
   },
   {
+    c: "odontologia",
+    u: "udp",
+    s: 750.95,
+    w: { NEM: 10, RANKING: 20, CL: 25, M1: 35, CIENCIAS: 10 },
+  },
+  {
     c: "enfermeria",
     u: "udp",
     s: 740.85,
@@ -413,6 +439,12 @@ const OFFERINGS: Offering[] = [
     u: "uandes",
     s: 944,
     w: { NEM: 10, RANKING: 15, CL: 20, M1: 35, CIENCIAS: 20 },
+  },
+  {
+    c: "odontologia",
+    u: "uandes",
+    s: 824.85,
+    w: { NEM: 20, RANKING: 20, CL: 15, M1: 30, CIENCIAS: 15 },
   },
   {
     c: "ingenieria-civil",
