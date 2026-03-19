@@ -301,3 +301,38 @@ Impacto esperado:
 - Mejor comunicacion de valor.
 - Mas opciones de entrada para alumnos que todavia no estan listos para comprometerse con todo el flujo.
 - Mayor probabilidad de conversion desde usuarios curiosos que quieren probar antes de decidir.
+
+## 16. Hay un error de copy en la landing de estudiantes
+
+Problema observado:
+
+- En la landing de estudiantes, en la seccion `Asi funciona`, aparece el texto:
+- `Responde 16 preguntas adaptativas (~15 min) y obtiene tu rango estimado con evidencia.`
+- Esa redaccion esta mal conjugada.
+
+Cambio que propongo:
+
+- Corregir ese copy a algo como `obtienes tu rango estimado`, `obtén tu rango estimado` o una variante equivalente.
+
+Impacto esperado:
+
+- Mejor calidad percibida del producto.
+- Menos ruido en una seccion clave de explicacion del flujo.
+
+## 17. La pantalla de sign-in menciona terminos, pero no ofrece links directos
+
+Problema observado:
+
+- En la pantalla de sign-in aparece el texto `Al continuar aceptas nuestros términos y condiciones.`
+- Pero ese bloque no incluye links directos a los terminos o a otras paginas legales relevantes.
+- Eso mete friccion y reduce confianza justo en un paso sensible del flujo.
+
+Cambio que propongo:
+
+- Agregar links directos desde ese bloque a terminos, condiciones y/o privacidad segun corresponda.
+
+Impacto esperado:
+
+- Mejor confianza en el login.
+- Mejor UX legal.
+- Menos friccion para usuarios que quieren validar a que estan aceptando.
