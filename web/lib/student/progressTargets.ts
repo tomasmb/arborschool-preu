@@ -66,23 +66,20 @@ const M1_TEST_CODE = "M1";
 export async function getProgressTargets(
   userId: string
 ): Promise<ProgressTargets> {
-  const dataset = await listActiveAdmissionsDataset();
-  const [planningProfile, m1Minutes] = await Promise.all([
-    getStudentPlanningProfile(userId),
-    getStudentTestHours(userId, M1_TEST_CODE),
-  ]);
+  const [dataset, planningProfile, m1Minutes, scoreTargets, profileScores] =
+    await Promise.all([
+      listActiveAdmissionsDataset(),
+      getStudentPlanningProfile(userId),
+      getStudentTestHours(userId, M1_TEST_CODE),
+      listStudentScoreTargets(userId),
+      listStudentProfileScores(userId),
+    ]);
 
   const effectiveMinutes =
     m1Minutes ?? planningProfile?.weeklyMinutesTarget ?? null;
   const defaultAtomsPerWeek = effectiveMinutes
     ? Math.round(effectiveMinutes / EFFECTIVE_MINUTES_PER_ATOM)
     : null;
-
-  // Load student-centric data
-  const [scoreTargets, profileScores] = await Promise.all([
-    listStudentScoreTargets(userId),
-    listStudentProfileScores(userId),
-  ]);
 
   const m1Target =
     scoreTargets.find((t) => t.testCode === M1_TEST_CODE)?.score ?? null;

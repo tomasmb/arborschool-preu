@@ -41,7 +41,7 @@ import type {
   AtomWithPrereqs,
   AtomMasteryState,
 } from "@/lib/diagnostic/questionUnlock/types";
-import { getUserDiagnosticSnapshot, getMasteryRows } from "./userQueries";
+import { getMasteryRows } from "./userQueries";
 
 // ============================================================================
 // TYPES
@@ -179,7 +179,7 @@ function buildLearningOrder(
  * atoms and 202 official questions. Atoms are ordered by marginal
  * efficiency (high-impact atoms first), respecting prerequisites.
  */
-async function buildUnlockCurve(
+export async function buildUnlockCurve(
   userId: string
 ): Promise<{
   curve: UnlockCurveEntry[];
@@ -303,27 +303,28 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+/** Return type of buildUnlockCurve, used by assembleProjectionMetadata. */
+export type UnlockCurveData = {
+  curve: UnlockCurveEntry[];
+  initialUnlocked: number;
+  totalRemainingAtoms: number;
+  totalOfficialQuestions: number;
+};
+
 /**
- * Computes everything the client needs to render projections locally.
- *
- * Called once on page load. Returns the unlock curve and an
- * accuracy-derived uncertainty factor so the client can walk the
- * curve at any slider speed without additional API calls.
- *
- * The projected score is knowledge-based (atoms mastered = questions
- * known). Accuracy only determines the confidence band width.
+ * Pure computation: assembles projection metadata from pre-fetched data.
+ * No DB calls — safe to run after parallel fetches resolve.
  */
-export async function buildProjectionMetadata(params: {
-  userId: string;
+export function assembleProjectionMetadata(params: {
+  snapshot: {
+    paesScoreMin: number | null;
+    paesScoreMax: number | null;
+  } | null;
+  curveData: UnlockCurveData;
   targetScore?: number | null;
   startingScore?: number | null;
-}): Promise<ProjectionMetadata | null> {
-  const { userId } = params;
-
-  const [snapshot, curveData] = await Promise.all([
-    getUserDiagnosticSnapshot(userId),
-    buildUnlockCurve(userId),
-  ]);
+}): ProjectionMetadata | null {
+  const { snapshot, curveData } = params;
 
   if (!snapshot?.paesScoreMin || !snapshot?.paesScoreMax) {
     return null;
