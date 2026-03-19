@@ -102,10 +102,6 @@ export function resolveDiagnosticEntryRoute(
     return DIAGNOSTIC_ROUTE;
   }
 
-  if (!journeySnapshot.hasPlanningProfile) {
-    return PLANNING_ROUTE;
-  }
-
   if (
     journeySnapshot.journeyState === "activation_ready" ||
     journeySnapshot.journeyState === "active_learning"
@@ -131,7 +127,7 @@ export function resolveStudyEntryRoute(params: {
     | "/portal";
   contextBannerCode?: PortalContextBannerCode;
 } {
-  const { journeyState, hasPlanningProfile } = params.journeySnapshot;
+  const { journeyState } = params.journeySnapshot;
 
   if (journeyState === "active_learning") {
     if (
@@ -150,14 +146,12 @@ export function resolveStudyEntryRoute(params: {
     return { route: PLANNING_ROUTE };
   }
 
-  if (!hasPlanningProfile) {
-    return { route: PLANNING_ROUTE };
-  }
-
   if (journeyState === "diagnostic_in_progress") {
     return { route: DIAGNOSTIC_ROUTE };
   }
 
+  // activation_ready: user completed the diagnostic, allow study
+  // even if they haven't created a planning profile yet.
   if (journeyState === "activation_ready") {
     return { route: STUDY_ROUTE };
   }
