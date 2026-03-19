@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuthenticatedStudentUser } from "@/lib/student/apiAuth";
 import {
   getScoreHistory,
-  buildProjectionMetadata,
+  buildUnlockCurve,
+  assembleProjectionMetadata,
 } from "@/lib/student/scoreHistory";
 import { getRetestStatus } from "@/lib/student/retestGating";
 import { getUserDiagnosticSnapshot } from "@/lib/student/userQueries";
@@ -37,6 +38,7 @@ export async function GET() {
       masteryBreakdown,
       axisMastery,
       targets,
+      curveData,
     ] = await Promise.all([
       getScoreHistory(userId),
       getRetestStatus(userId),
@@ -44,6 +46,7 @@ export async function GET() {
       getMasteryStatusBreakdown(userId),
       getAxisMasteryBreakdown(userId),
       getProgressTargets(userId),
+      buildUnlockCurve(userId),
     ]);
 
     const hasSnapshot =
@@ -60,10 +63,13 @@ export async function GET() {
       : null;
 
     const projectionTarget =
-      targets.studentM1Target ?? targets.highestUserM1 ?? targets.highestTargetM1;
+      targets.studentM1Target ??
+      targets.highestUserM1 ??
+      targets.highestTargetM1;
 
-    const projectionMetadata = await buildProjectionMetadata({
-      userId,
+    const projectionMetadata = assembleProjectionMetadata({
+      snapshot,
+      curveData,
       targetScore: projectionTarget,
       startingScore: display?.score ?? null,
     });

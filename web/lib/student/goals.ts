@@ -36,8 +36,10 @@ export {
 
 /** Legacy view used by old career-centric goals page. */
 export async function getStudentGoalsView(userId: string) {
-  const dataset = await listActiveAdmissionsDataset();
-  const planningProfile = await getStudentPlanningProfile(userId);
+  const [dataset, planningProfile] = await Promise.all([
+    listActiveAdmissionsDataset(),
+    getStudentPlanningProfile(userId),
+  ]);
 
   if (!dataset) {
     return {
@@ -81,13 +83,13 @@ export async function saveStudentGoalsView(
  * career interests, and admissions options for the positioning engine.
  */
 export async function getStudentObjectivesView(userId: string) {
-  const dataset = await listActiveAdmissionsDataset();
-  const planningProfile = await getStudentPlanningProfile(userId);
-
-  const [scoreTargets, profileScores] = await Promise.all([
-    listStudentScoreTargets(userId),
-    listStudentProfileScores(userId),
-  ]);
+  const [dataset, planningProfile, scoreTargets, profileScores] =
+    await Promise.all([
+      listActiveAdmissionsDataset(),
+      getStudentPlanningProfile(userId),
+      listStudentScoreTargets(userId),
+      listStudentProfileScores(userId),
+    ]);
 
   if (!dataset) {
     return {

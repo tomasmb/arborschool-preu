@@ -207,40 +207,45 @@ export async function createReviewSession(
   ]);
   const questionMap = await findBatchReviewQuestions(dueAtomIds, seenMap);
 
-  const items: ReviewSession["items"] = [];
-  let position = 0;
+  const validEntries: Array<{
+    due: (typeof dueItems)[number];
+    question: NonNullable<ReturnType<typeof questionMap.get>>;
+    parsed: ReturnType<typeof parseQtiXml>;
+  }> = [];
   for (const due of dueItems) {
     const q = questionMap.get(due.atomId);
     if (!q) continue;
-
-    position++;
-    const parsed = parseQtiXml(q.qtiXml);
-    const [response] = await db
-      .insert(atomStudyResponses)
-      .values({
-        sessionId: session.id,
-        questionId: q.id,
-        position,
-        difficultyLevel: "hard",
-      })
-      .returning({ id: atomStudyResponses.id });
-
-    items.push({
-      responseId: response.id,
-      atomId: due.atomId,
-      atomTitle: due.atomTitle,
-      questionHtml: parsed.html,
-      options: parsed.options,
-    });
+    validEntries.push({ due, question: q, parsed: parseQtiXml(q.qtiXml) });
   }
 
-  if (items.length === 0) {
+  if (validEntries.length === 0) {
     await db
       .update(atomStudySessions)
       .set({ status: "abandoned", completedAt: new Date() })
       .where(eq(atomStudySessions.id, session.id));
     return null;
   }
+
+  const responses = await db
+    .insert(atomStudyResponses)
+    .values(
+      validEntries.map((e, i) => ({
+        sessionId: session.id,
+        questionId: e.question.id,
+        position: i + 1,
+        difficultyLevel: "hard" as const,
+      }))
+    )
+    .returning({ id: atomStudyResponses.id });
+
+  const items: ReviewSession["items"] = validEntries.map((e, i) => ({
+    responseId: responses[i].id,
+    atomId: e.due.atomId,
+    atomTitle: e.due.atomTitle,
+    questionHtml: e.parsed.html,
+    options: e.parsed.options,
+  }));
+
   return { sessionId: session.id, items };
 }
 

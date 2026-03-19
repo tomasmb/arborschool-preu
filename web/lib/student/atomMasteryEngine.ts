@@ -132,34 +132,38 @@ export async function createAtomSession(
 ): Promise<AtomSessionPayload> {
   await applyInactivityDecay(userId);
 
-  const [atom] = await db
-    .select({ id: atoms.id, title: atoms.title })
-    .from(atoms)
-    .where(eq(atoms.id, atomId))
-    .limit(1);
-  if (!atom) throw new Error("Atom not found");
-
-  const [active] = await db
-    .select({
-      id: atomStudySessions.id,
-      status: atomStudySessions.status,
-      attemptNumber: atomStudySessions.attemptNumber,
-    })
-    .from(atomStudySessions)
-    .where(
-      and(
-        eq(atomStudySessions.userId, userId),
-        eq(atomStudySessions.atomId, atomId),
-        inArray(atomStudySessions.status, ["lesson", "in_progress"])
+  const [atomRows, activeRows, lessonRows] = await Promise.all([
+    db
+      .select({ id: atoms.id, title: atoms.title })
+      .from(atoms)
+      .where(eq(atoms.id, atomId))
+      .limit(1),
+    db
+      .select({
+        id: atomStudySessions.id,
+        status: atomStudySessions.status,
+        attemptNumber: atomStudySessions.attemptNumber,
+      })
+      .from(atomStudySessions)
+      .where(
+        and(
+          eq(atomStudySessions.userId, userId),
+          eq(atomStudySessions.atomId, atomId),
+          inArray(atomStudySessions.status, ["lesson", "in_progress"])
+        )
       )
-    )
-    .limit(1);
+      .limit(1),
+    db
+      .select({ id: lessons.id, lessonHtml: lessons.lessonHtml })
+      .from(lessons)
+      .where(eq(lessons.atomId, atomId))
+      .limit(1),
+  ]);
 
-  const [lesson] = await db
-    .select({ id: lessons.id, lessonHtml: lessons.lessonHtml })
-    .from(lessons)
-    .where(eq(lessons.atomId, atomId))
-    .limit(1);
+  const atom = atomRows[0];
+  const active = activeRows[0];
+  const lesson = lessonRows[0];
+  if (!atom) throw new Error("Atom not found");
 
   if (active) {
     return {
