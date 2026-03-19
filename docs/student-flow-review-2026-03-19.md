@@ -56,6 +56,7 @@ Problema observado:
 - `Volver al inicio` llevaba a la landing, pero al intentar entrar otra vez al diagnostico se volvia a la misma pestaña de `Estamos haciendo ajustes`.
 - El resultado practico era un bucle del que el alumno no podia salir facilmente.
 - En ese contexto, tampoco habia una opcion clara de cerrar sesion desde esa salida para romper el estado y recuperar control.
+- Ademas, en esa cuenta la sesion podia quedar activa mientras el alumno volvía a una landing donde tampoco habia una opcion visible de cerrar sesion.
 
 Cambio que propongo:
 
