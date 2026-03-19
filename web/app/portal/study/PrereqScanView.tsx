@@ -271,7 +271,7 @@ function AllClearPanel({ ctrl }: { ctrl: Controller }) {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
-        <Link href="/portal" className="btn-cta text-center text-sm py-3 px-6">
+        <Link href="/portal/study" className="btn-cta text-center text-sm py-3 px-6">
           Continuar aprendiendo
         </Link>
       </div>

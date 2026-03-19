@@ -214,7 +214,7 @@ function StudyCTA() {
           Cada concepto dominado mejora tu puntaje M1.
         </p>
       </div>
-      <Link href="/portal" className="btn-primary text-xs px-4 py-2 shrink-0">
+      <Link href="/portal/study" className="btn-primary text-xs px-4 py-2 shrink-0">
         Estudiar
       </Link>
     </section>
