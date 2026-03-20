@@ -20,8 +20,8 @@ import {
 } from "@/db/schema";
 import { parseQtiXml } from "@/lib/qti/serverParser";
 import {
-  findGeneratedQuestions,
-  getSeenQuestionIds,
+  getBatchSeenQuestionIds,
+  findBatchReviewQuestions,
   normalizeAnswer,
 } from "./questionQueries";
 import { startPrereqScan } from "./prerequisiteScan";
@@ -159,40 +159,56 @@ export async function createVerificationSession(
     })
     .returning({ id: atomStudySessions.id });
 
-  const items: VerificationSessionItem[] = [];
-  for (let i = 0; i < dueItems.length; i++) {
-    const due = dueItems[i];
-    const seenIds = await getSeenQuestionIds(userId, due.atomId);
-    const q = await findHardQuestion(due.atomId, seenIds);
+  const atomIds = dueItems.map((d) => d.atomId);
+  const seenMap = await getBatchSeenQuestionIds(userId, atomIds);
+  const questionsWithExclusions =
+    await findBatchReviewQuestions(atomIds, seenMap);
+
+  // Build insertable rows, skipping atoms with no available question
+  const insertRows: {
+    due: VerificationDueItem;
+    question: { id: string; qtiXml: string };
+    position: number;
+  }[] = [];
+  let pos = 0;
+  for (const due of dueItems) {
+    const q = questionsWithExclusions.get(due.atomId);
     if (!q) continue;
-
-    const parsed = parseQtiXml(q.qtiXml);
-    const [response] = await db
-      .insert(atomStudyResponses)
-      .values({
-        sessionId: session.id,
-        questionId: q.id,
-        position: i + 1,
-        difficultyLevel: "hard",
-      })
-      .returning({ id: atomStudyResponses.id });
-
-    items.push({
-      responseId: response.id,
-      atomId: due.atomId,
-      atomTitle: due.atomTitle,
-      questionHtml: parsed.html,
-      options: parsed.options,
-    });
+    pos++;
+    insertRows.push({ due, question: q, position: pos });
   }
 
-  if (items.length === 0) {
+  if (insertRows.length === 0) {
     await db
       .update(atomStudySessions)
       .set({ status: "abandoned", completedAt: new Date() })
       .where(eq(atomStudySessions.id, session.id));
     return null;
   }
+
+  // Batch insert all responses in a single query
+  const responses = await db
+    .insert(atomStudyResponses)
+    .values(
+      insertRows.map((r) => ({
+        sessionId: session.id,
+        questionId: r.question.id,
+        position: r.position,
+        difficultyLevel: "hard" as const,
+      }))
+    )
+    .returning({ id: atomStudyResponses.id });
+
+  const items: VerificationSessionItem[] = insertRows.map((r, i) => {
+    const parsed = parseQtiXml(r.question.qtiXml);
+    return {
+      responseId: responses[i].id,
+      atomId: r.due.atomId,
+      atomTitle: r.due.atomTitle,
+      questionHtml: parsed.html,
+      options: parsed.options,
+    };
+  });
 
   return { sessionId: session.id, items };
 }
@@ -230,13 +246,6 @@ export async function submitVerificationAnswer(params: {
   if (resp.isCorrect !== null) {
     throw new Error("Verification answer already submitted");
   }
-
-  const qRows = await findGeneratedQuestions({
-    atomId: "",
-    difficulty: "high",
-    limit: 0,
-  });
-  void qRows;
 
   const [qRow] = await db
     .select({ qtiXml: sql<string>`qti_xml` })
@@ -352,16 +361,6 @@ export async function submitVerificationAnswer(params: {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-async function findHardQuestion(atomId: string, excludeIds: string[]) {
-  const rows = await findGeneratedQuestions({
-    atomId,
-    difficulty: "high",
-    excludeIds,
-    limit: 1,
-  });
-  return rows[0] ?? null;
-}
 
 async function getResponseAtomId(responseId: string): Promise<string> {
   const [row] = await db

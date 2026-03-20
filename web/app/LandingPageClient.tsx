@@ -2,17 +2,27 @@
 
 import { useCallback, useEffect } from "react";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { trackLandingPageViewed } from "@/lib/analytics";
 import {
   HeroSection,
   ProblemSection,
   HowItWorksSection,
-  MasterySection,
-  ProgressSection,
   StakeholderTabs,
   CtaSection,
   Footer,
 } from "@/app/components/landing";
+
+const MasterySection = dynamic(
+  () =>
+    import("@/app/components/landing").then((mod) => mod.MasterySection),
+  { ssr: false }
+);
+const ProgressSection = dynamic(
+  () =>
+    import("@/app/components/landing").then((mod) => mod.ProgressSection),
+  { ssr: false }
+);
 
 function smoothScrollTo(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });

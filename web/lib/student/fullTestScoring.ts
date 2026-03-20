@@ -152,51 +152,41 @@ async function upsertMasteryFromCorrectAnswers(
 
   if (correctOriginals.length === 0) return;
 
-  const primaryAtoms = await tx
-    .select({
-      questionId: questionAtoms.questionId,
-      atomId: questionAtoms.atomId,
-    })
-    .from(questionAtoms)
-    .where(
-      and(
-        inArray(questionAtoms.questionId, correctOriginals),
-        eq(questionAtoms.relevance, "primary")
-      )
-    );
+  const uniqueAtomIds = await getPrimaryAtomIds(tx, correctOriginals);
+  if (uniqueAtomIds.length === 0) return;
 
   const now = new Date();
   const nowIso = now.toISOString();
-  for (const { atomId } of primaryAtoms) {
-    await tx
-      .insert(atomMastery)
-      .values({
+  await tx
+    .insert(atomMastery)
+    .values(
+      uniqueAtomIds.map((atomId) => ({
         userId,
         atomId,
         isMastered: true,
-        masterySource: "practice_test",
+        masterySource: "practice_test" as const,
         firstMasteredAt: now,
+        status: "mastered" as const,
+        updatedAt: now,
+      }))
+    )
+    .onConflictDoUpdate({
+      target: [atomMastery.userId, atomMastery.atomId],
+      set: {
+        isMastered: true,
+        masterySource: sql`CASE
+          WHEN ${atomMastery.isMastered} = true
+          THEN ${atomMastery.masterySource}
+          ELSE 'practice_test'
+        END`,
+        firstMasteredAt: sql`COALESCE(
+          ${atomMastery.firstMasteredAt},
+          ${nowIso}::timestamptz
+        )`,
         status: "mastered",
         updatedAt: now,
-      })
-      .onConflictDoUpdate({
-        target: [atomMastery.userId, atomMastery.atomId],
-        set: {
-          isMastered: true,
-          masterySource: sql`CASE
-            WHEN ${atomMastery.isMastered} = true
-            THEN ${atomMastery.masterySource}
-            ELSE 'practice_test'
-          END`,
-          firstMasteredAt: sql`COALESCE(
-            ${atomMastery.firstMasteredAt},
-            ${nowIso}::timestamptz
-          )`,
-          status: "mastered",
-          updatedAt: now,
-        },
-      });
-  }
+      },
+    });
 }
 
 /** Extracts unique primary atom IDs for a set of question IDs. */
@@ -233,32 +223,36 @@ async function creditSpacedRepetitionFromTest(
   if (atomIds.length === 0) return;
 
   const now = new Date();
-  for (const atomId of atomIds) {
-    await tx
-      .update(atomMastery)
-      .set({
-        sessionsSinceLastReview: 0,
-        lastDemonstratedAt: now,
-        reviewIntervalSessions: sql`CASE
-          WHEN ${atomMastery.reviewIntervalSessions} IS NOT NULL
-          THEN LEAST(CEIL(${atomMastery.reviewIntervalSessions} * 1.5)::int, 20)
-          ELSE ${atomMastery.reviewIntervalSessions}
-        END`,
-        nextReviewAt: sql`CASE
-          WHEN ${atomMastery.reviewIntervalSessions} IS NOT NULL
-          THEN NOW() + (LEAST(CEIL(${atomMastery.reviewIntervalSessions} * 1.5)::int, 20) * INTERVAL '2 days')
-          ELSE ${atomMastery.nextReviewAt}
-        END`,
-        updatedAt: now,
-      })
-      .where(
-        and(
-          eq(atomMastery.userId, userId),
-          eq(atomMastery.atomId, atomId),
-          eq(atomMastery.isMastered, true)
+  await tx
+    .update(atomMastery)
+    .set({
+      sessionsSinceLastReview: 0,
+      lastDemonstratedAt: now,
+      reviewIntervalSessions: sql`CASE
+        WHEN ${atomMastery.reviewIntervalSessions} IS NOT NULL
+        THEN LEAST(
+          CEIL(${atomMastery.reviewIntervalSessions} * 1.5)::int, 20
         )
-      );
-  }
+        ELSE ${atomMastery.reviewIntervalSessions}
+      END`,
+      nextReviewAt: sql`CASE
+        WHEN ${atomMastery.reviewIntervalSessions} IS NOT NULL
+        THEN NOW() + (
+          LEAST(
+            CEIL(${atomMastery.reviewIntervalSessions} * 1.5)::int, 20
+          ) * INTERVAL '2 days'
+        )
+        ELSE ${atomMastery.nextReviewAt}
+      END`,
+      updatedAt: now,
+    })
+    .where(
+      and(
+        eq(atomMastery.userId, userId),
+        inArray(atomMastery.atomId, atomIds),
+        eq(atomMastery.isMastered, true)
+      )
+    );
 }
 
 /**
@@ -278,17 +272,15 @@ async function flagMasteryDiscrepancies(
   if (atomIds.length === 0) return;
 
   const now = new Date();
-  for (const atomId of atomIds) {
-    await tx
-      .update(atomMastery)
-      .set({ status: "needs_verification", updatedAt: now })
-      .where(
-        and(
-          eq(atomMastery.userId, userId),
-          eq(atomMastery.atomId, atomId),
-          eq(atomMastery.isMastered, true),
-          eq(atomMastery.status, "mastered")
-        )
-      );
-  }
+  await tx
+    .update(atomMastery)
+    .set({ status: "needs_verification", updatedAt: now })
+    .where(
+      and(
+        eq(atomMastery.userId, userId),
+        inArray(atomMastery.atomId, atomIds),
+        eq(atomMastery.isMastered, true),
+        eq(atomMastery.status, "mastered")
+      )
+    );
 }
