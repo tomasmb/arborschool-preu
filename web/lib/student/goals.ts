@@ -9,7 +9,6 @@ import {
 } from "./goals.read";
 import {
   replaceStudentGoals,
-  saveStudentObjectives,
   upsertStudentScoreTarget,
 } from "./goals.write";
 import {
@@ -30,7 +29,6 @@ export {
   listStudentCareerInterests,
   getStudentPlanningProfile,
   replaceStudentGoals,
-  saveStudentObjectives,
   upsertStudentScoreTarget,
 };
 
