@@ -1,4 +1,5 @@
 import { and, desc, eq } from "drizzle-orm";
+import { unstable_cache } from "next/cache";
 import { db } from "@/db";
 import {
   admissionsDatasets,
@@ -109,21 +110,29 @@ function reduceGoalRows(rows: StudentGoalRow[]) {
   return [...byGoal.values()].sort((a, b) => a.priority - b.priority);
 }
 
-export async function listActiveAdmissionsDataset() {
-  const rows = await db
-    .select({
-      id: admissionsDatasets.id,
-      version: admissionsDatasets.version,
-      source: admissionsDatasets.source,
-      publishedAt: admissionsDatasets.publishedAt,
-    })
-    .from(admissionsDatasets)
-    .where(eq(admissionsDatasets.isActive, true))
-    .orderBy(desc(admissionsDatasets.publishedAt))
-    .limit(1);
+/**
+ * Active admissions dataset. Cached for 1 hour — changes once per
+ * admissions cycle, not per request.
+ */
+export const listActiveAdmissionsDataset = unstable_cache(
+  async () => {
+    const rows = await db
+      .select({
+        id: admissionsDatasets.id,
+        version: admissionsDatasets.version,
+        source: admissionsDatasets.source,
+        publishedAt: admissionsDatasets.publishedAt,
+      })
+      .from(admissionsDatasets)
+      .where(eq(admissionsDatasets.isActive, true))
+      .orderBy(desc(admissionsDatasets.publishedAt))
+      .limit(1);
 
-  return rows[0] ?? null;
-}
+    return rows[0] ?? null;
+  },
+  ["active-admissions-dataset"],
+  { revalidate: 3600, tags: ["admissions-data"] }
+);
 
 export async function listAdmissionsOptions(datasetId: string) {
   const rows = await db

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { PRIVATE_CACHE_HEADERS } from "@/lib/student/apiEnvelope";
 import { requireAuthenticatedStudentUser } from "@/lib/student/apiAuth";
 import {
   getAvailableFullTests,
@@ -27,40 +28,49 @@ export async function GET() {
         userId,
         inProgress.attemptId
       );
-      return NextResponse.json({
-        success: true,
-        data: {
-          testName: inProgress.testName,
-          questionCount: questions.length,
-          timeLimitMinutes:
-            inProgress.timeLimitMinutes ?? FULL_TEST_DURATION_MIN,
+      return NextResponse.json(
+        {
+          success: true,
+          data: {
+            testName: inProgress.testName,
+            questionCount: questions.length,
+            timeLimitMinutes:
+              inProgress.timeLimitMinutes ?? FULL_TEST_DURATION_MIN,
+          },
         },
-      });
+        { headers: PRIVATE_CACHE_HEADERS }
+      );
     }
 
     const available = await getAvailableFullTests(userId);
     if (available.length === 0) {
-      return NextResponse.json({
-        success: true,
-        data: {
-          testName: null,
-          questionCount: 0,
-          timeLimitMinutes: FULL_TEST_DURATION_MIN,
+      return NextResponse.json(
+        {
+          success: true,
+          data: {
+            testName: null,
+            questionCount: 0,
+            timeLimitMinutes: FULL_TEST_DURATION_MIN,
+          },
         },
-      });
+        { headers: PRIVATE_CACHE_HEADERS }
+      );
     }
 
     const test = available[0];
     const questions = await resolveTestQuestions(test.id, userId);
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        testName: test.name,
-        questionCount: questions.length,
-        timeLimitMinutes: test.timeLimitMinutes ?? FULL_TEST_DURATION_MIN,
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          testName: test.name,
+          questionCount: questions.length,
+          timeLimitMinutes: test.timeLimitMinutes ?? FULL_TEST_DURATION_MIN,
+        },
       },
-    });
+      { headers: PRIVATE_CACHE_HEADERS }
+    );
   } catch (error) {
     console.error("Failed to fetch test info:", error);
     return NextResponse.json(

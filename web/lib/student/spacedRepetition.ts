@@ -3,7 +3,7 @@
  * not calendar days. Intervals grow on success and shrink on failure.
  */
 
-import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   atomMastery,
@@ -125,59 +125,65 @@ export async function initializeReviewSchedule(
     .where(masteryWhere(userId, atomId));
 }
 
-/** Review budget based on recent study frequency. Hard cap: 5 items. */
-export async function getSessionBudget(userId: string): Promise<number> {
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const [row] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(atomStudySessions)
-    .where(
-      and(
-        eq(atomStudySessions.userId, userId),
-        gte(atomStudySessions.startedAt, sevenDaysAgo),
-        inArray(atomStudySessions.status, ["mastered", "failed"])
-      )
-    );
-  const spw = Number(row?.count ?? 0);
-  if (spw >= 3) return Math.min(5, Math.ceil(spw * 0.3));
-  if (spw >= 1) return Math.min(5, Math.ceil(spw * 0.2));
-  return 1;
-}
-
-/** Atoms due for review, sorted by urgency, capped at session budget. */
+/**
+ * Atoms due for review, sorted by urgency, capped at a dynamic budget
+ * derived from the student's recent study frequency.
+ *
+ * Budget logic (inlined as CTE to avoid a separate round-trip):
+ *   sessions_past_week >= 3 → CEIL(spw * 0.3), cap 5
+ *   sessions_past_week >= 1 → CEIL(spw * 0.2), cap 5
+ *   else                    → 1
+ */
 export async function getReviewDueItems(
   userId: string
 ): Promise<ReviewDueItem[]> {
-  const budget = await getSessionBudget(userId);
+  type DueRow = {
+    atom_id: string;
+    review_interval_sessions: number;
+    sessions_since_last_review: number;
+    title: string;
+  };
 
-  const sinceCol = atomMastery.sessionsSinceLastReview;
-  const intCol = atomMastery.reviewIntervalSessions;
-  const rows = await db
-    .select({
-      atomId: atomMastery.atomId,
-      interval: intCol,
-      since: sinceCol,
-      atomTitle: atoms.title,
-    })
-    .from(atomMastery)
-    .innerJoin(atoms, eq(atoms.id, atomMastery.atomId))
-    .where(
-      and(
-        eq(atomMastery.userId, userId),
-        eq(atomMastery.isMastered, true),
-        sql`${intCol} IS NOT NULL`,
-        sql`${sinceCol} >= ${intCol}`
-      )
+  const rows = await db.execute<DueRow>(sql`
+    WITH recent_sessions AS (
+      SELECT count(*) AS spw
+      FROM atom_study_sessions
+      WHERE user_id = ${userId}
+        AND started_at >= now() - interval '7 days'
+        AND status IN ('mastered', 'failed')
+    ),
+    budget AS (
+      SELECT LEAST(5, CASE
+        WHEN spw >= 3 THEN CEIL(spw * 0.3)
+        WHEN spw >= 1 THEN CEIL(spw * 0.2)
+        ELSE 1
+      END)::int AS b
+      FROM recent_sessions
     )
-    .orderBy(desc(sql`${sinceCol} - ${intCol}`), sql`${intCol} ASC`)
-    .limit(budget);
+    SELECT
+      am.atom_id,
+      am.review_interval_sessions,
+      am.sessions_since_last_review,
+      a.title
+    FROM atom_mastery am
+    JOIN atoms a ON a.id = am.atom_id
+    WHERE am.user_id = ${userId}
+      AND am.is_mastered = true
+      AND am.review_interval_sessions IS NOT NULL
+      AND am.sessions_since_last_review >= am.review_interval_sessions
+    ORDER BY
+      (am.sessions_since_last_review - am.review_interval_sessions) DESC,
+      am.review_interval_sessions ASC
+    LIMIT (SELECT b FROM budget)
+  `);
 
-  return rows.map((r) => ({
-    atomId: r.atomId,
-    atomTitle: r.atomTitle,
-    reviewIntervalSessions: r.interval!,
-    sessionsSinceLastReview: r.since ?? 0,
-    overdueBy: (r.since ?? 0) - (r.interval ?? 0),
+  return (rows as unknown as DueRow[]).map((r) => ({
+    atomId: r.atom_id,
+    atomTitle: r.title,
+    reviewIntervalSessions: r.review_interval_sessions,
+    sessionsSinceLastReview: r.sessions_since_last_review ?? 0,
+    overdueBy:
+      (r.sessions_since_last_review ?? 0) - (r.review_interval_sessions ?? 0),
   }));
 }
 

@@ -5,6 +5,7 @@
  */
 
 import { and, eq, sql } from "drizzle-orm";
+import { unstable_cache } from "next/cache";
 import { db } from "@/db";
 import { atomMastery, atoms, questions as questionsTable } from "@/db/schema";
 import {
@@ -14,14 +15,21 @@ import {
 } from "./habitGuard";
 import { getReviewDueItems } from "./spacedRepetition";
 
-/** Total count of official questions in the pool (for normalization). */
-export async function getTotalOfficialQuestionCount(): Promise<number> {
-  const [row] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(questionsTable)
-    .where(eq(questionsTable.source, "official"));
-  return Number(row?.count ?? 0);
-}
+/**
+ * Total count of official questions in the pool (for normalization).
+ * Cached for 1 hour — content changes are infrequent.
+ */
+export const getTotalOfficialQuestionCount = unstable_cache(
+  async (): Promise<number> => {
+    const [row] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(questionsTable)
+      .where(eq(questionsTable.source, "official"));
+    return Number(row?.count ?? 0);
+  },
+  ["content-question-count"],
+  { revalidate: 3600, tags: ["content-questions"] }
+);
 
 /**
  * Counts PAES questions that just became fully answerable because atomId

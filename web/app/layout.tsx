@@ -6,12 +6,14 @@ import { PostHogProvider } from "./providers";
 const inter = Inter({
   variable: "--font-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const merriweather = Merriweather({
   variable: "--font-serif",
   weight: ["300", "400", "700"],
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {

@@ -1,6 +1,5 @@
-import { and, desc, eq, gt, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { db } from "@/db";
-import { atomStudySessions } from "@/db/schema";
 import { SR_BALANCE_THRESHOLD } from "@/lib/diagnostic/scoringConstants";
 import {
   analyzeLearningPotential,
@@ -224,38 +223,30 @@ function buildEmptyState(status: Exclude<NextActionStatus, "ready">) {
 // SR_BALANCE_THRESHOLD imported from scoringConstants.ts (single source of truth)
 
 /**
- * Counts mastery sessions completed since the user's last review session.
- * Used by the balance rule to interleave reviews after 2-3 new masteries.
+ * Counts mastery sessions completed since the user's last review session
+ * in a single query with an inline subquery. Used by the balance rule to
+ * interleave reviews after 2-3 new masteries.
  */
-async function getMasteriesSinceLastReview(userId: string): Promise<number> {
-  const [lastReview] = await db
-    .select({ completedAt: atomStudySessions.completedAt })
-    .from(atomStudySessions)
-    .where(
-      and(
-        eq(atomStudySessions.userId, userId),
-        eq(atomStudySessions.sessionType, "review"),
-        sql`${atomStudySessions.completedAt} IS NOT NULL`
+async function getMasteriesSinceLastReview(
+  userId: string
+): Promise<number> {
+  const rows = await db.execute<{ count: string }>(sql`
+    SELECT count(*) AS count
+    FROM atom_study_sessions
+    WHERE user_id = ${userId}
+      AND session_type = 'mastery'
+      AND status = 'mastered'
+      AND completed_at > COALESCE(
+        (SELECT completed_at FROM atom_study_sessions
+         WHERE user_id = ${userId}
+           AND session_type = 'review'
+           AND completed_at IS NOT NULL
+         ORDER BY completed_at DESC
+         LIMIT 1),
+        '1970-01-01'::timestamptz
       )
-    )
-    .orderBy(desc(atomStudySessions.completedAt))
-    .limit(1);
-
-  const since = lastReview?.completedAt ?? new Date(0);
-
-  const [row] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(atomStudySessions)
-    .where(
-      and(
-        eq(atomStudySessions.userId, userId),
-        eq(atomStudySessions.sessionType, "mastery"),
-        eq(atomStudySessions.status, "mastered"),
-        gt(atomStudySessions.completedAt, since)
-      )
-    );
-
-  return Number(row?.count ?? 0);
+  `);
+  return Number((rows as unknown as { count: string }[])[0]?.count ?? 0);
 }
 
 export async function getStudentNextAction(

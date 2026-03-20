@@ -1,7 +1,11 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { studentPlanningProfiles } from "@/db/schema";
-import { studentApiError, studentApiSuccess } from "@/lib/student/apiEnvelope";
+import {
+  PRIVATE_CACHE_HEADERS,
+  studentApiError,
+  studentApiSuccess,
+} from "@/lib/student/apiEnvelope";
 import { getAuthenticatedStudentUserId } from "@/lib/student/auth";
 
 export async function GET() {
@@ -20,10 +24,13 @@ export async function GET() {
       .where(eq(studentPlanningProfiles.userId, userId))
       .limit(1);
 
-    return studentApiSuccess({
-      reminderInApp: row?.reminderInApp ?? true,
-      reminderEmail: row?.reminderEmail ?? true,
-    });
+    return studentApiSuccess(
+      {
+        reminderInApp: row?.reminderInApp ?? true,
+        reminderEmail: row?.reminderEmail ?? true,
+      },
+      { headers: PRIVATE_CACHE_HEADERS }
+    );
   } catch (error) {
     const message =
       error instanceof Error
@@ -60,41 +67,34 @@ export async function POST(request: Request) {
   }
 
   try {
-    const existing = await db
-      .select({ id: studentPlanningProfiles.id })
-      .from(studentPlanningProfiles)
-      .where(eq(studentPlanningProfiles.userId, userId))
-      .limit(1);
-
-    if (existing.length === 0) {
-      await db.insert(studentPlanningProfiles).values({
+    const now = new Date();
+    const [updated] = await db
+      .insert(studentPlanningProfiles)
+      .values({
         userId,
         weeklyMinutesTarget: 360,
         timezone: "America/Santiago",
         reminderInApp: body.reminderInApp ?? true,
         reminderEmail: body.reminderEmail ?? true,
-        updatedAt: new Date(),
-      });
-    } else {
-      await db
-        .update(studentPlanningProfiles)
-        .set({
-          reminderInApp: body.reminderInApp,
-          reminderEmail: body.reminderEmail,
-          updatedAt: new Date(),
-        })
-        .where(eq(studentPlanningProfiles.userId, userId));
-    }
-
-    const [updated] = await db
-      .select({
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: studentPlanningProfiles.userId,
+        set: {
+          ...(body.reminderInApp !== undefined && {
+            reminderInApp: body.reminderInApp,
+          }),
+          ...(body.reminderEmail !== undefined && {
+            reminderEmail: body.reminderEmail,
+          }),
+          updatedAt: now,
+        },
+      })
+      .returning({
         reminderInApp: studentPlanningProfiles.reminderInApp,
         reminderEmail: studentPlanningProfiles.reminderEmail,
         updatedAt: studentPlanningProfiles.updatedAt,
-      })
-      .from(studentPlanningProfiles)
-      .where(eq(studentPlanningProfiles.userId, userId))
-      .limit(1);
+      });
 
     return studentApiSuccess(updated);
   } catch (error) {

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Confetti } from "@/app/diagnostico/components/Confetti";
 import type { SessionStatus } from "@/lib/student/atomMasteryAlgorithm";
 
@@ -24,7 +24,7 @@ type AtomResultPanelProps = {
   nextAtom?: { id: string; title: string } | null;
 };
 
-function AnimatedStat({
+function AnimatedStatInner({
   label,
   value,
   delay,
@@ -64,7 +64,10 @@ function AnimatedStat({
   );
 }
 
-function AtomNode({
+const AnimatedStat = React.memo(AnimatedStatInner);
+AnimatedStat.displayName = "AnimatedStat";
+
+function AtomNodeInner({
   filled,
   label,
   delay,
@@ -129,6 +132,9 @@ function AtomNode({
     </div>
   );
 }
+
+const AtomNode = React.memo(AtomNodeInner);
+AtomNode.displayName = "AtomNode";
 
 function MiniPath({
   currentAtom,
@@ -407,7 +413,7 @@ function FailureWithCooldown({
   );
 }
 
-export function AtomResultPanel({
+function AtomResultPanelInner({
   status,
   atomTitle,
   totalAnswered,
@@ -482,3 +488,6 @@ export function AtomResultPanel({
     </div>
   );
 }
+
+export const AtomResultPanel = React.memo(AtomResultPanelInner);
+AtomResultPanel.displayName = "AtomResultPanel";

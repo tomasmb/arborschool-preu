@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 import type { ScoreDataPoint, ProjectionPoint, GoalMilestone } from "./types";
 
 type Props = {
@@ -36,7 +36,7 @@ const COLORS = {
  * SVG line chart showing score history, projection curve, confidence band,
  * and goal target lines.
  */
-export function ScoreJourneyChart({
+function ScoreJourneyChartInner({
   history,
   projection,
   milestones,
@@ -270,6 +270,9 @@ export function ScoreJourneyChart({
     </section>
   );
 }
+
+export const ScoreJourneyChart = React.memo(ScoreJourneyChartInner);
+ScoreJourneyChart.displayName = "ScoreJourneyChart";
 
 // ============================================================================
 // LEGEND

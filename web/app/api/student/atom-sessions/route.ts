@@ -3,6 +3,7 @@ import { studentApiError, studentApiSuccess } from "@/lib/student/apiEnvelope";
 import { getAuthenticatedStudentUserId } from "@/lib/student/auth";
 import { canStudyNewAtom } from "@/lib/student/accessControl";
 import { hasVerificationDue } from "@/lib/student/verificationQuiz";
+import { getAuthenticatedUserById } from "@/lib/auth/users";
 
 export async function POST(request: Request) {
   const userId = await getAuthenticatedStudentUserId();
@@ -21,7 +22,14 @@ export async function POST(request: Request) {
     return studentApiError("MISSING_FIELDS", "atomId is required", 400);
   }
 
-  const verificationBlocking = await hasVerificationDue(userId);
+  // React.cache'd — free on second call within the same request
+  const user = await getAuthenticatedUserById(userId);
+
+  const [verificationBlocking, canStudy] = await Promise.all([
+    hasVerificationDue(userId),
+    canStudyNewAtom(userId, user ?? undefined),
+  ]);
+
   if (verificationBlocking) {
     return studentApiError(
       "VERIFICATION_REQUIRED",
@@ -30,7 +38,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const canStudy = await canStudyNewAtom(userId);
   if (!canStudy) {
     return studentApiError(
       "ACCESS_REQUIRED",

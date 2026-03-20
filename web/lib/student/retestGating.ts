@@ -7,11 +7,13 @@
  * - RECOMMEND_THRESHOLD atoms to actively recommend retest
  * - Minimum 7 day spacing between full tests
  * - Max 3 full tests per month
+ *
+ * All gating data is fetched in a single CTE query to minimize DB
+ * round-trips (was 1-4 sequential queries before consolidation).
  */
 
-import { and, desc, eq, gte, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { db } from "@/db";
-import { atomMastery, testAttempts, users } from "@/db/schema";
 import { RETEST_ATOM_THRESHOLD } from "@/lib/diagnostic/scoringConstants";
 
 const UNLOCK_THRESHOLD = RETEST_ATOM_THRESHOLD;
@@ -29,122 +31,107 @@ export type RetestStatus = {
 };
 
 /**
- * Returns the timestamp of the student's last completed full test.
- * Excludes short diagnostics (identified by test_id IS NULL, i.e. no
- * reference to an actual test entity). Only real full-length tests count.
- */
-async function getLastFullTestDate(userId: string): Promise<Date | null> {
-  const [row] = await db
-    .select({ completedAt: testAttempts.completedAt })
-    .from(testAttempts)
-    .where(
-      and(
-        eq(testAttempts.userId, userId),
-        sql`${testAttempts.completedAt} IS NOT NULL`,
-        sql`${testAttempts.testId} IS NOT NULL`
-      )
-    )
-    .orderBy(desc(testAttempts.completedAt))
-    .limit(1);
-  return row?.completedAt ?? null;
-}
-
-/**
  * Whether the student has ever completed a full timed test (not just a
- * short diagnostic). Used to determine the diagnostic source label.
+ * short diagnostic). Used by callers that need this check independently
+ * of the full retest gating logic (e.g. free-tier gate in full-test/start).
  */
-export async function hasCompletedFullTest(userId: string): Promise<boolean> {
-  const date = await getLastFullTestDate(userId);
-  return date !== null;
+export async function hasCompletedFullTest(
+  userId: string
+): Promise<boolean> {
+  const [row] = await db.execute<{ has_test: boolean }>(sql`
+    SELECT EXISTS(
+      SELECT 1 FROM test_attempts
+      WHERE user_id = ${userId}
+        AND completed_at IS NOT NULL
+        AND test_id IS NOT NULL
+    ) AS has_test
+  `);
+  return row?.has_test === true;
+}
+
+type RetestGatingRow = {
+  last_test_date: Date | null;
+  diag_score: number | null;
+  atoms_since: string;
+  tests_this_month: string;
+};
+
+/**
+ * Fetches all retest gating data in a single CTE query: last full test
+ * date, diagnostic score, study-mastered atoms since last test, and
+ * full tests completed in the last 30 days.
+ */
+async function fetchRetestGatingData(
+  userId: string
+): Promise<RetestGatingRow> {
+  const rows = await db.execute<RetestGatingRow>(sql`
+    WITH last_full_test AS (
+      SELECT completed_at
+      FROM test_attempts
+      WHERE user_id = ${userId}
+        AND completed_at IS NOT NULL
+        AND test_id IS NOT NULL
+      ORDER BY completed_at DESC
+      LIMIT 1
+    )
+    SELECT
+      (SELECT completed_at FROM last_full_test) AS last_test_date,
+      (SELECT paes_score_min FROM users WHERE id = ${userId}) AS diag_score,
+      (
+        SELECT count(*)
+        FROM atom_mastery
+        WHERE user_id = ${userId}
+          AND is_mastered = true
+          AND mastery_source = 'study'
+          AND updated_at >= COALESCE(
+            (SELECT completed_at FROM last_full_test),
+            '1970-01-01'::timestamptz
+          )
+      ) AS atoms_since,
+      (
+        SELECT count(*)
+        FROM test_attempts
+        WHERE user_id = ${userId}
+          AND completed_at >= now() - interval '30 days'
+          AND test_id IS NOT NULL
+      ) AS tests_this_month
+  `);
+
+  return (rows as unknown as RetestGatingRow[])[0];
 }
 
 /**
- * Counts atoms mastered via study since the given date.
- * Only study-mastered atoms count toward retest thresholds (diagnostic
- * mastery is the baseline, not progress).
- */
-async function countAtomsMasteredSinceViaStudy(
-  userId: string,
-  since: Date | null
-): Promise<number> {
-  const conds = [
-    eq(atomMastery.userId, userId),
-    eq(atomMastery.isMastered, true),
-    eq(atomMastery.masterySource, "study"),
-  ];
-  if (since) {
-    conds.push(gte(atomMastery.updatedAt, since));
-  }
-  const [row] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(atomMastery)
-    .where(and(...conds));
-  return Number(row?.count ?? 0);
-}
-
-/**
- * Counts full tests (not diagnostics) completed in the last 30 days.
- */
-async function countFullTestsInLastMonth(userId: string): Promise<number> {
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  const [row] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(testAttempts)
-    .where(
-      and(
-        eq(testAttempts.userId, userId),
-        gte(testAttempts.completedAt, thirtyDaysAgo),
-        sql`${testAttempts.testId} IS NOT NULL`
-      )
-    );
-  return Number(row?.count ?? 0);
-}
-
-/**
- * Whether the student has completed a diagnostic (has PAES scores set).
- */
-async function hasDiagnosticScore(userId: string): Promise<boolean> {
-  const [row] = await db
-    .select({ min: users.paesScoreMin })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
-  return row?.min != null;
-}
-
-/**
- * Determines if the student is eligible for and/or should be recommended
- * to take a full timed test.
+ * Determines retest eligibility and recommendation in a single DB call.
  *
  * First test: available immediately after diagnostic — the diagnostic is
- * a rough screen (16 questions) and many atoms remain uncovered. Forcing
- * 18 study-mastered atoms before the first real measurement would make
- * the student study atoms they may already know.
+ * a rough screen (16 questions) and many atoms remain uncovered.
  *
  * Subsequent tests: normal gating (18 atoms, 7 days, 3/month).
  */
-export async function getRetestStatus(userId: string): Promise<RetestStatus> {
-  const lastTestDate = await getLastFullTestDate(userId);
+export async function getRetestStatus(
+  userId: string
+): Promise<RetestStatus> {
+  const data = await fetchRetestGatingData(userId);
 
-  // First full test — skip atom gate, just require a diagnostic
+  const lastTestDate = data.last_test_date
+    ? new Date(data.last_test_date)
+    : null;
+
   if (lastTestDate === null) {
-    const hasDiag = await hasDiagnosticScore(userId);
+    const hasDiag = data.diag_score != null;
     return {
       atomsMasteredSinceLastTest: 0,
       eligible: hasDiag,
       recommended: hasDiag,
-      blockedReason: hasDiag ? null : "Completa el diagnóstico primero",
+      blockedReason: hasDiag
+        ? null
+        : "Completa el diagnóstico primero",
       daysSinceLastTest: null,
       isFirstTest: true,
     };
   }
 
-  // Subsequent tests — normal gating
-  const atomsMastered = await countAtomsMasteredSinceViaStudy(
-    userId,
-    lastTestDate
-  );
-
+  const atomsMastered = Number(data.atoms_since);
   const daysSinceLastTest = Math.floor(
     (Date.now() - lastTestDate.getTime()) / (1000 * 60 * 60 * 24)
   );
@@ -154,7 +141,8 @@ export async function getRetestStatus(userId: string): Promise<RetestStatus> {
       atomsMasteredSinceLastTest: atomsMastered,
       eligible: false,
       recommended: false,
-      blockedReason: `Necesitas dominar ${UNLOCK_THRESHOLD - atomsMastered} conceptos más`,
+      blockedReason:
+        `Necesitas dominar ${UNLOCK_THRESHOLD - atomsMastered} conceptos más`,
       daysSinceLastTest,
       isFirstTest: false,
     };
@@ -165,13 +153,14 @@ export async function getRetestStatus(userId: string): Promise<RetestStatus> {
       atomsMasteredSinceLastTest: atomsMastered,
       eligible: false,
       recommended: false,
-      blockedReason: `Espera ${MIN_SPACING_DAYS - daysSinceLastTest} días más entre tests`,
+      blockedReason:
+        `Espera ${MIN_SPACING_DAYS - daysSinceLastTest} días más entre tests`,
       daysSinceLastTest,
       isFirstTest: false,
     };
   }
 
-  const testsThisMonth = await countFullTestsInLastMonth(userId);
+  const testsThisMonth = Number(data.tests_this_month);
   if (testsThisMonth >= MAX_TESTS_PER_MONTH) {
     return {
       atomsMasteredSinceLastTest: atomsMastered,

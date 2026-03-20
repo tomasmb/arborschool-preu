@@ -39,7 +39,11 @@ to replay all migrations from scratch and fail on "already exists" errors.
 ## Workflow for schema changes
 
 1. Edit the schema file (e.g. `web/db/schema/content.ts`)
-2. Ask the user to run `npx drizzle-kit generate --name <migration_name>` in their terminal
+2. Generate the migration:
+   - **Additive changes** (new tables, columns, indexes): the agent can run
+     `npx drizzle-kit generate --name <migration_name>` directly — no prompts.
+   - **Renames or destructive changes** (rename column/table, drop): ask the
+     user to run it in their terminal — drizzle-kit will prompt for disambiguation.
 3. Review the generated `.sql` file in `web/db/migrations/`
 4. Apply locally: `export $(grep -v '^#' .env.local | xargs) && node scripts/migrate.js`
 5. Update `docs/data-model-specification.md` if needed
@@ -49,5 +53,5 @@ to replay all migrations from scratch and fail on "already exists" errors.
 - `scripts/migrate.js` runs on every Vercel deploy (`vercel-build` script)
 - Production and preview deploys depend on migration files existing
 - Raw SQL changes are invisible to the migration system and WILL break deploys
-- `drizzle-kit generate` is interactive (rename disambiguation) — the user must run it
+- `drizzle-kit generate` is interactive **only** for renames/drops — additive changes are safe to run non-interactively
 - `drizzle-kit migrate` and `scripts/migrate.js` use incompatible tracking tables

@@ -1,13 +1,5 @@
-import { and, eq } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { db } from "@/db";
-import {
-  careerOfferings,
-  careers,
-  studentGoals,
-  studentGoalScores,
-  studentScoreTargets,
-  universities,
-} from "@/db/schema";
 import { getUserDiagnosticSnapshot, getMasteryRows } from "./userQueries";
 import { getScoreHistory } from "./scoreHistory";
 import { resolveDisplayScore } from "./scoreDisplay";
@@ -23,7 +15,6 @@ import {
 import { buildNextActionInsights } from "@/lib/student/nextAction";
 import {
   getRetestStatus,
-  hasCompletedFullTest,
   type RetestStatus,
 } from "@/lib/student/retestGating";
 import { getStudentMetrics } from "@/lib/student/metricsService";
@@ -137,61 +128,48 @@ function computeConfidence(params: {
   return { level: "low", score };
 }
 
+/**
+ * Fetches the student's M1 target score in a single query. Prefers the
+ * new student_score_targets row; falls back to the legacy per-career
+ * goal scores via a LEFT JOIN chain.
+ */
 async function getStudentM1Target(
   userId: string
 ): Promise<StudentM1Target | null> {
-  // Try new student-centric score targets first
-  const [targetRow] = await db
-    .select({ score: studentScoreTargets.score })
-    .from(studentScoreTargets)
-    .where(
-      and(
-        eq(studentScoreTargets.userId, userId),
-        eq(studentScoreTargets.testCode, "M1")
-      )
-    )
-    .limit(1);
-
-  if (targetRow) {
-    const parsed = Number(targetRow.score);
-    if (Number.isFinite(parsed)) {
-      return { score: parsed, goalLabel: "Tu objetivo M1" };
-    }
-  }
-
-  // Fallback to legacy per-career goal scores for existing users
-  const rows = await db
-    .select({
-      score: studentGoalScores.score,
-      priority: studentGoals.priority,
-      careerName: careers.name,
-      universityName: universities.name,
-    })
-    .from(studentGoals)
-    .innerJoin(studentGoalScores, eq(studentGoalScores.goalId, studentGoals.id))
-    .innerJoin(careerOfferings, eq(careerOfferings.id, studentGoals.offeringId))
-    .innerJoin(careers, eq(careers.id, careerOfferings.careerId))
-    .innerJoin(universities, eq(universities.id, careerOfferings.universityId))
-    .where(
-      and(
-        eq(studentGoals.userId, userId),
-        eq(studentGoals.isPrimary, true),
-        eq(studentGoalScores.testCode, "M1")
-      )
-    )
-    .orderBy(studentGoals.priority)
-    .limit(1);
-
-  const row = rows[0];
-  if (!row) return null;
-
-  const parsedScore = Number(row.score);
-  if (!Number.isFinite(parsedScore)) return null;
-
-  return {
-    score: parsedScore,
-    goalLabel: `${row.careerName} — ${row.universityName}`,
+  type TargetRow = {
+    score: string | null;
+    goal_label: string | null;
   };
+
+  const rows = await db.execute<TargetRow>(sql`
+    SELECT
+      COALESCE(sst.score::text, sgs.score::text) AS score,
+      CASE
+        WHEN sst.score IS NOT NULL THEN 'Tu objetivo M1'
+        ELSE (c.name || ' — ' || u.name)
+      END AS goal_label
+    FROM (SELECT 1) AS dummy
+    LEFT JOIN student_score_targets sst
+      ON sst.user_id = ${userId} AND sst.test_code = 'M1'
+    LEFT JOIN student_goals sg
+      ON sg.user_id = ${userId} AND sg.is_primary = true
+    LEFT JOIN student_goal_scores sgs
+      ON sgs.goal_id = sg.id AND sgs.test_code = 'M1'
+    LEFT JOIN career_offerings co ON co.id = sg.offering_id
+    LEFT JOIN careers c ON c.id = co.career_id
+    LEFT JOIN universities u ON u.id = co.university_id
+    WHERE sst.score IS NOT NULL OR sgs.score IS NOT NULL
+    ORDER BY sg.priority NULLS LAST
+    LIMIT 1
+  `);
+
+  const row = (rows as unknown as TargetRow[])[0];
+  if (!row?.score) return null;
+
+  const parsed = Number(row.score);
+  if (!Number.isFinite(parsed)) return null;
+
+  return { score: parsed, goalLabel: row.goal_label ?? "Tu objetivo M1" };
 }
 
 const EMPTY_STATES: Record<string, M1DashboardData["emptyState"]> = {
@@ -467,7 +445,7 @@ export async function getM1Dashboard(userId: string): Promise<M1DashboardData> {
     });
   }
 
-  const [analysis, retestStatus, metrics, hasFullTest] = await Promise.all([
+  const [analysis, retestStatus, metrics] = await Promise.all([
     analyzeLearningPotential(
       masteryRows.map((row) => ({
         atomId: row.atomId,
@@ -477,12 +455,12 @@ export async function getM1Dashboard(userId: string): Promise<M1DashboardData> {
     ),
     getRetestStatus(userId),
     getStudentMetrics(userId),
-    hasCompletedFullTest(userId),
   ]);
 
-  const diagnosticSource: DiagnosticSource = hasFullTest
-    ? "full_test"
-    : "short_diagnostic";
+  // Derive from retestStatus: if it's not the first test, a full test exists
+  const diagnosticSource: DiagnosticSource = retestStatus.isFirstTest
+    ? "short_diagnostic"
+    : "full_test";
 
   return buildReadyDashboard({
     displayScore,

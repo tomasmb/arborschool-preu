@@ -3,12 +3,12 @@
 /**
  * PostHog Provider
  *
- * Initializes PostHog analytics and connects it to our tracker interface.
- * Uses useRef guard to prevent double initialization in React Strict Mode.
+ * Lazily loads PostHog analytics via dynamic import to keep it out of the
+ * critical bundle (~45KB gzipped). Initialization happens after first paint
+ * via useEffect, so it never blocks FCP/LCP.
  */
 
 import { useEffect, useRef } from "react";
-import posthog from "posthog-js";
 import { initializeTracker } from "@/lib/analytics";
 
 interface PostHogProviderProps {
@@ -19,53 +19,43 @@ export function PostHogProvider({ children }: PostHogProviderProps) {
   const initialized = useRef(false);
 
   useEffect(() => {
-    // Skip if already initialized or no environment variables
     if (initialized.current) return;
+    initialized.current = true;
 
     const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
     const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST;
 
-    // In development without keys, just initialize tracker with console logging
     if (!posthogKey) {
       if (process.env.NODE_ENV === "development") {
         console.log("[PostHog] No API key found, analytics disabled");
       }
-      initialized.current = true;
       return;
     }
 
-    // Initialize PostHog
-    posthog.init(posthogKey, {
-      api_host: posthogHost || "https://us.i.posthog.com",
-      // Disable automatic pageview capture - we track manually
-      capture_pageview: false,
-      // Respect Do Not Track browser setting
-      respect_dnt: true,
-      // Enable session recording for user behavior insights
-      disable_session_recording: false,
+    import("posthog-js").then(({ default: posthog }) => {
+      posthog.init(posthogKey, {
+        api_host: posthogHost || "https://us.i.posthog.com",
+        capture_pageview: false,
+        respect_dnt: true,
+        disable_session_recording: false,
+      });
+
+      const buildVersion = process.env.NEXT_PUBLIC_BUILD_VERSION;
+      const isPreview = window.location.hostname.includes("vercel.app");
+      posthog.register({
+        ...(buildVersion && { build_version: buildVersion }),
+        environment: isPreview ? "preview" : "production",
+      });
+
+      initializeTracker(
+        (eventName, properties) => {
+          posthog.capture(eventName, properties);
+        },
+        (distinctId, properties) => {
+          posthog.identify(distinctId, properties);
+        }
+      );
     });
-
-    // Register global properties (attached to all events)
-    const buildVersion = process.env.NEXT_PUBLIC_BUILD_VERSION;
-    const isPreview = window.location.hostname.includes("vercel.app");
-    posthog.register({
-      ...(buildVersion && { build_version: buildVersion }),
-      environment: isPreview ? "preview" : "production",
-    });
-
-    // Connect PostHog to our tracker interface
-    initializeTracker(
-      // Capture function for events
-      (eventName, properties) => {
-        posthog.capture(eventName, properties);
-      },
-      // Identify function to link anonymous events to a user
-      (distinctId, properties) => {
-        posthog.identify(distinctId, properties);
-      }
-    );
-
-    initialized.current = true;
   }, []);
 
   return <>{children}</>;

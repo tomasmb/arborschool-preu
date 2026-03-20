@@ -428,6 +428,11 @@ export const studentReminderJobs = pgTable(
     index("idx_student_reminder_jobs_user").on(table.userId),
     index("idx_student_reminder_jobs_status").on(table.status),
     index("idx_student_reminder_jobs_schedule").on(table.scheduledFor),
+    index("idx_student_reminder_jobs_dispatch").on(
+      table.channel,
+      table.status,
+      table.scheduledFor
+    ),
   ]
 );
 
@@ -467,6 +472,10 @@ export const atomStudySessions = pgTable(
     index("idx_atom_study_sessions_user").on(table.userId),
     index("idx_atom_study_sessions_user_atom").on(table.userId, table.atomId),
     index("idx_atom_study_sessions_status").on(table.status),
+    index("idx_atom_study_sessions_user_type").on(
+      table.userId,
+      table.sessionType
+    ),
   ]
 );
 

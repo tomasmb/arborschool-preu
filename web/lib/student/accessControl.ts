@@ -47,6 +47,12 @@ async function refreshAccessIfStale(
   return "active";
 }
 
+export type UserAccessInput = {
+  role: string;
+  subscriptionStatus: string;
+  email: string;
+};
+
 /**
  * Count atoms mastered through actual study sessions (not diagnostic).
  * This is what the free-tier limit is based on.
@@ -69,34 +75,40 @@ async function countStudyMasteredAtoms(userId: string): Promise<number> {
  * Check if a free-tier user can still study a new atom.
  * Free users get 1 mini-clase (study session) before being gated.
  * Diagnostic-sourced mastery does NOT count toward this limit.
+ *
+ * Accepts optional pre-fetched user data to skip a redundant DB query.
  */
-export async function canStudyNewAtom(userId: string): Promise<boolean> {
-  const user = await db
-    .select({
-      role: users.role,
-      subscriptionStatus: users.subscriptionStatus,
-      email: users.email,
-    })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
+export async function canStudyNewAtom(
+  userId: string,
+  prefetchedUser?: UserAccessInput
+): Promise<boolean> {
+  let userRow: UserAccessInput;
 
-  if (user.length === 0) return false;
+  if (prefetchedUser) {
+    userRow = prefetchedUser;
+  } else {
+    const rows = await db
+      .select({
+        role: users.role,
+        subscriptionStatus: users.subscriptionStatus,
+        email: users.email,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
 
-  const resolvedStatus = await refreshAccessIfStale(userId, user[0]);
-  const effective = { ...user[0], subscriptionStatus: resolvedStatus };
+    if (rows.length === 0) return false;
+    userRow = rows[0];
+  }
+
+  const resolvedStatus = await refreshAccessIfStale(userId, userRow);
+  const effective = { ...userRow, subscriptionStatus: resolvedStatus };
 
   if (hasFullAccess(effective)) return true;
 
   const studyMastered = await countStudyMasteredAtoms(userId);
   return studyMastered < FREE_TIER_ATOM_LIMIT;
 }
-
-type UserAccessInput = {
-  role: string;
-  subscriptionStatus: string;
-  email: string;
-};
 
 /**
  * Get the user's access status for use in API responses and UI.

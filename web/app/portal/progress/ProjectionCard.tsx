@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import type { ProjectionResult } from "./types";
 
 const MIN_HOURS = 0.5;
@@ -8,7 +9,7 @@ const HOURS_STEP = 0.5;
 
 export { MIN_HOURS, MAX_HOURS, HOURS_STEP };
 
-export function ProjectionCard({
+function ProjectionCardInner({
   projection,
   hoursPerWeek,
   onChangeHours,
@@ -123,3 +124,6 @@ export function ProjectionCard({
     </section>
   );
 }
+
+export const ProjectionCard = React.memo(ProjectionCardInner);
+ProjectionCard.displayName = "ProjectionCard";

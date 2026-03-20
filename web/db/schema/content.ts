@@ -167,7 +167,13 @@ export const generatedQuestions = pgTable(
       .defaultNow()
       .notNull(),
   },
-  (table) => [index("idx_generated_questions_atom").on(table.atomId)]
+  (table) => [
+    index("idx_generated_questions_atom").on(table.atomId),
+    index("idx_generated_questions_atom_diff").on(
+      table.atomId,
+      table.difficultyLevel
+    ),
+  ]
 );
 
 // ------------------------------------------------------------------------------
