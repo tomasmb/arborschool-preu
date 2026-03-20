@@ -1,5 +1,9 @@
 import { getStudentNextAction } from "@/lib/student/nextAction";
-import { studentApiError, studentApiSuccess } from "@/lib/student/apiEnvelope";
+import {
+  PRIVATE_CACHE_HEADERS,
+  studentApiError,
+  studentApiSuccess,
+} from "@/lib/student/apiEnvelope";
 import { getAuthenticatedStudentUserId } from "@/lib/student/auth";
 
 export async function GET() {
@@ -10,7 +14,9 @@ export async function GET() {
 
   try {
     const nextActionData = await getStudentNextAction(userId);
-    return studentApiSuccess(nextActionData);
+    return studentApiSuccess(nextActionData, {
+      headers: PRIVATE_CACHE_HEADERS,
+    });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to load next action";

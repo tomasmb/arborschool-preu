@@ -159,61 +159,40 @@ const RELEVANT_ATOMS_CTE = sql`
 `;
 
 /**
- * Counts relevant atoms grouped by mastery status.
- * Atoms without an atom_mastery row are counted as "not_started".
+ * Fetches both status breakdown and per-axis breakdown in a single query.
+ * Groups by axis so we get per-axis rows; the global totals are summed
+ * in JS from the per-axis rows.
  */
-export async function getMasteryStatusBreakdown(
+export async function getMasteryBreakdowns(
   userId: string
-): Promise<MasteryStatusBreakdown> {
-  const rows = await db.execute(sql`
-    ${RELEVANT_ATOMS_CTE}
-    SELECT
-      count(*) FILTER (
-        WHERE am.status = 'mastered'
-      ) AS mastered,
-      count(*) FILTER (
-        WHERE am.status = 'in_progress'
-      ) AS in_progress,
-      count(*) FILTER (
-        WHERE am.status = 'needs_verification'
-      ) AS needs_verification,
-      count(*) FILTER (
-        WHERE am.status IS NULL
-          OR am.status = 'not_started'
-      ) AS not_started,
-      count(*) AS total
-    FROM relevant r
-    JOIN atoms a ON a.id = r.id
-    LEFT JOIN atom_mastery am
-      ON am.atom_id = r.id AND am.user_id = ${userId}
-  `);
-
-  type Row = Record<string, string | number>;
-  const row = (rows as unknown as Row[])[0] ?? {};
-  return {
-    mastered: Number(row.mastered ?? 0),
-    inProgress: Number(row.in_progress ?? 0),
-    needsVerification: Number(row.needs_verification ?? 0),
-    notStarted: Number(row.not_started ?? 0),
-    total: Number(row.total ?? 0),
+): Promise<{
+  statusBreakdown: MasteryStatusBreakdown;
+  axisBreakdown: AxisMasteryItem[];
+}> {
+  type Row = {
+    axis: string;
+    total: string;
+    mastered: string;
+    status_mastered: string;
+    status_in_progress: string;
+    status_needs_verification: string;
+    status_not_started: string;
   };
-}
 
-/**
- * Returns mastery counts for each axis, scoped to relevant atoms.
- * Sorted by axis display order (ALG, NUM, GEO, PROB).
- */
-export async function getAxisMasteryBreakdown(
-  userId: string
-): Promise<AxisMasteryItem[]> {
-  const rows = await db.execute(sql`
+  const rows = await db.execute<Row>(sql`
     ${RELEVANT_ATOMS_CTE}
     SELECT
       a.axis,
       count(*) AS total,
+      count(*) FILTER (WHERE am.is_mastered = true) AS mastered,
+      count(*) FILTER (WHERE am.status = 'mastered') AS status_mastered,
+      count(*) FILTER (WHERE am.status = 'in_progress') AS status_in_progress,
       count(*) FILTER (
-        WHERE am.is_mastered = true
-      ) AS mastered
+        WHERE am.status = 'needs_verification'
+      ) AS status_needs_verification,
+      count(*) FILTER (
+        WHERE am.status IS NULL OR am.status = 'not_started'
+      ) AS status_not_started
     FROM relevant r
     JOIN atoms a ON a.id = r.id
     LEFT JOIN atom_mastery am
@@ -222,9 +201,21 @@ export async function getAxisMasteryBreakdown(
     ORDER BY a.axis
   `);
 
-  type Row = Record<string, string | number>;
-  return (rows as unknown as Row[]).map((r) => {
+  const rawRows = rows as unknown as Row[];
+  let sMastered = 0,
+    sInProgress = 0,
+    sNeedsVerification = 0,
+    sNotStarted = 0,
+    sTotal = 0;
+
+  const axisBreakdown: AxisMasteryItem[] = rawRows.map((r) => {
     const axis = String(r.axis);
+    sMastered += Number(r.status_mastered ?? 0);
+    sInProgress += Number(r.status_in_progress ?? 0);
+    sNeedsVerification += Number(r.status_needs_verification ?? 0);
+    sNotStarted += Number(r.status_not_started ?? 0);
+    sTotal += Number(r.total ?? 0);
+
     return {
       axis,
       axisCode: AXIS_SHORT_CODES[axis] ?? axis,
@@ -233,4 +224,37 @@ export async function getAxisMasteryBreakdown(
       total: Number(r.total ?? 0),
     };
   });
+
+  return {
+    statusBreakdown: {
+      mastered: sMastered,
+      inProgress: sInProgress,
+      needsVerification: sNeedsVerification,
+      notStarted: sNotStarted,
+      total: sTotal,
+    },
+    axisBreakdown,
+  };
+}
+
+/**
+ * Counts relevant atoms grouped by mastery status.
+ * Delegates to the combined query for backward compatibility.
+ */
+export async function getMasteryStatusBreakdown(
+  userId: string
+): Promise<MasteryStatusBreakdown> {
+  const { statusBreakdown } = await getMasteryBreakdowns(userId);
+  return statusBreakdown;
+}
+
+/**
+ * Returns mastery counts for each axis, scoped to relevant atoms.
+ * Delegates to the combined query for backward compatibility.
+ */
+export async function getAxisMasteryBreakdown(
+  userId: string
+): Promise<AxisMasteryItem[]> {
+  const { axisBreakdown } = await getMasteryBreakdowns(userId);
+  return axisBreakdown;
 }

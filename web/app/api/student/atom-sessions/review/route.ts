@@ -12,6 +12,7 @@ import {
 import { getAuthenticatedStudentUserId } from "@/lib/student/auth";
 import { getUserAccessStatus } from "@/lib/student/accessControl";
 import { hasVerificationDue } from "@/lib/student/verificationQuiz";
+import { getAuthenticatedUserById } from "@/lib/auth/users";
 
 /**
  * POST /api/student/atom-sessions/review
@@ -24,7 +25,14 @@ export async function POST() {
     return studentApiError("UNAUTHORIZED", "Unauthorized", 401);
   }
 
-  const verificationBlocking = await hasVerificationDue(userId);
+  // React.cache'd — free on second call within the same request
+  const user = await getAuthenticatedUserById(userId);
+
+  const [verificationBlocking, access] = await Promise.all([
+    hasVerificationDue(userId),
+    getUserAccessStatus(userId, user ?? undefined),
+  ]);
+
   if (verificationBlocking) {
     return studentApiError(
       "VERIFICATION_REQUIRED",
@@ -33,7 +41,6 @@ export async function POST() {
     );
   }
 
-  const access = await getUserAccessStatus(userId);
   if (access.subscriptionStatus !== "active") {
     return studentApiError(
       "ACCESS_REQUIRED",

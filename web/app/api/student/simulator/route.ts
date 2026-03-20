@@ -1,7 +1,11 @@
 import { auth } from "@/auth";
 import { getAuthenticatedUserById } from "@/lib/auth/users";
 import { getStudentGoalSimulation } from "@/lib/student/simulator";
-import { studentApiError, studentApiSuccess } from "@/lib/student/apiEnvelope";
+import {
+  PRIVATE_CACHE_HEADERS,
+  studentApiError,
+  studentApiSuccess,
+} from "@/lib/student/apiEnvelope";
 
 const MIN_SCORE = 100;
 const MAX_SCORE = 1000;
@@ -93,7 +97,7 @@ export async function GET(request: Request) {
       return studentApiError("GOAL_NOT_FOUND", "Goal not found", 404);
     }
 
-    return studentApiSuccess(simulation);
+    return studentApiSuccess(simulation, { headers: PRIVATE_CACHE_HEADERS });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to load simulation";

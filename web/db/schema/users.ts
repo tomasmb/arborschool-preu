@@ -128,6 +128,11 @@ export const atomMastery = pgTable(
     primaryKey({ columns: [table.userId, table.atomId] }),
     index("idx_atom_mastery_user").on(table.userId),
     index("idx_atom_mastery_status").on(table.status),
+    index("idx_atom_mastery_user_mastered").on(
+      table.userId,
+      table.isMastered
+    ),
+    index("idx_atom_mastery_user_status").on(table.userId, table.status),
   ]
 );
 
@@ -156,7 +161,13 @@ export const testAttempts = pgTable(
     resolvedQuestions: jsonb("resolved_questions"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   },
-  (table) => [index("idx_test_attempts_user").on(table.userId)]
+  (table) => [
+    index("idx_test_attempts_user").on(table.userId),
+    index("idx_test_attempts_user_completed").on(
+      table.userId,
+      table.completedAt
+    ),
+  ]
 );
 
 // ------------------------------------------------------------------------------

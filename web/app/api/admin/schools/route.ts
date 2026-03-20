@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { schools } from "@/db/schema";
 import { requireAdminUser } from "@/lib/admin/apiAuth";
+import { PRIVATE_CACHE_HEADERS } from "@/lib/student/apiEnvelope";
 
 export async function GET() {
   const auth = await requireAdminUser();
@@ -13,7 +14,10 @@ export async function GET() {
     .from(schools)
     .orderBy(schools.createdAt);
 
-  return NextResponse.json({ success: true, data: rows });
+  return NextResponse.json(
+    { success: true, data: rows },
+    { headers: PRIVATE_CACHE_HEADERS }
+  );
 }
 
 function slugify(name: string): string {

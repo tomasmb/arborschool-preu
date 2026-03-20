@@ -3,6 +3,7 @@ import { eq, count, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { users, schools, accessGrants } from "@/db/schema";
 import { requireAdminUser } from "@/lib/admin/apiAuth";
+import { PRIVATE_CACHE_HEADERS } from "@/lib/student/apiEnvelope";
 
 export async function GET() {
   const auth = await requireAdminUser();
@@ -41,15 +42,18 @@ export async function GET() {
       .limit(10),
   ]);
 
-  return NextResponse.json({
-    success: true,
-    data: {
-      totalUsers: totalUsersRow?.count ?? 0,
-      activeUsers: activeUsersRow?.count ?? 0,
-      freeUsers: freeUsersRow?.count ?? 0,
-      totalSchools: schoolCountRow?.count ?? 0,
-      totalGrants: grantCountRow?.count ?? 0,
-      recentUsers,
+  return NextResponse.json(
+    {
+      success: true,
+      data: {
+        totalUsers: totalUsersRow?.count ?? 0,
+        activeUsers: activeUsersRow?.count ?? 0,
+        freeUsers: freeUsersRow?.count ?? 0,
+        totalSchools: schoolCountRow?.count ?? 0,
+        totalGrants: grantCountRow?.count ?? 0,
+        recentUsers,
+      },
     },
-  });
+    { headers: PRIVATE_CACHE_HEADERS }
+  );
 }

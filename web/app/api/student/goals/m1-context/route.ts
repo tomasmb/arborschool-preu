@@ -10,7 +10,11 @@ import {
   studentGoals,
   universities,
 } from "@/db/schema";
-import { studentApiError, studentApiSuccess } from "@/lib/student/apiEnvelope";
+import {
+  PRIVATE_CACHE_HEADERS,
+  studentApiError,
+  studentApiSuccess,
+} from "@/lib/student/apiEnvelope";
 import { getAuthenticatedStudentUserId } from "@/lib/student/auth";
 import { normalizeWeightOrScore } from "@/lib/student/goals.types";
 
@@ -39,7 +43,7 @@ export async function GET() {
 
   try {
     const data = await getM1GoalContext(userId);
-    return studentApiSuccess(data);
+    return studentApiSuccess(data, { headers: PRIVATE_CACHE_HEADERS });
   } catch (error) {
     const msg =
       error instanceof Error ? error.message : "Failed to load M1 context";
@@ -83,42 +87,48 @@ async function getM1GoalContext(userId: string): Promise<M1GoalContext> {
     };
   }
 
-  const cutoffRows = await db
-    .select({ cutoffScore: offeringCutoffs.cutoffScore })
-    .from(offeringCutoffs)
-    .where(eq(offeringCutoffs.offeringId, primaryGoal.offeringId))
-    .orderBy(offeringCutoffs.admissionYear)
-    .limit(1);
+  const [cutoffRows, weights, m1ScoreRows] = await Promise.all([
+    db
+      .select({ cutoffScore: offeringCutoffs.cutoffScore })
+      .from(offeringCutoffs)
+      .where(eq(offeringCutoffs.offeringId, primaryGoal.offeringId))
+      .orderBy(offeringCutoffs.admissionYear)
+      .limit(1),
+    db
+      .select({
+        testCode: offeringWeights.testCode,
+        weightPercent: offeringWeights.weightPercent,
+      })
+      .from(offeringWeights)
+      .where(eq(offeringWeights.offeringId, primaryGoal.offeringId)),
+    db
+      .select({ score: studentGoalScores.score })
+      .from(studentGoalScores)
+      .where(
+        and(
+          eq(studentGoalScores.goalId, primaryGoal.goalId),
+          eq(studentGoalScores.testCode, "M1")
+        )
+      )
+      .limit(1),
+  ]);
 
-  const lastCutoff = normalizeWeightOrScore(cutoffRows[0]?.cutoffScore ?? null);
-
-  const weights = await db
-    .select({
-      testCode: offeringWeights.testCode,
-      weightPercent: offeringWeights.weightPercent,
-    })
-    .from(offeringWeights)
-    .where(eq(offeringWeights.offeringId, primaryGoal.offeringId));
+  const lastCutoff = normalizeWeightOrScore(
+    cutoffRows[0]?.cutoffScore ?? null
+  );
 
   const otherRequiredTests = weights
     .filter(
       (w) =>
-        w.testCode !== "M1" && w.testCode !== "NEM" && w.testCode !== "RANKING"
+        w.testCode !== "M1" &&
+        w.testCode !== "NEM" &&
+        w.testCode !== "RANKING"
     )
     .map((w) => w.testCode);
 
-  const m1ScoreRows = await db
-    .select({ score: studentGoalScores.score })
-    .from(studentGoalScores)
-    .where(
-      and(
-        eq(studentGoalScores.goalId, primaryGoal.goalId),
-        eq(studentGoalScores.testCode, "M1")
-      )
-    )
-    .limit(1);
-
-  const currentM1Score = normalizeWeightOrScore(m1ScoreRows[0]?.score ?? null);
+  const currentM1Score = normalizeWeightOrScore(
+    m1ScoreRows[0]?.score ?? null
+  );
 
   const buffer = primaryGoal.bufferPoints ?? 30;
   const suggestedM1Target =

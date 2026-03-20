@@ -8,10 +8,7 @@ import {
 } from "@/lib/student/scoreHistory";
 import { getRetestStatus } from "@/lib/student/retestGating";
 import { getUserDiagnosticSnapshot } from "@/lib/student/userQueries";
-import {
-  getMasteryStatusBreakdown,
-  getAxisMasteryBreakdown,
-} from "@/lib/student/metricsService";
+import { getMasteryBreakdowns } from "@/lib/student/metricsService";
 import { getProgressTargets } from "@/lib/student/progressTargets";
 import { resolveDisplayScore } from "@/lib/student/scoreDisplay";
 import { upsertStudentTestHours } from "@/lib/student/goals.write";
@@ -36,19 +33,20 @@ export async function GET() {
       scoreHistory,
       retestStatus,
       snapshot,
-      masteryBreakdown,
-      axisMastery,
+      breakdowns,
       targets,
       curveData,
     ] = await Promise.all([
       getScoreHistory(userId),
       getRetestStatus(userId),
       getUserDiagnosticSnapshot(userId),
-      getMasteryStatusBreakdown(userId),
-      getAxisMasteryBreakdown(userId),
+      getMasteryBreakdowns(userId),
       getProgressTargets(userId),
       buildUnlockCurve(userId),
     ]);
+
+    const masteryBreakdown = breakdowns.statusBreakdown;
+    const axisMastery = breakdowns.axisBreakdown;
 
     const hasSnapshot =
       snapshot?.paesScoreMin != null && snapshot?.paesScoreMax != null;

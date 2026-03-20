@@ -1,6 +1,7 @@
 import { getSessionState } from "@/lib/student/atomMasteryEngine";
 import {
   isValidUuid,
+  PRIVATE_CACHE_HEADERS,
   studentApiError,
   studentApiSuccess,
 } from "@/lib/student/apiEnvelope";
@@ -22,7 +23,7 @@ export async function GET(
 
   try {
     const result = await getSessionState(sessionId, userId);
-    return studentApiSuccess(result);
+    return studentApiSuccess(result, { headers: PRIVATE_CACHE_HEADERS });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to fetch session";

@@ -176,6 +176,13 @@
       "when": 1774024556150,
       "tag": "0024_add-question-atoms-questionid-index",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1774027238968,
+      "tag": "0025_add-composite-indexes",
+      "breakpoints": true
     }
   ]
 }

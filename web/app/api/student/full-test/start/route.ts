@@ -16,6 +16,7 @@ import {
   DEFAULT_QUESTION_COUNT,
 } from "@/lib/student/fullTestAssembly";
 import { getUserAccessStatus } from "@/lib/student/accessControl";
+import { getAuthenticatedUserById } from "@/lib/auth/users";
 import { FULL_TEST_DURATION_MIN } from "@/lib/diagnostic/scoringConstants";
 import { eq } from "drizzle-orm";
 
@@ -43,8 +44,9 @@ export async function POST() {
       return handleResumedAttempt(inProgress, userId);
     }
 
-    // Free users get one full test; after that, require active subscription
-    const access = await getUserAccessStatus(userId);
+    // React.cache'd — free on second call within the same request
+    const user = await getAuthenticatedUserById(userId);
+    const access = await getUserAccessStatus(userId, user ?? undefined);
     if (access.subscriptionStatus !== "active") {
       const alreadyTested = await hasCompletedFullTest(userId);
       if (alreadyTested) {
@@ -73,12 +75,10 @@ export async function POST() {
     }
 
     // Pool-based assembly: pick 60 questions maximising atom coverage
-    const compositeTestId =
-      await getOrCreateCompositeTest(DEFAULT_SUBJECT);
-    const resolvedQuestions = await assembleMaxCoverageQuestions(
-      userId,
-      DEFAULT_SUBJECT
-    );
+    const [compositeTestId, resolvedQuestions] = await Promise.all([
+      getOrCreateCompositeTest(DEFAULT_SUBJECT),
+      assembleMaxCoverageQuestions(userId, DEFAULT_SUBJECT),
+    ]);
 
     if (resolvedQuestions.length === 0) {
       return NextResponse.json(
