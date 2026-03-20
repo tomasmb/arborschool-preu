@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuthenticatedStudentUser } from "@/lib/student/apiAuth";
+import { PRIVATE_CACHE_HEADERS } from "@/lib/student/apiEnvelope";
 import {
   getScoreHistory,
   buildUnlockCurve,
@@ -93,25 +94,28 @@ export async function GET() {
       ? scoreHistory.filter((s) => s.type === "full_test")
       : [];
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        masteryBreakdown,
-        axisMastery,
-        personalBest,
-        scoreHistory: displayHistory,
-        projectionMetadata,
-        retestStatus,
-        currentScore,
-        goalMilestones: targets.milestones.map((m) => ({
-          ...m,
-          weeksToReach: null as number | null,
-        })),
-        defaultAtomsPerWeek: targets.defaultAtomsPerWeek,
-        studentM1Target: targets.studentM1Target,
-        careerPositioning: targets.careerPositioning,
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          masteryBreakdown,
+          axisMastery,
+          personalBest,
+          scoreHistory: displayHistory,
+          projectionMetadata,
+          retestStatus,
+          currentScore,
+          goalMilestones: targets.milestones.map((m) => ({
+            ...m,
+            weeksToReach: null as number | null,
+          })),
+          defaultAtomsPerWeek: targets.defaultAtomsPerWeek,
+          studentM1Target: targets.studentM1Target,
+          careerPositioning: targets.careerPositioning,
+        },
       },
-    });
+      { headers: PRIVATE_CACHE_HEADERS }
+    );
   } catch (error) {
     console.error("Failed to fetch progress:", error);
     return NextResponse.json(

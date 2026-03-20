@@ -92,44 +92,72 @@ export async function canStudyNewAtom(userId: string): Promise<boolean> {
   return studyMastered < FREE_TIER_ATOM_LIMIT;
 }
 
+type UserAccessInput = {
+  role: string;
+  subscriptionStatus: string;
+  email: string;
+};
+
 /**
  * Get the user's access status for use in API responses and UI.
- * Re-checks access grants for free users so admin-added grants
- * take effect without requiring a re-login.
+ * Accepts optional pre-fetched user data to avoid a redundant DB query
+ * when the caller already has it (e.g. from getAuthenticatedUserById).
+ * For active/admin users, skips the mastery count query entirely.
  */
-export async function getUserAccessStatus(userId: string): Promise<{
+export async function getUserAccessStatus(
+  userId: string,
+  prefetchedUser?: UserAccessInput
+): Promise<{
   hasAccess: boolean;
   subscriptionStatus: string;
   masteredAtomCount: number;
   freeAtomLimit: number;
 }> {
-  const user = await db
-    .select({
-      role: users.role,
-      subscriptionStatus: users.subscriptionStatus,
-      email: users.email,
-    })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
+  let userRow: UserAccessInput;
 
-  if (user.length === 0) {
+  if (prefetchedUser) {
+    userRow = prefetchedUser;
+  } else {
+    const rows = await db
+      .select({
+        role: users.role,
+        subscriptionStatus: users.subscriptionStatus,
+        email: users.email,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (rows.length === 0) {
+      return {
+        hasAccess: false,
+        subscriptionStatus: "free",
+        masteredAtomCount: 0,
+        freeAtomLimit: FREE_TIER_ATOM_LIMIT,
+      };
+    }
+
+    userRow = rows[0];
+  }
+
+  const resolvedStatus = await refreshAccessIfStale(userId, userRow);
+  const effective = { ...userRow, subscriptionStatus: resolvedStatus };
+  const isFullAccess = hasFullAccess(effective);
+
+  // Active/admin users have full access -- no need to count study mastery
+  if (isFullAccess) {
     return {
-      hasAccess: false,
-      subscriptionStatus: "free",
+      hasAccess: true,
+      subscriptionStatus: resolvedStatus,
       masteredAtomCount: 0,
       freeAtomLimit: FREE_TIER_ATOM_LIMIT,
     };
   }
 
-  const resolvedStatus = await refreshAccessIfStale(userId, user[0]);
-  const effective = { ...user[0], subscriptionStatus: resolvedStatus };
-  const isFullAccess = hasFullAccess(effective);
-
   const studyMastered = await countStudyMasteredAtoms(userId);
 
   return {
-    hasAccess: isFullAccess || studyMastered < FREE_TIER_ATOM_LIMIT,
+    hasAccess: studyMastered < FREE_TIER_ATOM_LIMIT,
     subscriptionStatus: resolvedStatus,
     masteredAtomCount: studyMastered,
     freeAtomLimit: FREE_TIER_ATOM_LIMIT,

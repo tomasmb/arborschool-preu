@@ -4,7 +4,11 @@ import {
 } from "@/lib/student/goals";
 import { computeInterestPositions } from "@/lib/student/careerPositioning";
 import { getStudentJourneySnapshot } from "@/lib/student/journeyState";
-import { studentApiError, studentApiSuccess } from "@/lib/student/apiEnvelope";
+import {
+  studentApiError,
+  studentApiSuccess,
+  PRIVATE_CACHE_HEADERS,
+} from "@/lib/student/apiEnvelope";
 import { getAuthenticatedStudentUserId } from "@/lib/student/auth";
 import {
   saveStudentScoresAndProfile,
@@ -59,7 +63,7 @@ export async function GET() {
 
   try {
     const payload = await buildObjectivesPayload(userId);
-    return studentApiSuccess(payload);
+    return studentApiSuccess(payload, { headers: PRIVATE_CACHE_HEADERS });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to load objectives";

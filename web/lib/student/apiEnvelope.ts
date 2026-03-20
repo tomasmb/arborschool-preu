@@ -66,11 +66,16 @@ export type StudentApiFailure = {
 
 export type StudentApiResponse<T> = StudentApiSuccess<T> | StudentApiFailure;
 
-export function studentApiSuccess<T>(data: T) {
-  return NextResponse.json<StudentApiSuccess<T>>({
-    success: true,
-    data,
-  });
+/** Short-lived private cache for read-only student API responses. */
+export const PRIVATE_CACHE_HEADERS = {
+  "Cache-Control": "private, max-age=30, stale-while-revalidate=60",
+};
+
+export function studentApiSuccess<T>(data: T, init?: ResponseInit) {
+  return NextResponse.json<StudentApiSuccess<T>>(
+    { success: true, data },
+    init
+  );
 }
 
 export function studentApiError(

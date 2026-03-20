@@ -37,7 +37,15 @@ export default async function PortalPage({ searchParams }: PortalPageProps) {
     redirect(signInUrl);
   }
 
-  const journey = await getStudentJourneySnapshot(user.id);
+  const [journey, accessStatus] = await Promise.all([
+    getStudentJourneySnapshot(user.id),
+    getUserAccessStatus(user.id, {
+      role: user.role,
+      subscriptionStatus: user.subscriptionStatus,
+      email: user.email,
+    }),
+  ]);
+
   if (journey.journeyState === "planning_required") {
     redirect("/portal/goals?mode=planning");
   }
@@ -51,7 +59,6 @@ export default async function PortalPage({ searchParams }: PortalPageProps) {
     PORTAL_CONTEXT_BANNER_PARAM
   );
   const contextBanner = resolvePortalContextBanner(bannerCode);
-  const accessStatus = await getUserAccessStatus(user.id);
 
   return (
     <PageShell
