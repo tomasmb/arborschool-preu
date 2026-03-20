@@ -164,7 +164,7 @@ async function upsertMasteryFromCorrectAnswers(
         userId,
         atomId,
         isMastered: true,
-        masterySource: "practice_test",
+        masterySource: "practice_test" as const,
         firstMasteredAt: now,
         status: "mastered" as const,
         updatedAt: now,
