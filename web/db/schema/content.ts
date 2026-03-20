@@ -231,6 +231,7 @@ export const questionAtoms = pgTable(
   (table) => [
     primaryKey({ columns: [table.questionId, table.atomId] }),
     index("idx_question_atoms_atom").on(table.atomId),
+    index("idx_question_atoms_question").on(table.questionId),
   ]
 );
 

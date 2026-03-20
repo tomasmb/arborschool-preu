@@ -27,7 +27,18 @@ import {
   MAX_HOURS,
   HOURS_STEP,
 } from "./ProjectionCard";
-import { ScoreJourneyChart } from "./ScoreJourneyChart";
+import dynamic from "next/dynamic";
+
+const ScoreJourneyChart = dynamic(
+  () =>
+    import("./ScoreJourneyChart").then((mod) => mod.ScoreJourneyChart),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-64 rounded-2xl bg-gray-100 animate-pulse" />
+    ),
+  }
+);
 import type {
   CurrentScore,
   GoalMilestone,
