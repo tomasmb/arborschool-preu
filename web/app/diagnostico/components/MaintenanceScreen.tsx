@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { clearAllDiagnosticData } from "@/lib/diagnostic/storage";
 
 // ============================================================================
 // MAINTENANCE SCREEN
@@ -80,7 +81,10 @@ export function MaintenanceScreen() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                clearAllDiagnosticData();
+                window.location.reload();
+              }}
               aria-label="Intentar cargar el diagnóstico de nuevo"
               className="btn-cta px-8 py-3 flex items-center justify-center gap-2"
             >

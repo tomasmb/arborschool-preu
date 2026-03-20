@@ -8,6 +8,7 @@ import {
   trackLandingCtaClicked,
 } from "@/lib/analytics";
 import type { LandingPrimaryAction } from "@/lib/student/journeyRouting";
+import { AUTH_POST_LOGIN_CALLBACK_URL } from "@/lib/student/journeyRouting";
 import { ExampleResultsModal } from "@/app/diagnostico/components";
 import {
   HeroSection,
@@ -20,10 +21,12 @@ import {
 
 function Navigation({
   ctaLabel,
+  showLoginLink,
   onPrimaryAction,
   isNavigating,
 }: {
   ctaLabel: string;
+  showLoginLink: boolean;
   onPrimaryAction: () => void;
   isNavigating: boolean;
 }) {
@@ -46,6 +49,15 @@ function Navigation({
             </span>
           </div>
           <div className="flex items-center gap-4">
+            {showLoginLink && (
+              <a
+                href={AUTH_POST_LOGIN_CALLBACK_URL}
+                className="text-sm text-cool-gray
+                  hover:text-charcoal transition-colors"
+              >
+                Ya tengo cuenta
+              </a>
+            )}
             <LoadingButton
               onClick={onPrimaryAction}
               isLoading={isNavigating}
@@ -93,6 +105,7 @@ export function StudentLandingClient({
     <main className="min-h-screen overflow-hidden">
       <Navigation
         ctaLabel={primaryAction.label}
+        showLoginLink={primaryAction.journeyState === "anonymous"}
         onPrimaryAction={() => goToPrimaryAction("navbar")}
         isNavigating={isNavigating}
       />

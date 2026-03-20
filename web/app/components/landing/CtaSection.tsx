@@ -57,8 +57,8 @@ export function CtaSection() {
             Agenda una demo para tu colegio
           </h2>
           <p className="text-lg sm:text-xl text-cool-gray">
-            Te mostramos la plataforma con datos de ejemplo en
-            20 minutos.
+            Te mostramos la plataforma en 20 minutos y te activamos
+            un piloto gratuito para que la pruebes con tus alumnos.
           </p>
         </ScrollReveal>
 

@@ -4,7 +4,6 @@ import type { SessionDifficulty } from "@/lib/student/atomMasteryAlgorithm";
 
 type MasteryMeterProps = {
   difficulty: SessionDifficulty;
-  consecutiveCorrect: number;
   totalAnswered: number;
   totalCorrect: number;
 };
@@ -47,17 +46,14 @@ const PHASE_INDEX: Record<SessionDifficulty, number> = {
 
 /**
  * Visual mastery progress indicator.
- * Shows the three difficulty phases as a journey + a streak meter
- * that fills as the student gets consecutive correct answers.
+ * Shows the three difficulty phases (easy → medium → hard) and accuracy.
  */
 export function MasteryMeter({
   difficulty,
-  consecutiveCorrect,
   totalAnswered,
   totalCorrect,
 }: MasteryMeterProps) {
   const activeIdx = PHASE_INDEX[difficulty];
-  const streak = Math.min(consecutiveCorrect, 3);
   const accuracy =
     totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
 
@@ -95,7 +91,7 @@ export function MasteryMeter({
         })}
       </div>
 
-      {/* Labels + streak */}
+      {/* Labels + accuracy */}
       <div className="flex items-center justify-between">
         {/* Phase labels */}
         <div className="flex items-center gap-3">
@@ -118,48 +114,13 @@ export function MasteryMeter({
           })}
         </div>
 
-        {/* Consecutive correct streak dots */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-[10px] text-gray-400 font-medium mr-1">
-            Racha
+        {/* Accuracy stat (inline) */}
+        {totalAnswered > 0 && (
+          <span className="text-[10px] text-gray-400 font-medium">
+            {accuracy}% precisión
           </span>
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className={[
-                "w-3.5 h-3.5 rounded-full border-2 transition-all",
-                "duration-300",
-                i < streak
-                  ? "bg-emerald-500 border-emerald-500 scale-110"
-                  : "bg-white border-gray-300",
-              ].join(" ")}
-            >
-              {i < streak && (
-                <svg
-                  className="w-full h-full text-white p-px"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={3}
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              )}
-            </div>
-          ))}
-        </div>
+        )}
       </div>
-
-      {/* Compact accuracy stat */}
-      {totalAnswered > 0 && (
-        <p className="text-[11px] text-gray-400 text-right">
-          {accuracy}% precisión
-        </p>
-      )}
     </div>
   );
 }

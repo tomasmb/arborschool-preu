@@ -61,7 +61,8 @@ function useExecutionControllers(
   core: CoreState,
   cache: CacheState,
   timer: TimerState,
-  routeRef: MutableRefObject<CoreState["route"]>
+  routeRef: MutableRefObject<CoreState["route"]>,
+  isRestored: boolean
 ) {
   const resultActions = useDiagnosticResultsActions({
     attemptId: timer.attemptId,
@@ -114,6 +115,7 @@ function useExecutionControllers(
 
   const timerActions = useDiagnosticTimer(
     {
+      isRestored,
       stage: core.stage,
       questionIndex: core.questionIndex,
       route: core.route,
@@ -236,7 +238,7 @@ export function useDiagnosticFlow() {
     isStudentPortalUser: core.isStudentPortalUser,
   });
 
-  useSessionPersistence(
+  const isRestored = useSessionPersistence(
     {
       setScreen: core.setScreen,
       setStage: core.setStage,
@@ -266,7 +268,9 @@ export function useDiagnosticFlow() {
   });
 
   useLifecycleControllers(core, timer);
-  const execution = useExecutionControllers(core, cache, timer, routeRef);
+  const execution = useExecutionControllers(
+    core, cache, timer, routeRef, isRestored
+  );
   const uiHandlers = useUiHandlers(core);
 
   return buildFlowResult({

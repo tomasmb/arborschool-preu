@@ -123,7 +123,16 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
           </div>
 
           <p className="text-xs text-gray-400 text-center">
-            Al continuar aceptas nuestros términos y condiciones.
+            Al continuar aceptas nuestros{" "}
+            <a
+              href="/terminos"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-gray-600 transition-colors"
+            >
+              términos y condiciones
+            </a>
+            .
           </p>
         </div>
       </div>

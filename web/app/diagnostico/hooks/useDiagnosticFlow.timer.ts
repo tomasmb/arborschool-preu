@@ -8,6 +8,7 @@ import { computeScoredResults } from "../utils/diagnosticApi";
 import type { Screen } from "./useDiagnosticFlow.types";
 
 type TimerParams = {
+  isRestored: boolean;
   stage: 1 | 2;
   questionIndex: number;
   route: Route | null;
@@ -74,6 +75,7 @@ export function useDiagnosticTimer(
   }, [params, routeRef]);
 
   useEffect(() => {
+    if (!params.isRestored) return;
     if (params.timeExpiredAt !== null) {
       return;
     }

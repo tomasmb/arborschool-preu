@@ -399,7 +399,6 @@ export function AtomStudyView({ ctrl }: { ctrl: Controller }) {
         </div>
         <MasteryMeter
           difficulty={ctrl.difficulty}
-          consecutiveCorrect={ctrl.answerResult?.consecutiveCorrect ?? 0}
           totalAnswered={ctrl.totalAnswered}
           totalCorrect={ctrl.totalCorrect}
         />
