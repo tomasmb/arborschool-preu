@@ -3,10 +3,9 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import { InlineRecoveryPanel } from "../components";
-import { filterNumericInput } from "@/lib/student/constants";
 import type { GoalOption, PlanningProfileDraft } from "./types";
 import { OfferingAutocomplete } from "./OfferingAutocomplete";
-import { formatPlanningCutoff, selectedPlanningOption } from "./goalHelpers";
+import { selectedPlanningOption } from "./goalHelpers";
 import { StepCommitment } from "./StepCommitment";
 
 type PlanningModeFlowProps = {
@@ -25,7 +24,7 @@ type PlanningModeFlowProps = {
   onSaveForLater: () => Promise<void>;
 };
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 3;
 
 function StepIndicator({ current, total }: { current: number; total: number }) {
   return (
@@ -171,119 +170,8 @@ function StepCareer({
   );
 }
 
-/**
- * Step 2: Suggested M1 target based on career interest.
- * The system suggests a target (cutoff + 30pt margin), student can adjust.
- */
-function StepSuggestedTarget({
-  option,
-  m1Draft,
-  onChangeM1,
-  onNext,
-}: {
-  option: GoalOption | null;
-  m1Draft: string;
-  onChangeM1: (value: string) => void;
-  onNext: () => void;
-}) {
-  const suggestedM1 = useMemo(() => {
-    if (!option || option.lastCutoff === null) return null;
-    const m1Weight = option.weights.find(
-      (w) => w.testCode.toUpperCase() === "M1"
-    );
-    if (!m1Weight || m1Weight.weightPercent === 0) return null;
-    const target = option.lastCutoff + 30;
-    const fraction = m1Weight.weightPercent / 100;
-    const raw = target / fraction;
-    return Math.round(Math.max(100, Math.min(1000, raw)));
-  }, [option]);
-
-  const hasSuggestion = suggestedM1 !== null;
-  const currentValue = m1Draft || (hasSuggestion ? String(suggestedM1) : "");
-
-  return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <h2 className="text-2xl sm:text-3xl font-serif font-bold text-primary">
-          Te recomendamos este objetivo
-        </h2>
-        <p className="text-sm text-gray-600">
-          Basado en tu carrera de interés, este es el puntaje M1 que necesitas.
-          Puedes ajustarlo — es TU objetivo.
-        </p>
-      </div>
-
-      {option && (
-        <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-4 space-y-1">
-          <p className="text-sm font-medium text-gray-800">
-            {option.careerName} — {option.universityName}
-          </p>
-          <p className="text-xs text-gray-500">
-            Último corte: {formatPlanningCutoff(option)}
-          </p>
-        </div>
-      )}
-
-      <div className="space-y-2">
-        <label
-          htmlFor="m1-target"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Tu objetivo M1
-        </label>
-        <input
-          id="m1-target"
-          type="text"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          value={currentValue}
-          onChange={(e) => onChangeM1(filterNumericInput(e.target.value))}
-          placeholder="Ej: 700"
-          className="w-full max-w-xs rounded-xl border border-gray-200 bg-white
-            px-4 py-3 text-lg font-bold tabular-nums
-            focus:border-primary focus:ring-2 focus:ring-primary/10
-            focus:outline-none transition-all"
-        />
-        {hasSuggestion && (
-          <p className="text-xs text-gray-400">
-            Sugerencia: {suggestedM1} pts (corte + 30 pts de margen)
-          </p>
-        )}
-        <p className="text-xs text-gray-500">
-          Estos son TUS objetivos. Puedes cambiarlos cuando quieras.
-        </p>
-      </div>
-
-      {currentValue && (
-        <button
-          type="button"
-          onClick={onNext}
-          className="btn-cta w-full sm:w-auto flex items-center
-            justify-center gap-2 py-3"
-        >
-          Continuar
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M13 7l5 5m0 0l-5 5m5-5H6"
-            />
-          </svg>
-        </button>
-      )}
-    </div>
-  );
-}
-
 function StepConfirm({
   option,
-  m1Draft,
   saving,
   error,
   infoMessage,
@@ -291,7 +179,6 @@ function StepConfirm({
   onSaveForLater,
 }: {
   option: GoalOption | null;
-  m1Draft: string;
   saving: boolean;
   error: string | null;
   infoMessage: string | null;
@@ -305,8 +192,8 @@ function StepConfirm({
           Todo listo para tu diagnóstico
         </h2>
         <p className="text-sm text-gray-600">
-          Con tu objetivo definido, el diagnóstico priorizará qué estudiar
-          primero.
+          Con tu carrera elegida, el diagnóstico calibrará tu nivel y te
+          sugerirá un objetivo M1 personalizado.
         </p>
       </div>
 
@@ -318,14 +205,6 @@ function StepConfirm({
             </p>
             <p className="text-sm font-semibold text-gray-800">
               {option.careerName} — {option.universityName}
-            </p>
-          </div>
-        )}
-        {m1Draft && (
-          <div>
-            <p className="text-xs font-medium text-gray-500">Tu objetivo M1</p>
-            <p className="text-lg font-bold text-primary tabular-nums">
-              {m1Draft} pts
             </p>
           </div>
         )}
@@ -391,7 +270,6 @@ function StepConfirm({
 export function PlanningModeFlow(props: PlanningModeFlowProps) {
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState<"forward" | "back">("forward");
-  const [m1Draft, setM1Draft] = useState("");
 
   const option = useMemo(
     () => selectedPlanningOption(props.options, props.selectedOfferingId),
@@ -428,22 +306,14 @@ export function PlanningModeFlow(props: PlanningModeFlowProps) {
               onNext={() => goForward(1)}
             />
           ) : step === 1 ? (
-            <StepSuggestedTarget
-              option={option}
-              m1Draft={m1Draft}
-              onChangeM1={setM1Draft}
-              onNext={() => goForward(2)}
-            />
-          ) : step === 2 ? (
             <StepCommitment
               planningProfile={props.planningProfile}
               onPlanningProfileChange={props.onPlanningProfileChange}
-              onNext={() => goForward(3)}
+              onNext={() => goForward(2)}
             />
           ) : (
             <StepConfirm
               option={option}
-              m1Draft={m1Draft}
               saving={props.saving}
               error={props.error}
               infoMessage={props.infoMessage}

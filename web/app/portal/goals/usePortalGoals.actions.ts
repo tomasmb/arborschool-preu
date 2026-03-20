@@ -385,6 +385,7 @@ export function useGoalSaveHandlers(state: GoalsState) {
         }
 
         state.setInfoMessage("Plan guardado. Puedes volver cuando quieras.");
+        router.push("/portal");
       } catch (saveError) {
         state.setError(
           saveError instanceof Error

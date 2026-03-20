@@ -352,13 +352,10 @@ export function calculatePAESScore(
  * Get performance level from score
  */
 export function getLevel(score: number): string {
-  if (score < 450) return "Muy Inicial";
-  if (score < 500) return "Inicial";
-  if (score < 550) return "Intermedio Bajo";
-  if (score < 600) return "Intermedio";
-  if (score < 650) return "Intermedio Alto";
-  if (score < 700) return "Alto";
-  return "Muy Alto";
+  if (score < 500) return "En camino";
+  if (score < 650) return "Intermedio";
+  if (score < 800) return "Avanzado";
+  return "Sobresaliente";
 }
 
 /**

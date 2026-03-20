@@ -28,7 +28,7 @@ export function HowItWorksSection() {
             <StepCard
               number={2}
               title="Completa diagnóstico M1"
-              description="Responde 16 preguntas adaptativas (~15 min) y obtiene tu rango estimado con evidencia."
+              description="Responde 16 preguntas adaptativas (~15 min) y obtén tu rango estimado con evidencia."
               variant="primary"
             />
           </ScrollReveal>

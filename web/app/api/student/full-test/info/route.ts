@@ -7,6 +7,7 @@ import {
   resolveTestQuestions,
 } from "@/lib/student/fullTest";
 import { FULL_TEST_DURATION_MIN } from "@/lib/diagnostic/scoringConstants";
+import { PAES_TOTAL_QUESTIONS } from "@/lib/diagnostic/paesScoreTable";
 
 /**
  * GET /api/student/full-test/info
@@ -49,7 +50,7 @@ export async function GET() {
           success: true,
           data: {
             testName: null,
-            questionCount: 0,
+            questionCount: PAES_TOTAL_QUESTIONS,
             timeLimitMinutes: FULL_TEST_DURATION_MIN,
           },
         },
@@ -59,13 +60,15 @@ export async function GET() {
 
     const test = available[0];
     const questions = await resolveTestQuestions(test.id, userId);
+    const questionCount =
+      questions.length > 0 ? questions.length : PAES_TOTAL_QUESTIONS;
 
     return NextResponse.json(
       {
         success: true,
         data: {
           testName: test.name,
-          questionCount: questions.length,
+          questionCount,
           timeLimitMinutes: test.timeLimitMinutes ?? FULL_TEST_DURATION_MIN,
         },
       },

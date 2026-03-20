@@ -132,7 +132,9 @@ async function getM1GoalContext(userId: string): Promise<M1GoalContext> {
 
   const buffer = primaryGoal.bufferPoints ?? 30;
   const suggestedM1Target =
-    lastCutoff !== null ? Math.min(1000, lastCutoff + buffer) : null;
+    lastCutoff !== null
+      ? Math.ceil(Math.min(1000, lastCutoff + buffer))
+      : null;
 
   return {
     hasCareerGoal: true,

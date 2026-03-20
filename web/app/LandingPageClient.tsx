@@ -54,7 +54,7 @@ function Navigation({
           <div className="flex items-center gap-3">
             <a
               href="/estudiantes"
-              className="hidden sm:inline-flex text-sm text-cool-gray
+              className="inline-flex text-sm text-cool-gray
                 hover:text-charcoal transition-colors"
             >
               Para estudiantes
