@@ -3,7 +3,11 @@ import { getOrCreateCurrentMission } from "@/lib/student/missions";
 import { getStudentJourneySnapshot } from "@/lib/student/journeyState";
 import { getStudentNextAction } from "@/lib/student/nextAction";
 import { getDailyStreak } from "@/lib/student/streakTracker";
-import { studentApiError, studentApiSuccess } from "@/lib/student/apiEnvelope";
+import {
+  studentApiError,
+  studentApiSuccess,
+  PRIVATE_CACHE_HEADERS,
+} from "@/lib/student/apiEnvelope";
 import { getAuthenticatedStudentUserId } from "@/lib/student/auth";
 
 export async function GET() {
@@ -23,19 +27,22 @@ export async function GET() {
       ]
     );
 
-    return studentApiSuccess({
-      ...dashboard,
-      mission,
-      streak,
-      journeyState: journey.journeyState,
-      nextActionSummary: {
-        status: nextAction.status,
-        hasAction: Boolean(nextAction.nextAction),
-        estimatedMinutes: nextAction.nextAction?.studyMinutes ?? null,
-        pointsGain: nextAction.nextAction?.pointsGain ?? null,
+    return studentApiSuccess(
+      {
+        ...dashboard,
+        mission,
+        streak,
+        journeyState: journey.journeyState,
+        nextActionSummary: {
+          status: nextAction.status,
+          hasAction: Boolean(nextAction.nextAction),
+          estimatedMinutes: nextAction.nextAction?.studyMinutes ?? null,
+          pointsGain: nextAction.nextAction?.pointsGain ?? null,
+        },
+        nextActionFull: nextAction,
       },
-      nextActionFull: nextAction,
-    });
+      { headers: PRIVATE_CACHE_HEADERS }
+    );
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to load dashboard";

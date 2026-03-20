@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { users } from "@/db/schema";
@@ -129,40 +130,45 @@ export async function upsertUserFromOAuth(profile: OAuthProfile) {
   return createdUser;
 }
 
-export async function getAuthenticatedUserById(
-  userId: string
-): Promise<AuthenticatedUserRecord | null> {
-  const result = await db
-    .select({
-      id: users.id,
-      email: users.email,
-      firstName: users.firstName,
-      lastName: users.lastName,
-      role: users.role,
-      subscriptionStatus: users.subscriptionStatus,
-      schoolId: users.schoolId,
-      paesScoreMin: users.paesScoreMin,
-      paesScoreMax: users.paesScoreMax,
-    })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
+/**
+ * Fetches a user by ID. Wrapped with React cache() so multiple calls
+ * within the same server request (e.g. page + API handler) hit the DB
+ * only once.
+ */
+export const getAuthenticatedUserById = cache(
+  async (userId: string): Promise<AuthenticatedUserRecord | null> => {
+    const result = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        role: users.role,
+        subscriptionStatus: users.subscriptionStatus,
+        schoolId: users.schoolId,
+        paesScoreMin: users.paesScoreMin,
+        paesScoreMax: users.paesScoreMax,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
 
-  if (result.length === 0) {
-    return null;
+    if (result.length === 0) {
+      return null;
+    }
+
+    const row = result[0];
+
+    return {
+      id: row.id,
+      email: row.email,
+      firstName: row.firstName,
+      lastName: row.lastName,
+      role: row.role,
+      subscriptionStatus: row.subscriptionStatus,
+      schoolId: row.schoolId,
+      hasDiagnosticSnapshot:
+        row.paesScoreMin !== null && row.paesScoreMax !== null,
+    };
   }
-
-  const row = result[0];
-
-  return {
-    id: row.id,
-    email: row.email,
-    firstName: row.firstName,
-    lastName: row.lastName,
-    role: row.role,
-    subscriptionStatus: row.subscriptionStatus,
-    schoolId: row.schoolId,
-    hasDiagnosticSnapshot:
-      row.paesScoreMin !== null && row.paesScoreMax !== null,
-  };
-}
+);

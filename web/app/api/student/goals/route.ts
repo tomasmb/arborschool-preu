@@ -6,7 +6,11 @@ import {
   getStudentGoalsView,
 } from "@/lib/student/goals";
 import { getStudentJourneySnapshot } from "@/lib/student/journeyState";
-import { studentApiError, studentApiSuccess } from "@/lib/student/apiEnvelope";
+import {
+  studentApiError,
+  studentApiSuccess,
+  PRIVATE_CACHE_HEADERS,
+} from "@/lib/student/apiEnvelope";
 import { getAuthenticatedStudentUserId } from "@/lib/student/auth";
 
 type GoalsRequestBody = {
@@ -25,10 +29,10 @@ export async function GET() {
       getStudentGoalsView(userId),
       getStudentJourneySnapshot(userId),
     ]);
-    return studentApiSuccess({
-      ...view,
-      journeyState: journey.journeyState,
-    });
+    return studentApiSuccess(
+      { ...view, journeyState: journey.journeyState },
+      { headers: PRIVATE_CACHE_HEADERS }
+    );
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to load goals";

@@ -132,6 +132,8 @@ export function CareerPositioningSection({
   options,
   onAddCareer,
   onRemoveCareer,
+  saving,
+  error,
 }: {
   careerInterests: Array<{
     offeringId: string;
@@ -142,6 +144,8 @@ export function CareerPositioningSection({
   options: GoalOption[];
   onAddCareer: (offeringId: string) => void;
   onRemoveCareer: (offeringId: string) => void;
+  saving?: boolean;
+  error?: string | null;
 }) {
   const aboveCount = careerInterests.filter(
     (ci) => ci.position?.status === "above"
@@ -150,17 +154,28 @@ export function CareerPositioningSection({
   return (
     <section className="card-section space-y-5">
       <div>
-        <h2 className="text-xl font-serif font-semibold text-primary">
-          ¿Dónde me posiciono?
-        </h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-serif font-semibold text-primary">
+            ¿Dónde me posiciono?
+          </h2>
+          {saving && (
+            <span className="text-xs text-gray-400 animate-pulse">
+              Guardando…
+            </span>
+          )}
+        </div>
         <p className="text-sm text-gray-500 mt-1">
-          Explora cómo tus objetivos te posicionan en distintas carreras.
+          Explora cómo tus objetivos te posicionan en distintas
+          carreras.
         </p>
         {careerInterests.length > 0 && (
           <p className="text-xs text-gray-400 mt-1">
             Cumples para {aboveCount} de {careerInterests.length}{" "}
             {careerInterests.length === 1 ? "carrera" : "carreras"}
           </p>
+        )}
+        {error && (
+          <p className="text-xs text-red-600 mt-1">{error}</p>
         )}
       </div>
 
@@ -170,8 +185,8 @@ export function CareerPositioningSection({
             p-6 text-center"
         >
           <p className="text-sm text-gray-500">
-            Agrega carreras de interés para ver cómo te posicionas con tus
-            puntajes.
+            Agrega carreras de interés para ver cómo te posicionas
+            con tus puntajes.
           </p>
         </div>
       ) : (

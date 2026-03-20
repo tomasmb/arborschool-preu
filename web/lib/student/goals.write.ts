@@ -366,16 +366,14 @@ export async function upsertStudentScoreTarget(
 }
 
 /**
- * Saves all student objectives at once: score targets, profile scores,
- * and career interests in a single transaction-safe operation.
+ * Saves score targets and profile scores in a single transaction.
+ * Career interests are saved separately via replaceStudentCareerInterests.
  */
-export async function saveStudentObjectives(
+export async function saveStudentScoresAndProfile(
   userId: string,
   params: {
     scoreTargets: ScoreTargetInput[];
     profileScores: ProfileScoreInput[];
-    careerInterests: CareerInterestInput[];
-    planningProfile?: StudentPlanningProfileInput;
   }
 ) {
   const scoreErr = validateScoreTargetInputs(params.scoreTargets);
@@ -384,21 +382,7 @@ export async function saveStudentObjectives(
   const profileErr = validateProfileScoreInputs(params.profileScores);
   if (profileErr) throw new Error(profileErr);
 
-  if (params.careerInterests.length > MAX_CAREER_INTERESTS) {
-    throw new Error(`Maximum ${MAX_CAREER_INTERESTS} career interests allowed`);
-  }
-
-  const offeringIds = params.careerInterests.map((i) => i.offeringId);
-  if (offeringIds.length > 0) {
-    await assertOfferingsExist(offeringIds);
-  }
-
-  const normalizedProfile = normalizePlanningProfileInput(
-    params.planningProfile
-  );
-
   await db.transaction(async (tx) => {
-    // Score targets
     await tx
       .delete(studentScoreTargets)
       .where(eq(studentScoreTargets.userId, userId));
@@ -413,7 +397,6 @@ export async function saveStudentObjectives(
       );
     }
 
-    // Profile scores
     await tx
       .delete(studentProfileScores)
       .where(eq(studentProfileScores.userId, userId));
@@ -427,12 +410,34 @@ export async function saveStudentObjectives(
         }))
       );
     }
+  });
+}
 
-    // Career interests (reuses studentGoals as bookmarks)
+/**
+ * Replaces only the student's career interests (studentGoals) without
+ * touching score targets or profile scores. Used for auto-saving career
+ * add/remove actions independently of the manual score save flow.
+ */
+export async function replaceStudentCareerInterests(
+  userId: string,
+  careerInterests: CareerInterestInput[]
+) {
+  if (careerInterests.length > MAX_CAREER_INTERESTS) {
+    throw new Error(
+      `Maximum ${MAX_CAREER_INTERESTS} career interests allowed`
+    );
+  }
+
+  const offeringIds = careerInterests.map((i) => i.offeringId);
+  if (offeringIds.length > 0) {
+    await assertOfferingsExist(offeringIds);
+  }
+
+  await db.transaction(async (tx) => {
     await clearExistingGoals(tx, userId);
-    if (params.careerInterests.length > 0) {
+    if (careerInterests.length > 0) {
       await tx.insert(studentGoals).values(
-        params.careerInterests.map((i) => ({
+        careerInterests.map((i) => ({
           userId,
           offeringId: i.offeringId,
           priority: i.priority,
@@ -441,9 +446,6 @@ export async function saveStudentObjectives(
         }))
       );
     }
-
-    // Planning profile
-    await upsertPlanningProfile(tx, userId, normalizedProfile);
   });
 }
 

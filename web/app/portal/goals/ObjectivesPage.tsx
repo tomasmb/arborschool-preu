@@ -321,6 +321,8 @@ function ObjectivesContent() {
             options={objectives.options}
             onAddCareer={objectives.addCareerInterest}
             onRemoveCareer={objectives.removeCareerInterest}
+            saving={objectives.careerSaving}
+            error={objectives.careerError}
           />
 
           <StudyCTA />

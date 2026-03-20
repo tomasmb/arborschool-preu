@@ -43,16 +43,17 @@ export default async function StudyPage({ searchParams }: StudyPageProps) {
   const deepLinkParams = toUrlSearchParams(queryParams);
   const mode = deepLinkParams.get("mode");
 
-  // Verification gate: block all study/review/scan unless already in
-  // verification mode. Forces student to resolve flagged atoms first.
-  if (mode !== "verification") {
-    const verificationDue = await hasVerificationDue(user.id);
-    if (verificationDue) {
-      redirect("/portal/study?mode=verification");
-    }
-  }
+  // Run verification check and journey snapshot in parallel when possible.
+  // Verification gate blocks all study/review/scan unless in verification mode.
+  const needsVerificationCheck = mode !== "verification";
+  const [verificationDue, journey] = await Promise.all([
+    needsVerificationCheck ? hasVerificationDue(user.id) : false,
+    getStudentJourneySnapshot(user.id),
+  ]);
 
-  const journey = await getStudentJourneySnapshot(user.id);
+  if (verificationDue) {
+    redirect("/portal/study?mode=verification");
+  }
   const studyEntry = resolveStudyEntryRoute({
     journeySnapshot: journey,
     isEmailLink:
