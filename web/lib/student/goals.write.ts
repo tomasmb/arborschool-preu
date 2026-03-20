@@ -366,51 +366,50 @@ export async function upsertStudentScoreTarget(
 }
 
 /**
- * Saves score targets and profile scores in a single transaction.
- * Career interests are saved separately via replaceStudentCareerInterests.
+ * Upserts a single profile score (NEM or RANKING).
  */
-export async function saveStudentScoresAndProfile(
+export async function upsertStudentProfileScore(
   userId: string,
-  params: {
-    scoreTargets: ScoreTargetInput[];
-    profileScores: ProfileScoreInput[];
-  }
+  scoreType: string,
+  score: number
 ) {
-  const scoreErr = validateScoreTargetInputs(params.scoreTargets);
-  if (scoreErr) throw new Error(scoreErr);
+  const normalized = scoreType.trim().toUpperCase();
+  const validTypes = new Set(["NEM", "RANKING"]);
+  if (!validTypes.has(normalized)) {
+    throw new Error(`Invalid profile score type: ${normalized}`);
+  }
 
-  const profileErr = validateProfileScoreInputs(params.profileScores);
-  if (profileErr) throw new Error(profileErr);
+  const rounded = Math.round(score);
+  if (!isValidScore(rounded)) {
+    throw new Error(`Score must be between ${SCORE_MIN} and ${SCORE_MAX}`);
+  }
 
-  await db.transaction(async (tx) => {
-    await tx
-      .delete(studentScoreTargets)
-      .where(eq(studentScoreTargets.userId, userId));
-    if (params.scoreTargets.length > 0) {
-      await tx.insert(studentScoreTargets).values(
-        params.scoreTargets.map((t) => ({
-          userId,
-          testCode: t.testCode.trim().toUpperCase(),
-          score: normalizeScore(Math.round(t.score)),
-          updatedAt: new Date(),
-        }))
-      );
-    }
+  const scoreStr = normalizeScore(rounded);
+  const [existing] = await db
+    .select({ id: studentProfileScores.id })
+    .from(studentProfileScores)
+    .where(
+      and(
+        eq(studentProfileScores.userId, userId),
+        eq(studentProfileScores.scoreType, normalized)
+      )
+    )
+    .limit(1);
 
-    await tx
-      .delete(studentProfileScores)
-      .where(eq(studentProfileScores.userId, userId));
-    if (params.profileScores.length > 0) {
-      await tx.insert(studentProfileScores).values(
-        params.profileScores.map((s) => ({
-          userId,
-          scoreType: s.scoreType.trim().toUpperCase(),
-          score: normalizeScore(Math.round(s.score)),
-          updatedAt: new Date(),
-        }))
-      );
-    }
-  });
+  if (existing) {
+    await db
+      .update(studentProfileScores)
+      .set({ score: scoreStr, updatedAt: new Date() })
+      .where(eq(studentProfileScores.id, existing.id));
+  } else {
+    await db.insert(studentProfileScores).values({
+      userId,
+      scoreType: normalized,
+      score: scoreStr,
+    });
+  }
+
+  return { scoreType: normalized, score: rounded };
 }
 
 /**

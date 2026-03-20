@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useRef } from "react";
+import { Suspense, useEffect } from "react";
 import { PageShell, InlineRecoveryPanel } from "@/app/portal/components";
 import { ELECTIVO_SUB_TESTS } from "@/lib/student/constants";
 import { CareerPositioningSection } from "./CareerPositioningSection";
@@ -11,33 +11,7 @@ import { ScoreInput } from "./ScoreInput";
 import { usePortalObjectives } from "./usePortalObjectives";
 import { usePortalGoals } from "./usePortalGoals";
 import { testLabel } from "./utils";
-
-const UNSAVED_MSG =
-  "Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?";
-
-function useUnsavedChangesWarning(isDirty: boolean) {
-  const dirtyRef = useRef(isDirty);
-  dirtyRef.current = isDirty;
-
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (!dirtyRef.current) return;
-      e.preventDefault();
-    };
-
-    const originalPushState = history.pushState.bind(history);
-    history.pushState = function (...args: Parameters<History["pushState"]>) {
-      if (dirtyRef.current && !window.confirm(UNSAVED_MSG)) return;
-      return originalPushState(...args);
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      history.pushState = originalPushState;
-    };
-  }, []);
-}
+import type { FieldSaveStatus } from "./usePortalObjectives";
 
 // ---------------------------------------------------------------------------
 // SECTION: SCORE OBJECTIVES
@@ -49,12 +23,14 @@ function ScoreObjectivesSection({
   scoreTargets,
   profileScores,
   careerInterests,
+  fieldStatus,
   onUpdateScore,
   onUpdateProfile,
 }: {
   scoreTargets: Record<string, string>;
   profileScores: Record<string, string>;
   careerInterests: { offeringId: string }[];
+  fieldStatus: Record<string, FieldSaveStatus>;
   onUpdateScore: (testCode: string, value: string) => void;
   onUpdateProfile: (scoreType: string, value: string) => void;
 }) {
@@ -67,8 +43,7 @@ function ScoreObjectivesSection({
           Mis objetivos de puntaje
         </h2>
         <p className="text-sm text-gray-500 mt-1">
-          Define tus metas PAES. Estos son TUS objetivos — puedes cambiarlos
-          cuando quieras.
+          Define tus metas PAES. Tus cambios se guardan automáticamente.
         </p>
       </div>
 
@@ -83,6 +58,7 @@ function ScoreObjectivesSection({
               label={testLabel(tc)}
               value={scoreTargets[tc] ?? ""}
               onChange={(v) => onUpdateScore(tc, v)}
+              saveStatus={fieldStatus[tc] ?? "idle"}
             />
           ))}
           {hasM2Career && (
@@ -90,6 +66,7 @@ function ScoreObjectivesSection({
               label={testLabel("M2")}
               value={scoreTargets.M2 ?? ""}
               onChange={(v) => onUpdateScore("M2", v)}
+              saveStatus={fieldStatus.M2 ?? "idle"}
             />
           )}
         </div>
@@ -97,8 +74,12 @@ function ScoreObjectivesSection({
 
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-gray-800">Electivo</span>
-          <span className="text-[10px] text-gray-400">se usa el mejor</span>
+          <span className="text-sm font-semibold text-gray-800">
+            Electivo
+          </span>
+          <span className="text-[10px] text-gray-400">
+            se usa el mejor
+          </span>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           {ELECTIVO_SUB_TESTS.map((sub) => (
@@ -107,6 +88,7 @@ function ScoreObjectivesSection({
               label={testLabel(sub)}
               value={scoreTargets[sub] ?? ""}
               onChange={(v) => onUpdateScore(sub, v)}
+              saveStatus={fieldStatus[sub] ?? "idle"}
             />
           ))}
         </div>
@@ -118,8 +100,8 @@ function ScoreObjectivesSection({
             Tu perfil académico
           </p>
           <p className="text-xs text-gray-400 mt-0.5">
-            Estos valores dependen de tus notas. Actualiza tu estimación a
-            medida que avanza tu año escolar.
+            Estos valores dependen de tus notas. Actualiza tu estimación
+            a medida que avanza tu año escolar.
           </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -128,50 +110,18 @@ function ScoreObjectivesSection({
             value={profileScores.NEM ?? ""}
             onChange={(v) => onUpdateProfile("NEM", v)}
             hint="tu estimación"
+            saveStatus={fieldStatus.NEM ?? "idle"}
           />
           <ScoreInput
             label="Ranking"
             value={profileScores.RANKING ?? ""}
             onChange={(v) => onUpdateProfile("RANKING", v)}
             hint="tu estimación"
+            saveStatus={fieldStatus.RANKING ?? "idle"}
           />
         </div>
       </div>
     </section>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// SAVE BAR
-// ---------------------------------------------------------------------------
-
-function SaveBar({
-  isDirty,
-  saving,
-  error,
-  infoMessage,
-  onSave,
-}: {
-  isDirty: boolean;
-  saving: boolean;
-  error: string | null;
-  infoMessage: string | null;
-  onSave: () => void;
-}) {
-  return (
-    <div className="space-y-2">
-      <button
-        type="button"
-        disabled={saving || !isDirty}
-        onClick={onSave}
-        className="btn-primary w-full py-2.5
-          disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {saving ? "Guardando…" : "Guardar cambios"}
-      </button>
-      {error && <p className="text-xs text-red-600">{error}</p>}
-      {infoMessage && <p className="text-xs text-emerald-600">{infoMessage}</p>}
-    </div>
   );
 }
 
@@ -214,7 +164,10 @@ function StudyCTA() {
           Cada concepto dominado mejora tu puntaje M1.
         </p>
       </div>
-      <Link href="/portal/study" className="btn-primary text-xs px-4 py-2 shrink-0">
+      <Link
+        href="/portal/study"
+        className="btn-primary text-xs px-4 py-2 shrink-0"
+      >
         Estudiar
       </Link>
     </section>
@@ -237,8 +190,6 @@ function ObjectivesContent() {
     planningModeRequested &&
     (objectives.journeyState === null ||
       objectives.journeyState === "planning_required");
-
-  useUnsavedChangesWarning(objectives.isDirty && !isPlanningMode);
 
   useEffect(() => {
     if (
@@ -304,16 +255,9 @@ function ObjectivesContent() {
             scoreTargets={objectives.scoreTargets}
             profileScores={objectives.profileScores}
             careerInterests={objectives.careerInterests}
+            fieldStatus={objectives.fieldStatus}
             onUpdateScore={objectives.updateScoreTarget}
             onUpdateProfile={objectives.updateProfileScore}
-          />
-
-          <SaveBar
-            isDirty={objectives.isDirty}
-            saving={objectives.saving}
-            error={objectives.error}
-            infoMessage={objectives.infoMessage}
-            onSave={objectives.handleSave}
           />
 
           <CareerPositioningSection

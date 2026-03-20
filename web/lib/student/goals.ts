@@ -10,6 +10,7 @@ import {
 import {
   replaceStudentGoals,
   upsertStudentScoreTarget,
+  upsertStudentProfileScore,
 } from "./goals.write";
 import {
   MAX_PRIMARY_GOALS,
@@ -30,6 +31,7 @@ export {
   getStudentPlanningProfile,
   replaceStudentGoals,
   upsertStudentScoreTarget,
+  upsertStudentProfileScore,
 };
 
 /** Legacy view used by old career-centric goals page. */

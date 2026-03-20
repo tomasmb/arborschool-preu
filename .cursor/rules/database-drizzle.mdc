@@ -18,14 +18,30 @@ alwaysApply: false
 1. **Schema changes** go in `web/db/schema/*.ts` (drizzle schema files)
 2. **Migrations** are generated via `npx drizzle-kit generate` (interactive — user runs it)
 3. **Migrations are applied** via `node scripts/migrate.js` (runs on Vercel deploy)
-4. **Local DB sync** uses `npx drizzle-kit migrate` or `node scripts/migrate.js`
+4. **Local DB sync** uses `node scripts/migrate.js` (NOT `npx drizzle-kit migrate`)
+
+## Applying migrations locally
+
+**ALWAYS use `node scripts/migrate.js`** (with DATABASE_URL from `.env.local`):
+
+```bash
+cd web
+export $(grep -v '^#' .env.local | xargs) && node scripts/migrate.js
+```
+
+**NEVER use `npx drizzle-kit migrate`** to apply migrations. It uses a different
+tracking table (`drizzle.__drizzle_migrations`) than our custom `scripts/migrate.js`
+(which uses `public._drizzle_migrations`). Running `drizzle-kit migrate` will try
+to replay all migrations from scratch and fail on "already exists" errors.
+
+`drizzle-kit generate` is fine — it only generates `.sql` files and doesn't touch the DB.
 
 ## Workflow for schema changes
 
 1. Edit the schema file (e.g. `web/db/schema/content.ts`)
 2. Ask the user to run `npx drizzle-kit generate --name <migration_name>` in their terminal
 3. Review the generated `.sql` file in `web/db/migrations/`
-4. Ask the user to run `npx drizzle-kit migrate` to apply locally
+4. Apply locally: `export $(grep -v '^#' .env.local | xargs) && node scripts/migrate.js`
 5. Update `docs/data-model-specification.md` if needed
 
 ## Why this matters
@@ -34,3 +50,4 @@ alwaysApply: false
 - Production and preview deploys depend on migration files existing
 - Raw SQL changes are invisible to the migration system and WILL break deploys
 - `drizzle-kit generate` is interactive (rename disambiguation) — the user must run it
+- `drizzle-kit migrate` and `scripts/migrate.js` use incompatible tracking tables
