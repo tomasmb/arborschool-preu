@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useRef } from "react";
+import { Suspense, useEffect } from "react";
 import { PageShell, InlineRecoveryPanel } from "@/app/portal/components";
 import { ELECTIVO_SUB_TESTS } from "@/lib/student/constants";
 import { CareerPositioningSection } from "./CareerPositioningSection";
@@ -11,33 +11,7 @@ import { ScoreInput } from "./ScoreInput";
 import { usePortalObjectives } from "./usePortalObjectives";
 import { usePortalGoals } from "./usePortalGoals";
 import { testLabel } from "./utils";
-
-const UNSAVED_MSG =
-  "Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?";
-
-function useUnsavedChangesWarning(isDirty: boolean) {
-  const dirtyRef = useRef(isDirty);
-  dirtyRef.current = isDirty;
-
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (!dirtyRef.current) return;
-      e.preventDefault();
-    };
-
-    const originalPushState = history.pushState.bind(history);
-    history.pushState = function (...args: Parameters<History["pushState"]>) {
-      if (dirtyRef.current && !window.confirm(UNSAVED_MSG)) return;
-      return originalPushState(...args);
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      history.pushState = originalPushState;
-    };
-  }, []);
-}
+import type { FieldSaveStatus } from "./usePortalObjectives";
 
 // ---------------------------------------------------------------------------
 // SECTION: SCORE OBJECTIVES
@@ -49,12 +23,14 @@ function ScoreObjectivesSection({
   scoreTargets,
   profileScores,
   careerInterests,
+  fieldStatus,
   onUpdateScore,
   onUpdateProfile,
 }: {
   scoreTargets: Record<string, string>;
   profileScores: Record<string, string>;
   careerInterests: { offeringId: string }[];
+  fieldStatus: Record<string, FieldSaveStatus>;
   onUpdateScore: (testCode: string, value: string) => void;
   onUpdateProfile: (scoreType: string, value: string) => void;
 }) {
@@ -67,8 +43,7 @@ function ScoreObjectivesSection({
           Mis objetivos de puntaje
         </h2>
         <p className="text-sm text-gray-500 mt-1">
-          Define tus metas PAES. Estos son TUS objetivos — puedes cambiarlos
-          cuando quieras.
+          Define tus metas PAES. Tus cambios se guardan automáticamente.
         </p>
       </div>
 
@@ -83,6 +58,7 @@ function ScoreObjectivesSection({
               label={testLabel(tc)}
               value={scoreTargets[tc] ?? ""}
               onChange={(v) => onUpdateScore(tc, v)}
+              saveStatus={fieldStatus[tc] ?? "idle"}
             />
           ))}
           {hasM2Career && (
@@ -90,6 +66,7 @@ function ScoreObjectivesSection({
               label={testLabel("M2")}
               value={scoreTargets.M2 ?? ""}
               onChange={(v) => onUpdateScore("M2", v)}
+              saveStatus={fieldStatus.M2 ?? "idle"}
             />
           )}
         </div>
@@ -97,8 +74,12 @@ function ScoreObjectivesSection({
 
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-gray-800">Electivo</span>
-          <span className="text-[10px] text-gray-400">se usa el mejor</span>
+          <span className="text-sm font-semibold text-gray-800">
+            Electivo
+          </span>
+          <span className="text-[10px] text-gray-400">
+            se usa el mejor
+          </span>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           {ELECTIVO_SUB_TESTS.map((sub) => (
@@ -107,6 +88,7 @@ function ScoreObjectivesSection({
               label={testLabel(sub)}
               value={scoreTargets[sub] ?? ""}
               onChange={(v) => onUpdateScore(sub, v)}
+              saveStatus={fieldStatus[sub] ?? "idle"}
             />
           ))}
         </div>
@@ -118,8 +100,8 @@ function ScoreObjectivesSection({
             Tu perfil académico
           </p>
           <p className="text-xs text-gray-400 mt-0.5">
-            Estos valores dependen de tus notas. Actualiza tu estimación a
-            medida que avanza tu año escolar.
+            Estos valores dependen de tus notas. Actualiza tu estimación
+            a medida que avanza tu año escolar.
           </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -128,82 +110,18 @@ function ScoreObjectivesSection({
             value={profileScores.NEM ?? ""}
             onChange={(v) => onUpdateProfile("NEM", v)}
             hint="tu estimación"
+            saveStatus={fieldStatus.NEM ?? "idle"}
           />
           <ScoreInput
             label="Ranking"
             value={profileScores.RANKING ?? ""}
             onChange={(v) => onUpdateProfile("RANKING", v)}
             hint="tu estimación"
+            saveStatus={fieldStatus.RANKING ?? "idle"}
           />
         </div>
       </div>
     </section>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// SAVE BAR
-// ---------------------------------------------------------------------------
-
-/**
- * Sticky bottom bar that slides up when score/profile changes are unsaved.
- * Sits above the mobile bottom nav (pb-16 sm:pb-0) and uses z-20 to layer
- * below the nav (z-30) but above page content.
- */
-function SaveBar({
-  isDirty,
-  saving,
-  error,
-  infoMessage,
-  onSave,
-}: {
-  isDirty: boolean;
-  saving: boolean;
-  error: string | null;
-  infoMessage: string | null;
-  onSave: () => void;
-}) {
-  const visible = isDirty || saving || !!error || !!infoMessage;
-
-  return (
-    <div
-      className={`fixed bottom-0 left-0 right-0 z-20
-        pb-16 sm:pb-0
-        transition-transform duration-300 ease-out
-        ${visible ? "translate-y-0" : "translate-y-full"}`}
-    >
-      <div
-        className="border-t border-gray-200 bg-white/95 backdrop-blur-sm
-          shadow-[0_-4px_12px_rgba(0,0,0,0.06)]"
-      >
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
-          <div className="flex-1 min-w-0">
-            {error && (
-              <p className="text-xs text-red-600 truncate">{error}</p>
-            )}
-            {infoMessage && (
-              <p className="text-xs text-emerald-600 truncate">
-                {infoMessage}
-              </p>
-            )}
-            {!error && !infoMessage && isDirty && (
-              <p className="text-xs text-gray-500">
-                Tienes cambios sin guardar
-              </p>
-            )}
-          </div>
-          <button
-            type="button"
-            disabled={saving || !isDirty}
-            onClick={onSave}
-            className="btn-primary px-5 py-2 text-sm shrink-0
-              disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saving ? "Guardando…" : "Guardar cambios"}
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -246,7 +164,10 @@ function StudyCTA() {
           Cada concepto dominado mejora tu puntaje M1.
         </p>
       </div>
-      <Link href="/portal/study" className="btn-primary text-xs px-4 py-2 shrink-0">
+      <Link
+        href="/portal/study"
+        className="btn-primary text-xs px-4 py-2 shrink-0"
+      >
         Estudiar
       </Link>
     </section>
@@ -269,8 +190,6 @@ function ObjectivesContent() {
     planningModeRequested &&
     (objectives.journeyState === null ||
       objectives.journeyState === "planning_required");
-
-  useUnsavedChangesWarning(objectives.isDirty && !isPlanningMode);
 
   useEffect(() => {
     if (
@@ -317,52 +236,43 @@ function ObjectivesContent() {
   }
 
   return (
-    <>
-      <PageShell
-        title="Mis objetivos"
-        subtitle="Define tus metas PAES y explora cómo te posicionas en distintas carreras."
-      >
-        {objectives.loadError ? (
-          <InlineRecoveryPanel
-            message={objectives.loadError}
-            onRetry={objectives.retryLoad}
-            retryLabel="Intentar de nuevo"
-            showSecondaryAction={false}
+    <PageShell
+      title="Mis objetivos"
+      subtitle="Define tus metas PAES y explora cómo te posicionas en distintas carreras."
+    >
+      {objectives.loadError ? (
+        <InlineRecoveryPanel
+          message={objectives.loadError}
+          onRetry={objectives.retryLoad}
+          retryLabel="Intentar de nuevo"
+          showSecondaryAction={false}
+        />
+      ) : objectives.loading ? (
+        <ObjectivesSkeleton />
+      ) : (
+        <div className="space-y-5">
+          <ScoreObjectivesSection
+            scoreTargets={objectives.scoreTargets}
+            profileScores={objectives.profileScores}
+            careerInterests={objectives.careerInterests}
+            fieldStatus={objectives.fieldStatus}
+            onUpdateScore={objectives.updateScoreTarget}
+            onUpdateProfile={objectives.updateProfileScore}
           />
-        ) : objectives.loading ? (
-          <ObjectivesSkeleton />
-        ) : (
-          <div className="space-y-5">
-            <ScoreObjectivesSection
-              scoreTargets={objectives.scoreTargets}
-              profileScores={objectives.profileScores}
-              careerInterests={objectives.careerInterests}
-              onUpdateScore={objectives.updateScoreTarget}
-              onUpdateProfile={objectives.updateProfileScore}
-            />
 
-            <CareerPositioningSection
-              careerInterests={objectives.careerInterests}
-              options={objectives.options}
-              onAddCareer={objectives.addCareerInterest}
-              onRemoveCareer={objectives.removeCareerInterest}
-              saving={objectives.careerSaving}
-              error={objectives.careerError}
-            />
+          <CareerPositioningSection
+            careerInterests={objectives.careerInterests}
+            options={objectives.options}
+            onAddCareer={objectives.addCareerInterest}
+            onRemoveCareer={objectives.removeCareerInterest}
+            saving={objectives.careerSaving}
+            error={objectives.careerError}
+          />
 
-            <StudyCTA />
-          </div>
-        )}
-      </PageShell>
-
-      <SaveBar
-        isDirty={objectives.isDirty}
-        saving={objectives.saving}
-        error={objectives.error}
-        infoMessage={objectives.infoMessage}
-        onSave={objectives.handleSave}
-      />
-    </>
+          <StudyCTA />
+        </div>
+      )}
+    </PageShell>
   );
 }
 

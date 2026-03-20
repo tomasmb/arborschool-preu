@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { isValidScore } from "@/lib/student/constants";
 import type { CareerPositionResult } from "@/lib/student/careerPositioning";
-import type { GoalOption, PlanningProfileDraft } from "./types";
+import type { GoalOption } from "./types";
 
 type JourneyState =
   | "planning_required"
@@ -46,41 +47,99 @@ export type ObjectivesPayload = {
 export type ScoreTargetDraft = Record<string, string>;
 export type ProfileScoreDraft = Record<string, string>;
 
+export type FieldSaveStatus =
+  | "idle"
+  | "saving"
+  | "saved"
+  | "error";
+
+const DEBOUNCE_MS = 1500;
+const SAVED_DISPLAY_MS = 2000;
+const POSITION_REFRESH_MS = 2000;
+
+// -----------------------------------------------------------------------
+// Per-field auto-save via PATCH
+// -----------------------------------------------------------------------
+
+async function patchField(
+  key: string,
+  score: number,
+  isProfile: boolean
+): Promise<boolean> {
+  const body = isProfile
+    ? { scoreType: key, score }
+    : { testCode: key, score };
+
+  try {
+    const res = await fetch("/api/student/objectives", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+const PROFILE_KEYS = new Set(["NEM", "RANKING"]);
+
+// -----------------------------------------------------------------------
+// Hook
+// -----------------------------------------------------------------------
+
 export function usePortalObjectives() {
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [infoMessage, setInfoMessage] = useState<string | null>(null);
-  const [isDirty, setIsDirty] = useState(false);
 
   const [careerSaving, setCareerSaving] = useState(false);
   const [careerError, setCareerError] = useState<string | null>(null);
 
   const [dataset, setDataset] = useState<ObjectivesPayload["dataset"]>(null);
   const [options, setOptions] = useState<GoalOption[]>([]);
-  const [journeyState, setJourneyState] = useState<JourneyState | null>(null);
+  const [journeyState, setJourneyState] = useState<JourneyState | null>(
+    null
+  );
   const [planningProfile, setPlanningProfile] =
     useState<ObjectivesPayload["planningProfile"]>(null);
 
   const [scoreTargets, setScoreTargets] = useState<ScoreTargetDraft>({});
-  const [profileScores, setProfileScores] = useState<ProfileScoreDraft>({});
+  const [profileScores, setProfileScores] = useState<ProfileScoreDraft>(
+    {}
+  );
   const [careerInterests, setCareerInterests] = useState<
     CareerInterestWithPosition[]
   >([]);
 
+  const [fieldStatus, setFieldStatus] = useState<
+    Record<string, FieldSaveStatus>
+  >({});
+
   const [retryVersion, setRetryVersion] = useState(0);
   const mountedRef = useRef(true);
   const careerSaveSeqRef = useRef(0);
+  const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>(
+    {}
+  );
+  const savedTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>(
+    {}
+  );
+  const posRefreshTimer = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
 
   useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      for (const t of Object.values(debounceTimers.current)) clearTimeout(t);
+      for (const t of Object.values(savedTimers.current)) clearTimeout(t);
+      if (posRefreshTimer.current) clearTimeout(posRefreshTimer.current);
     };
   }, []);
 
-  // Load objectives from API
+  // ---- Load objectives ----
+
   useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -115,7 +174,6 @@ export function usePortalObjectives() {
         setProfileScores(profile);
 
         setCareerInterests(data.careerInterests);
-        setIsDirty(false);
       } catch {
         if (!cancelled && mountedRef.current) {
           setLoadError("Error de conexión al cargar objetivos");
@@ -136,27 +194,84 @@ export function usePortalObjectives() {
     setRetryVersion((v) => v + 1);
   }, []);
 
+  // ---- Refresh career positions after score changes ----
+
+  const schedulePositionsRefresh = useCallback(() => {
+    if (posRefreshTimer.current) clearTimeout(posRefreshTimer.current);
+    posRefreshTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch("/api/student/objectives");
+        const json = await res.json();
+        if (!mountedRef.current || !json.success) return;
+        const data = json.data as ObjectivesPayload;
+        setCareerInterests(data.careerInterests);
+      } catch {
+        /* non-critical — positions will refresh on next load */
+      }
+    }, POSITION_REFRESH_MS);
+  }, []);
+
+  // ---- Per-field auto-save ----
+
+  const saveField = useCallback(
+    async (key: string, value: string) => {
+      const parsed = Math.round(Number(value));
+      if (!value.trim() || !isValidScore(parsed)) return;
+
+      setFieldStatus((prev) => ({ ...prev, [key]: "saving" }));
+
+      const ok = await patchField(key, parsed, PROFILE_KEYS.has(key));
+
+      if (!mountedRef.current) return;
+
+      if (ok) {
+        setFieldStatus((prev) => ({ ...prev, [key]: "saved" }));
+        if (savedTimers.current[key]) {
+          clearTimeout(savedTimers.current[key]);
+        }
+        savedTimers.current[key] = setTimeout(() => {
+          if (mountedRef.current) {
+            setFieldStatus((prev) => ({ ...prev, [key]: "idle" }));
+          }
+        }, SAVED_DISPLAY_MS);
+        schedulePositionsRefresh();
+      } else {
+        setFieldStatus((prev) => ({ ...prev, [key]: "error" }));
+      }
+    },
+    [schedulePositionsRefresh]
+  );
+
+  const debounceSave = useCallback(
+    (key: string, value: string) => {
+      if (debounceTimers.current[key]) {
+        clearTimeout(debounceTimers.current[key]);
+      }
+      debounceTimers.current[key] = setTimeout(() => {
+        saveField(key, value);
+      }, DEBOUNCE_MS);
+    },
+    [saveField]
+  );
+
   const updateScoreTarget = useCallback(
     (testCode: string, value: string) => {
       setScoreTargets((prev) => ({ ...prev, [testCode]: value }));
-      setIsDirty(true);
+      debounceSave(testCode, value);
     },
-    []
+    [debounceSave]
   );
 
   const updateProfileScore = useCallback(
     (scoreType: string, value: string) => {
       setProfileScores((prev) => ({ ...prev, [scoreType]: value }));
-      setIsDirty(true);
+      debounceSave(scoreType, value);
     },
-    []
+    [debounceSave]
   );
 
-  /**
-   * Persists career interests via the dedicated endpoint.
-   * Uses a sequence counter to discard stale responses when
-   * multiple saves race (e.g. rapid add-then-remove).
-   */
+  // ---- Career auto-save (unchanged) ----
+
   const saveCareerInterests = useCallback(
     async (interests: CareerInterestWithPosition[]) => {
       const seq = ++careerSaveSeqRef.current;
@@ -180,7 +295,9 @@ export function usePortalObjectives() {
         if (seq !== careerSaveSeqRef.current) return;
 
         if (!json.success) {
-          setCareerError(json.error ?? "Error al guardar carreras");
+          setCareerError(
+            json.error ?? "Error al guardar carreras"
+          );
           return;
         }
 
@@ -203,7 +320,9 @@ export function usePortalObjectives() {
   const addCareerInterest = useCallback(
     (offeringId: string) => {
       if (!offeringId) return;
-      if (careerInterests.some((ci) => ci.offeringId === offeringId)) return;
+      if (careerInterests.some((ci) => ci.offeringId === offeringId)) {
+        return;
+      }
       if (careerInterests.length >= 5) return;
 
       const option = options.find((o) => o.offeringId === offeringId);
@@ -240,63 +359,10 @@ export function usePortalObjectives() {
     [careerInterests, saveCareerInterests]
   );
 
-  const handleSave = useCallback(async () => {
-    setSaving(true);
-    setError(null);
-    setInfoMessage(null);
-
-    const scoreTargetPayload = Object.entries(scoreTargets)
-      .filter(([, v]) => v.trim() !== "")
-      .map(([testCode, value]) => ({
-        testCode,
-        score: Number(value),
-      }));
-
-    const profilePayload = Object.entries(profileScores)
-      .filter(([, v]) => v.trim() !== "")
-      .map(([scoreType, value]) => ({
-        scoreType,
-        score: Number(value),
-      }));
-
-    try {
-      const res = await fetch("/api/student/objectives", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          scoreTargets: scoreTargetPayload,
-          profileScores: profilePayload,
-        }),
-      });
-
-      const json = await res.json();
-
-      if (!json.success) {
-        setError(json.error ?? "Error al guardar");
-        return;
-      }
-
-      // Refresh career positions since they depend on score targets
-      const data = json.data as ObjectivesPayload;
-      setCareerInterests(data.careerInterests);
-
-      setIsDirty(false);
-      setInfoMessage("Objetivos guardados");
-      setTimeout(() => setInfoMessage(null), 3000);
-    } catch {
-      setError("Error de conexión al guardar");
-    } finally {
-      setSaving(false);
-    }
-  }, [scoreTargets, profileScores]);
-
   return {
     loading,
-    saving,
     loadError,
-    error,
-    infoMessage,
-    isDirty,
+    fieldStatus,
     careerSaving,
     careerError,
     dataset,
@@ -311,6 +377,5 @@ export function usePortalObjectives() {
     updateProfileScore,
     addCareerInterest,
     removeCareerInterest,
-    handleSave,
   };
 }
