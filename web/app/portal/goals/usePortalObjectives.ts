@@ -54,6 +54,9 @@ export function usePortalObjectives() {
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
 
+  const [careerSaving, setCareerSaving] = useState(false);
+  const [careerError, setCareerError] = useState<string | null>(null);
+
   const [dataset, setDataset] = useState<ObjectivesPayload["dataset"]>(null);
   const [options, setOptions] = useState<GoalOption[]>([]);
   const [journeyState, setJourneyState] = useState<JourneyState | null>(null);
@@ -68,6 +71,7 @@ export function usePortalObjectives() {
 
   const [retryVersion, setRetryVersion] = useState(0);
   const mountedRef = useRef(true);
+  const careerSaveSeqRef = useRef(0);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -132,15 +136,69 @@ export function usePortalObjectives() {
     setRetryVersion((v) => v + 1);
   }, []);
 
-  const updateScoreTarget = useCallback((testCode: string, value: string) => {
-    setScoreTargets((prev) => ({ ...prev, [testCode]: value }));
-    setIsDirty(true);
-  }, []);
+  const updateScoreTarget = useCallback(
+    (testCode: string, value: string) => {
+      setScoreTargets((prev) => ({ ...prev, [testCode]: value }));
+      setIsDirty(true);
+    },
+    []
+  );
 
-  const updateProfileScore = useCallback((scoreType: string, value: string) => {
-    setProfileScores((prev) => ({ ...prev, [scoreType]: value }));
-    setIsDirty(true);
-  }, []);
+  const updateProfileScore = useCallback(
+    (scoreType: string, value: string) => {
+      setProfileScores((prev) => ({ ...prev, [scoreType]: value }));
+      setIsDirty(true);
+    },
+    []
+  );
+
+  /**
+   * Persists career interests via the dedicated endpoint.
+   * Uses a sequence counter to discard stale responses when
+   * multiple saves race (e.g. rapid add-then-remove).
+   */
+  const saveCareerInterests = useCallback(
+    async (interests: CareerInterestWithPosition[]) => {
+      const seq = ++careerSaveSeqRef.current;
+      setCareerSaving(true);
+      setCareerError(null);
+
+      const payload = interests.map((ci, i) => ({
+        offeringId: ci.offeringId,
+        priority: i + 1,
+      }));
+
+      try {
+        const res = await fetch("/api/student/objectives/careers", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ careerInterests: payload }),
+        });
+
+        const json = await res.json();
+        if (!mountedRef.current) return;
+        if (seq !== careerSaveSeqRef.current) return;
+
+        if (!json.success) {
+          setCareerError(json.error ?? "Error al guardar carreras");
+          return;
+        }
+
+        setCareerInterests(
+          json.data.careerInterests as CareerInterestWithPosition[]
+        );
+      } catch {
+        if (mountedRef.current && seq === careerSaveSeqRef.current) {
+          setCareerError("Error de conexión al guardar carreras");
+        }
+      } finally {
+        if (mountedRef.current && seq === careerSaveSeqRef.current) {
+          setCareerSaving(false);
+        }
+      }
+    },
+    []
+  );
 
   const addCareerInterest = useCallback(
     (offeringId: string) => {
@@ -151,12 +209,12 @@ export function usePortalObjectives() {
       const option = options.find((o) => o.offeringId === offeringId);
       if (!option) return;
 
-      setCareerInterests((prev) => [
-        ...prev,
+      const updated = [
+        ...careerInterests,
         {
           goalId: `new-${Date.now()}`,
           offeringId,
-          priority: prev.length + 1,
+          priority: careerInterests.length + 1,
           careerName: option.careerName,
           universityName: option.universityName,
           location: null,
@@ -164,19 +222,23 @@ export function usePortalObjectives() {
           cutoffYear: option.cutoffYear,
           position: null,
         },
-      ]);
-      setIsDirty(true);
+      ];
+      setCareerInterests(updated);
+      saveCareerInterests(updated);
     },
-    [careerInterests, options]
+    [careerInterests, options, saveCareerInterests]
   );
 
-  const removeCareerInterest = useCallback((offeringId: string) => {
-    setCareerInterests((prev) => {
-      const filtered = prev.filter((ci) => ci.offeringId !== offeringId);
-      return filtered.map((ci, i) => ({ ...ci, priority: i + 1 }));
-    });
-    setIsDirty(true);
-  }, []);
+  const removeCareerInterest = useCallback(
+    (offeringId: string) => {
+      const filtered = careerInterests
+        .filter((ci) => ci.offeringId !== offeringId)
+        .map((ci, i) => ({ ...ci, priority: i + 1 }));
+      setCareerInterests(filtered);
+      saveCareerInterests(filtered);
+    },
+    [careerInterests, saveCareerInterests]
+  );
 
   const handleSave = useCallback(async () => {
     setSaving(true);
@@ -197,11 +259,6 @@ export function usePortalObjectives() {
         score: Number(value),
       }));
 
-    const interestsPayload = careerInterests.map((ci, i) => ({
-      offeringId: ci.offeringId,
-      priority: i + 1,
-    }));
-
     try {
       const res = await fetch("/api/student/objectives", {
         method: "POST",
@@ -209,7 +266,6 @@ export function usePortalObjectives() {
         body: JSON.stringify({
           scoreTargets: scoreTargetPayload,
           profileScores: profilePayload,
-          careerInterests: interestsPayload,
         }),
       });
 
@@ -220,8 +276,10 @@ export function usePortalObjectives() {
         return;
       }
 
+      // Refresh career positions since they depend on score targets
       const data = json.data as ObjectivesPayload;
       setCareerInterests(data.careerInterests);
+
       setIsDirty(false);
       setInfoMessage("Objetivos guardados");
       setTimeout(() => setInfoMessage(null), 3000);
@@ -230,7 +288,7 @@ export function usePortalObjectives() {
     } finally {
       setSaving(false);
     }
-  }, [scoreTargets, profileScores, careerInterests]);
+  }, [scoreTargets, profileScores]);
 
   return {
     loading,
@@ -239,6 +297,8 @@ export function usePortalObjectives() {
     error,
     infoMessage,
     isDirty,
+    careerSaving,
+    careerError,
     dataset,
     options,
     journeyState,

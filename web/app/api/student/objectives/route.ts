@@ -1,24 +1,20 @@
 import {
   getStudentObjectivesView,
-  saveStudentObjectives,
   upsertStudentScoreTarget,
-  type StudentPlanningProfileInput,
 } from "@/lib/student/goals";
 import { computeInterestPositions } from "@/lib/student/careerPositioning";
 import { getStudentJourneySnapshot } from "@/lib/student/journeyState";
 import { studentApiError, studentApiSuccess } from "@/lib/student/apiEnvelope";
 import { getAuthenticatedStudentUserId } from "@/lib/student/auth";
-import type {
-  ScoreTargetInput,
-  ProfileScoreInput,
-  CareerInterestInput,
+import {
+  saveStudentScoresAndProfile,
+  type ScoreTargetInput,
+  type ProfileScoreInput,
 } from "@/lib/student/goals.write";
 
 type ObjectivesRequestBody = {
   scoreTargets?: ScoreTargetInput[];
   profileScores?: ProfileScoreInput[];
-  careerInterests?: CareerInterestInput[];
-  planningProfile?: StudentPlanningProfileInput;
 };
 
 /** Shared response builder for GET and POST. */
@@ -74,8 +70,8 @@ export async function GET() {
 /**
  * POST /api/student/objectives
  *
- * Saves all student objectives at once: score targets, profile scores,
- * career interests, and optional planning profile.
+ * Saves score targets and profile scores. Career interests are saved
+ * separately via PUT /api/student/objectives/careers.
  */
 export async function POST(request: Request) {
   const userId = await getAuthenticatedStudentUserId();
@@ -91,11 +87,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    await saveStudentObjectives(userId, {
+    await saveStudentScoresAndProfile(userId, {
       scoreTargets: body.scoreTargets ?? [],
       profileScores: body.profileScores ?? [],
-      careerInterests: body.careerInterests ?? [],
-      planningProfile: body.planningProfile,
     });
 
     const payload = await buildObjectivesPayload(userId);
