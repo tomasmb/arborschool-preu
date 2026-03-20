@@ -46,8 +46,19 @@ function statusLabel(position: CareerPositionResult | null): {
   };
 }
 
+function PositionSkeleton() {
+  return (
+    <div className="space-y-2 animate-pulse">
+      <div className="h-1.5 rounded-full bg-gray-200" />
+      <div className="h-3 w-32 rounded bg-gray-200" />
+      <div className="h-2.5 w-24 rounded bg-gray-100" />
+    </div>
+  );
+}
+
 function CareerPositionCard({
   interest,
+  loading,
   onRemove,
 }: {
   interest: {
@@ -56,18 +67,30 @@ function CareerPositionCard({
     universityName: string;
     position: CareerPositionResult | null;
   };
+  loading?: boolean;
   onRemove: () => void;
 }) {
   const pos = interest.position;
   const border = pos ? statusColor(pos.status) : "border-gray-200";
   const label = statusLabel(pos);
   const progressPct =
-    pos?.weightedScore != null && pos?.lastCutoff != null && pos.lastCutoff > 0
-      ? Math.min(100, Math.round((pos.weightedScore / pos.lastCutoff) * 100))
+    pos?.weightedScore != null
+      && pos?.lastCutoff != null
+      && pos.lastCutoff > 0
+      ? Math.min(
+          100,
+          Math.round((pos.weightedScore / pos.lastCutoff) * 100)
+        )
       : null;
 
+  const showSkeleton = loading && !pos;
+
   return (
-    <div className={`rounded-xl border p-4 space-y-2 transition-all ${border}`}>
+    <div
+      className={
+        `rounded-xl border p-4 space-y-2 transition-all ${border}`
+      }
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-gray-800 truncate">
@@ -100,28 +123,40 @@ function CareerPositionCard({
         </button>
       </div>
 
-      {progressPct !== null && (
-        <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all duration-500 ${
-              pos?.status === "above"
-                ? "bg-emerald-500"
-                : pos?.status === "near"
-                  ? "bg-amber-500"
-                  : "bg-red-400"
-            }`}
-            style={{ width: `${progressPct}%` }}
-          />
-        </div>
-      )}
+      {showSkeleton ? (
+        <PositionSkeleton />
+      ) : (
+        <>
+          {progressPct !== null && (
+            <div
+              className="h-1.5 rounded-full bg-gray-100 overflow-hidden"
+            >
+              <div
+                className={
+                  `h-full rounded-full transition-all duration-500 ${
+                    pos?.status === "above"
+                      ? "bg-emerald-500"
+                      : pos?.status === "near"
+                        ? "bg-amber-500"
+                        : "bg-red-400"
+                  }`
+                }
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+          )}
 
-      <p className={`text-xs font-medium ${label.color}`}>{label.text}</p>
+          <p className={`text-xs font-medium ${label.color}`}>
+            {label.text}
+          </p>
 
-      {pos?.lastCutoff != null && (
-        <p className="text-[10px] text-gray-400">
-          Último corte: {Math.round(pos.lastCutoff)} pts
-          {pos.cutoffYear ? ` (${pos.cutoffYear})` : ""}
-        </p>
+          {pos?.lastCutoff != null && (
+            <p className="text-[10px] text-gray-400">
+              Último corte: {Math.round(pos.lastCutoff)} pts
+              {pos.cutoffYear ? ` (${pos.cutoffYear})` : ""}
+            </p>
+          )}
+        </>
       )}
     </div>
   );
@@ -195,6 +230,7 @@ export function CareerPositioningSection({
             <CareerPositionCard
               key={ci.offeringId}
               interest={ci}
+              loading={saving}
               onRemove={() => onRemoveCareer(ci.offeringId)}
             />
           ))}
