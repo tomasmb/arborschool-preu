@@ -8,6 +8,7 @@
 
 - Run raw SQL (`psql`, `CREATE TABLE`, `ALTER TABLE`, `DROP TABLE`, etc.)
 - Use `drizzle-kit push` / `db:push` (doesn't create migration files)
+- Use `drizzle-kit migrate` to apply migrations (incompatible tracking table)
 - Write migration `.sql` files by hand
 - Modify the database schema or data outside of drizzle
 - Modify `meta/_journal.json` or snapshot files by hand
@@ -16,8 +17,19 @@
 
 1. Edit `web/db/schema/*.ts` for schema changes
 2. Tell the user to run `npx drizzle-kit generate --name <name>` (it's interactive)
-3. Tell the user to run `npx drizzle-kit migrate` to apply locally
+3. Apply locally with `node scripts/migrate.js` (with DATABASE_URL from `.env.local`)
 4. Update `docs/data-model-specification.md` to match
+
+### Applying migrations locally
+
+```bash
+cd web
+export $(grep -v '^#' .env.local | xargs) && node scripts/migrate.js
+```
+
+**Why not `drizzle-kit migrate`?** It tracks migrations in `drizzle.__drizzle_migrations`
+while `scripts/migrate.js` uses `public._drizzle_migrations`. They are incompatible.
+`drizzle-kit migrate` will try to replay all migrations from scratch and fail.
 
 ### Why
 

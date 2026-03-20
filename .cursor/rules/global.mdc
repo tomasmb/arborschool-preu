@@ -11,7 +11,8 @@ alwaysApply: true
 
 - NEVER run raw SQL (psql, pg, CREATE/ALTER/DROP TABLE) against the database
 - NEVER use `db:push` — it doesn't create migration files and breaks deploys
-- Schema changes → edit `web/db/schema/*.ts` → user runs `drizzle-kit generate` → user runs `drizzle-kit migrate`
+- NEVER use `drizzle-kit migrate` — incompatible tracking table, use `node scripts/migrate.js`
+- Schema changes → edit `web/db/schema/*.ts` → user runs `drizzle-kit generate` → apply with `node scripts/migrate.js`
 - Production deploys run `node scripts/migrate.js` which reads `.sql` files from `web/db/migrations/`
 - `drizzle-kit generate` is interactive — always ask the user to run it in their terminal
 
