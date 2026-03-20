@@ -1,0 +1,1 @@
+CREATE INDEX "idx_question_atoms_question" ON "question_atoms" USING btree ("question_id");
