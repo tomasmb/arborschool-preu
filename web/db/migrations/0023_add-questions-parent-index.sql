@@ -1,0 +1,1 @@
+CREATE INDEX "idx_questions_parent" ON "questions" USING btree ("parent_question_id");
