@@ -200,7 +200,6 @@ export function usePortalObjectives() {
 
   const schedulePositionsRefresh = useCallback(() => {
     if (posRefreshTimer.current) clearTimeout(posRefreshTimer.current);
-    setPositionsRefreshing(true);
     posRefreshTimer.current = setTimeout(async () => {
       try {
         const res = await fetch("/api/student/objectives");
@@ -242,6 +241,7 @@ export function usePortalObjectives() {
         schedulePositionsRefresh();
       } else {
         setFieldStatus((prev) => ({ ...prev, [key]: "error" }));
+        setPositionsRefreshing(false);
       }
     },
     [schedulePositionsRefresh]
@@ -262,6 +262,7 @@ export function usePortalObjectives() {
   const updateScoreTarget = useCallback(
     (testCode: string, value: string) => {
       setScoreTargets((prev) => ({ ...prev, [testCode]: value }));
+      if (value.trim()) setPositionsRefreshing(true);
       debounceSave(testCode, value);
     },
     [debounceSave]
@@ -270,6 +271,7 @@ export function usePortalObjectives() {
   const updateProfileScore = useCallback(
     (scoreType: string, value: string) => {
       setProfileScores((prev) => ({ ...prev, [scoreType]: value }));
+      if (value.trim()) setPositionsRefreshing(true);
       debounceSave(scoreType, value);
     },
     [debounceSave]
