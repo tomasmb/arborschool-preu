@@ -4,7 +4,7 @@ import { filterNumericInput } from "@/lib/student/constants";
 import type { FieldSaveStatus } from "./usePortalObjectives";
 
 type ScoreInputProps = {
-  label: string;
+  label: React.ReactNode;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
