@@ -1,9 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { MAX_CAREER_INTERESTS } from "@/lib/student/constants";
-import type { CareerPositionResult } from "@/lib/student/careerPositioning";
+import type {
+  CareerPositionResult,
+  WeightBreakdownItem,
+} from "@/lib/student/careerPositioning";
 import { OfferingAutocomplete } from "./OfferingAutocomplete";
 import type { GoalOption } from "./types";
+import { testLabel } from "./utils";
 
 function statusColor(status: CareerPositionResult["status"]) {
   switch (status) {
@@ -56,9 +61,86 @@ function PositionSkeleton() {
   );
 }
 
+function formatBreakdownValue(value: number | null): string {
+  if (value === null) return "--";
+  return Math.round(value).toLocaleString("es-CL");
+}
+
+function WeightBreakdown({
+  breakdown,
+}: {
+  breakdown: WeightBreakdownItem[];
+}) {
+  return (
+    <div className="space-y-1 pt-1">
+      <div
+        className="grid grid-cols-[2fr_1fr_1fr_1fr] text-[10px]
+          text-gray-400 font-medium px-1"
+      >
+        <span>Prueba</span>
+        <span className="text-right">Peso</span>
+        <span className="text-right">Puntaje</span>
+        <span className="text-right">Aporte</span>
+      </div>
+      {breakdown.map((item) => (
+        <div
+          key={item.testCode}
+          className={`grid grid-cols-[2fr_1fr_1fr_1fr] text-[11px]
+            px-1 py-0.5 rounded ${
+            item.score !== null
+              ? "text-gray-700"
+              : "text-gray-300"
+          }`}
+        >
+          <span className="truncate font-medium">
+            {testLabel(item.testCode)}
+          </span>
+          <span className="text-right tabular-nums">
+            {item.weightPercent}%
+          </span>
+          <span className="text-right tabular-nums">
+            {formatBreakdownValue(item.score)}
+          </span>
+          <span className="text-right tabular-nums">
+            {formatBreakdownValue(item.contribution)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function WeightsOnlyBreakdown({
+  weights,
+}: {
+  weights: { testCode: string; weightPercent: number }[];
+}) {
+  return (
+    <div className="space-y-1 pt-1">
+      <p className="text-[10px] text-gray-400 italic">
+        Ingresa tus puntajes para ver el desglose
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {weights.map((w) => (
+          <span
+            key={w.testCode}
+            className="text-[10px] text-gray-400 bg-gray-100 rounded-full
+              px-2 py-0.5"
+          >
+            {testLabel(w.testCode)} {w.weightPercent}%
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function CareerPositionCard({
   interest,
   loading,
+  expanded,
+  fallbackWeights,
+  onToggle,
   onRemove,
 }: {
   interest: {
@@ -68,6 +150,9 @@ function CareerPositionCard({
     position: CareerPositionResult | null;
   };
   loading?: boolean;
+  expanded: boolean;
+  fallbackWeights?: { testCode: string; weightPercent: number }[];
+  onToggle: () => void;
   onRemove: () => void;
 }) {
   const pos = interest.position;
@@ -84,12 +169,26 @@ function CareerPositionCard({
       : null;
 
   const showSkeleton = loading && !pos;
+  const hasBreakdown = pos && pos.breakdown.length > 0;
 
   return (
     <div
       className={
-        `rounded-xl border p-4 space-y-2 transition-all ${border}`
+        `rounded-xl border p-4 space-y-2 transition-all cursor-pointer
+        select-none ${border}`
       }
+      onClick={(e) => {
+        if ((e.target as HTMLElement).closest("[data-no-expand]")) return;
+        onToggle();
+      }}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onToggle();
+        }
+      }}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
@@ -102,6 +201,7 @@ function CareerPositionCard({
         </div>
         <button
           type="button"
+          data-no-expand
           onClick={onRemove}
           className="shrink-0 text-gray-400 hover:text-red-500
             transition-colors"
@@ -156,8 +256,35 @@ function CareerPositionCard({
               {pos.cutoffYear ? ` (${pos.cutoffYear})` : ""}
             </p>
           )}
+
+          {expanded && (
+            <div className="pt-1 border-t border-gray-100 mt-1">
+              {hasBreakdown ? (
+                <WeightBreakdown breakdown={pos.breakdown} />
+              ) : fallbackWeights && fallbackWeights.length > 0 ? (
+                <WeightsOnlyBreakdown weights={fallbackWeights} />
+              ) : null}
+            </div>
+          )}
         </>
       )}
+
+      <div className="flex justify-center pt-0.5">
+        <svg
+          className={`w-4 h-4 text-gray-300 transition-transform
+            duration-200 ${expanded ? "rotate-180" : ""}`}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </div>
     </div>
   );
 }
@@ -182,9 +309,15 @@ export function CareerPositioningSection({
   saving?: boolean;
   error?: string | null;
 }) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
   const aboveCount = careerInterests.filter(
     (ci) => ci.position?.status === "above"
   ).length;
+
+  const optionsByOfferingId = new Map(
+    options.map((o) => [o.offeringId, o])
+  );
 
   return (
     <section className="card-section space-y-5">
@@ -231,6 +364,15 @@ export function CareerPositioningSection({
               key={ci.offeringId}
               interest={ci}
               loading={saving}
+              expanded={expandedId === ci.offeringId}
+              fallbackWeights={
+                optionsByOfferingId.get(ci.offeringId)?.weights
+              }
+              onToggle={() =>
+                setExpandedId((prev) =>
+                  prev === ci.offeringId ? null : ci.offeringId
+                )
+              }
               onRemove={() => onRemoveCareer(ci.offeringId)}
             />
           ))}

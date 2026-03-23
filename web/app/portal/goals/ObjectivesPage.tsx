@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { PageShell, InlineRecoveryPanel } from "@/app/portal/components";
 import { ELECTIVO_SUB_TESTS } from "@/lib/student/constants";
 import { CareerPositioningSection } from "./CareerPositioningSection";
+import { NemCalculator } from "./NemCalculator";
 import { PlanningModeFlow } from "./PlanningModeFlow";
 import { ScoreInput } from "./ScoreInput";
 import { usePortalObjectives } from "./usePortalObjectives";
@@ -16,6 +17,50 @@ import type { FieldSaveStatus } from "./usePortalObjectives";
 // ---------------------------------------------------------------------------
 // SECTION: SCORE OBJECTIVES
 // ---------------------------------------------------------------------------
+
+function RankingLabel() {
+  const [showTip, setShowTip] = useState(false);
+  return (
+    <span className="inline-flex items-center gap-1">
+      Ranking
+      <span className="relative">
+        <button
+          type="button"
+          onClick={() => setShowTip((v) => !v)}
+          onBlur={() => setShowTip(false)}
+          className="text-gray-400 hover:text-gray-500 transition-colors"
+          aria-label="Info ranking"
+        >
+          <svg
+            className="w-3.5 h-3.5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708
+                2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0
+                11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"
+            />
+          </svg>
+        </button>
+        {showTip && (
+          <span
+            className="absolute right-0 top-full mt-1.5 w-56
+              rounded-lg bg-gray-800 text-white text-[11px]
+              leading-snug p-2.5 shadow-lg z-20 pointer-events-none"
+          >
+            El ranking oficial se obtiene en demre.cl o en tu colegio.
+            Puedes usar tu NEM como estimación inicial.
+          </span>
+        )}
+      </span>
+    </span>
+  );
+}
 
 const PAES_TESTS = ["M1", "CL"] as const;
 
@@ -105,20 +150,28 @@ function ScoreObjectivesSection({
           </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <ScoreInput
-            label="NEM (Notas)"
-            value={profileScores.NEM ?? ""}
-            onChange={(v) => onUpdateProfile("NEM", v)}
-            hint="tu estimación"
-            saveStatus={fieldStatus.NEM ?? "idle"}
-          />
-          <ScoreInput
-            label="Ranking"
-            value={profileScores.RANKING ?? ""}
-            onChange={(v) => onUpdateProfile("RANKING", v)}
-            hint="tu estimación"
-            saveStatus={fieldStatus.RANKING ?? "idle"}
-          />
+          <div className="space-y-1">
+            <ScoreInput
+              label="NEM (Notas)"
+              value={profileScores.NEM ?? ""}
+              onChange={(v) => onUpdateProfile("NEM", v)}
+              hint="tu estimación"
+              saveStatus={fieldStatus.NEM ?? "idle"}
+            />
+            <NemCalculator
+              nemValue={profileScores.NEM ?? ""}
+              onUseNem={(v) => onUpdateProfile("NEM", v)}
+            />
+          </div>
+          <div className="space-y-1">
+            <ScoreInput
+              label={<RankingLabel />}
+              value={profileScores.RANKING ?? ""}
+              onChange={(v) => onUpdateProfile("RANKING", v)}
+              hint="tu estimación"
+              saveStatus={fieldStatus.RANKING ?? "idle"}
+            />
+          </div>
         </div>
       </div>
     </section>
