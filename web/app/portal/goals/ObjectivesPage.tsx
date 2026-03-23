@@ -319,6 +319,7 @@ function ObjectivesContent() {
             onAddCareer={objectives.addCareerInterest}
             onRemoveCareer={objectives.removeCareerInterest}
             saving={objectives.careerSaving}
+            refreshing={objectives.positionsRefreshing}
             error={objectives.careerError}
           />
 

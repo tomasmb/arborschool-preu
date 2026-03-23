@@ -115,6 +115,8 @@ export function usePortalObjectives() {
     Record<string, FieldSaveStatus>
   >({});
 
+  const [positionsRefreshing, setPositionsRefreshing] = useState(false);
+
   const [retryVersion, setRetryVersion] = useState(0);
   const mountedRef = useRef(true);
   const careerSaveSeqRef = useRef(0);
@@ -198,6 +200,7 @@ export function usePortalObjectives() {
 
   const schedulePositionsRefresh = useCallback(() => {
     if (posRefreshTimer.current) clearTimeout(posRefreshTimer.current);
+    setPositionsRefreshing(true);
     posRefreshTimer.current = setTimeout(async () => {
       try {
         const res = await fetch("/api/student/objectives");
@@ -207,6 +210,8 @@ export function usePortalObjectives() {
         setCareerInterests(data.careerInterests);
       } catch {
         /* non-critical — positions will refresh on next load */
+      } finally {
+        if (mountedRef.current) setPositionsRefreshing(false);
       }
     }, POSITION_REFRESH_MS);
   }, []);
@@ -365,6 +370,7 @@ export function usePortalObjectives() {
     fieldStatus,
     careerSaving,
     careerError,
+    positionsRefreshing,
     dataset,
     options,
     journeyState,

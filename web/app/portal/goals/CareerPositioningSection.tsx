@@ -138,6 +138,7 @@ function WeightsOnlyBreakdown({
 function CareerPositionCard({
   interest,
   loading,
+  refreshing,
   expanded,
   fallbackWeights,
   onToggle,
@@ -150,6 +151,7 @@ function CareerPositionCard({
     position: CareerPositionResult | null;
   };
   loading?: boolean;
+  refreshing?: boolean;
   expanded: boolean;
   fallbackWeights?: { testCode: string; weightPercent: number }[];
   onToggle: () => void;
@@ -169,6 +171,7 @@ function CareerPositionCard({
       : null;
 
   const showSkeleton = loading && !pos;
+  const isStale = refreshing && !!pos;
   const hasBreakdown = pos && pos.breakdown.length > 0;
 
   return (
@@ -246,7 +249,11 @@ function CareerPositionCard({
             </div>
           )}
 
-          <p className={`text-xs font-medium ${label.color}`}>
+          <p
+            className={`text-xs font-medium ${label.color} ${
+              isStale ? "animate-pulse" : ""
+            }`}
+          >
             {label.text}
           </p>
 
@@ -295,6 +302,7 @@ export function CareerPositioningSection({
   onAddCareer,
   onRemoveCareer,
   saving,
+  refreshing,
   error,
 }: {
   careerInterests: Array<{
@@ -307,6 +315,7 @@ export function CareerPositioningSection({
   onAddCareer: (offeringId: string) => void;
   onRemoveCareer: (offeringId: string) => void;
   saving?: boolean;
+  refreshing?: boolean;
   error?: string | null;
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -364,6 +373,7 @@ export function CareerPositioningSection({
               key={ci.offeringId}
               interest={ci}
               loading={saving}
+              refreshing={refreshing}
               expanded={expandedId === ci.offeringId}
               fallbackWeights={
                 optionsByOfferingId.get(ci.offeringId)?.weights
