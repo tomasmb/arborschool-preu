@@ -170,8 +170,7 @@ function CareerPositionCard({
         )
       : null;
 
-  const showSkeleton = loading && !pos;
-  const isStale = refreshing && !!pos;
+  const showSkeleton = (loading && !pos) || refreshing;
   const hasBreakdown = pos && pos.breakdown.length > 0;
 
   return (
@@ -249,11 +248,7 @@ function CareerPositionCard({
             </div>
           )}
 
-          <p
-            className={`text-xs font-medium ${label.color} ${
-              isStale ? "animate-pulse" : ""
-            }`}
-          >
+          <p className={`text-xs font-medium ${label.color}`}>
             {label.text}
           </p>
 
