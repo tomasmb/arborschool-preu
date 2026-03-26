@@ -13,7 +13,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { users } from "./users";
-import { atoms, generatedQuestions, questions } from "./content";
+import { atoms, questions } from "./content";
 import {
   sessionTypeEnum,
   sessionStatusEnum,
@@ -490,9 +490,8 @@ export const atomStudyResponses = pgTable(
     sessionId: uuid("session_id")
       .references(() => atomStudySessions.id)
       .notNull(),
-    questionId: text("question_id")
-      .references(() => generatedQuestions.id)
-      .notNull(),
+    questionId: text("question_id").notNull(),
+    atomId: varchar("atom_id", { length: 50 }).references(() => atoms.id),
     position: integer("position").notNull(),
     difficultyLevel: sessionDifficultyEnum("difficulty_level").notNull(),
     selectedAnswer: varchar("selected_answer", { length: 10 }),

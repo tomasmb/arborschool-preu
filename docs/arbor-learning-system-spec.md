@@ -66,7 +66,7 @@ This applies to ALL student-facing flows:
 |---|---|---|
 | Full test | Official `questions` | Per-student assembly: prefer alternate versions the student hasn't seen. If all versions seen, find another question testing the same atoms. Repeat only as last resort. Goal: cover all/most atoms the test assesses. |
 | Mini-clase | `generated_questions` | Exclude all questions this user has ever answered for this atom (across all sessions). Difficulty fallback when pool exhausted. |
-| SR review | `generated_questions` | Exclude all previously answered questions for this atom. Prefer hard. |
+| SR review | `questions` (alternate) + `generated_questions` fallback | Try PAES variant first (eligibility: all co-primary atoms mastered). Fall back to generated hard question if no eligible variant. Exclude previously seen in both pools. |
 | Prereq scan | `generated_questions` | Exclude all previously answered questions for this atom (all sessions, not just current). Prefer hard, fall back to medium. |
 | Verification | `generated_questions` | Exclude all previously answered questions for this atom. Hard only. |
 
@@ -398,8 +398,9 @@ Pure time-based intervals break down for students with irregular activity.
 - Reviews measured in **sessions**, not calendar days
 - Each session has a **review budget** (capped fraction)
 - Calendar time is a secondary signal (inactivity decay)
-- v1 uses `generated_questions` for reviews (official alternate versions
-  deferred until question bank is expanded)
+- Mixed question pool: PAES variant (alternate) questions first for
+  exam-realistic context, generated questions as fallback for atoms
+  without eligible variants (prerequisite-only or co-atom constraints)
 - Balance rule: don't do too many reviews without completing new atoms
   in between
 
@@ -477,9 +478,17 @@ If inactive > 14 days:
 
 - Select atoms where `sessionsSinceLastReview >= reviewIntervalSessions`
 - Cap at session budget (max 5)
-- Use **alternate** source questions (different PAES versions)
+- For each due atom, select one question using variant-first strategy:
+  1. Find alternate (`source='alternate'`) questions where the atom is PRIMARY
+  2. Eligibility filter: all OTHER primary atoms on the variant must be
+     mastered by the student (prevents testing unlearned material)
+  3. Freshness filter: exclude variants seen in full tests, diagnostics
+     (`student_responses`), or prior SR sessions (`atom_study_responses`)
+  4. If eligible unseen variant found → use it (PAES-realistic context)
+  5. Else → fall back to generated hard question (current `generated_questions`
+     path, unseen-first within the atom's generated pool)
 - Mix atoms for interleaving (desirable difficulty)
-- 1 HARD question per review item
+- 1 question per review item (hard difficulty for generated, exam-level for variants)
 
 ### 7.9 SR Failure Protocol
 
@@ -1036,6 +1045,7 @@ Internal code (variable names, DB columns, API paths) uses the internal terms.
 | Verification quiz engine | IMPLEMENTED | `verificationQuiz.ts` | 1 hard Q per flagged atom, restore/downgrade |
 | Question freshness (gen. Qs) | IMPLEMENTED | `questionQueries.ts` | Shared `getSeenQuestionIds` for SR, scan, verification |
 | Question freshness (full test) | IMPLEMENTED | `fullTest.ts` | Per-student test assembly with unseen-first selection |
+| SR variant-first review | IMPLEMENTED | `questionQueries.ts`, `spacedRepetition.ts` | `findBatchReviewVariants` with co-atom eligibility + unseen filter, generated fallback |
 
 ### 16.3 UI — Implemented
 
