@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { mutate } from "swr";
+import { SWR_KEYS } from "@/app/portal/swrKeys";
 import { toErrorMessage } from "../errorUtils";
 import type {
   AtomSessionPayload,
@@ -194,6 +196,9 @@ export function useAtomStudyController(atomIdFromUrl: string | null) {
     ) {
       setFinalStatus(answerResult.status);
       setPhase("result");
+      void mutate(SWR_KEYS.dashboard);
+      void mutate(SWR_KEYS.progress);
+      void mutate(SWR_KEYS.nextAction);
     } else {
       await fetchNextQuestion(session.sessionId);
     }

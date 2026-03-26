@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import useSWR from "swr";
 import { PageShell, ErrorStatePanel } from "@/app/portal/components";
-import type { ApiEnvelope } from "@/lib/student/apiClientEnvelope";
-import { resolveApiErrorMessage } from "@/lib/student/apiClientEnvelope";
+import { SWR_KEYS } from "@/app/portal/swrKeys";
 import {
   EFFECTIVE_MINUTES_PER_ATOM,
   RANDOM_GUESS_ACC,
@@ -295,50 +295,21 @@ async function persistHours(weeklyMinutes: number) {
 }
 
 function useProgressData() {
-  const [data, setData] = useState<ProgressData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data, error, isLoading } =
+    useSWR<ProgressData>(SWR_KEYS.progress);
+
   const [hoursPerWeek, setHoursRaw] = useState(DEFAULT_HOURS);
-  const mountedRef = useRef(true);
+  const hoursInitializedRef = useRef(false);
   const persistRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    mountedRef.current = true;
-
-    (async () => {
-      try {
-        const res = await fetch("/api/student/progress", {
-          credentials: "include",
-        });
-        const payload = (await res.json()) as ApiEnvelope<ProgressData>;
-        if (!res.ok || !payload.success) {
-          throw new Error(
-            resolveApiErrorMessage(payload, "Error al cargar progreso")
-          );
-        }
-        if (!mountedRef.current) return;
-
-        setData(payload.data);
-
-        const profileAtoms = payload.data.defaultAtomsPerWeek;
-        if (profileAtoms) {
-          const profileHours = atomsToHours(profileAtoms);
-          setHoursRaw(profileHours);
-        }
-      } catch (err) {
-        if (!mountedRef.current) return;
-        setError(
-          err instanceof Error ? err.message : "Error al cargar progreso"
-        );
-      } finally {
-        if (mountedRef.current) setLoading(false);
-      }
-    })();
-
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
+    if (!data || hoursInitializedRef.current) return;
+    hoursInitializedRef.current = true;
+    const profileAtoms = data.defaultAtomsPerWeek;
+    if (profileAtoms) {
+      setHoursRaw(atomsToHours(profileAtoms));
+    }
+  }, [data]);
 
   const handleHoursChange = useCallback((hours: number) => {
     const clamped = Math.min(MAX_HOURS, Math.max(MIN_HOURS, hours));
@@ -350,9 +321,9 @@ function useProgressData() {
   }, []);
 
   return {
-    data,
-    loading,
-    error,
+    data: data ?? null,
+    loading: isLoading,
+    error: error ? (error as Error).message : null,
     hoursPerWeek,
     setHoursPerWeek: handleHoursChange,
   };

@@ -1,7 +1,9 @@
+import { PortalSWRProvider } from "./swrConfig";
+
 export default function PortalLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return <PortalSWRProvider>{children}</PortalSWRProvider>;
 }

@@ -1,12 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import type { ApiEnvelope } from "@/lib/student/apiClientEnvelope";
+import useSWR from "swr";
+import { SWR_KEYS } from "@/app/portal/swrKeys";
 
 type NextActionBrief = {
   axis: string;
   firstAtom: { atomId: string; title: string } | null;
+};
+
+type NextActionResponse = {
+  nextAction: NextActionBrief | null;
 };
 
 /**
@@ -14,30 +18,8 @@ type NextActionBrief = {
  * atom and links directly to the study page.
  */
 export function NextMiniClaseCTA() {
-  const [action, setAction] = useState<NextActionBrief | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("/api/student/next-action", {
-          credentials: "include",
-        });
-        if (!res.ok) return;
-        const json = (await res.json()) as ApiEnvelope<{
-          nextAction: NextActionBrief | null;
-        }>;
-        if (!cancelled && json.success && json.data.nextAction) {
-          setAction(json.data.nextAction);
-        }
-      } catch {
-        /* best-effort */
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { data } = useSWR<NextActionResponse>(SWR_KEYS.nextAction);
+  const action = data?.nextAction ?? null;
 
   if (!action?.firstAtom) return null;
 

@@ -1,11 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { mutate } from "swr";
 import type { ResolvedQuestion } from "@/lib/student/fullTest";
 import type { Axis } from "@/lib/diagnostic/config";
 import { resolveApiErrorMessage } from "@/lib/student/apiClientEnvelope";
 import type { ApiEnvelope } from "@/lib/student/apiClientEnvelope";
 import { FULL_TEST_DURATION_MIN } from "@/lib/diagnostic/scoringConstants";
+import { SWR_KEYS } from "@/app/portal/swrKeys";
 
 // ============================================================================
 // TYPES
@@ -312,6 +314,10 @@ export function useFullTestFlow() {
         results,
         error: null,
       }));
+
+      void mutate(SWR_KEYS.dashboard);
+      void mutate(SWR_KEYS.progress);
+      void mutate(SWR_KEYS.nextAction);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Error al enviar el test";

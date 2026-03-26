@@ -1,65 +1,33 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
+import useSWR from "swr";
 import {
   trackAuthSuccessOnce,
   trackStudentDashboardViewed,
 } from "@/lib/analytics";
-import { toErrorMessage } from "./errorUtils";
-import { getErrorMessage } from "./formatters";
-import type {
-  ApiEnvelope,
-  DashboardPayload,
-  DashboardViewModel,
-} from "./types";
+import type { DashboardPayload, DashboardViewModel } from "./types";
+import { SWR_KEYS } from "./swrKeys";
 
 export function usePortalDashboard(): DashboardViewModel {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<DashboardPayload | null>(null);
+  const { data, error, isLoading } =
+    useSWR<DashboardPayload>(SWR_KEYS.dashboard);
 
+  const trackedRef = useRef(false);
   useEffect(() => {
-    let isMounted = true;
+    if (!data || trackedRef.current) return;
+    trackedRef.current = true;
+    trackAuthSuccessOnce({
+      source: "dashboard",
+      entryPoint: "/portal",
+      journeyState: data.journeyState,
+    });
+    trackStudentDashboardViewed(data.status);
+  }, [data]);
 
-    async function loadDashboard() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await fetch("/api/student/dashboard/m1", {
-          method: "GET",
-          credentials: "include",
-        });
-
-        const payload =
-          (await response.json()) as ApiEnvelope<DashboardPayload>;
-        if (!response.ok || !payload.success) {
-          throw new Error(
-            getErrorMessage(payload, "No pudimos cargar tu portal")
-          );
-        }
-        if (!isMounted) return;
-
-        setData(payload.data);
-        trackAuthSuccessOnce({
-          source: "dashboard",
-          entryPoint: "/portal",
-          journeyState: payload.data.journeyState,
-        });
-        trackStudentDashboardViewed(payload.data.status);
-      } catch (loadError) {
-        if (!isMounted) return;
-        setError(toErrorMessage(loadError, "No pudimos cargar tu portal"));
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    }
-
-    loadDashboard();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  return { loading, error, data };
+  return {
+    loading: isLoading,
+    error: error ? (error as Error).message : null,
+    data: data ?? null,
+  };
 }
