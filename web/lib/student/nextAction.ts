@@ -7,7 +7,12 @@ import {
 } from "@/lib/diagnostic/questionUnlock";
 import { getReviewDueItems } from "./spacedRepetition";
 import { getVerificationDueItems } from "./verificationQuiz";
-import { getUserDiagnosticSnapshot, getMasteryRows } from "./userQueries";
+import {
+  getUserDiagnosticSnapshot,
+  getMasteryRows,
+  type DiagnosticSnapshot,
+  type MasteryRow,
+} from "./userQueries";
 
 type NextActionStatus = "ready" | "missing_diagnostic" | "missing_mastery";
 
@@ -249,6 +254,26 @@ async function getMasteriesSinceLastReview(
   return Number((rows as unknown as { count: string }[])[0]?.count ?? 0);
 }
 
+/** Pre-fetched data that can be shared with the dashboard. */
+export type NextActionSharedData = {
+  snapshot: DiagnosticSnapshot | null;
+  masteryRows: MasteryRow[];
+};
+
+/**
+ * Builds next-action data using pre-fetched shared data.
+ * Avoids redundant DB reads when called alongside getM1Dashboard.
+ */
+export async function getStudentNextActionWithData(
+  userId: string,
+  shared: NextActionSharedData
+): Promise<StudentNextActionData> {
+  return buildNextActionFromData(
+    userId, shared.snapshot, shared.masteryRows
+  );
+}
+
+/** Standalone entry point — fetches its own data. */
 export async function getStudentNextAction(
   userId: string
 ): Promise<StudentNextActionData> {
@@ -257,6 +282,14 @@ export async function getStudentNextAction(
     getMasteryRows(userId),
   ]);
 
+  return buildNextActionFromData(userId, snapshot, masteryRows);
+}
+
+async function buildNextActionFromData(
+  userId: string,
+  snapshot: DiagnosticSnapshot | null,
+  masteryRows: MasteryRow[]
+): Promise<StudentNextActionData> {
   const minScore = snapshot?.paesScoreMin ?? null;
   const maxScore = snapshot?.paesScoreMax ?? null;
   const hasDiagnostic = minScore !== null && maxScore !== null;
@@ -293,7 +326,6 @@ export async function getStudentNextAction(
 
   const currentScore = Math.round((minScore + maxScore) / 2);
 
-  // Exclude atoms in cooldown from route analysis so they aren't suggested
   const eligibleRows = masteryRows.filter(
     (r) => !(r.cooldown && r.cooldown > 0)
   );
@@ -314,7 +346,6 @@ export async function getStudentNextAction(
 
   const insights = buildNextActionInsights(analysis);
 
-  // Spec 7.10: suggest review block after N newly mastered atoms
   const reviewSuggested =
     reviewDueItems.length > 0 && masteriesSinceReview >= SR_BALANCE_THRESHOLD;
 
