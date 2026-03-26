@@ -10,12 +10,12 @@ import {
   atomStudyResponses,
   atomStudySessions,
   atoms,
-  generatedQuestions,
 } from "@/db/schema";
 import { parseQtiXml } from "@/lib/qti/serverParser";
 import { startPrereqScan } from "./prerequisiteScan";
 import {
   findBatchReviewQuestions,
+  findBatchReviewVariants,
   getBatchSeenQuestionIds,
   getQuestionAtomId,
   getQuestionContent,
@@ -187,7 +187,11 @@ export async function getReviewDueItems(
   }));
 }
 
-/** Creates a review session with one hard question per due atom. */
+/**
+ * Creates a review session with one question per due atom.
+ * Tries PAES variant (alternate) questions first for exam-realistic context,
+ * then falls back to AI-generated questions for atoms without eligible variants.
+ */
 export async function createReviewSession(
   userId: string
 ): Promise<ReviewSession | null> {
@@ -196,7 +200,7 @@ export async function createReviewSession(
 
   const dueAtomIds = dueItems.map((d) => d.atomId);
 
-  const [session, seenMap] = await Promise.all([
+  const [session, variantMap, seenMap] = await Promise.all([
     db
       .insert(atomStudySessions)
       .values({
@@ -209,13 +213,27 @@ export async function createReviewSession(
       })
       .returning({ id: atomStudySessions.id })
       .then((rows) => rows[0]),
+    findBatchReviewVariants(dueAtomIds, userId),
     getBatchSeenQuestionIds(userId, dueAtomIds),
   ]);
-  const questionMap = await findBatchReviewQuestions(dueAtomIds, seenMap);
+
+  // Atoms without a variant match fall back to generated questions
+  const remainingAtomIds = dueAtomIds.filter((id) => !variantMap.has(id));
+  const generatedMap =
+    remainingAtomIds.length > 0
+      ? await findBatchReviewQuestions(remainingAtomIds, seenMap)
+      : new Map<string, { id: string; qtiXml: string }>();
+
+  // Merge both maps: variant wins, generated is fallback
+  const questionMap = new Map<string, { id: string; qtiXml: string }>();
+  for (const [atomId, q] of variantMap) questionMap.set(atomId, q);
+  for (const [atomId, q] of generatedMap) {
+    if (!questionMap.has(atomId)) questionMap.set(atomId, q);
+  }
 
   const validEntries: Array<{
     due: (typeof dueItems)[number];
-    question: NonNullable<ReturnType<typeof questionMap.get>>;
+    question: { id: string; qtiXml: string };
     parsed: ReturnType<typeof parseQtiXml>;
   }> = [];
   for (const due of dueItems) {
@@ -238,6 +256,7 @@ export async function createReviewSession(
       validEntries.map((e, i) => ({
         sessionId: session.id,
         questionId: e.question.id,
+        atomId: e.due.atomId,
         position: i + 1,
         difficultyLevel: "hard" as const,
       }))
@@ -266,6 +285,7 @@ export async function submitReviewAnswer(params: {
     .select({
       id: atomStudyResponses.id,
       questionId: atomStudyResponses.questionId,
+      atomId: atomStudyResponses.atomId,
     })
     .from(atomStudyResponses)
     .where(
@@ -293,7 +313,8 @@ export async function submitReviewAnswer(params: {
     .set({ selectedAnswer: normalized, isCorrect, answeredAt: new Date() })
     .where(eq(atomStudyResponses.id, resp.id));
 
-  const atomId = await getQuestionAtomId(resp.questionId);
+  // Use stored atomId when available, fall back to lookup for legacy rows
+  const atomId = resp.atomId ?? (await getQuestionAtomId(resp.questionId));
   if (!atomId) throw new Error("Question not linked to an atom");
   const where = masteryWhere(params.userId, atomId);
 
@@ -349,16 +370,15 @@ export async function completeReviewSession(
       )
     );
 
+  // Read atomId directly from the response row (supports both variant and
+  // generated questions). Legacy rows without atomId are resolved via fallback.
   const responses = await db
     .select({
       isCorrect: atomStudyResponses.isCorrect,
-      atomId: generatedQuestions.atomId,
+      atomId: atomStudyResponses.atomId,
+      questionId: atomStudyResponses.questionId,
     })
     .from(atomStudyResponses)
-    .innerJoin(
-      generatedQuestions,
-      eq(generatedQuestions.id, atomStudyResponses.questionId)
-    )
     .where(
       and(
         eq(atomStudyResponses.sessionId, sessionId),
@@ -370,10 +390,12 @@ export async function completeReviewSession(
   const failedAtomIds: string[] = [];
   let passed = 0;
   for (const r of responses) {
-    if (seen.has(r.atomId)) continue;
-    seen.add(r.atomId);
+    const atomId = r.atomId ?? (await getQuestionAtomId(r.questionId));
+    if (!atomId) continue;
+    if (seen.has(atomId)) continue;
+    seen.add(atomId);
     if (r.isCorrect) passed++;
-    else failedAtomIds.push(r.atomId);
+    else failedAtomIds.push(atomId);
   }
   return { passed, failed: failedAtomIds.length, failedAtomIds };
 }
@@ -385,7 +407,8 @@ export async function handleReviewFailures(
   userId: string,
   failedAtomIds: string[]
 ): Promise<ReviewFailureResult> {
-  if (failedAtomIds.length === 0) return { halvedIntervals: [], pendingScans: [] };
+  if (failedAtomIds.length === 0)
+    return { halvedIntervals: [], pendingScans: [] };
 
   const [atomRows, masteryRows] = await Promise.all([
     db
@@ -470,7 +493,10 @@ async function collectNextHop(
   const nextIds: string[] = [];
   for (const a of rows) {
     for (const id of (a.prerequisiteIds ?? []).filter(Boolean)) {
-      if (!visited.has(id)) { nextIds.push(id); visited.add(id); }
+      if (!visited.has(id)) {
+        nextIds.push(id);
+        visited.add(id);
+      }
     }
   }
   return nextIds;

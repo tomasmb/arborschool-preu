@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { questions, questionAtoms } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { parseQtiXml } from "@/lib/diagnostic/qtiParser";
 import { requireAuthenticatedStudentUser } from "@/lib/student/apiAuth";
 
@@ -53,6 +53,7 @@ export async function GET(request: Request) {
           eq(questions.source, "alternate")
         )
       )
+      .orderBy(sql`random()`)
       .limit(1);
 
     if (result.length === 0) {

@@ -490,7 +490,8 @@ CREATE TABLE atom_study_sessions (
 CREATE TABLE atom_study_responses (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     session_id UUID REFERENCES atom_study_sessions(id) NOT NULL,
-    question_id VARCHAR REFERENCES generated_questions(id) NOT NULL,
+    question_id VARCHAR NOT NULL,
+    atom_id VARCHAR(50) REFERENCES atoms(id),
     position INTEGER NOT NULL,
     difficulty_level session_difficulty NOT NULL,
     selected_answer VARCHAR(10),
@@ -555,7 +556,7 @@ tests ──N:N──▶ questions (via test_questions)
 
 users ──N:N──▶ atoms (via atom_mastery)
   │
-  ├──1:N──▶ atom_study_sessions ──1:N──▶ atom_study_responses ──N:1──▶ generated_questions
+  ├──1:N──▶ atom_study_sessions ──1:N──▶ atom_study_responses ──N:1──▶ generated_questions | questions (alternate)
   │
   ├──1:N──▶ test_attempts ──1:N──▶ student_responses
   │
