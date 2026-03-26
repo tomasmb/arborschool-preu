@@ -254,22 +254,28 @@ export async function getNextScanQuestion(
   }
 
   const prereqIds = await getPrereqIds(session.atomId);
-  const tested = await getTestedPrereqs(sessionId, prereqIds);
+
+  // Preload titles + tested prereqs in parallel to avoid per-iteration DB hits
+  const [tested, prereqTitleRows] = await Promise.all([
+    getTestedPrereqs(sessionId, prereqIds),
+    prereqIds.length > 0
+      ? db
+          .select({ id: atoms.id, title: atoms.title })
+          .from(atoms)
+          .where(inArray(atoms.id, prereqIds))
+      : Promise.resolve([]),
+  ]);
   const testedSet = new Set(tested.map((t) => t.atomId));
+  const titleMap = new Map(prereqTitleRows.map((r) => [r.id, r.title]));
 
   for (const prereqId of prereqIds) {
     if (testedSet.has(prereqId)) continue;
 
     const seenIds = await getSeenQuestionIds(userId, prereqId);
     const result = await findScanQuestion(prereqId, seenIds);
-    if (!result) continue; // no questions available → assume solid
+    if (!result) continue;
 
     const { question: q, difficulty } = result;
-    const [prereqAtom] = await db
-      .select({ title: atoms.title })
-      .from(atoms)
-      .where(eq(atoms.id, prereqId))
-      .limit(1);
 
     const parsed = parseQtiXml(q.qtiXml);
     const position = tested.length + 1;
@@ -291,7 +297,7 @@ export async function getNextScanQuestion(
         questionHtml: parsed.html,
         options: parsed.options,
         prereqAtomId: prereqId,
-        prereqTitle: prereqAtom?.title ?? prereqId,
+        prereqTitle: titleMap.get(prereqId) ?? prereqId,
         position,
         totalPrereqs: prereqIds.length,
       },

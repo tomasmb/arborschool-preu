@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import useSWR from "swr";
 import { isValidScore } from "@/lib/student/constants";
 import type { CareerPositionResult } from "@/lib/student/careerPositioning";
+import { SWR_KEYS } from "@/app/portal/swrKeys";
 import type { GoalOption } from "./types";
 
 type JourneyState =
@@ -89,8 +91,12 @@ const PROFILE_KEYS = new Set(["NEM", "RANKING"]);
 // -----------------------------------------------------------------------
 
 export function usePortalObjectives() {
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const {
+    data: swrData,
+    error: swrError,
+    isLoading,
+    mutate,
+  } = useSWR<ObjectivesPayload>(SWR_KEYS.objectives);
 
   const [careerSaving, setCareerSaving] = useState(false);
   const [careerError, setCareerError] = useState<string | null>(null);
@@ -117,7 +123,6 @@ export function usePortalObjectives() {
 
   const [positionsRefreshing, setPositionsRefreshing] = useState(false);
 
-  const [retryVersion, setRetryVersion] = useState(0);
   const mountedRef = useRef(true);
   const careerSaveSeqRef = useRef(0);
   const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>(
@@ -140,80 +145,44 @@ export function usePortalObjectives() {
     };
   }, []);
 
-  // ---- Load objectives ----
-
+  // Populate local state from SWR data
   useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      setLoading(true);
-      setLoadError(null);
-      try {
-        const res = await fetch("/api/student/objectives");
-        const json = await res.json();
-        if (cancelled || !mountedRef.current) return;
+    if (!swrData) return;
 
-        if (!json.success) {
-          setLoadError(json.error ?? "Error al cargar objetivos");
-          return;
-        }
+    setDataset(swrData.dataset);
+    setOptions(swrData.options);
+    setJourneyState(swrData.journeyState);
+    setPlanningProfile(swrData.planningProfile);
 
-        const data = json.data as ObjectivesPayload;
-        setDataset(data.dataset);
-        setOptions(data.options);
-        setJourneyState(data.journeyState);
-        setPlanningProfile(data.planningProfile);
-
-        const targets: ScoreTargetDraft = {};
-        for (const t of data.scoreTargets) {
-          targets[t.testCode] = String(Math.round(t.score));
-        }
-        setScoreTargets(targets);
-
-        const profile: ProfileScoreDraft = {};
-        for (const p of data.profileScores) {
-          profile[p.scoreType] = String(Math.round(p.score));
-        }
-        setProfileScores(profile);
-
-        setCareerInterests(data.careerInterests);
-      } catch {
-        if (!cancelled && mountedRef.current) {
-          setLoadError("Error de conexión al cargar objetivos");
-        }
-      } finally {
-        if (!cancelled && mountedRef.current) {
-          setLoading(false);
-        }
-      }
+    const targets: ScoreTargetDraft = {};
+    for (const t of swrData.scoreTargets) {
+      targets[t.testCode] = String(Math.round(t.score));
     }
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [retryVersion]);
+    setScoreTargets(targets);
+
+    const profile: ProfileScoreDraft = {};
+    for (const p of swrData.profileScores) {
+      profile[p.scoreType] = String(Math.round(p.score));
+    }
+    setProfileScores(profile);
+
+    setCareerInterests(swrData.careerInterests);
+  }, [swrData]);
 
   const retryLoad = useCallback(() => {
-    setRetryVersion((v) => v + 1);
-  }, []);
+    void mutate();
+  }, [mutate]);
 
   // ---- Refresh career positions after score changes ----
 
   const schedulePositionsRefresh = useCallback(() => {
     if (posRefreshTimer.current) clearTimeout(posRefreshTimer.current);
-    posRefreshTimer.current = setTimeout(async () => {
-      try {
-        const res = await fetch("/api/student/objectives");
-        const json = await res.json();
-        if (!mountedRef.current || !json.success) return;
-        const data = json.data as ObjectivesPayload;
-        setCareerInterests(data.careerInterests);
-      } catch {
-        /* non-critical — positions will refresh on next load */
-      } finally {
+    posRefreshTimer.current = setTimeout(() => {
+      void mutate().finally(() => {
         if (mountedRef.current) setPositionsRefreshing(false);
-      }
+      });
     }, POSITION_REFRESH_MS);
-  }, []);
+  }, [mutate]);
 
   // ---- Per-field auto-save ----
 
@@ -367,8 +336,8 @@ export function usePortalObjectives() {
   );
 
   return {
-    loading,
-    loadError,
+    loading: isLoading,
+    loadError: swrError ? (swrError as Error).message : null,
     fieldStatus,
     careerSaving,
     careerError,

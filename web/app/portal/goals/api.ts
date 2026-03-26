@@ -1,5 +1,4 @@
 import type { SimulatorPayload, StudentGoalsPayload } from "./types";
-import { trackAuthSuccessOnce } from "@/lib/analytics";
 import {
   resolveApiErrorMessage,
   type ApiEnvelope,
@@ -38,25 +37,6 @@ export function planningProfileToApi(draft: {
     reminderInApp: draft.reminderInApp,
     reminderEmail: draft.reminderEmail,
   };
-}
-
-export async function fetchGoals(): Promise<StudentGoalsPayload> {
-  const response = await fetch("/api/student/goals", {
-    method: "GET",
-    credentials: "include",
-  });
-  const payload = (await response.json()) as ApiEnvelope<StudentGoalsPayload>;
-  if (!response.ok || !payload.success) {
-    throw new Error(
-      resolveApiErrorMessage(payload, "No pudimos cargar tus metas")
-    );
-  }
-  trackAuthSuccessOnce({
-    source: "goals",
-    entryPoint: "/portal/goals",
-    journeyState: payload.data.journeyState,
-  });
-  return payload.data;
 }
 
 export async function saveGoals(params: {

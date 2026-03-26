@@ -1,6 +1,11 @@
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
-import { getUserDiagnosticSnapshot, getMasteryRows } from "./userQueries";
+import {
+  getUserDiagnosticSnapshot,
+  getMasteryRows,
+  type DiagnosticSnapshot,
+  type MasteryRow,
+} from "./userQueries";
 import { getScoreHistory } from "./scoreHistory";
 import { resolveDisplayScore } from "./scoreDisplay";
 import {
@@ -18,6 +23,12 @@ import {
   type RetestStatus,
 } from "@/lib/student/retestGating";
 import { getStudentMetrics } from "@/lib/student/metricsService";
+
+/** Pre-fetched data that can be shared across dashboard consumers. */
+export type DashboardSharedData = {
+  snapshot: DiagnosticSnapshot | null;
+  masteryRows: MasteryRow[];
+};
 
 const DEFAULT_FORECAST_WEEKS = 8;
 const DEFAULT_WEEKLY_MINUTES = 360;
@@ -380,7 +391,30 @@ function buildReadyDashboard(params: {
   };
 }
 
-export async function getM1Dashboard(userId: string): Promise<M1DashboardData> {
+/**
+ * Builds the M1 dashboard using pre-fetched shared data.
+ * Avoids redundant DB reads when called alongside getStudentNextAction.
+ */
+export async function getM1DashboardWithData(
+  userId: string,
+  shared: DashboardSharedData
+): Promise<M1DashboardData> {
+  const { snapshot, masteryRows } = shared;
+
+  const [target, scoreHistory] = await Promise.all([
+    getStudentM1Target(userId),
+    getScoreHistory(userId),
+  ]);
+
+  return buildDashboardFromData(
+    userId, snapshot, target, masteryRows, scoreHistory
+  );
+}
+
+/** Standalone entry point — fetches its own data. */
+export async function getM1Dashboard(
+  userId: string
+): Promise<M1DashboardData> {
   const [snapshot, target, masteryRows, scoreHistory] = await Promise.all([
     getUserDiagnosticSnapshot(userId),
     getStudentM1Target(userId),
@@ -388,6 +422,18 @@ export async function getM1Dashboard(userId: string): Promise<M1DashboardData> {
     getScoreHistory(userId),
   ]);
 
+  return buildDashboardFromData(
+    userId, snapshot, target, masteryRows, scoreHistory
+  );
+}
+
+async function buildDashboardFromData(
+  userId: string,
+  snapshot: DiagnosticSnapshot | null,
+  target: StudentM1Target | null,
+  masteryRows: MasteryRow[],
+  scoreHistory: Awaited<ReturnType<typeof getScoreHistory>>
+): Promise<M1DashboardData> {
   const latestMin = snapshot?.paesScoreMin ?? null;
   const latestMax = snapshot?.paesScoreMax ?? null;
   const hasDiagnostic = latestMin !== null && latestMax !== null;
@@ -457,7 +503,6 @@ export async function getM1Dashboard(userId: string): Promise<M1DashboardData> {
     getStudentMetrics(userId),
   ]);
 
-  // Derive from retestStatus: if it's not the first test, a full test exists
   const diagnosticSource: DiagnosticSource = retestStatus.isFirstTest
     ? "short_diagnostic"
     : "full_test";

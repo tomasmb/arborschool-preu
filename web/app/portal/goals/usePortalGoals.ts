@@ -14,18 +14,17 @@ import {
 
 export function usePortalGoals() {
   const state = useGoalsState();
-  const [loadRetryVersion, setLoadRetryVersion] = useState(0);
   const [simulatorRetryVersion, setSimulatorRetryVersion] = useState(0);
   const slotMutations = useGoalSlotMutations(state);
   const draftMutations = useGoalDraftMutations(state);
   const saveHandlers = useGoalSaveHandlers(state);
 
-  useGoalsLoader(state, loadRetryVersion);
+  const mutateGoals = useGoalsLoader(state);
   useGoalsSimulator(state, simulatorRetryVersion);
 
   const retryLoadGoals = useCallback(() => {
-    setLoadRetryVersion((current) => current + 1);
-  }, []);
+    void mutateGoals();
+  }, [mutateGoals]);
 
   const retrySimulation = useCallback(() => {
     setSimulatorRetryVersion((current) => current + 1);

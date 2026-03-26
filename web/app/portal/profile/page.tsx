@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import useSWR from "swr";
 import { signOut } from "next-auth/react";
 import { PageShell } from "@/app/portal/components";
+import { SWR_KEYS } from "@/app/portal/swrKeys";
 
 type ProfileData = {
   id: string;
@@ -39,36 +41,15 @@ function ProfileSkeleton() {
 }
 
 function useProfileData() {
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [reminders, setReminders] = useState<ReminderPrefs | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const { data: profile, isLoading: profileLoading } =
+    useSWR<ProfileData>(SWR_KEYS.profile);
+  const {
+    data: reminders,
+    isLoading: remindersLoading,
+    mutate: mutateReminders,
+  } = useSWR<ReminderPrefs>(SWR_KEYS.reminders);
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const [profileRes, remindersRes] = await Promise.all([
-          fetch("/api/student/me", { credentials: "include" }),
-          fetch("/api/student/reminders/preferences", {
-            credentials: "include",
-          }),
-        ]);
-        const profileData = await profileRes.json();
-        if (profileData.success) {
-          setProfile(profileData.data);
-        }
-        const remindersData = await remindersRes.json();
-        if (remindersData.success) {
-          setReminders(remindersData.data);
-        }
-      } catch {
-        // Ignore
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
+  const [saving, setSaving] = useState(false);
 
   async function updateReminders(patch: Partial<ReminderPrefs>) {
     setSaving(true);
@@ -81,10 +62,11 @@ function useProfileData() {
       });
       const data = await res.json();
       if (data.success) {
-        setReminders({
-          reminderInApp: data.data.reminderInApp,
-          reminderEmail: data.data.reminderEmail,
-        });
+        void mutateReminders(
+          { reminderInApp: data.data.reminderInApp,
+            reminderEmail: data.data.reminderEmail },
+          false
+        );
       }
     } catch {
       // Ignore
@@ -93,7 +75,13 @@ function useProfileData() {
     }
   }
 
-  return { profile, reminders, loading, saving, updateReminders };
+  return {
+    profile: profile ?? null,
+    reminders: reminders ?? null,
+    loading: profileLoading || remindersLoading,
+    saving,
+    updateReminders,
+  };
 }
 
 function AccountSection({ profile }: { profile: ProfileData }) {

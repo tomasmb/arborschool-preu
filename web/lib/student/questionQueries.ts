@@ -77,6 +77,42 @@ export async function getQuestionAtomId(
 }
 
 /**
+ * Batch variant of getQuestionAtomId — resolves multiple question IDs
+ * to their atom IDs in 2 queries instead of 2N.
+ */
+export async function getBatchQuestionAtomIds(
+  questionIds: string[]
+): Promise<Map<string, string>> {
+  const result = new Map<string, string>();
+  if (questionIds.length === 0) return result;
+
+  const [genRows, variantRows] = await Promise.all([
+    db
+      .select({ id: generatedQuestions.id, atomId: generatedQuestions.atomId })
+      .from(generatedQuestions)
+      .where(inArray(generatedQuestions.id, questionIds)),
+    db
+      .select({
+        questionId: questionAtoms.questionId,
+        atomId: questionAtoms.atomId,
+      })
+      .from(questionAtoms)
+      .where(
+        and(
+          inArray(questionAtoms.questionId, questionIds),
+          eq(questionAtoms.relevance, "primary")
+        )
+      ),
+  ]);
+
+  for (const row of genRows) result.set(row.id, row.atomId);
+  for (const row of variantRows) {
+    if (!result.has(row.questionId)) result.set(row.questionId, row.atomId);
+  }
+  return result;
+}
+
+/**
  * Fetches QTI XML content for a question by ID.
  * Checks generated_questions first, then the questions table (variants).
  */
@@ -192,6 +228,8 @@ export async function findBatchReviewQuestions(
   const result = new Map<string, GeneratedQuestionRow>();
   if (atomIds.length === 0) return result;
 
+  // Cap rows to avoid unbounded scans; 5 candidates per atom is enough
+  // to find one non-excluded question in practice.
   const rows = await db
     .select({
       id: generatedQuestions.id,
@@ -206,7 +244,8 @@ export async function findBatchReviewQuestions(
         eq(generatedQuestions.difficultyLevel, "high")
       )
     )
-    .orderBy(desc(generatedQuestions.createdAt));
+    .orderBy(desc(generatedQuestions.createdAt))
+    .limit(atomIds.length * 5);
 
   for (const row of rows) {
     if (result.has(row.atomId)) continue;
@@ -236,7 +275,7 @@ export async function findBatchReviewVariants(
   const result = new Map<string, GeneratedQuestionRow>();
   if (atomIds.length === 0) return result;
 
-  // 1. Load all alternate questions where any target atom is primary
+  // 1. Load alternate questions where any target atom is primary (bounded)
   const candidates = await db
     .select({
       questionId: questions.id,
@@ -251,7 +290,8 @@ export async function findBatchReviewVariants(
         eq(questionAtoms.relevance, "primary"),
         eq(questions.source, "alternate")
       )
-    );
+    )
+    .limit(atomIds.length * 10);
 
   if (candidates.length === 0) return result;
 

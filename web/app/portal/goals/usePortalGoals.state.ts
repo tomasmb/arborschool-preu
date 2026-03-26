@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { fetchGoals, DEFAULT_PLANNING_PROFILE, simulateGoal } from "./api";
+import { useEffect, useMemo, useRef, useState } from "react";
+import useSWR from "swr";
+import { trackAuthSuccessOnce } from "@/lib/analytics";
+import { SWR_KEYS } from "@/app/portal/swrKeys";
+import { DEFAULT_PLANNING_PROFILE, simulateGoal } from "./api";
 import {
   type GoalDraft,
   type GoalRecord,
@@ -170,44 +173,36 @@ export function applyGoalsPayload(
   });
 }
 
-export function useGoalsLoader(state: GoalsState, loadRetryVersion: number) {
+export function useGoalsLoader(state: GoalsState) {
+  const { data, error, isLoading, mutate } =
+    useSWR<StudentGoalsPayload>(SWR_KEYS.goals);
+
   useEffect(() => {
-    let isMounted = true;
-
-    async function load() {
-      state.setLoading(true);
-      state.setLoadError(null);
-      state.setError(null);
-      try {
-        const payload = await fetchGoals();
-        if (!isMounted) {
-          return;
-        }
-        applyGoalsPayload(state, payload);
-      } catch (loadError) {
-        if (!isMounted) {
-          return;
-        }
-        state.setLoadError(
-          loadError instanceof Error
-            ? loadError.message
-            : "No pudimos cargar tus metas"
-        );
-      } finally {
-        if (isMounted) {
-          state.setLoading(false);
-        }
-      }
-    }
-
-    load();
-
-    return () => {
-      isMounted = false;
-    };
-    // Uses stable state setters only; reruns only when retry is requested.
+    state.setLoading(isLoading);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadRetryVersion]);
+  }, [isLoading]);
+
+  useEffect(() => {
+    state.setLoadError(error ? (error as Error).message : null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error]);
+
+  const trackedRef = useRef(false);
+  useEffect(() => {
+    if (!data) return;
+    applyGoalsPayload(state, data);
+    if (!trackedRef.current) {
+      trackedRef.current = true;
+      trackAuthSuccessOnce({
+        source: "goals",
+        entryPoint: "/portal/goals",
+        journeyState: data.journeyState,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
+
+  return mutate;
 }
 
 export function useGoalsSimulator(

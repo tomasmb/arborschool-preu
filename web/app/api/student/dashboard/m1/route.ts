@@ -1,8 +1,12 @@
-import { getM1Dashboard } from "@/lib/student/dashboardM1";
+import { getM1DashboardWithData } from "@/lib/student/dashboardM1";
 import { getOrCreateCurrentMission } from "@/lib/student/missions";
 import { getStudentJourneySnapshot } from "@/lib/student/journeyState";
-import { getStudentNextAction } from "@/lib/student/nextAction";
+import { getStudentNextActionWithData } from "@/lib/student/nextAction";
 import { getDailyStreak } from "@/lib/student/streakTracker";
+import {
+  getUserDiagnosticSnapshot,
+  getMasteryRows,
+} from "@/lib/student/userQueries";
 import {
   studentApiError,
   studentApiSuccess,
@@ -17,15 +21,21 @@ export async function GET() {
   }
 
   try {
-    const [dashboard, mission, journey, nextAction, streak] = await Promise.all(
-      [
-        getM1Dashboard(userId),
+    // Fetch shared data once — used by both dashboard and nextAction
+    const [snapshot, masteryRows] = await Promise.all([
+      getUserDiagnosticSnapshot(userId),
+      getMasteryRows(userId),
+    ]);
+    const shared = { snapshot, masteryRows };
+
+    const [dashboard, mission, journey, nextAction, streak] =
+      await Promise.all([
+        getM1DashboardWithData(userId, shared),
         getOrCreateCurrentMission(userId),
         getStudentJourneySnapshot(userId),
-        getStudentNextAction(userId),
+        getStudentNextActionWithData(userId, shared),
         getDailyStreak(userId),
-      ]
-    );
+      ]);
 
     return studentApiSuccess(
       {

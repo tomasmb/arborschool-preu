@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { mutate } from "swr";
+import { SWR_KEYS } from "@/app/portal/swrKeys";
 import { toErrorMessage } from "../errorUtils";
 import type { ApiEnvelope } from "@/lib/student/apiClientEnvelope";
 
@@ -167,6 +169,9 @@ export function useReviewSessionController() {
       if (!data.success) throw new Error("Error al completar repaso");
       setCompletion(data.data);
       setPhase("result");
+      void mutate(SWR_KEYS.dashboard);
+      void mutate(SWR_KEYS.progress);
+      void mutate(SWR_KEYS.nextAction);
     } catch (err) {
       setError(toErrorMessage(err, "Error al completar repaso"));
       setPhase("error");

@@ -14,12 +14,13 @@ export async function GET() {
   }
 
   try {
-    const user = await getAuthenticatedUserById(userId);
+    const [user, journey] = await Promise.all([
+      getAuthenticatedUserById(userId),
+      getStudentJourneySnapshot(userId),
+    ]);
     if (!user) {
       return studentApiError("USER_NOT_FOUND", "User not found", 404);
     }
-
-    const journey = await getStudentJourneySnapshot(user.id);
 
     return studentApiSuccess(
       {

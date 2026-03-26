@@ -16,6 +16,7 @@ import { startPrereqScan } from "./prerequisiteScan";
 import {
   findBatchReviewQuestions,
   findBatchReviewVariants,
+  getBatchQuestionAtomIds,
   getBatchSeenQuestionIds,
   getQuestionAtomId,
   getQuestionContent,
@@ -386,11 +387,20 @@ export async function completeReviewSession(
       )
     );
 
+  // Batch-resolve atom IDs for legacy rows missing the atomId column
+  const legacyQuestionIds = responses
+    .filter((r) => !r.atomId)
+    .map((r) => r.questionId);
+  const atomIdMap =
+    legacyQuestionIds.length > 0
+      ? await getBatchQuestionAtomIds(legacyQuestionIds)
+      : new Map<string, string>();
+
   const seen = new Set<string>();
   const failedAtomIds: string[] = [];
   let passed = 0;
   for (const r of responses) {
-    const atomId = r.atomId ?? (await getQuestionAtomId(r.questionId));
+    const atomId = r.atomId ?? atomIdMap.get(r.questionId) ?? null;
     if (!atomId) continue;
     if (seen.has(atomId)) continue;
     seen.add(atomId);
@@ -437,6 +447,7 @@ export async function handleReviewFailures(
   const now = new Date();
 
   const noPrereqUpdates: Array<{ atomId: string; newInterval: number }> = [];
+  const atomsNeedingScan: string[] = [];
 
   for (const atomId of failedAtomIds) {
     const prereqs = (prereqMap.get(atomId) ?? []).filter(Boolean);
@@ -446,25 +457,37 @@ export async function handleReviewFailures(
       noPrereqUpdates.push({ atomId, newInterval });
       halvedIntervals.push({ atomId, newInterval });
     } else {
-      const scan = await startPrereqScan(userId, atomId);
-      if (scan.sessionId) {
-        pendingScans.push({ atomId, scanSessionId: scan.sessionId });
-      }
+      atomsNeedingScan.push(atomId);
     }
   }
 
-  await Promise.all(
-    noPrereqUpdates.map(({ atomId, newInterval }) =>
-      db
-        .update(atomMastery)
-        .set({
-          reviewIntervalSessions: newInterval,
-          sessionsSinceLastReview: 0,
-          updatedAt: now,
-        })
-        .where(masteryWhere(userId, atomId))
-    )
-  );
+  // Run scans and interval updates in parallel
+  const [scanResults] = await Promise.all([
+    Promise.all(
+      atomsNeedingScan.map((atomId) => startPrereqScan(userId, atomId))
+    ),
+    Promise.all(
+      noPrereqUpdates.map(({ atomId, newInterval }) =>
+        db
+          .update(atomMastery)
+          .set({
+            reviewIntervalSessions: newInterval,
+            sessionsSinceLastReview: 0,
+            updatedAt: now,
+          })
+          .where(masteryWhere(userId, atomId))
+      )
+    ),
+  ]);
+
+  for (let i = 0; i < atomsNeedingScan.length; i++) {
+    if (scanResults[i].sessionId) {
+      pendingScans.push({
+        atomId: atomsNeedingScan[i],
+        scanSessionId: scanResults[i].sessionId!,
+      });
+    }
+  }
 
   return { halvedIntervals, pendingScans };
 }

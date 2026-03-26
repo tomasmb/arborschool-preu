@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { mutate } from "swr";
+import { SWR_KEYS } from "@/app/portal/swrKeys";
 import { toErrorMessage } from "../errorUtils";
 import type { ApiEnvelope } from "@/lib/student/apiClientEnvelope";
 
@@ -159,6 +161,9 @@ export function useVerificationController() {
       prereqScans: [...prereqScans],
     });
     setPhase("result");
+    void mutate(SWR_KEYS.dashboard);
+    void mutate(SWR_KEYS.progress);
+    void mutate(SWR_KEYS.nextAction);
   }, [session, currentIndex, correctCount, answeredCount, prereqScans]);
 
   return {

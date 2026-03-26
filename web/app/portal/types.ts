@@ -1,7 +1,4 @@
-import type { ApiEnvelope } from "@/lib/student/apiClientEnvelope";
 import type { NextActionPayload } from "./NextActionSection";
-
-export type { ApiEnvelope };
 
 export type RetestStatusPayload = {
   atomsMasteredSinceLastTest: number;

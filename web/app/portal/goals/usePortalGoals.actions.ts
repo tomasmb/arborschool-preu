@@ -2,11 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useRef } from "react";
+import { mutate } from "swr";
 import {
   trackPlanningSavedMilestone,
   trackStudentGoalsSaved,
   trackStudentSimulatorInteraction,
 } from "@/lib/analytics";
+import { SWR_KEYS } from "@/app/portal/swrKeys";
 import { planningProfileToApi, saveGoals } from "./api";
 import type { GoalDraft, PlanningProfileDraft, StudentGoal } from "./types";
 import { normalizeTestCode } from "./utils";
@@ -335,6 +337,9 @@ export function useGoalSaveHandlers(state: GoalsState) {
         journeyState: saved.journeyState,
       });
       applyGoalsPayload(state, saved);
+
+      void mutate(SWR_KEYS.dashboard);
+      void mutate(SWR_KEYS.progress);
     },
     [state]
   );
