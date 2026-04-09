@@ -12,4 +12,5 @@ export * from "./content";
 export * from "./users";
 export * from "./access";
 export * from "./studentPortal";
+export * from "./metrics";
 export * from "./relations";

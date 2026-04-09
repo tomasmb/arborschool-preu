@@ -18,7 +18,13 @@ type ScannedPrereq = { atomId: string; correct: boolean };
 
 type ScanNextResult =
   | { done: false; question: ScanQuestionPayload }
-  | { done: true; cooldown: true; scannedPrereqs: ScannedPrereq[] };
+  | {
+      done: true;
+      cooldown: boolean;
+      scannedPrereqs: ScannedPrereq[];
+      blockedPrereqNoQuestions?: boolean;
+      blockingPrereqAtomIds?: string[];
+    };
 
 type ScanAnswerResult = {
   responseId: string;
@@ -37,7 +43,8 @@ export type ScanPhase =
   | "question"
   | "feedback"
   | "gap_found"
-  | "all_clear";
+  | "all_clear"
+  | "content_gap_blocked";
 
 export function usePrereqScanController(scanSessionId: string | null) {
   const [phase, setPhase] = useState<ScanPhase>("loading");
@@ -50,6 +57,9 @@ export function usePrereqScanController(scanSessionId: string | null) {
   const [submitting, setSubmitting] = useState(false);
   const [scannedPrereqs, setScannedPrereqs] = useState<ScannedPrereq[]>([]);
   const [gapAtomId, setGapAtomId] = useState<string | null>(null);
+  const [blockingPrereqAtomIds, setBlockingPrereqAtomIds] = useState<
+    string[] | null
+  >(null);
 
   const fetchNext = useCallback(async (sessId: string) => {
     try {
@@ -64,6 +74,12 @@ export function usePrereqScanController(scanSessionId: string | null) {
       const result = data.data;
       if (result.done) {
         setScannedPrereqs(result.scannedPrereqs);
+        if (result.blockedPrereqNoQuestions) {
+          setBlockingPrereqAtomIds(result.blockingPrereqAtomIds ?? []);
+          setPhase("content_gap_blocked");
+          return;
+        }
+        setBlockingPrereqAtomIds(null);
         setPhase("all_clear");
         return;
       }
@@ -140,6 +156,7 @@ export function usePrereqScanController(scanSessionId: string | null) {
     submitting,
     scannedPrereqs,
     gapAtomId,
+    blockingPrereqAtomIds,
     submitAnswer,
     advanceToNext,
   };
