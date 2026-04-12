@@ -197,6 +197,20 @@
       "when": 1774544369680,
       "tag": "0027_add_users_school_index",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1775241600000,
+      "tag": "0028_prereq_question_gap_events",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1775328000000,
+      "tag": "0029_blocked_cannot_pass_base",
+      "breakpoints": true
     }
   ]
 }

@@ -351,7 +351,12 @@ export function AtomStudyView({ ctrl }: { ctrl: Controller }) {
             | {
                 sessionId: string | null;
                 prereqCount: number;
-                status: "in_progress" | "no_prereqs";
+                status:
+                  | "in_progress"
+                  | "no_prereqs"
+                  | "blocked_prereq_no_questions"
+                  | "blocked_cannot_pass_base";
+                blockingPrereqAtomIds?: string[];
               }
             | undefined
         }

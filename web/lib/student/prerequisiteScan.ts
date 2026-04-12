@@ -14,9 +14,11 @@ import {
   atomStudySessions,
   atoms,
   generatedQuestions,
+  prereqQuestionGapEvents,
 } from "@/db/schema";
 import { parseQtiXml } from "@/lib/qti/serverParser";
 import {
+  filterAtomIdsWithoutMediumOrHighGeneratedQuestions,
   findGeneratedQuestions,
   getQuestionAtomId,
   getQuestionContent,
@@ -32,7 +34,13 @@ import { verifySessionOwnership } from "./sessionQueries";
 export type ScanStartResult = {
   sessionId: string | null;
   prereqCount: number;
-  status: "in_progress" | "no_prereqs";
+  status:
+    | "in_progress"
+    | "no_prereqs"
+    | "blocked_prereq_no_questions"
+    | "blocked_cannot_pass_base";
+  /** Prereq atoms with no medium/high generated questions (cannot verify) */
+  blockingPrereqAtomIds?: string[];
 };
 
 export type ScanQuestionPayload = {
@@ -47,7 +55,14 @@ export type ScanQuestionPayload = {
 
 export type ScanNextResult =
   | { done: false; question: ScanQuestionPayload }
-  | { done: true; cooldown: boolean; scannedPrereqs: ScannedPrereq[] };
+  | {
+      done: true;
+      cooldown: boolean;
+      scannedPrereqs: ScannedPrereq[];
+      /** True when prereqs lack generated items — target atom is blocked, not cooldown */
+      blockedPrereqNoQuestions?: boolean;
+      blockingPrereqAtomIds?: string[];
+    };
 
 export type ScannedPrereq = { atomId: string; correct: boolean };
 
@@ -77,6 +92,13 @@ async function getPrereqIds(atomId: string): Promise<string[]> {
     .limit(1);
   if (!atom) throw new Error("Atom not found");
   return (atom.prerequisiteIds ?? []).filter(Boolean);
+}
+
+/** Prerequisite atom IDs for this atom; empty ⇒ root / base atom in the graph. */
+export async function getAtomPrerequisiteIds(
+  atomId: string
+): Promise<string[]> {
+  return getPrereqIds(atomId);
 }
 
 /**
@@ -175,6 +197,82 @@ async function setCooldown(userId: string, failedAtomId: string) {
     });
 }
 
+/**
+ * Target atom cannot be advanced via prereq scan until base atoms have items.
+ * Records pilot analytics per base atom. Does not apply mastery cooldown.
+ */
+async function applyBlockedPrereqNoQuestions(
+  userId: string,
+  targetAtomId: string,
+  blockingBaseAtomIds: string[]
+) {
+  await db
+    .insert(atomMastery)
+    .values({
+      userId,
+      atomId: targetAtomId,
+      status: "blocked_prereq_no_questions",
+      isMastered: false,
+      cooldownUntilMasteryCount: 0,
+    })
+    .onConflictDoUpdate({
+      target: [atomMastery.userId, atomMastery.atomId],
+      set: {
+        status: "blocked_prereq_no_questions",
+        isMastered: false,
+        cooldownUntilMasteryCount: 0,
+        updatedAt: new Date(),
+      },
+    });
+
+  if (blockingBaseAtomIds.length === 0) return;
+
+  await db
+    .insert(prereqQuestionGapEvents)
+    .values(
+      blockingBaseAtomIds.map((baseAtomId) => ({
+        userId,
+        targetAtomId,
+        baseAtomId,
+      }))
+    )
+    .onConflictDoNothing({
+      target: [
+        prereqQuestionGapEvents.userId,
+        prereqQuestionGapEvents.targetAtomId,
+        prereqQuestionGapEvents.baseAtomId,
+      ],
+    });
+}
+
+/**
+ * Root atom (no prerequisites): student did not reach mastery in mini-clase.
+ * Skip prereq scan and cooldown so they are not nudged to retry the same base.
+ */
+export async function applyBlockedCannotPassBase(
+  userId: string,
+  atomId: string
+) {
+  await db
+    .insert(atomMastery)
+    .values({
+      userId,
+      atomId,
+      status: "blocked_cannot_pass_base",
+      isMastered: false,
+      cooldownUntilMasteryCount: 0,
+    })
+    .onConflictDoUpdate({
+      target: [atomMastery.userId, atomMastery.atomId],
+      set: {
+        status: "blocked_cannot_pass_base",
+        isMastered: false,
+        cooldownUntilMasteryCount: 0,
+        updatedAt: new Date(),
+      },
+    });
+}
+
 async function completeScanSession(sessionId: string) {
   await db
     .update(atomStudySessions)
@@ -196,6 +294,18 @@ export async function startPrereqScan(
   if (prereqIds.length === 0) {
     await setCooldown(userId, failedAtomId);
     return { sessionId: null, prereqCount: 0, status: "no_prereqs" };
+  }
+
+  const blockingIds =
+    await filterAtomIdsWithoutMediumOrHighGeneratedQuestions(prereqIds);
+  if (blockingIds.length === prereqIds.length) {
+    await applyBlockedPrereqNoQuestions(userId, failedAtomId, blockingIds);
+    return {
+      sessionId: null,
+      prereqCount: prereqIds.length,
+      status: "blocked_prereq_no_questions",
+      blockingPrereqAtomIds: blockingIds,
+    };
   }
 
   const [active] = await db
@@ -301,6 +411,25 @@ export async function getNextScanQuestion(
         position,
         totalPrereqs: prereqIds.length,
       },
+    };
+  }
+
+  const blockingMissing =
+    await filterAtomIdsWithoutMediumOrHighGeneratedQuestions(prereqIds);
+  if (blockingMissing.length > 0) {
+    await applyBlockedPrereqNoQuestions(
+      userId,
+      session.atomId,
+      blockingMissing
+    );
+    await completeScanSession(sessionId);
+    const scannedPrereqs = await getTestedPrereqs(sessionId, prereqIds);
+    return {
+      done: true,
+      cooldown: false,
+      scannedPrereqs,
+      blockedPrereqNoQuestions: true,
+      blockingPrereqAtomIds: blockingMissing,
     };
   }
 

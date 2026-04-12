@@ -78,6 +78,7 @@ export async function getNextStudyAtom(
       atomId: atomMastery.atomId,
       isMastered: atomMastery.isMastered,
       cooldown: atomMastery.cooldownUntilMasteryCount,
+      status: atomMastery.status,
     })
     .from(atomMastery)
     .where(eq(atomMastery.userId, userId));
@@ -88,6 +89,15 @@ export async function getNextStudyAtom(
   const cooldownSet = new Set(
     masteryRows.filter((r) => r.cooldown && r.cooldown > 0).map((r) => r.atomId)
   );
+  const blockedPrereqSet = new Set(
+    masteryRows
+      .filter(
+        (r) =>
+          r.status === "blocked_prereq_no_questions" ||
+          r.status === "blocked_cannot_pass_base"
+      )
+      .map((r) => r.atomId)
+  );
 
   const candidates = await db
     .select({ id: atoms.id, title: atoms.title })
@@ -96,7 +106,10 @@ export async function getNextStudyAtom(
     .limit(50);
 
   const next = candidates.find(
-    (a) => !masteredSet.has(a.id) && !cooldownSet.has(a.id)
+    (a) =>
+      !masteredSet.has(a.id) &&
+      !cooldownSet.has(a.id) &&
+      !blockedPrereqSet.has(a.id)
   );
   return next ?? null;
 }
