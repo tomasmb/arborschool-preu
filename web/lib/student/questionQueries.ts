@@ -50,6 +50,28 @@ export async function findGeneratedQuestions(params: {
 }
 
 /**
+ * Prerequisite scan uses medium/high generated items only. Atoms with neither
+ * in the pool cannot be verified (distinct from "student exhausted all items").
+ */
+export async function filterAtomIdsWithoutMediumOrHighGeneratedQuestions(
+  atomIds: string[]
+): Promise<string[]> {
+  if (atomIds.length === 0) return [];
+  const rows = await db
+    .select({ atomId: generatedQuestions.atomId })
+    .from(generatedQuestions)
+    .where(
+      and(
+        inArray(generatedQuestions.atomId, atomIds),
+        inArray(generatedQuestions.difficultyLevel, ["medium", "high"])
+      )
+    )
+    .groupBy(generatedQuestions.atomId);
+  const withQuestions = new Set(rows.map((r) => r.atomId));
+  return atomIds.filter((id) => !withQuestions.has(id));
+}
+
+/**
  * Resolves the atom ID that a question belongs to.
  * Checks generated_questions first (1:1 atom), then question_atoms (variants).
  */

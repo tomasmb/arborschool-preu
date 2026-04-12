@@ -8,7 +8,12 @@ import type { SessionStatus } from "@/lib/student/atomMasteryAlgorithm";
 type PrereqScanInfo = {
   sessionId: string | null;
   prereqCount: number;
-  status: "in_progress" | "no_prereqs";
+  status:
+    | "in_progress"
+    | "no_prereqs"
+    | "blocked_prereq_no_questions"
+    | "blocked_cannot_pass_base";
+  blockingPrereqAtomIds?: string[];
 };
 
 type AtomResultPanelProps = {
@@ -260,6 +265,135 @@ function MasteryResult({
   );
 }
 
+function FailureCannotPassBaseAtom({
+  atomTitle,
+  totalAnswered,
+  totalCorrect,
+}: {
+  atomTitle: string;
+  totalAnswered: number;
+  totalCorrect: number;
+}) {
+  const accuracy =
+    totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
+
+  return (
+    <>
+      <div className="text-center space-y-2">
+        <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium bg-sky-100 text-sky-800">
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          Pausa en este tema base
+        </div>
+        <h2 className="text-2xl sm:text-3xl font-serif font-bold text-primary">
+          {atomTitle}
+        </h2>
+        <p className="text-sm text-gray-600 max-w-md mx-auto">
+          Este concepto suele apoyarse en otras ideas más abajo. Para que no
+          pierdas tiempo repitiendo lo mismo, lo dejamos de lado por ahora y
+          seguimos por otro camino.
+        </p>
+      </div>
+
+      <MiniPath currentAtom={atomTitle} mastered={false} />
+
+      <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto">
+        <AnimatedStat
+          label="Respondidas"
+          value={String(totalAnswered)}
+          delay={400}
+        />
+        <AnimatedStat label="Precisión" value={`${accuracy}%`} delay={600} />
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <Link href="/portal/study" className="btn-cta text-center text-sm py-3 px-6">
+          Elegir otro tema
+        </Link>
+        <Link href="/portal" className="btn-secondary text-center">
+          Volver al inicio
+        </Link>
+      </div>
+    </>
+  );
+}
+
+function FailureBlockedPrereqContent({
+  atomTitle,
+  totalAnswered,
+  totalCorrect,
+  prereqScan,
+}: {
+  atomTitle: string;
+  totalAnswered: number;
+  totalCorrect: number;
+  prereqScan: PrereqScanInfo;
+}) {
+  const accuracy =
+    totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
+  const n = prereqScan.blockingPrereqAtomIds?.length ?? prereqScan.prereqCount;
+
+  return (
+    <>
+      <div className="text-center space-y-2">
+        <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium bg-violet-100 text-violet-800">
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
+          Prerrequisitos sin preguntas
+        </div>
+        <h2 className="text-2xl sm:text-3xl font-serif font-bold text-primary">
+          {atomTitle}
+        </h2>
+        <p className="text-sm text-gray-600 max-w-md mx-auto">
+          No pudimos verificar {n === 1 ? "un prerequisito base" : `${n} prerequisitos base`} por falta de ítems en la plataforma. Este concepto queda bloqueado — avanza con otros temas; no seguiremos gastando intentos aquí.
+        </p>
+      </div>
+
+      <MiniPath currentAtom={atomTitle} mastered={false} />
+
+      <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto">
+        <AnimatedStat
+          label="Respondidas"
+          value={String(totalAnswered)}
+          delay={400}
+        />
+        <AnimatedStat label="Precisión" value={`${accuracy}%`} delay={600} />
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <Link href="/portal" className="btn-cta text-center text-sm py-3 px-6">
+          Elegir otro concepto
+        </Link>
+        <Link href="/portal/study" className="btn-secondary text-center">
+          Ver estudio
+        </Link>
+      </div>
+    </>
+  );
+}
+
 function FailureWithPrereqScan({
   atomTitle,
   totalAnswered,
@@ -433,6 +567,10 @@ function AtomResultPanelInner({
     return () => clearTimeout(t);
   }, []);
 
+  const isCannotPassBase =
+    prereqScan?.status === "blocked_cannot_pass_base";
+  const isBlockedPrereqContent =
+    prereqScan?.status === "blocked_prereq_no_questions";
   const hasPrereqScan =
     prereqScan && prereqScan.status === "in_progress" && prereqScan.sessionId;
 
@@ -448,11 +586,15 @@ function AtomResultPanelInner({
           "transition-all duration-700",
           isMastered
             ? "bg-gradient-to-br from-emerald-50 to-white border-emerald-200"
-            : hasPrereqScan
-              ? "bg-gradient-to-br from-amber-50 to-white border-amber-200"
-              : cooldownApplied
-                ? "bg-gradient-to-br from-blue-50 to-white border-blue-200"
-                : "bg-gradient-to-br from-rose-50 to-white border-rose-200",
+            : isCannotPassBase
+              ? "bg-gradient-to-br from-sky-50 to-white border-sky-200"
+              : isBlockedPrereqContent
+                ? "bg-gradient-to-br from-violet-50 to-white border-violet-200"
+                : hasPrereqScan
+                  ? "bg-gradient-to-br from-amber-50 to-white border-amber-200"
+                  : cooldownApplied
+                    ? "bg-gradient-to-br from-blue-50 to-white border-blue-200"
+                    : "bg-gradient-to-br from-rose-50 to-white border-rose-200",
           showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6",
         ].join(" ")}
       >
@@ -466,7 +608,27 @@ function AtomResultPanelInner({
           />
         )}
 
-        {!isMastered && hasPrereqScan && (
+        {!isMastered && isCannotPassBase && (
+          <FailureCannotPassBaseAtom
+            atomTitle={atomTitle}
+            totalAnswered={totalAnswered}
+            totalCorrect={totalCorrect}
+          />
+        )}
+
+        {!isMastered && !isCannotPassBase && isBlockedPrereqContent && prereqScan && (
+          <FailureBlockedPrereqContent
+            atomTitle={atomTitle}
+            totalAnswered={totalAnswered}
+            totalCorrect={totalCorrect}
+            prereqScan={prereqScan}
+          />
+        )}
+
+        {!isMastered &&
+          !isCannotPassBase &&
+          !isBlockedPrereqContent &&
+          hasPrereqScan && (
           <FailureWithPrereqScan
             atomTitle={atomTitle}
             totalAnswered={totalAnswered}
@@ -475,7 +637,10 @@ function AtomResultPanelInner({
           />
         )}
 
-        {!isMastered && !hasPrereqScan && (
+        {!isMastered &&
+          !isCannotPassBase &&
+          !isBlockedPrereqContent &&
+          !hasPrereqScan && (
           <FailureWithCooldown
             atomTitle={atomTitle}
             totalAnswered={totalAnswered}

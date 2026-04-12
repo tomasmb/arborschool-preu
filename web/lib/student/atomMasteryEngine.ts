@@ -37,9 +37,11 @@ import {
   applyInactivityDecay,
 } from "./spacedRepetition";
 import {
-  startPrereqScan,
+  applyBlockedCannotPassBase,
   checkCooldownExpiry,
   COOLDOWN_MASTERY_COUNT,
+  getAtomPrerequisiteIds,
+  startPrereqScan,
 } from "./prerequisiteScan";
 import type { ScanStartResult } from "./prerequisiteScan";
 import type { HabitGuardSignal } from "./habitGuard";
@@ -71,7 +73,12 @@ export type AnswerResultWithLifecycle = AnswerResultPayload & {
   prereqScan?: {
     sessionId: string | null;
     prereqCount: number;
-    status: "in_progress" | "no_prereqs";
+    status:
+      | "in_progress"
+      | "no_prereqs"
+      | "blocked_prereq_no_questions"
+      | "blocked_cannot_pass_base";
+    blockingPrereqAtomIds?: string[];
   };
   cooldownApplied?: boolean;
   cooldownRemaining?: number;
@@ -179,7 +186,10 @@ export async function createAtomSession(
 
   // Enforce cooldown: student must master N other atoms before retrying
   const [masteryRow] = await db
-    .select({ cooldown: atomMastery.cooldownUntilMasteryCount })
+    .select({
+      cooldown: atomMastery.cooldownUntilMasteryCount,
+      status: atomMastery.status,
+    })
     .from(atomMastery)
     .where(and(eq(atomMastery.userId, userId), eq(atomMastery.atomId, atomId)))
     .limit(1);
@@ -187,6 +197,18 @@ export async function createAtomSession(
     throw new Error(
       `Este concepto está en pausa — domina ${masteryRow.cooldown}` +
         ` concepto(s) más antes de reintentar`
+    );
+  }
+  if (masteryRow?.status === "blocked_prereq_no_questions") {
+    throw new Error(
+      "Este concepto quedó bloqueado: faltan preguntas en la plataforma " +
+        "para verificar prerrequisitos base. Avanza con otros temas por ahora."
+    );
+  }
+  if (masteryRow?.status === "blocked_cannot_pass_base") {
+    throw new Error(
+      "Este concepto base quedó en pausa: por ahora no encaja con tu avance. " +
+        "Sigue con otros temas; no hace falta insistir aquí."
     );
   }
 
@@ -473,8 +495,24 @@ export async function submitAnswer(params: {
   }
 
   if (updated.status === "failed") {
-    scanResult = await startPrereqScan(params.userId, session.atomId);
-    cooldownApplied = scanResult.status === "no_prereqs";
+    if (session.sessionType === "mastery") {
+      const prereqIds = await getAtomPrerequisiteIds(session.atomId);
+      if (prereqIds.length === 0) {
+        await applyBlockedCannotPassBase(params.userId, session.atomId);
+        scanResult = {
+          sessionId: null,
+          prereqCount: 0,
+          status: "blocked_cannot_pass_base",
+        };
+        cooldownApplied = false;
+      } else {
+        scanResult = await startPrereqScan(params.userId, session.atomId);
+        cooldownApplied = scanResult.status === "no_prereqs";
+      }
+    } else {
+      scanResult = await startPrereqScan(params.userId, session.atomId);
+      cooldownApplied = scanResult.status === "no_prereqs";
+    }
     await incrementSessionCounters(params.userId);
   }
 
@@ -508,6 +546,7 @@ export async function submitAnswer(params: {
           sessionId: scanResult.sessionId,
           prereqCount: scanResult.prereqCount,
           status: scanResult.status,
+          blockingPrereqAtomIds: scanResult.blockingPrereqAtomIds,
         }
       : undefined,
     cooldownApplied,

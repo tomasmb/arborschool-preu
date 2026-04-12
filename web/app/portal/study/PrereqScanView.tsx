@@ -229,6 +229,56 @@ function GapFoundPanel({ ctrl }: { ctrl: Controller }) {
   );
 }
 
+function ContentGapBlockedPanel({ ctrl }: { ctrl: Controller }) {
+  const n = ctrl.blockingPrereqAtomIds?.length ?? 0;
+
+  return (
+    <section
+      className="rounded-2xl p-6 sm:p-8 space-y-6 border
+        bg-gradient-to-br from-violet-50 to-white border-violet-200"
+    >
+      <div className="text-center space-y-2">
+        <div
+          className="inline-flex items-center gap-2 rounded-full px-4 py-1.5
+            text-sm font-medium bg-violet-100 text-violet-800"
+        >
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
+          Prerrequisitos sin verificar
+        </div>
+        <h2 className="text-2xl sm:text-3xl font-serif font-bold text-primary">
+          No pudimos revisar {n === 1 ? "una base" : "todas las bases"}
+        </h2>
+        <p className="text-sm text-gray-600 max-w-md mx-auto">
+          {n > 0
+            ? `Faltan preguntas en la plataforma para ${n} prerequisito${n !== 1 ? "s" : ""} base. Este concepto queda bloqueado hasta tener contenido — no es un problema tuyo. Avanza con otros temas.`
+            : "Faltan preguntas en la plataforma para verificar prerequisitos base. Avanza con otros temas."}
+        </p>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <Link href="/portal/study" className="btn-cta text-center text-sm py-3 px-6">
+          Continuar aprendiendo
+        </Link>
+        <Link href="/portal" className="btn-secondary text-center">
+          Volver al inicio
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 function AllClearPanel({ ctrl }: { ctrl: Controller }) {
   const passed = ctrl.scannedPrereqs.filter((p) => p.correct).length;
   const total = ctrl.scannedPrereqs.length;
@@ -289,6 +339,9 @@ export function PrereqScanView({ ctrl }: { ctrl: Controller }) {
     );
   }
   if (ctrl.phase === "gap_found") return <GapFoundPanel ctrl={ctrl} />;
+  if (ctrl.phase === "content_gap_blocked") {
+    return <ContentGapBlockedPanel ctrl={ctrl} />;
+  }
   if (ctrl.phase === "all_clear") return <AllClearPanel ctrl={ctrl} />;
 
   return (

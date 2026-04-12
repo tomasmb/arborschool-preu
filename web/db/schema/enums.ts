@@ -55,6 +55,8 @@ export const masteryStatusEnum = pgEnum("mastery_status", [
   "mastered",
   "needs_verification", // Full test discrepancy detected; pending quick check
   "frozen", // Blocked due to failed PP100
+  "blocked_prereq_no_questions", // Prereq scan cannot verify bases (no medium/high items)
+  "blocked_cannot_pass_base", // Root atom: student did not reach mastery; do not loop retries
 ]);
 
 // How mastery was achieved
