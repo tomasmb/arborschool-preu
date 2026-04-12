@@ -35,3 +35,4 @@ La aplicación estará disponible en http://localhost:3000
 Push to `main` triggers automatic deployment via Vercel.
 
 See [web/README.md](./web/README.md) for detailed setup instructions.
+
