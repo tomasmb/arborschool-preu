@@ -67,7 +67,7 @@ export default async function PortalPage({ searchParams }: PortalPageProps) {
     >
       <M1DashboardClient
         contextBanner={contextBanner}
-        subscriptionStatus={user.subscriptionStatus}
+        subscriptionStatus={accessStatus.subscriptionStatus}
         masteredAtomCount={accessStatus.masteredAtomCount}
       />
     </PageShell>

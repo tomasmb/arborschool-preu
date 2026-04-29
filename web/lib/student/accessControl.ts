@@ -5,6 +5,13 @@ import { resolveAccessGrant } from "@/lib/auth/accessGrants";
 
 const FREE_TIER_ATOM_LIMIT = 1;
 
+// Access restrictions are currently disabled: every authenticated user is
+// granted full platform access regardless of `subscriptionStatus`. To re-enable
+// the free-tier paywall, restore the original logic in `hasFullAccess` and
+// `getUserAccessStatus` below, and revert `portal/page.tsx` to pass the raw
+// `user.subscriptionStatus` into the dashboard.
+const ACCESS_RESTRICTIONS_DISABLED = true;
+
 /**
  * Check if a user has full platform access (active subscription).
  * Admins always have full access.
@@ -13,6 +20,7 @@ export function hasFullAccess(user: {
   role: string;
   subscriptionStatus: string;
 }): boolean {
+  if (ACCESS_RESTRICTIONS_DISABLED) return true;
   if (user.role === "admin") return true;
   return user.subscriptionStatus === "active";
 }
@@ -125,6 +133,18 @@ export async function getUserAccessStatus(
   masteredAtomCount: number;
   freeAtomLimit: number;
 }> {
+  // Bypass: with restrictions disabled, every user is reported as fully active.
+  // This skips DB lookups entirely and ensures both API gates and UI prompts
+  // (which key off the returned `subscriptionStatus`) treat the user as paid.
+  if (ACCESS_RESTRICTIONS_DISABLED) {
+    return {
+      hasAccess: true,
+      subscriptionStatus: "active",
+      masteredAtomCount: 0,
+      freeAtomLimit: FREE_TIER_ATOM_LIMIT,
+    };
+  }
+
   let userRow: UserAccessInput;
 
   if (prefetchedUser) {
