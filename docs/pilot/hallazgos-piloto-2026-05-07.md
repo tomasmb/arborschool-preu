@@ -92,51 +92,33 @@ bajos, lo cual es esperado para su nivel:
 - Casos de alumnos con buen rendimiento que pueden ser historias de éxito
 
 ### Datos que NO podemos mostrar (por falta de uso)
-- ❌ Evolución de puntaje PAES (necesitan al menos 2 diagnósticos)
+- ❌ Evolución de puntaje PAES (necesitan hacer un ensayo completo para comparar)
 - ❌ Progreso en mastery de átomos (nadie lo usa)
 - ❌ Impacto del estudio dirigido en los puntajes
 - ❌ Engagement autónomo (retención, streaks, misiones)
 - ❌ Datos de 4° medio (0% de activación)
 
 ### Para el pitch necesitamos
-1. Que **todos los alumnos** hagan al menos 1 diagnóstico completo
-2. Que estudien con la plataforma M1 durante 2-3 semanas
-3. Que hagan un **segundo diagnóstico** para medir evolución
-4. Con eso podemos mostrar: delta de puntaje, átomos dominados,
-   correlación estudio → mejora
+1. Que **todos los alumnos** hagan al menos 1 diagnóstico completo.
+2. Que estudien con la plataforma M1 durante **1-2 semanas**. Si bien el liceo les da un espacio los miércoles en el colegio, es **fundamental que los profesores recalquen que pueden (y deben) trabajar en Arbor en cualquier momento** desde sus casas.
+3. Que realicen un **ensayo completo** para medir la evolución del aprendizaje (cambio en el puntaje PAES y cantidad de átomos nuevos aprendidos).
+4. Con eso podremos mostrar: delta de puntaje, átomos dominados y la correlación entre estudio y mejora.
 
 ---
 
 ## 4. Plan de Acción Propuesto
 
 ### Semana 1 (8-14 mayo)
-- [ ] Compartir dashboard con profesores del liceo
-- [ ] Coordinar sesión presencial para que 4° medio haga diagnóstico
-- [ ] Los 38 alumnos de 2° medio inactivos hacen diagnóstico
+- [ ] Compartir dashboard con profesores del liceo para mostrar urgencia.
+- [ ] Coordinar sesión presencial para que 4° medio haga el diagnóstico.
+- [ ] Los 38 alumnos de 2° medio inactivos hacen el diagnóstico.
+- [ ] Los profesores comunican que Arbor debe usarse de forma autónoma en cualquier momento, **no solo el día miércoles** asignado en el colegio.
 
-### Semana 2-3 (15-28 mayo)
-- [ ] Todos los alumnos con diagnóstico empiezan estudio M1
-- [ ] Profesores asignan "tarea" de completar al menos 5 sesiones/semana
-- [ ] Monitoreo semanal de actividad con el dashboard
+### Semana 2 (15-21 mayo)
+- [ ] Todos los alumnos con diagnóstico empiezan el estudio continuo en M1.
+- [ ] Profesores asignan "tarea" de completar sesiones.
+- [ ] Monitoreo de actividad y uso autónomo con el dashboard.
 
-### Semana 4 (29 mayo - 4 junio)
-- [ ] Segundo diagnóstico completo para medir evolución
-- [ ] Extraer datos de progreso para el pitch
-
----
-
-## 5. Archivos Relacionados
-
-| Archivo                    | Descripción                          |
-|----------------------------|--------------------------------------|
-| `web/pilot-dashboard.html` | Dashboard interactivo para profesores|
-| `web/scripts/pilot-data-extract.mjs` | Script de extracción (re-ejecutable) |
-| `web/pilot-data.json`      | Datos extraídos (gitignored, PII)    |
-
-### Re-ejecutar extracción
-```bash
-cd web
-DATABASE_URL="<neon_connection_string>" node scripts/pilot-data-extract.mjs
-npx serve -l 5555 .
-# Abrir http://localhost:5555/pilot-dashboard.html
-```
+### Semana 3 (22-28 mayo)
+- [ ] **Ensayo completo** para medir evolución real.
+- [ ] Extraer datos de progreso (átomos aprendidos, delta puntaje) para el pitch final.
