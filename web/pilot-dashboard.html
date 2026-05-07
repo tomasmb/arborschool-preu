@@ -1,201 +1,314 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Arbor — Reporte de Uso Piloto: Liceo Antonio Varas</title>
+<title>Arbor Pilot · Liceo Antonio Varas</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-*{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#f8fafc;--surface:#ffffff;--border:#e2e8f0;--accent:#4f46e5;--accent2:#6366f1;--green:#10b981;--yellow:#f59e0b;--red:#ef4444;--orange:#f97316;--text:#0f172a;--text2:#475569;--text3:#94a3b8}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-.header{background:linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,#4338ca 100%);padding:3rem 2rem;position:relative;overflow:hidden;color:white;}
-.header::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
-.header-content{position:relative;z-index:1;max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:flex-end;}
-.header h1{font-size:2.5rem;font-weight:800;letter-spacing:-0.02em;}
-.header p{color:#c7d2fe;margin-top:0.5rem;font-size:1.1rem;}
-.header .tag{background:rgba(255,255,255,.15);backdrop-filter:blur(10px);padding:.5rem 1.25rem;border-radius:999px;font-size:.85rem;color:#ffffff;font-weight:600;}
-.container{max-width:1200px;margin:-2rem auto 3rem;padding:0 1.5rem;position:relative;z-index:10;}
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+:root {
+  --bg: #09090b;
+  --bg-card: rgba(24, 24, 27, 0.6);
+  --border: rgba(255, 255, 255, 0.1);
+  --text: #fafafa;
+  --text-muted: #a1a1aa;
+  --accent: #10b981; /* Emerald */
+  --accent-glow: rgba(16, 185, 129, 0.2);
+  --danger: #ef4444;
+  --danger-glow: rgba(239, 68, 68, 0.2);
+  --warning: #f59e0b;
+  --info: #3b82f6;
+}
+* { margin:0; padding:0; box-sizing:border-box; font-family:'Outfit', sans-serif; }
+body { background-color:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; background-image: radial-gradient(circle at 50% -20%, #1e1b4b 0%, transparent 60%); }
 
-/* Critical Alert Banner */
-.critical-banner{background:linear-gradient(to right, #fee2e2, #fef2f2);border-left:6px solid var(--red);border-radius:12px;padding:1.5rem 2rem;margin-bottom:2rem;box-shadow:0 10px 15px -3px rgba(0,0,0,0.05), 0 4px 6px -4px rgba(0,0,0,0.05);display:flex;gap:1.5rem;align-items:center;}
-.critical-banner .icon{font-size:3rem;}
-.critical-banner .content h2{color:#991b1b;font-size:1.25rem;margin-bottom:0.5rem;font-weight:800;}
-.critical-banner .content p{color:#7f1d1d;font-size:1rem;line-height:1.5;font-weight:500;}
+/* Header Premium */
+.header {
+  padding: 2.5rem 0;
+  border-bottom: 1px solid var(--border);
+  background: rgba(9, 9, 11, 0.5);
+  backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.brand img { height: 40px; }
+.brand h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  background: linear-gradient(to right, #fff, #a1a1aa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.brand .separator { color: var(--border); margin: 0 0.5rem; font-weight: 300; }
+.header-meta {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.badge-live {
+  background: rgba(16, 185, 129, 0.1);
+  color: #34d399;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+.badge-live::before {
+  content: ''; width: 8px; height: 8px; background: #34d399; border-radius: 50%;
+  box-shadow: 0 0 8px #34d399;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
-/* KPI Grid */
-.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.5rem;margin-bottom:2.5rem}
-.kpi{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.5rem;box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);transition:transform 0.2s;}
-.kpi:hover{transform:translateY(-2px);box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);}
-.kpi .label{font-size:.8rem;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;font-weight:700;}
-.kpi .value{font-size:2.5rem;font-weight:800;margin:.5rem 0;color:var(--text);line-height:1;}
-.kpi .sub{font-size:.85rem;color:var(--text3);font-weight:500;}
-.kpi.alert{border:2px solid #fca5a5;background:#fef2f2;}
-.kpi.alert .value{color:var(--red);}
-.kpi.ok .value{color:var(--green);}
+.container { max-width: 1280px; margin: 3rem auto; padding: 0 2rem; }
 
-/* Objective Section */
-.objective-card{background:linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);border:1px solid #5eead4;border-radius:16px;padding:2.5rem;margin-top:3rem;text-align:center;}
-.objective-card h2{color:#0f766e;font-size:1.8rem;margin-bottom:1rem;font-weight:800;}
-.objective-card p.subtitle{color:#115e59;font-size:1.1rem;max-width:800px;margin:0 auto 2rem;line-height:1.6;}
-.roadmap{display:flex;justify-content:space-between;align-items:flex-start;max-width:900px;margin:0 auto;position:relative;}
-.roadmap::before{content:'';position:absolute;top:24px;left:50px;right:50px;height:4px;background:#99f6e4;z-index:1;}
-.step{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;align-items:center;gap:1rem;}
-.step-circle{width:52px;height:52px;border-radius:50%;background:#ffffff;border:4px solid #14b8a6;display:flex;align-items:center;justify-content:center;font-size:1.25rem;font-weight:bold;color:#0d9488;box-shadow:0 4px 6px rgba(0,0,0,0.1);}
-.step.active .step-circle{background:#14b8a6;color:white;}
-.step.danger .step-circle{border-color:#ef4444;color:#ef4444;background:#fee2e2;}
-.step-title{font-weight:700;color:#0f766e;font-size:1rem;}
-.step-desc{font-size:0.85rem;color:#115e59;padding:0 1rem;line-height:1.4;}
+/* Critical Banner Glassmorphism */
+.critical-banner {
+  background: linear-gradient(135deg, rgba(239,68,68,0.1) 0%, rgba(127,29,29,0.2) 100%);
+  border: 1px solid rgba(239,68,68,0.3);
+  border-radius: 16px;
+  padding: 1.5rem 2rem;
+  margin-bottom: 3rem;
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  box-shadow: 0 0 40px var(--danger-glow);
+  position: relative;
+  overflow: hidden;
+}
+.critical-banner::after {
+  content: ''; position: absolute; top:0; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent, rgba(239,68,68,0.5), transparent);
+}
+.critical-banner .icon { font-size: 2.5rem; filter: drop-shadow(0 0 10px rgba(239,68,68,0.5)); }
+.critical-banner h2 { color: #fca5a5; font-size: 1.25rem; margin-bottom: 0.5rem; font-weight: 600; }
+.critical-banner p { color: #fecaca; font-size: 1rem; line-height: 1.6; }
 
-/* Insights section */
-.insights-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2.5rem;}
-@media(max-width:900px){.insights-grid{grid-template-columns:1fr;}}
-.insight-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.5rem;box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);}
-.insight-card h3{font-size:1.1rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem;color:var(--text);}
-.insight-card ul{padding-left:1.25rem;color:var(--text2);font-size:.95rem;line-height:1.6;}
-.insight-card li{margin-bottom:0.5rem;}
-.insight-card li strong{color:var(--text);}
+/* Grid & Cards */
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 3rem; }
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-bottom: 3rem; }
+@media (max-width: 1024px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } .grid-2 { grid-template-columns: 1fr; } }
 
-/* Charts */
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem}
-@media(max-width:900px){.grid2{grid-template-columns:1fr}}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.5rem;box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);}
-.card h3{font-size:1.1rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem;color:var(--text);}
-.chart-wrap{position:relative;height:280px;width:100%;}
+.card {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+.card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+}
+.card:hover { border-color: rgba(255,255,255,0.2); transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+
+/* KPIs */
+.kpi-title { font-size: 0.875rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: space-between; }
+.kpi-value { font-size: 3rem; font-weight: 700; color: var(--text); line-height: 1; margin-bottom: 0.5rem; }
+.kpi-sub { font-size: 0.875rem; color: var(--text-muted); }
+.kpi.danger .kpi-value { color: #f87171; text-shadow: 0 0 20px rgba(248,113,113,0.3); }
+.kpi.success .kpi-value { color: #34d399; text-shadow: 0 0 20px rgba(52,211,153,0.3); }
+
+/* Roadmap Premium */
+.roadmap-section {
+  margin: 4rem 0;
+  text-align: center;
+}
+.roadmap-section h2 { font-size: 2rem; font-weight: 700; margin-bottom: 1rem; background: linear-gradient(to right, #34d399, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.roadmap-section p.subtitle { color: var(--text-muted); font-size: 1.1rem; max-width: 800px; margin: 0 auto 3rem; }
+.roadmap { display: flex; justify-content: space-between; position: relative; max-width: 1000px; margin: 0 auto; }
+.roadmap::before { content:''; position:absolute; top:30px; left:50px; right:50px; height:2px; background:var(--border); z-index:1; }
+.step { flex:1; position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; gap:1rem; }
+.step-icon { width:64px; height:64px; border-radius:50%; background:#18181b; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:1.5rem; font-weight:700; color:var(--text-muted); transition:all 0.3s; }
+.step.active .step-icon { border-color:var(--accent); color:var(--accent); box-shadow:0 0 20px var(--accent-glow); background:rgba(16,185,129,0.1); }
+.step.danger .step-icon { border-color:var(--danger); color:var(--danger); box-shadow:0 0 20px var(--danger-glow); background:rgba(239,68,68,0.1); animation: pulse-danger 2s infinite; }
+@keyframes pulse-danger { 0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); } 70% { box-shadow: 0 0 0 15px rgba(239,68,68,0); } 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); } }
+.step h3 { font-size:1.1rem; font-weight:600; color:var(--text); }
+.step p { font-size:0.9rem; color:var(--text-muted); max-width:200px; line-height:1.4; }
+.step p strong { color:var(--text); }
+
+/* Lists & Insights */
+.insight-box h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem; }
+.insight-list { list-style: none; }
+.insight-list li { padding-left: 1.5rem; position: relative; margin-bottom: 1rem; color: var(--text-muted); line-height: 1.6; }
+.insight-list li::before { content: '→'; position: absolute; left: 0; color: var(--accent); font-weight: bold; }
+.insight-list li strong { color: var(--text); }
 
 /* Tables */
-.section-title{font-size:1.5rem;font-weight:800;margin:3rem 0 1.5rem;padding-bottom:.75rem;border-bottom:2px solid var(--border);display:flex;align-items:center;gap:.75rem;color:var(--text);}
-table{width:100%;border-collapse:collapse;font-size:.9rem}
-th{text-align:left;padding:.75rem 1rem;color:var(--text2);font-weight:700;border-bottom:2px solid var(--border);font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;background:#f8fafc;position:sticky;top:0;z-index:10;}
-td{padding:1rem;border-bottom:1px solid var(--border);color:var(--text2);}
-td strong{color:var(--text);}
-tr:hover td{background:#f1f5f9;}
-.scroll-table{max-height:400px;overflow-y:auto;border-radius:8px;}
-.scroll-table::-webkit-scrollbar{width:6px}
-.scroll-table::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:6px}
+.table-wrapper { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); background: rgba(0,0,0,0.2); }
+table { width: 100%; border-collapse: collapse; text-align: left; }
+th { padding: 1rem 1.5rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02); }
+td { padding: 1rem 1.5rem; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-muted); }
+td strong { color: var(--text); font-weight: 500; }
+tr:hover td { background: rgba(255,255,255,0.02); }
+tr:last-child td { border-bottom: none; }
 
-.badge{display:inline-block;padding:.25rem .75rem;border-radius:999px;font-size:.75rem;font-weight:700;}
-.badge-green{background:#d1fae5;color:#059669;}
-.badge-red{background:#fee2e2;color:#dc2626;}
-.badge-gray{background:#f1f5f9;color:#64748b;}
+.pill { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+.pill-green { background: rgba(16,185,129,0.1); color: #34d399; border: 1px solid rgba(16,185,129,0.2); }
+.pill-red { background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+.pill-gray { background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--border); }
 
-.paes-bar{height:8px;border-radius:4px;background:var(--border);position:relative;min-width:100px;overflow:hidden;}
-.paes-bar-fill{height:100%;border-radius:4px;position:absolute;left:0;top:0;transition:width 1s ease;}
+.bar-container { width: 120px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; position: relative; overflow: hidden; }
+.bar-fill { position: absolute; top: 0; height: 100%; border-radius: 3px; }
+
+/* Charts Area */
+.chart-container { position: relative; height: 300px; width: 100%; margin-top: 1rem; }
+.section-title { font-size: 1.5rem; font-weight: 600; margin: 3rem 0 1.5rem; }
+
 </style>
 </head>
 <body>
-<div class="header">
-  <div class="header-content">
-    <div>
-      <h1>🌳 Arbor — Reporte de Uso Piloto</h1>
-      <p>Resultados preliminares · <strong>Liceo Antonio Varas</strong></p>
+
+<header class="header">
+  <div class="header-container">
+    <div class="brand">
+      <img src="public/logo-arbor.svg" alt="Arbor Logo" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2933/2933245.png'; this.style.filter='invert(1) opacity(0.8)';">
+      <h1>Arbor <span class="separator">/</span> Analytics Piloto</h1>
     </div>
-    <div class="tag" id="extractDate">Cargando fecha...</div>
+    <div class="header-meta">
+      <span id="dateText">Actualizado: --</span>
+      <div class="badge-live">Liceo Antonio Varas</div>
+    </div>
   </div>
-</div>
+</header>
 
 <div class="container">
 
   <div class="critical-banner">
-    <div class="icon">🚨</div>
-    <div class="content">
-      <h2>Alerta Crítica de Activación: 4° Medio Inactivo</h2>
-      <p>De los <strong>79 alumnos de 4° Medio</strong> registrados en la plataforma, <strong>NINGUNO (0%)</strong> ha realizado el diagnóstico. La plataforma M1 de estudio avanzado (útil para la PAES) <strong>no ha sido utilizada</strong>. Sin uso por parte de los alumnos, es imposible recopilar datos para medir la evolución del aprendizaje.</p>
+    <div class="icon">⚠️</div>
+    <div>
+      <h2>Alerta de Adopción: 4° Medio Inactivo</h2>
+      <p>De los <strong>79 alumnos de 4° Medio</strong> registrados, <strong>0%</strong> ha realizado el diagnóstico. La plataforma M1 de estudio avanzado (vital para preparar la PAES) <strong>no ha sido utilizada</strong>. Sin el uso de los alumnos, es imposible recopilar datos para medir la evolución del aprendizaje.</p>
     </div>
   </div>
 
-  <div class="kpi-row" id="kpiRow"></div>
+  <div class="grid-4" id="kpiContainer">
+    <!-- KPIs Inyectados vía JS -->
+  </div>
 
-  <div class="insights-grid">
-    <div class="insight-card">
-      <h3>🔍 Hallazgos Principales</h3>
-      <ul id="insightList"></ul>
+  <div class="roadmap-section">
+    <h2>Objetivo Final del Piloto</h2>
+    <p class="subtitle">Para demostrar una <strong>mejora real en el puntaje PAES</strong> y aprendizaje de nuevos átomos, necesitamos cumplir estos pasos secuenciales. <strong>Actualmente estamos bloqueados en el Paso 2.</strong></p>
+    
+    <div class="roadmap">
+      <div class="step active">
+        <div class="step-icon">1</div>
+        <h3>Diagnóstico</h3>
+        <p>Línea base.<br><strong style="color:#34d399">Logrado en 2°M (54%)</strong></p>
+      </div>
+      <div class="step danger">
+        <div class="step-icon">2</div>
+        <h3>Estudio Continuo</h3>
+        <p>Uso autónomo en casa.<br><strong style="color:#f87171">Falta uso de plataforma</strong></p>
+      </div>
+      <div class="step">
+        <div class="step-icon">3</div>
+        <h3>Ensayo Completo</h3>
+        <p>Medir evolución y nuevos átomos dominados.</p>
+      </div>
+      <div class="step">
+        <div class="step-icon">4</div>
+        <h3>Resultados</h3>
+        <p>Demostrar impacto real en el rendimiento.</p>
+      </div>
     </div>
-    <div class="insight-card">
-      <h3>💡 Qué Necesitamos de los Profesores</h3>
-      <ul>
+  </div>
+
+  <div class="grid-2">
+    <div class="card insight-box">
+      <h3><span>📊</span> Resumen de Hallazgos</h3>
+      <ul class="insight-list" id="insightList"></ul>
+    </div>
+    <div class="card insight-box">
+      <h3><span>🎯</span> Qué Necesitamos del Liceo</h3>
+      <ul class="insight-list">
         <li><strong>Coordinar una clase presencial urgente</strong> para que los alumnos de 4° Medio completen el diagnóstico inicial.</li>
-        <li><strong>Asignar tareas en Arbor:</strong> Indicar a los alumnos que realicen sesiones de estudio de átomos (M1) semanalmente (ej. "Tienen que sacar 5 átomos a la semana").</li>
-        <li>Fomentar el <strong>uso autónomo</strong> desde las casas. Actualmente, la actividad <strong>solo existe</strong> durante el horario escolar (Picos los días 14-15, 21-22 y 28-29 de abril).</li>
+        <li><strong>Cambio de mentalidad:</strong> El uso esporádico solo ocurre los días miércoles en el colegio. Es <strong>fundamental</strong> recalcar que pueden y deben usar Arbor <strong>en cualquier momento desde sus casas</strong>.</li>
+        <li><strong>Asignar tareas concretas:</strong> Que los profesores exijan completar 5 sesiones de átomos semanales como tarea formal.</li>
       </ul>
     </div>
   </div>
 
-  <div class="objective-card">
-    <h2>🎯 Objetivo Final del Piloto</h2>
-    <p class="subtitle">El éxito del piloto se mide demostrando una <strong>mejora real en el puntaje PAES</strong> a través del uso de la plataforma. Para lograr esto, necesitamos cumplir los siguientes pasos secuenciales:</p>
-    
-    <div class="roadmap">
-      <div class="step active">
-        <div class="step-circle">1</div>
-        <div class="step-title">Diagnóstico</div>
-        <div class="step-desc">Establecer línea base.<br><em>(Logrado en 2°M, 0% en 4°M)</em></div>
-      </div>
-      <div class="step danger">
-        <div class="step-circle">2</div>
-        <div class="step-title">Estudio Continuo (M1)</div>
-        <div class="step-desc">Uso autónomo y en clase para dominar átomos.<br><em>(¡Falta! Plataforma inactiva)</em></div>
-      </div>
-      <div class="step">
-        <div class="step-circle">3</div>
-        <div class="step-title">Ensayo Final</div>
-        <div class="step-desc">Nuevo diagnóstico para medir evolución.</div>
-      </div>
-      <div class="step">
-        <div class="step-circle">4</div>
-        <div class="step-title">Resultados</div>
-        <div class="step-desc">Demostrar el impacto de Arbor en el colegio.</div>
-      </div>
+  <h2 class="section-title">Visualización de Rendimiento</h2>
+  <div class="grid-2">
+    <div class="card">
+      <div class="kpi-title">Activación por Nivel</div>
+      <div class="chart-container"><canvas id="chartCurso"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="kpi-title">Sesiones de Estudio (Timeline)</div>
+      <div class="chart-container"><canvas id="chartActivity"></canvas></div>
     </div>
   </div>
-
-  <div class="section-title">📊 Visualización de Datos</div>
-  <div class="grid2">
-    <div class="card"><h3><span>📉</span> Activación por Curso</h3><div class="chart-wrap"><canvas id="chartCurso"></canvas></div></div>
-    <div class="card"><h3><span>📅</span> Actividad (Sesiones de Estudio M1)</h3><div class="chart-wrap"><canvas id="chartActivity"></canvas></div></div>
-  </div>
-  <div class="grid2" style="grid-template-columns: 1fr;">
-    <div class="card"><h3><span>🎯</span> Distribución de Puntajes PAES Estimados (2° Medio)</h3><div class="chart-wrap"><canvas id="chartPaes"></canvas></div></div>
+  
+  <div class="card" style="margin-bottom: 3rem;">
+    <div class="kpi-title">Distribución de Puntajes PAES (Solo 2° Medio)</div>
+    <div class="chart-container" style="height: 250px;"><canvas id="chartPaes"></canvas></div>
   </div>
 
-  <div class="section-title">📋 Alumnos con Diagnóstico Completado</div>
-  <div class="card" style="padding:0; overflow:hidden;"><div class="scroll-table"><table id="tblStudents">
-  <thead><tr><th>Alumno</th><th>Curso</th><th>Intentos</th><th>Estado</th><th>PAES Estimado</th><th>Rango de Desempeño</th><th>Última Actividad</th></tr></thead>
-  <tbody></tbody>
-  </table></div></div>
+  <h2 class="section-title">Detalle de Alumnos: Activos</h2>
+  <div class="table-wrapper" style="margin-bottom: 3rem;">
+    <table id="tblStudents">
+      <thead><tr><th>Alumno</th><th>Nivel</th><th>Intentos</th><th>Estado</th><th>PAES Estimado</th><th>Desempeño</th><th>Última Actividad</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
-  <div class="section-title">🚨 Alumnos Inactivos (Requieren Atención)</div>
-  <div class="kpi-row" id="inactiveRow"></div>
-  <div class="card" style="padding:0; overflow:hidden;"><div class="scroll-table"><table id="tblInactive">
-  <thead><tr><th>Alumno</th><th>Curso</th><th>Email Institucional</th><th>Fecha Registro</th></tr></thead>
-  <tbody></tbody>
-  </table></div></div>
+  <h2 class="section-title" style="color: #f87171;">Alumnos Críticos (Inactivos)</h2>
+  <div class="table-wrapper">
+    <table id="tblInactive">
+      <thead><tr><th>Alumno</th><th>Nivel</th><th>Email Institucional</th><th>Fecha Registro</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
 </div>
 
 <script>
-// Formatters
-const CURSO_LABEL = {'2do_medio':'2° Medio','4to_medio':'4° Medio','egresado':'Egresado','otro':'Otro'};
+Chart.defaults.color = '#a1a1aa';
+Chart.defaults.font.family = "'Outfit', sans-serif";
+Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(24, 24, 27, 0.9)';
+Chart.defaults.plugins.tooltip.titleFont = { size: 14, family: "'Outfit', sans-serif", weight: 'bold' };
+Chart.defaults.plugins.tooltip.padding = 12;
+Chart.defaults.plugins.tooltip.cornerRadius = 8;
+Chart.defaults.plugins.tooltip.borderColor = 'rgba(255,255,255,0.1)';
+Chart.defaults.plugins.tooltip.borderWidth = 1;
+
+const CURSO_LABEL = {'2do_medio':'2° Medio','4to_medio':'4° Medio','egresado':'Egresado'};
 function cl(c){return CURSO_LABEL[c]||c||'—'}
 function fullName(u){return [u.first_name,u.last_name].filter(Boolean).join(' ')||u.email.split('@')[0]}
 
-// Chart Configuration
-Chart.defaults.font.family = "'Inter', sans-serif";
-Chart.defaults.color = '#64748b';
-Chart.defaults.plugins.tooltip.backgroundColor = '#1e293b';
-Chart.defaults.plugins.tooltip.padding = 10;
-Chart.defaults.plugins.tooltip.cornerRadius = 8;
-
 function init(d) {
-  document.getElementById('extractDate').textContent = 'Actualizado: ' + new Date(d.extractedAt).toLocaleDateString('es-CL',{day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('dateText').textContent = 'Datos al: ' + new Date(d.extractedAt).toLocaleDateString('es-CL',{day:'numeric',month:'long',year:'numeric'});
 
   const S = d.summary;
   const withCompleted = d.attemptsPerUser.filter(u => Number(u.completed)>0);
   const noAttempts = d.attemptsPerUser.filter(u => Number(u.completed)===0);
   const activationPct = Math.round(withCompleted.length / S.totalStudents * 100);
 
-  // Curso breakdown
   const cursoCounts = {};
   d.studentsByCurso.forEach(c => cursoCounts[c.curso] = Number(c.count));
   const activePerCurso = {};
@@ -206,57 +319,54 @@ function init(d) {
   const total2M = cursoCounts['2do_medio']||0;
 
   // Insights
-  const insights = [];
-  insights.push(`Tasa de activación general del liceo es del <strong>${activationPct}%</strong> (${withCompleted.length} de ${S.totalStudents} alumnos).`);
-  insights.push(`En <strong>4° Medio</strong> hay un <strong>0% de activación</strong>. Nadie ha completado un diagnóstico.`);
-  insights.push(`En <strong>2° Medio</strong> la activación es del <strong>${Math.round(active2M/total2M*100)}%</strong>.`);
-  insights.push(`El uso de la plataforma <strong>esporádico y exclusivo al horario escolar</strong>. Los días 14, 21 y 28 concentran casi el 100% de la actividad.`);
-  document.getElementById('insightList').innerHTML = insights.map(i=>`<li>${i}</li>`).join('');
-
-  // KPIs
-  const kpis = [
-    {label:'Alumnos Registrados',value:S.totalStudents,sub:`${total2M} en 2°M · ${cursoCounts['4to_medio']||0} en 4°M`},
-    {label:'Tasa de Activación',value:activationPct+'%',sub:`${withCompleted.length} alumnos con diagnóstico`,cls:activationPct<30?'alert':'ok'},
-    {label:'Sesiones de Estudio (M1)',value:S.totalStudySessions,sub:'Funcionalidad principal sin uso',cls:'alert'},
-    {label:'Alumnos 100% Inactivos',value:noAttempts.length,sub:`${Math.round(noAttempts.length/S.totalStudents*100)}% de los alumnos registrados`,cls:'alert'}
-  ];
-  document.getElementById('kpiRow').innerHTML = kpis.map(k=>`<div class="kpi ${k.cls||''}"><div class="label">${k.label}</div><div class="value">${k.value}</div><div class="sub">${k.sub}</div></div>`).join('');
-
-  // Inactive Breakdown KPI
-  document.getElementById('inactiveRow').innerHTML = `
-    <div class="kpi alert"><div class="label">4° Medio Sin Diagnóstico</div><div class="value" style="color:#dc2626">${inactive4M}</div><div class="sub">de ${cursoCounts['4to_medio']||0} registrados (0% avance)</div></div>
-    <div class="kpi alert"><div class="label">2° Medio Sin Diagnóstico</div><div class="value" style="color:#dc2626">${total2M - active2M}</div><div class="sub">de ${total2M} registrados</div></div>
+  document.getElementById('insightList').innerHTML = `
+    <li>La tasa de activación global es solo del <strong>${activationPct}%</strong> (${withCompleted.length} de ${S.totalStudents} alumnos).</li>
+    <li><strong>4° Medio tiene un 0% de participación.</strong> Es crítico revertir esto ya que rinden la PAES pronto.</li>
+    <li>El uso de la plataforma se limita a <strong>sesiones en el horario de clases</strong> (días 14, 21 y 28). No hay trabajo autónomo.</li>
   `;
 
-  // Chart: Curso / Activation
-  const ctxCurso = document.getElementById('chartCurso');
-  new Chart(ctxCurso, {
+  // KPIs
+  document.getElementById('kpiContainer').innerHTML = `
+    <div class="card kpi">
+      <div class="kpi-title">Alumnos Totales</div>
+      <div class="kpi-value">${S.totalStudents}</div>
+      <div class="kpi-sub">${total2M} en 2°M · ${cursoCounts['4to_medio']||0} en 4°M</div>
+    </div>
+    <div class="card kpi ${activationPct<30?'danger':'success'}">
+      <div class="kpi-title">Activación Global <span style="font-size:1.2rem">${activationPct<30?'↓':'↑'}</span></div>
+      <div class="kpi-value">${activationPct}%</div>
+      <div class="kpi-sub">${withCompleted.length} completaron diagnóstico</div>
+    </div>
+    <div class="card kpi danger">
+      <div class="kpi-title">Sesiones de Estudio (M1)</div>
+      <div class="kpi-value">${S.totalStudySessions}</div>
+      <div class="kpi-sub">Mínimo uso de la plataforma</div>
+    </div>
+    <div class="card kpi danger">
+      <div class="kpi-title">Alumnos 100% Inactivos</div>
+      <div class="kpi-value">${noAttempts.length}</div>
+      <div class="kpi-sub">Representan el ${Math.round(noAttempts.length/S.totalStudents*100)}% de los alumnos</div>
+    </div>
+  `;
+
+  // Chart Curso
+  new Chart(document.getElementById('chartCurso'), {
     type: 'bar',
     data: {
       labels: ['2° Medio', '4° Medio'],
       datasets: [
-        {
-          label: 'Con Diagnóstico (Activos)',
-          data: [active2M, activePerCurso['4to_medio']||0],
-          backgroundColor: '#10b981',
-          borderRadius: 4
-        },
-        {
-          label: 'Sin Diagnóstico (Inactivos)',
-          data: [total2M - active2M, inactive4M],
-          backgroundColor: '#fca5a5',
-          borderRadius: 4
-        }
+        { label: 'Con Diagnóstico', data: [active2M, activePerCurso['4to_medio']||0], backgroundColor: '#10b981', borderRadius: 6 },
+        { label: 'Sin Diagnóstico', data: [total2M - active2M, inactive4M], backgroundColor: '#ef4444', borderRadius: 6 }
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      scales: { x: { stacked: true, grid: {display:false} }, y: { stacked: true, grid: {color:'#f1f5f9'} } },
-      plugins: { legend: { position: 'top' } }
+      scales: { x: { stacked: true, grid: {display:false} }, y: { stacked: true, grid: {color:'rgba(255,255,255,0.05)'} } },
+      plugins: { legend: { labels: { color: '#fafafa', font: {family: "'Outfit', sans-serif"} } } }
     }
   });
 
-  // Chart: Study Activity
+  // Chart Activity
   const at = d.activityTimeline || [];
   new Chart(document.getElementById('chartActivity'), {
     type: 'line',
@@ -265,100 +375,80 @@ function init(d) {
       datasets:[{
         label: 'Sesiones Realizadas',
         data: at.map(a=>Number(a.sessions)),
-        borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.1)', fill: true, tension: 0.4, pointRadius: 5, pointBackgroundColor: '#4f46e5'
+        borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', fill: true, tension: 0.4, borderWidth: 3, pointRadius: 4, pointBackgroundColor: '#3b82f6'
       }]
     },
     options:{
       responsive:true, maintainAspectRatio:false,
-      scales: { x: { grid: {display:false} }, y: { grid: {color:'#f1f5f9'}, beginAtZero: true, ticks: {stepSize: 5} } },
+      scales: { x: { grid: {display:false} }, y: { grid: {color:'rgba(255,255,255,0.05)'}, beginAtZero: true, ticks:{stepSize:5} } },
       plugins: { legend: { display: false } }
     }
   });
 
-  // Chart: PAES
+  // Chart PAES
   const ps = d.paesScores.filter(p => p.paes_score_min != null);
   const buckets = {'100-200':0,'200-300':0,'300-400':0,'400-500':0,'500-600':0,'600-700':0,'700+':0};
   ps.forEach(p => {
     const s = p.paes_score_min;
-    if(s<200) buckets['100-200']++;
-    else if(s<300) buckets['200-300']++;
-    else if(s<400) buckets['300-400']++;
-    else if(s<500) buckets['400-500']++;
-    else if(s<600) buckets['500-600']++;
-    else if(s<700) buckets['600-700']++;
-    else buckets['700+']++;
+    if(s<200) buckets['100-200']++; else if(s<300) buckets['200-300']++; else if(s<400) buckets['300-400']++;
+    else if(s<500) buckets['400-500']++; else if(s<600) buckets['500-600']++; else if(s<700) buckets['600-700']++; else buckets['700+']++;
   });
   new Chart(document.getElementById('chartPaes'), {
     type: 'bar',
     data:{
       labels:Object.keys(buckets),
       datasets:[{
-        label:'Cantidad de Alumnos',
-        data:Object.values(buckets),
-        backgroundColor: ['#ef4444','#f97316','#f59e0b','#eab308','#84cc16','#10b981','#06b6d4'],
+        label:'Alumnos', data:Object.values(buckets),
+        backgroundColor: (ctx) => {
+          const gradient = ctx.chart.ctx.createLinearGradient(0, 0, 0, 300);
+          gradient.addColorStop(0, '#3b82f6'); gradient.addColorStop(1, '#8b5cf6');
+          return gradient;
+        },
         borderRadius:6
       }]
     },
     options:{
       responsive:true, maintainAspectRatio:false,
-      scales: { x: { grid: {display:false} }, y: { grid: {color:'#f1f5f9'}, beginAtZero:true, ticks:{stepSize:2} } },
+      scales: { x: { grid: {display:false} }, y: { grid: {color:'rgba(255,255,255,0.05)'}, beginAtZero:true, ticks:{stepSize:2} } },
       plugins: { legend: { display: false } }
     }
   });
 
-  // Tables Population
+  // Tables
   const tbody = document.querySelector('#tblStudents tbody');
-  const active = [...withCompleted];
-  active.sort((a,b)=>(b.max_paes||0)-(a.max_paes||0));
-  active.forEach(u => {
-    const minP = u.min_paes ?? '—'; 
-    const maxP = u.max_paes ?? '—';
+  [...withCompleted].sort((a,b)=>(b.max_paes||0)-(a.max_paes||0)).forEach(u => {
+    const minP = u.min_paes ?? '—'; const maxP = u.max_paes ?? '—';
     const range = minP !== '—' ? `${minP} – ${maxP}` : '—';
     const last = u.last_attempt ? new Date(u.last_attempt).toLocaleDateString('es-CL') : '—';
     
-    let bar = '<span class="badge badge-gray">Sin Datos</span>';
+    let bar = '<span class="pill pill-gray">Sin Datos</span>';
     if(u.min_paes!=null && u.max_paes!=null){
-      const p1=Math.max(0,(u.min_paes-100)/900*100);
-      const p2=Math.max(0,(u.max_paes-100)/900*100);
+      const p1=Math.max(0,(u.min_paes-100)/900*100); const p2=Math.max(0,(u.max_paes-100)/900*100);
       const c = u.min_paes<300?'#ef4444':u.min_paes<500?'#f59e0b':'#10b981';
-      bar=`<div class="paes-bar"><div class="paes-bar-fill" style="left:${p1}%;width:${Math.max(5, p2-p1)}%;background:${c}"></div></div>`;
+      bar=`<div class="bar-container"><div class="bar-fill" style="left:${p1}%;width:${Math.max(5, p2-p1)}%;background:${c};box-shadow:0 0 10px ${c}"></div></div>`;
     }
     
-    tbody.insertAdjacentHTML('beforeend', `
-      <tr>
-        <td><strong>${fullName(u)}</strong></td>
-        <td>${cl(u.curso)}</td>
-        <td>${u.attempts}</td>
-        <td><span class="badge badge-green">Completado</span></td>
-        <td style="font-weight:600; color:var(--text);">${range}</td>
-        <td>${bar}</td>
-        <td>${last}</td>
-      </tr>
-    `);
+    tbody.insertAdjacentHTML('beforeend', `<tr>
+      <td><strong>${fullName(u)}</strong></td><td>${cl(u.curso)}</td><td>${u.attempts}</td>
+      <td><span class="pill pill-green">Completado</span></td><td style="color:#fafafa">${range}</td><td>${bar}</td><td>${last}</td>
+    </tr>`);
   });
 
   const itbody = document.querySelector('#tblInactive tbody');
-  const inactiveArr = [...noAttempts];
-  inactiveArr.sort((a,b)=>(a.curso||'').localeCompare(b.curso||'')||fullName(a).localeCompare(fullName(b)));
-  inactiveArr.forEach(u => {
-    itbody.insertAdjacentHTML('beforeend', `
-      <tr>
-        <td><strong>${fullName(u)}</strong></td>
-        <td><span class="badge ${u.curso==='4to_medio'?'badge-red':'badge-gray'}">${cl(u.curso)}</span></td>
-        <td style="font-family:monospace;font-size:0.85rem">${u.email}</td>
-        <td>${u.first_attempt?new Date(u.first_attempt).toLocaleDateString('es-CL'):'—'}</td>
-      </tr>
-    `);
+  [...noAttempts].sort((a,b)=>(a.curso||'').localeCompare(b.curso||'')||fullName(a).localeCompare(fullName(b))).forEach(u => {
+    itbody.insertAdjacentHTML('beforeend', `<tr>
+      <td><strong>${fullName(u)}</strong></td>
+      <td><span class="pill ${u.curso==='4to_medio'?'pill-red':'pill-gray'}">${cl(u.curso)}</span></td>
+      <td style="font-family:monospace; opacity:0.7">${u.email}</td>
+      <td>${u.first_attempt?new Date(u.first_attempt).toLocaleDateString('es-CL'):'—'}</td>
+    </tr>`);
   });
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  fetch('pilot-data.json')
-    .then(r => r.json())
-    .then(data => init(data))
-    .catch(e => {
-      document.body.innerHTML += `<div style="max-width:800px;margin:50px auto;padding:20px;background:#fee2e2;color:#991b1b;border-radius:8px;border:1px solid #f87171;"><strong>Error cargando datos:</strong> ${e.message}<br><br>Asegúrate de haber generado el archivo <code>pilot-data.json</code> ejecutando el script de extracción y estar sirviendo la página a través de un servidor HTTP local (ej. <code>npx serve .</code>).</div>`;
-    });
+  fetch('pilot-data.json').then(r => r.json()).then(init).catch(e => {
+    document.body.innerHTML += `<div style="max-width:800px;margin:50px auto;padding:20px;background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.3);border-radius:12px;"><strong>Error:</strong> ${e.message}</div>`;
+  });
 });
 </script>
 </body>
