@@ -23,15 +23,66 @@
 * { margin:0; padding:0; box-sizing:border-box; font-family:'Outfit', sans-serif; }
 body { background-color:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; background-image: radial-gradient(circle at 50% -20%, #1e1b4b 0%, transparent 60%); }
 
-/* Header Premium */
+/* Hero Section */
+.hero {
+  height: 60vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  z-index: 10;
+}
+.hero img {
+  height: 120px;
+  margin-bottom: 2rem;
+  filter: drop-shadow(0 0 20px rgba(255,255,255,0.2));
+}
+.hero h1 {
+  font-size: 3.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(to right, #fff, #a1a1aa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 1rem;
+}
+.hero p {
+  font-size: 1.25rem;
+  color: var(--text-muted);
+  max-width: 600px;
+}
+.scroll-indicator {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: bounce 2s infinite;
+  color: var(--text-muted);
+  font-size: 2rem;
+}
+@keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0) translateX(-50%);} 40% {transform: translateY(-10px) translateX(-50%);} 60% {transform: translateY(-5px) translateX(-50%);} }
+
+/* Header Premium (Sticky) */
 .header {
-  padding: 2.5rem 0;
+  padding: 1rem 0;
   border-bottom: 1px solid var(--border);
-  background: rgba(9, 9, 11, 0.5);
+  background: rgba(9, 9, 11, 0.8);
   backdrop-filter: blur(12px);
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 100;
+  opacity: 0;
+  transform: translateY(-100%);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.header.visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 .header-container {
   max-width: 1280px;
@@ -41,87 +92,31 @@ body { background-color:var(--bg); color:var(--text); min-height:100vh; overflow
   justify-content: space-between;
   align-items: center;
 }
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-.brand img { height: 40px; }
-.brand h1 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  background: linear-gradient(to right, #fff, #a1a1aa);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
+.brand { display: flex; align-items: center; gap: 1rem; }
+.brand img { height: 32px; }
+.brand h2 { font-size: 1.25rem; font-weight: 600; color: #fff; }
 .brand .separator { color: var(--border); margin: 0 0.5rem; font-weight: 300; }
-.header-meta {
-  font-size: 0.875rem;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
+.header-meta { font-size: 0.875rem; color: var(--text-muted); display: flex; align-items: center; gap: 1rem; }
 .badge-live {
-  background: rgba(16, 185, 129, 0.1);
-  color: #34d399;
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  background: rgba(16, 185, 129, 0.1); color: #34d399; padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; border: 1px solid rgba(16, 185, 129, 0.2);
 }
 .badge-live::before {
-  content: ''; width: 8px; height: 8px; background: #34d399; border-radius: 50%;
-  box-shadow: 0 0 8px #34d399;
-  animation: pulse 2s infinite;
+  content: ''; width: 8px; height: 8px; background: #34d399; border-radius: 50%; box-shadow: 0 0 8px #34d399; animation: pulse 2s infinite;
 }
 @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
-.container { max-width: 1280px; margin: 3rem auto; padding: 0 2rem; }
-
-/* Critical Banner Glassmorphism */
-.critical-banner {
-  background: linear-gradient(135deg, rgba(239,68,68,0.1) 0%, rgba(127,29,29,0.2) 100%);
-  border: 1px solid rgba(239,68,68,0.3);
-  border-radius: 16px;
-  padding: 1.5rem 2rem;
-  margin-bottom: 3rem;
-  display: flex;
-  gap: 1.5rem;
-  align-items: center;
-  box-shadow: 0 0 40px var(--danger-glow);
-  position: relative;
-  overflow: hidden;
-}
-.critical-banner::after {
-  content: ''; position: absolute; top:0; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent, rgba(239,68,68,0.5), transparent);
-}
-.critical-banner .icon { font-size: 2.5rem; filter: drop-shadow(0 0 10px rgba(239,68,68,0.5)); }
-.critical-banner h2 { color: #fca5a5; font-size: 1.25rem; margin-bottom: 0.5rem; font-weight: 600; }
-.critical-banner p { color: #fecaca; font-size: 1rem; line-height: 1.6; }
+.container { max-width: 1280px; margin: 0 auto 3rem; padding: 0 2rem; position: relative; z-index: 20; }
 
 /* Grid & Cards */
-.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 3rem; }
-.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-bottom: 3rem; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
 @media (max-width: 1024px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } .grid-2 { grid-template-columns: 1fr; } }
 
 .card {
-  background: var(--bg-card);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 1.5rem;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
+  background: var(--bg-card); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: 20px; padding: 1.5rem; transition: all 0.3s ease; position: relative; overflow: hidden;
 }
 .card::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
 }
 .card:hover { border-color: rgba(255,255,255,0.2); transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 
@@ -132,11 +127,18 @@ body { background-color:var(--bg); color:var(--text); min-height:100vh; overflow
 .kpi.danger .kpi-value { color: #f87171; text-shadow: 0 0 20px rgba(248,113,113,0.3); }
 .kpi.success .kpi-value { color: #34d399; text-shadow: 0 0 20px rgba(52,211,153,0.3); }
 
-/* Roadmap Premium */
-.roadmap-section {
-  margin: 4rem 0;
-  text-align: center;
+/* Critical Banner Glassmorphism */
+.critical-banner {
+  background: linear-gradient(135deg, rgba(239,68,68,0.1) 0%, rgba(127,29,29,0.2) 100%);
+  border: 1px solid rgba(239,68,68,0.3); border-radius: 16px; padding: 1.5rem 2rem; margin-top: 3rem; margin-bottom: 3rem; display: flex; gap: 1.5rem; align-items: center; box-shadow: 0 0 40px var(--danger-glow); position: relative; overflow: hidden;
 }
+.critical-banner::after { content: ''; position: absolute; top:0; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent, rgba(239,68,68,0.5), transparent); }
+.critical-banner .icon { font-size: 2.5rem; filter: drop-shadow(0 0 10px rgba(239,68,68,0.5)); }
+.critical-banner h2 { color: #fca5a5; font-size: 1.25rem; margin-bottom: 0.5rem; font-weight: 600; }
+.critical-banner p { color: #fecaca; font-size: 1rem; line-height: 1.6; }
+
+/* Roadmap Premium */
+.roadmap-section { margin: 4rem 0; text-align: center; }
 .roadmap-section h2 { font-size: 2rem; font-weight: 700; margin-bottom: 1rem; background: linear-gradient(to right, #34d399, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .roadmap-section p.subtitle { color: var(--text-muted); font-size: 1.1rem; max-width: 800px; margin: 0 auto 3rem; }
 .roadmap { display: flex; justify-content: space-between; position: relative; max-width: 1000px; margin: 0 auto; }
@@ -149,6 +151,19 @@ body { background-color:var(--bg); color:var(--text); min-height:100vh; overflow
 .step h3 { font-size:1.1rem; font-weight:600; color:var(--text); }
 .step p { font-size:0.9rem; color:var(--text-muted); max-width:200px; line-height:1.4; }
 .step p strong { color:var(--text); }
+
+/* Mutual Benefit Box */
+.mutual-benefit {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 16px;
+  padding: 2rem;
+  margin: 3rem 0;
+  text-align: center;
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.1);
+}
+.mutual-benefit h3 { font-size: 1.5rem; color: #93c5fd; margin-bottom: 1rem; font-weight: 600;}
+.mutual-benefit p { color: #e2e8f0; font-size: 1.1rem; max-width: 800px; margin: 0 auto; line-height: 1.6;}
 
 /* Lists & Insights */
 .insight-box h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem; }
@@ -182,36 +197,79 @@ tr:last-child td { border-bottom: none; }
 </head>
 <body>
 
-<header class="header">
+<header class="header" id="stickyHeader">
   <div class="header-container">
     <div class="brand">
       <img src="public/logo-arbor.svg" alt="Arbor Logo" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2933/2933245.png'; this.style.filter='invert(1) opacity(0.8)';">
-      <h1>Arbor <span class="separator">/</span> Analytics Piloto</h1>
+      <h2>Arbor <span class="separator">/</span> Analytics Piloto</h2>
     </div>
     <div class="header-meta">
-      <span id="dateText">Actualizado: --</span>
+      <span id="dateTextHeader"></span>
       <div class="badge-live">Liceo Antonio Varas</div>
     </div>
   </div>
 </header>
 
+<div class="hero" id="heroSection">
+  <img src="public/logo-arbor.svg" alt="Arbor Logo" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2933/2933245.png'; this.style.filter='invert(1) opacity(0.8)';">
+  <h1>Reporte de Piloto Arbor</h1>
+  <p>Liceo Antonio Varas · Resultados y Progreso de Adopción</p>
+  <div class="scroll-indicator">↓</div>
+</div>
+
 <div class="container">
 
-  <div class="critical-banner">
-    <div class="icon">⚠️</div>
-    <div>
-      <h2>Alerta de Adopción: 4° Medio Inactivo</h2>
-      <p>De los <strong>79 alumnos de 4° Medio</strong> registrados, <strong>0%</strong> ha realizado el diagnóstico. La plataforma M1 de estudio avanzado (vital para preparar la PAES) <strong>no ha sido utilizada</strong>. Sin el uso de los alumnos, es imposible recopilar datos para medir la evolución del aprendizaje.</p>
+  <!-- Primera vista: Datos generales y buenas noticias -->
+  <div class="grid-4" id="kpiContainer">
+    <!-- KPIs Inyectados vía JS (Alumnos Totales, Activación General) -->
+  </div>
+
+  <h2 class="section-title" style="margin-top: 1rem;">Visión General de Alumnos</h2>
+  <div class="grid-2">
+    <div class="card">
+      <div class="kpi-title">Alumnos Registrados vs Activos</div>
+      <div class="chart-container"><canvas id="chartCurso"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="kpi-title">Distribución de Puntajes Estimados (Base 2° Medio)</div>
+      <div class="chart-container"><canvas id="chartPaes"></canvas></div>
     </div>
   </div>
 
-  <div class="grid-4" id="kpiContainer">
-    <!-- KPIs Inyectados vía JS -->
+  <!-- Segunda vista: El llamado a la urgencia -->
+  <div class="critical-banner">
+    <div class="icon">⚠️</div>
+    <div>
+      <h2>Punto de Atención: 4° Medio Inactivo</h2>
+      <p>Notamos que de los <strong>79 alumnos de 4° Medio</strong>, aún <strong>ninguno</strong> ha realizado el diagnóstico inicial. La funcionalidad central de estudio (M1) clave para preparar la PAES no se está aprovechando en este nivel.</p>
+    </div>
+  </div>
+
+  <!-- Insights adaptados a las indicaciones -->
+  <div class="grid-2">
+    <div class="card insight-box">
+      <h3><span>🔍</span> Resumen del Piloto</h3>
+      <ul class="insight-list" id="insightList"></ul>
+    </div>
+    <div class="card insight-box">
+      <h3><span>💡</span> Ideas para Impulsar el Uso</h3>
+      <ul class="insight-list">
+        <li><strong>Fomentar el estudio autónomo:</strong> Recordarle a los alumnos que pueden (y deben) usar Arbor <strong>en cualquier momento desde sus casas</strong>. La mayor actividad se concentra solo en los horarios asignados en el colegio.</li>
+        <li><strong>Sugerir metas semanales:</strong> A modo de recomendación, podría ser útil plantearles a los alumnos el objetivo de realizar unas 5 sesiones de átomos por semana.</li>
+        <li><strong>Diagnóstico en 4° Medio:</strong> Encontrar un espacio breve presencial para que este nivel rompa el hielo y complete su primer ensayo diagnóstico.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Mutual Benefit Highlight -->
+  <div class="mutual-benefit">
+    <h3>🤝 Un Beneficio Mutuo</h3>
+    <p>El uso constante de Arbor genera una sinergia clave: a nosotros nos permite recopilar datos valiosos para validar y perfeccionar la plataforma, y <strong>a ustedes (los profesores) les entrega analíticas detalladas y en tiempo real sobre el verdadero progreso y las brechas de aprendizaje de sus alumnos.</strong></p>
   </div>
 
   <div class="roadmap-section">
-    <h2>Objetivo Final del Piloto</h2>
-    <p class="subtitle">Para demostrar una <strong>mejora real en el puntaje PAES</strong> y aprendizaje de nuevos átomos, necesitamos cumplir estos pasos secuenciales. <strong>Actualmente estamos bloqueados en el Paso 2.</strong></p>
+    <h2>Roadmap del Piloto</h2>
+    <p class="subtitle">Para demostrar una <strong>mejora real en el aprendizaje</strong>, sugerimos seguir estos pasos secuenciales. <strong>Actualmente nos encontramos en el Paso 2.</strong></p>
     
     <div class="roadmap">
       <div class="step active">
@@ -222,7 +280,7 @@ tr:last-child td { border-bottom: none; }
       <div class="step danger">
         <div class="step-icon">2</div>
         <h3>Estudio Continuo</h3>
-        <p>Uso autónomo en casa.<br><strong style="color:#f87171">Falta uso de plataforma</strong></p>
+        <p>Uso autónomo en casa.<br><strong style="color:#f87171">Oportunidad de mejora</strong></p>
       </div>
       <div class="step">
         <div class="step-icon">3</div>
@@ -237,38 +295,6 @@ tr:last-child td { border-bottom: none; }
     </div>
   </div>
 
-  <div class="grid-2">
-    <div class="card insight-box">
-      <h3><span>📊</span> Resumen de Hallazgos</h3>
-      <ul class="insight-list" id="insightList"></ul>
-    </div>
-    <div class="card insight-box">
-      <h3><span>🎯</span> Qué Necesitamos del Liceo</h3>
-      <ul class="insight-list">
-        <li><strong>Coordinar una clase presencial urgente</strong> para que los alumnos de 4° Medio completen el diagnóstico inicial.</li>
-        <li><strong>Cambio de mentalidad:</strong> El uso esporádico solo ocurre los días miércoles en el colegio. Es <strong>fundamental</strong> recalcar que pueden y deben usar Arbor <strong>en cualquier momento desde sus casas</strong>.</li>
-        <li><strong>Asignar tareas concretas:</strong> Que los profesores exijan completar 5 sesiones de átomos semanales como tarea formal.</li>
-      </ul>
-    </div>
-  </div>
-
-  <h2 class="section-title">Visualización de Rendimiento</h2>
-  <div class="grid-2">
-    <div class="card">
-      <div class="kpi-title">Activación por Nivel</div>
-      <div class="chart-container"><canvas id="chartCurso"></canvas></div>
-    </div>
-    <div class="card">
-      <div class="kpi-title">Sesiones de Estudio (Timeline)</div>
-      <div class="chart-container"><canvas id="chartActivity"></canvas></div>
-    </div>
-  </div>
-  
-  <div class="card" style="margin-bottom: 3rem;">
-    <div class="kpi-title">Distribución de Puntajes PAES (Solo 2° Medio)</div>
-    <div class="chart-container" style="height: 250px;"><canvas id="chartPaes"></canvas></div>
-  </div>
-
   <h2 class="section-title">Detalle de Alumnos: Activos</h2>
   <div class="table-wrapper" style="margin-bottom: 3rem;">
     <table id="tblStudents">
@@ -277,7 +303,7 @@ tr:last-child td { border-bottom: none; }
     </table>
   </div>
 
-  <h2 class="section-title" style="color: #f87171;">Alumnos Críticos (Inactivos)</h2>
+  <h2 class="section-title" style="color: #f87171;">Detalle de Alumnos: Pendientes de Diagnóstico</h2>
   <div class="table-wrapper">
     <table id="tblInactive">
       <thead><tr><th>Alumno</th><th>Nivel</th><th>Email Institucional</th><th>Fecha Registro</th></tr></thead>
@@ -288,6 +314,19 @@ tr:last-child td { border-bottom: none; }
 </div>
 
 <script>
+// Scroll Magic for Header
+window.addEventListener('scroll', () => {
+  const header = document.getElementById('stickyHeader');
+  const hero = document.getElementById('heroSection');
+  if (window.scrollY > hero.offsetHeight * 0.5) {
+    header.classList.add('visible');
+    hero.style.opacity = '0';
+  } else {
+    header.classList.remove('visible');
+    hero.style.opacity = '1';
+  }
+});
+
 Chart.defaults.color = '#a1a1aa';
 Chart.defaults.font.family = "'Outfit', sans-serif";
 Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(24, 24, 27, 0.9)';
@@ -302,7 +341,8 @@ function cl(c){return CURSO_LABEL[c]||c||'—'}
 function fullName(u){return [u.first_name,u.last_name].filter(Boolean).join(' ')||u.email.split('@')[0]}
 
 function init(d) {
-  document.getElementById('dateText').textContent = 'Datos al: ' + new Date(d.extractedAt).toLocaleDateString('es-CL',{day:'numeric',month:'long',year:'numeric'});
+  const dateStr = 'Actualizado: ' + new Date(d.extractedAt).toLocaleDateString('es-CL',{day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('dateTextHeader').textContent = dateStr;
 
   const S = d.summary;
   const withCompleted = d.attemptsPerUser.filter(u => Number(u.completed)>0);
@@ -320,32 +360,32 @@ function init(d) {
 
   // Insights
   document.getElementById('insightList').innerHTML = `
-    <li>La tasa de activación global es solo del <strong>${activationPct}%</strong> (${withCompleted.length} de ${S.totalStudents} alumnos).</li>
-    <li><strong>4° Medio tiene un 0% de participación.</strong> Es crítico revertir esto ya que rinden la PAES pronto.</li>
-    <li>El uso de la plataforma se limita a <strong>sesiones en el horario de clases</strong> (días 14, 21 y 28). No hay trabajo autónomo.</li>
+    <li>Contamos con <strong>${S.totalStudents} alumnos registrados exitosamente</strong>, un gran primer paso.</li>
+    <li>De ellos, el <strong>${activationPct}% ya probó la plataforma</strong> realizando al menos un intento diagnóstico.</li>
+    <li>En <strong>2° Medio</strong> la adopción inicial fue fuerte (${Math.round(active2M/total2M*100)}%), pero en 4° Medio aún no hay registros de actividad.</li>
   `;
 
   // KPIs
   document.getElementById('kpiContainer').innerHTML = `
     <div class="card kpi">
-      <div class="kpi-title">Alumnos Totales</div>
+      <div class="kpi-title">Alumnos Registrados</div>
       <div class="kpi-value">${S.totalStudents}</div>
       <div class="kpi-sub">${total2M} en 2°M · ${cursoCounts['4to_medio']||0} en 4°M</div>
     </div>
-    <div class="card kpi ${activationPct<30?'danger':'success'}">
-      <div class="kpi-title">Activación Global <span style="font-size:1.2rem">${activationPct<30?'↓':'↑'}</span></div>
-      <div class="kpi-value">${activationPct}%</div>
-      <div class="kpi-sub">${withCompleted.length} completaron diagnóstico</div>
+    <div class="card kpi success">
+      <div class="kpi-title">Alumnos Activos</div>
+      <div class="kpi-value">${withCompleted.length}</div>
+      <div class="kpi-sub">Han realizado diagnóstico</div>
     </div>
-    <div class="card kpi danger">
+    <div class="card kpi">
       <div class="kpi-title">Sesiones de Estudio (M1)</div>
       <div class="kpi-value">${S.totalStudySessions}</div>
-      <div class="kpi-sub">Mínimo uso de la plataforma</div>
+      <div class="kpi-sub">Sesiones completadas hasta la fecha</div>
     </div>
     <div class="card kpi danger">
-      <div class="kpi-title">Alumnos 100% Inactivos</div>
+      <div class="kpi-title">Pendientes de Diagnóstico</div>
       <div class="kpi-value">${noAttempts.length}</div>
-      <div class="kpi-sub">Representan el ${Math.round(noAttempts.length/S.totalStudents*100)}% de los alumnos</div>
+      <div class="kpi-sub">Aún no inician actividad</div>
     </div>
   `;
 
@@ -356,32 +396,13 @@ function init(d) {
       labels: ['2° Medio', '4° Medio'],
       datasets: [
         { label: 'Con Diagnóstico', data: [active2M, activePerCurso['4to_medio']||0], backgroundColor: '#10b981', borderRadius: 6 },
-        { label: 'Sin Diagnóstico', data: [total2M - active2M, inactive4M], backgroundColor: '#ef4444', borderRadius: 6 }
+        { label: 'Pendientes', data: [total2M - active2M, inactive4M], backgroundColor: '#ef4444', borderRadius: 6 }
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       scales: { x: { stacked: true, grid: {display:false} }, y: { stacked: true, grid: {color:'rgba(255,255,255,0.05)'} } },
       plugins: { legend: { labels: { color: '#fafafa', font: {family: "'Outfit', sans-serif"} } } }
-    }
-  });
-
-  // Chart Activity
-  const at = d.activityTimeline || [];
-  new Chart(document.getElementById('chartActivity'), {
-    type: 'line',
-    data:{
-      labels: at.map(a=>new Date(a.activity_date).toLocaleDateString('es-CL',{day:'numeric',month:'short'})),
-      datasets:[{
-        label: 'Sesiones Realizadas',
-        data: at.map(a=>Number(a.sessions)),
-        borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', fill: true, tension: 0.4, borderWidth: 3, pointRadius: 4, pointBackgroundColor: '#3b82f6'
-      }]
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      scales: { x: { grid: {display:false} }, y: { grid: {color:'rgba(255,255,255,0.05)'}, beginAtZero: true, ticks:{stepSize:5} } },
-      plugins: { legend: { display: false } }
     }
   });
 
