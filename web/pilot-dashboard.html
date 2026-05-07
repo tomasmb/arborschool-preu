@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arbor — Dashboard Piloto · Liceo Antonio Varas</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0e17;--surface:#111827;--surface2:#1a2234;--border:#1e293b;--accent:#6366f1;--accent2:#818cf8;--green:#10b981;--yellow:#f59e0b;--red:#ef4444;--orange:#f97316;--text:#f1f5f9;--text2:#94a3b8;--text3:#64748b}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.header{background:linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,#4338ca 100%);padding:2rem 2rem 3rem;position:relative;overflow:hidden}
+.header::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
+.header h1{font-size:1.75rem;font-weight:800;position:relative;z-index:1}
+.header p{color:#c7d2fe;margin-top:.25rem;font-size:.9rem;position:relative;z-index:1}
+.header .tag{position:absolute;top:1.5rem;right:2rem;background:rgba(255,255,255,.1);backdrop-filter:blur(10px);padding:.4rem 1rem;border-radius:999px;font-size:.75rem;color:#c7d2fe;z-index:1}
+.container{max-width:1400px;margin:-1.5rem auto 2rem;padding:0 1.5rem}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1.5rem}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem;overflow:hidden}
+.kpi .label{font-size:.7rem;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.kpi .value{font-size:2rem;font-weight:800;margin:.25rem 0;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.kpi .sub{font-size:.78rem;color:var(--text3)}
+.kpi.alert .value{background:linear-gradient(135deg,var(--red),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.kpi.ok .value{background:linear-gradient(135deg,var(--green),#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem}
+.card h3{font-size:.9rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+.chart-wrap{position:relative;height:260px}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+th{text-align:left;padding:.5rem .75rem;color:var(--text2);font-weight:600;border-bottom:1px solid var(--border);font-size:.7rem;text-transform:uppercase;letter-spacing:.04em}
+td{padding:.5rem .75rem;border-bottom:1px solid rgba(30,41,59,.5)}
+tr:hover td{background:rgba(99,102,241,.05)}
+.badge{display:inline-block;padding:.15rem .5rem;border-radius:999px;font-size:.7rem;font-weight:600}
+.badge-green{background:rgba(16,185,129,.15);color:#34d399}
+.badge-red{background:rgba(239,68,68,.15);color:#f87171}
+.badge-yellow{background:rgba(245,158,11,.15);color:#fbbf24}
+.insight-box{background:linear-gradient(135deg,rgba(245,158,11,.08),rgba(239,68,68,.08));border:1px solid rgba(245,158,11,.2);border-radius:12px;padding:1.25rem;margin-bottom:1.5rem}
+.insight-box h3{color:var(--yellow);font-size:.9rem;margin-bottom:.5rem}
+.insight-box ul{padding-left:1.25rem;color:var(--text2);font-size:.85rem;line-height:1.8}
+.insight-box li strong{color:var(--text)}
+.scroll-table{max-height:420px;overflow-y:auto}
+.scroll-table::-webkit-scrollbar{width:4px}
+.scroll-table::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.paes-bar{height:6px;border-radius:3px;background:var(--border);position:relative;min-width:80px}
+.paes-bar-fill{height:100%;border-radius:3px;position:absolute;left:0;top:0}
+.section-title{font-size:1.1rem;font-weight:700;margin:2rem 0 1rem;padding-bottom:.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.5rem}
+</style>
+</head>
+<body>
+<div class="header">
+<span class="tag" id="extractDate"></span>
+<h1>🌳 Arbor — Dashboard Piloto</h1>
+<p>Liceo Antonio Varas · Solo datos de alumnos del liceo</p>
+</div>
+<div class="container">
+
+<div class="insight-box" id="insightBox">
+<h3>⚠️ Hallazgos Críticos</h3>
+<ul id="insightList"></ul>
+</div>
+
+<div class="kpi-row" id="kpiRow"></div>
+
+<div class="grid2">
+<div class="card"><h3><span>📊</span> Distribución por Curso</h3><div class="chart-wrap"><canvas id="chartCurso"></canvas></div></div>
+<div class="card"><h3><span>📅</span> Diagnósticos por Fecha</h3><div class="chart-wrap"><canvas id="chartDiag"></canvas></div></div>
+</div>
+<div class="grid2">
+<div class="card"><h3><span>🎯</span> Distribución PAES (puntaje mínimo estimado)</h3><div class="chart-wrap"><canvas id="chartPaes"></canvas></div></div>
+<div class="card"><h3><span>📈</span> Actividad Diaria — Sesiones Estudio</h3><div class="chart-wrap"><canvas id="chartActivity"></canvas></div></div>
+</div>
+
+<div class="section-title">📋 Alumnos con Diagnóstico Completado</div>
+<div class="card" style="padding:.5rem"><div class="scroll-table"><table id="tblStudents">
+<thead><tr><th>Alumno</th><th>Curso</th><th>Intentos</th><th>Completados</th><th>PAES Min</th><th>PAES Max</th><th>Rango</th><th>Última Actividad</th></tr></thead>
+<tbody></tbody>
+</table></div></div>
+
+<div class="section-title">🚨 Alumnos Registrados SIN Diagnóstico</div>
+<div class="kpi-row" id="inactiveRow"></div>
+<div class="card" style="padding:.5rem;margin-top:.5rem"><div class="scroll-table"><table id="tblInactive">
+<thead><tr><th>Alumno</th><th>Curso</th><th>Email</th><th>Registrado</th></tr></thead>
+<tbody></tbody>
+</table></div></div>
+
+<div class="section-title">🧠 Mastery de Átomos</div>
+<div class="card" style="padding:.5rem"><div class="scroll-table"><table id="tblMastery">
+<thead><tr><th>Alumno</th><th>Curso</th><th>Átomos Tocados</th><th>Dominados</th><th>En Progreso</th><th>% Mastery</th></tr></thead>
+<tbody></tbody>
+</table></div></div>
+
+</div>
+
+<script>
+const CURSO_LABEL = {'2do_medio':'2° Medio','4to_medio':'4° Medio','egresado':'Egresado','otro':'Otro'};
+const CURSO_SHORT = {'2do_medio':'2°M','4to_medio':'4°M','egresado':'Egr','otro':'—'};
+function cl(c){return CURSO_LABEL[c]||c||'—'}
+function cs(c){return CURSO_SHORT[c]||c||'—'}
+function fullName(u){return [u.first_name,u.last_name].filter(Boolean).join(' ')||u.email.split('@')[0]}
+
+function init(d) {
+  document.getElementById('extractDate').textContent = '📅 ' + new Date(d.extractedAt).toLocaleString('es-CL',{dateStyle:'medium',timeStyle:'short'});
+
+  const S = d.summary;
+  const withAttempts = d.attemptsPerUser.filter(u => Number(u.attempts)>0);
+  const withCompleted = d.attemptsPerUser.filter(u => Number(u.completed)>0);
+  const noAttempts = d.attemptsPerUser.filter(u => Number(u.attempts)===0);
+  const activationPct = Math.round(withCompleted.length / S.totalStudents * 100);
+
+  // PAES avg
+  const ps = d.paesScores.filter(p => p.paes_score_min != null);
+  const avgPaesMin = ps.length ? Math.round(ps.reduce((s,p)=>s+p.paes_score_min,0)/ps.length) : 0;
+
+  // Curso breakdown of inactive
+  const cursoCounts = {};
+  d.studentsByCurso.forEach(c => cursoCounts[c.curso] = Number(c.count));
+  const activePerCurso = {};
+  withCompleted.forEach(u => { activePerCurso[u.curso] = (activePerCurso[u.curso]||0)+1; });
+
+  // Insights
+  const insights = [];
+  const inactive4 = (cursoCounts['4to_medio']||0)-(activePerCurso['4to_medio']||0);
+  const inactive2 = (cursoCounts['2do_medio']||0)-(activePerCurso['2do_medio']||0);
+  insights.push(`Solo <strong>${withCompleted.length} de ${S.totalStudents}</strong> alumnos (${activationPct}%) han completado al menos 1 diagnóstico`);
+  if(inactive4>0) insights.push(`<strong>${inactive4} alumnos de 4to medio</strong> registrados sin ningún diagnóstico`);
+  if(inactive2>0) insights.push(`<strong>${inactive2} alumnos de 2do medio</strong> registrados sin ningún diagnóstico`);
+  if(S.totalStudySessions<5) insights.push(`<strong>${S.totalStudySessions} sesiones de estudio</strong> de átomos — la plataforma M1 casi no se ha usado`);
+  if(S.totalSprints===0) insights.push(`<strong>0 sprints de estudio</strong> iniciados`);
+  document.getElementById('insightList').innerHTML = insights.map(i=>`<li>${i}</li>`).join('');
+
+  // KPIs
+  const kpis = [
+    {label:'Alumnos Registrados',value:S.totalStudents,sub:d.studentsByCurso.map(c=>`${Number(c.count)} ${cs(c.curso)}`).join(' · ')},
+    {label:'Diagnósticos Completados',value:S.completedTestAttempts,sub:`de ${S.totalTestAttempts} intentos (${S.totalTestAttempts?Math.round(S.completedTestAttempts/S.totalTestAttempts*100):0}% completados)`},
+    {label:'Tasa Activación',value:activationPct+'%',sub:`${withCompleted.length} alumnos con ≥1 diagnóstico`,cls:activationPct<50?'alert':'ok'},
+    {label:'Sin Diagnóstico',value:noAttempts.length,sub:`${Math.round(noAttempts.length/S.totalStudents*100)}% de alumnos inactivos`,cls:'alert'},
+    {label:'Sesiones Estudio M1',value:S.totalStudySessions,sub:'Sesiones de átomos',cls:S.totalStudySessions<10?'alert':''},
+    {label:'PAES Promedio (min)',value:avgPaesMin||'—',sub:'De diagnósticos completados'},
+  ];
+  document.getElementById('kpiRow').innerHTML = kpis.map(k=>`<div class="kpi ${k.cls||''}"><div class="label">${k.label}</div><div class="value">${k.value}</div><div class="sub">${k.sub}</div></div>`).join('');
+
+  // Chart: Curso
+  new Chart(document.getElementById('chartCurso'), {
+    type: 'doughnut',
+    data: {labels: d.studentsByCurso.map(c=>cl(c.curso)), datasets:[{data:d.studentsByCurso.map(c=>Number(c.count)),backgroundColor:['#6366f1','#818cf8','#10b981','#64748b'],borderWidth:0,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:'#94a3b8',font:{size:12}}}}}
+  });
+
+  // Chart: Diagnostic timeline
+  const dt = d.diagnosticTimeline || [];
+  new Chart(document.getElementById('chartDiag'), {
+    type: 'bar',
+    data: {labels:dt.map(a=>new Date(a.activity_date).toLocaleDateString('es-CL',{day:'numeric',month:'short'})),datasets:[{label:'Alumnos',data:dt.map(a=>Number(a.active_users)),backgroundColor:'#6366f1',borderRadius:6},{label:'Intentos',data:dt.map(a=>Number(a.attempts)),backgroundColor:'#818cf8',borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#94a3b8'}}},scales:{x:{ticks:{color:'#64748b',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#64748b'},grid:{color:'rgba(30,41,59,.5)'}}}}
+  });
+
+  // Chart: PAES
+  const buckets = {'100-200':0,'200-300':0,'300-400':0,'400-500':0,'500-600':0,'600-700':0,'700+':0};
+  ps.forEach(p => {
+    const s = p.paes_score_min;
+    if(s<200) buckets['100-200']++;
+    else if(s<300) buckets['200-300']++;
+    else if(s<400) buckets['300-400']++;
+    else if(s<500) buckets['400-500']++;
+    else if(s<600) buckets['500-600']++;
+    else if(s<700) buckets['600-700']++;
+    else buckets['700+']++;
+  });
+  new Chart(document.getElementById('chartPaes'), {
+    type: 'bar',
+    data:{labels:Object.keys(buckets),datasets:[{label:'Alumnos',data:Object.values(buckets),backgroundColor:['#ef4444','#f97316','#f59e0b','#eab308','#84cc16','#10b981','#06b6d4'],borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#64748b'},grid:{display:false}},y:{ticks:{color:'#64748b',stepSize:1},grid:{color:'rgba(30,41,59,.5)'}}}}
+  });
+
+  // Chart: Study activity
+  const at = d.activityTimeline || [];
+  new Chart(document.getElementById('chartActivity'), {
+    type: 'line',
+    data:{labels:at.map(a=>new Date(a.activity_date).toLocaleDateString('es-CL',{day:'numeric',month:'short'})),datasets:[{label:'Sesiones',data:at.map(a=>Number(a.sessions)),borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,.1)',fill:true,tension:.3,pointRadius:4,pointBackgroundColor:'#818cf8'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#64748b'},grid:{display:false}},y:{ticks:{color:'#64748b',stepSize:1},grid:{color:'rgba(30,41,59,.5)'}}}}
+  });
+
+  // Table: Students with diagnostics
+  const tbody = document.querySelector('#tblStudents tbody');
+  const active = withCompleted.filter(u=>Number(u.completed)>0);
+  active.sort((a,b)=>(b.max_paes||0)-(a.max_paes||0));
+  active.forEach(u => {
+    const tr = document.createElement('tr');
+    const minP = u.min_paes ?? '—'; const maxP = u.max_paes ?? '—';
+    const last = u.last_attempt ? new Date(u.last_attempt).toLocaleDateString('es-CL') : '—';
+    let bar = '<span style="color:var(--text3)">—</span>';
+    if(u.min_paes!=null && u.max_paes!=null){
+      const p1=Math.max(0,(u.min_paes-100)/900*100), p2=Math.max(0,(u.max_paes-100)/900*100);
+      const c = u.min_paes<300?'var(--red)':u.min_paes<500?'var(--yellow)':'var(--green)';
+      bar=`<div class="paes-bar"><div class="paes-bar-fill" style="left:${p1}%;width:${p2-p1}%;background:${c}"></div></div>`;
+    }
+    tr.innerHTML=`<td style="font-weight:500">${fullName(u)}</td><td>${cs(u.curso)}</td><td>${u.attempts}</td><td><span class="badge badge-green">${u.completed}</span></td><td>${minP}</td><td>${maxP}</td><td>${bar}</td><td style="color:var(--text3)">${last}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  // Inactive KPIs per curso
+  const inactiveKpis = d.studentsByCurso.map(c => {
+    const total = Number(c.count);
+    const act = activePerCurso[c.curso]||0;
+    const inact = total - act;
+    return `<div class="kpi alert"><div class="label">${cl(c.curso)} sin diagnóstico</div><div class="value">${inact}</div><div class="sub">de ${total} registrados</div></div>`;
+  }).join('');
+  document.getElementById('inactiveRow').innerHTML = inactiveKpis;
+
+  // Table: Inactive students
+  const itbody = document.querySelector('#tblInactive tbody');
+  noAttempts.sort((a,b)=>(a.curso||'').localeCompare(b.curso||'')||fullName(a).localeCompare(fullName(b)));
+  noAttempts.forEach(u => {
+    const tr = document.createElement('tr');
+    tr.innerHTML=`<td>${fullName(u)}</td><td>${cs(u.curso)}</td><td style="color:var(--text3);font-size:.75rem">${u.email}</td><td style="color:var(--text3)">${u.first_attempt?new Date(u.first_attempt).toLocaleDateString('es-CL'):'—'}</td>`;
+    itbody.appendChild(tr);
+  });
+
+  // Table: Mastery
+  const mtbody = document.querySelector('#tblMastery tbody');
+  d.masteryPerUser.forEach(u => {
+    const tr = document.createElement('tr');
+    const pct = Number(u.total_atoms_touched)>0?Math.round(Number(u.mastered)/Number(u.total_atoms_touched)*100):0;
+    tr.innerHTML=`<td style="font-weight:500">${fullName(u)}</td><td>${cs(u.curso)}</td><td>${u.total_atoms_touched}</td><td><span class="badge badge-green">${u.mastered}</span></td><td>${u.in_progress}</td><td>${pct}%</td>`;
+    mtbody.appendChild(tr);
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  fetch('pilot-data.json')
+    .then(r => r.json())
+    .then(data => init(data))
+    .catch(e => {
+      document.body.innerHTML += `<p style="color:red;padding:2rem">Error: ${e.message}</p>`;
+    });
+});
+</script>
+</body>
+</html>

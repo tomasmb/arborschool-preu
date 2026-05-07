@@ -40,3 +40,6 @@ web/public/videos/
 
 # remotion build artifacts
 video/public/clips/
+
+# Pilot data (contains student PII)
+web/pilot-data.json
