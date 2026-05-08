@@ -173,9 +173,9 @@ body { background-color:var(--bg); color:var(--text); min-height:100vh; overflow
 .insight-list li strong { color: var(--text); }
 
 /* Tables */
-.table-wrapper { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); background: rgba(0,0,0,0.2); }
+.table-wrapper { max-height: 450px; overflow-y: auto; overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); background: rgba(0,0,0,0.2); }
 table { width: 100%; border-collapse: collapse; text-align: left; }
-th { padding: 1rem 1.5rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02); }
+th { position: sticky; top: 0; z-index: 10; padding: 1rem 1.5rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); border-bottom: 1px solid var(--border); background: #121215; box-shadow: 0 1px 0 var(--border); }
 td { padding: 1rem 1.5rem; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-muted); }
 td strong { color: var(--text); font-weight: 500; }
 tr:hover td { background: rgba(255,255,255,0.02); }
@@ -268,29 +268,29 @@ tr:last-child td { border-bottom: none; }
   </div>
 
   <div class="roadmap-section">
-    <h2>Roadmap del Piloto</h2>
-    <p class="subtitle">Para demostrar una <strong>mejora real en el aprendizaje</strong>, sugerimos seguir estos pasos secuenciales. <strong>Actualmente nos encontramos en el Paso 2.</strong></p>
+    <h2>Plan de Acción y Fechas Clave</h2>
+    <p class="subtitle">Para demostrar una <strong>mejora real en el aprendizaje</strong>, necesitamos ejecutar los siguientes pasos en las próximas semanas. <strong>Actualmente estamos bloqueados en el Paso 2.</strong></p>
     
     <div class="roadmap">
       <div class="step active">
         <div class="step-icon">1</div>
-        <h3>Diagnóstico</h3>
-        <p>Línea base.<br><strong style="color:#34d399">Logrado en 2°M (54%)</strong></p>
+        <h3>Diagnósticos<br><span style="font-size:0.8rem; font-weight:400; color:var(--text-muted)">(8-14 Mayo)</span></h3>
+        <p>Lograr participación total.<br><strong style="color:#34d399">Logrado en 2°M (54%)</strong></p>
       </div>
       <div class="step danger">
         <div class="step-icon">2</div>
-        <h3>Estudio Continuo</h3>
-        <p>Uso autónomo en casa.<br><strong style="color:#f87171">Oportunidad de mejora</strong></p>
+        <h3>Impulsar Uso en Casa<br><span style="font-size:0.8rem; font-weight:400; color:var(--text-muted)">(15-21 Mayo)</span></h3>
+        <p>Fomentar estudio autónomo M1.<br><strong style="color:#f87171">Oportunidad de mejora</strong></p>
       </div>
       <div class="step">
         <div class="step-icon">3</div>
-        <h3>Ensayo Completo</h3>
-        <p>Medir evolución y nuevos átomos dominados.</p>
+        <h3>Ensayo Completo<br><span style="font-size:0.8rem; font-weight:400; color:var(--text-muted)">(22-28 Mayo)</span></h3>
+        <p>Medir evolución y nuevos átomos aprendidos.</p>
       </div>
       <div class="step">
         <div class="step-icon">4</div>
-        <h3>Resultados</h3>
-        <p>Demostrar impacto real en el rendimiento.</p>
+        <h3>Evaluar Resultados<br><span style="font-size:0.8rem; font-weight:400; color:var(--text-muted)">(Desde 29 Mayo)</span></h3>
+        <p>Demostrar impacto en puntaje PAES.</p>
       </div>
     </div>
   </div>
