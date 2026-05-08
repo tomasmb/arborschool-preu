@@ -293,20 +293,15 @@ tr:last-child td { border-bottom: none; }
     </div>
   </div>
 
-  <div class="card" style="margin-bottom: 5rem; text-align: center; max-width: 800px; margin-left: auto; margin-right: auto; border-color: rgba(59, 130, 246, 0.3); background: linear-gradient(180deg, rgba(24, 24, 27, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);">
-    <h2 style="font-size: 1.5rem; margin-bottom: 1rem; color: #fff;">📈 Simulador de Evolución de Aprendizaje</h2>
-    <p style="color: var(--text-muted); margin-bottom: 2.5rem; font-size: 0.95rem;">Mueve el deslizador para ver cómo el <strong>Estudio Continuo (Paso 2)</strong> impacta directamente en el puntaje proyectado que validaremos finalmente en el <strong>Ensayo Completo (Paso 3)</strong>.</p>
+  <div class="card" id="evolutionSimContainer" style="margin-bottom: 5rem; text-align: center; max-width: 800px; margin-left: auto; margin-right: auto; border-color: rgba(59, 130, 246, 0.3); background: linear-gradient(180deg, rgba(24, 24, 27, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);">
+    <h2 style="font-size: 1.5rem; margin-bottom: 1rem; color: #fff;">📈 Evolución de Aprendizaje (Proyectada)</h2>
+    <p style="color: var(--text-muted); margin-bottom: 2.5rem; font-size: 0.95rem;">Sigue bajando para observar cómo el <strong>Estudio Continuo (Paso 2)</strong> impacta directamente en el puntaje proyectado que validaremos finalmente en el <strong>Ensayo Completo (Paso 3)</strong>.</p>
     
     <div style="font-size: 4.5rem; font-weight: 800; color: #34d399; line-height: 1; text-shadow: 0 0 20px rgba(52,211,153,0.3); transition: color 0.3s;" id="simScore">450</div>
-    <p style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2.5rem; margin-top: 0.5rem;">Puntaje PAES Estimado</p>
+    <p style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1.5rem; margin-top: 0.5rem;">Puntaje PAES Estimado</p>
     
-    <div style="position: relative; padding: 0 10px;">
-      <input type="range" min="0" max="20" value="0" id="simSlider" style="width: 100%; cursor: pointer; accent-color: #10b981; height: 8px; border-radius: 4px; outline: none;">
-      <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.8rem; margin-top: 1rem; font-weight: 500;">
-        <span style="text-align: left;"><strong>Paso 1: Diagnóstico</strong><br>0 sesiones M1</span>
-        <span style="text-align: center; color: #fff;"><span id="simSessions" style="font-size: 1.2rem; font-weight: 700;">0</span><br>sesiones en casa</span>
-        <span style="text-align: right;"><strong>Paso 3: Ensayo Completo</strong><br>20+ sesiones M1</span>
-      </div>
+    <div style="position: relative; height: 250px; width: 100%; padding: 0 10px;">
+      <canvas id="scrollChart"></canvas>
     </div>
   </div>
 
@@ -486,38 +481,96 @@ window.addEventListener('DOMContentLoaded', () => {
     document.body.innerHTML += `<div style="max-width:800px;margin:50px auto;padding:20px;background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.3);border-radius:12px;"><strong>Error:</strong> ${e.message}</div>`;
   });
 
-  // Simulator Logic
-  const slider = document.getElementById('simSlider');
-  const scoreDisplay = document.getElementById('simScore');
-  const sessionsDisplay = document.getElementById('simSessions');
-  const baseScore = 450;
-  const maxScore = 720;
-  
-  if (slider) {
-    slider.addEventListener('input', (e) => {
-      const sessions = parseInt(e.target.value);
-      sessionsDisplay.textContent = sessions;
-      
-      // Calculate score with a logarithmic curve (diminishing returns)
-      // Max sessions = 20. Diff = 270.
-      let currentScore = baseScore;
-      if (sessions > 0) {
-        const factor = Math.log(sessions + 1) / Math.log(21);
-        currentScore = Math.floor(baseScore + (factor * (maxScore - baseScore)));
+  // Scroll-driven Chart Simulator Logic
+  const scrollChartCanvas = document.getElementById('scrollChart');
+  if (scrollChartCanvas) {
+    const ctx = scrollChartCanvas.getContext('2d');
+    
+    // Data points for the logarithmic curve
+    const totalPoints = 20;
+    const baseS = 450;
+    const maxS = 720;
+    const fullData = [];
+    for(let i=0; i<=totalPoints; i++) {
+      const factor = i===0 ? 0 : Math.log(i + 1) / Math.log(21);
+      fullData.push(Math.floor(baseS + (factor * (maxS - baseS))));
+    }
+
+    const scrollChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: Array.from({length: totalPoints+1}, (_, i) => i === 0 ? 'Diagnóstico' : i + ' sesiones'),
+        datasets: [{
+          label: 'Puntaje Estimado',
+          data: [baseS], // Start with just the first point
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.2)',
+          fill: true,
+          tension: 0.4,
+          borderWidth: 4,
+          pointRadius: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { grid: { display: false }, ticks: { maxTicksLimit: 5 } },
+          y: { min: 400, max: 800, grid: { color: 'rgba(255,255,255,0.05)' }, title: {display: false} }
+        },
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        animation: { duration: 0 } // Disable default animation for smooth scroll-driven updates
       }
-      
-      scoreDisplay.textContent = currentScore;
-      
-      // Color change based on score
-      if (currentScore < 500) {
-        scoreDisplay.style.color = '#f87171'; // Red
-        scoreDisplay.style.textShadow = '0 0 20px rgba(248,113,113,0.3)';
-      } else if (currentScore < 600) {
-        scoreDisplay.style.color = '#f59e0b'; // Orange
-        scoreDisplay.style.textShadow = '0 0 20px rgba(245,158,11,0.3)';
-      } else {
-        scoreDisplay.style.color = '#34d399'; // Green
-        scoreDisplay.style.textShadow = '0 0 20px rgba(52,211,153,0.3)';
+    });
+
+    const simContainer = document.getElementById('evolutionSimContainer');
+    const scoreDisplay = document.getElementById('simScore');
+    let ticking = false;
+    
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const rect = simContainer.getBoundingClientRect();
+          const windowHeight = window.innerHeight;
+          
+          // Calculate progress. Start when top of element reaches 85% of screen height.
+          // End when top reaches 15% of screen height.
+          const startPos = windowHeight * 0.85;
+          const endPos = windowHeight * 0.15;
+          
+          let progress = (startPos - rect.top) / (startPos - endPos);
+          progress = Math.max(0, Math.min(1, progress));
+          
+          const pointsToShow = Math.max(1, Math.ceil(progress * (totalPoints + 1)));
+          
+          if (scrollChart.data.datasets[0].data.length !== pointsToShow) {
+            scrollChart.data.datasets[0].data = fullData.slice(0, pointsToShow);
+            
+            // Add point styling: show only the last active point
+            scrollChart.data.datasets[0].pointRadius = fullData.slice(0, pointsToShow).map((_, i) => i === pointsToShow - 1 ? 8 : 0);
+            scrollChart.data.datasets[0].pointBackgroundColor = '#10b981';
+            scrollChart.data.datasets[0].pointBorderColor = '#fff';
+            scrollChart.data.datasets[0].pointBorderWidth = 2;
+            
+            scrollChart.update();
+            
+            const currentScore = fullData[pointsToShow - 1];
+            scoreDisplay.textContent = currentScore;
+            
+            if (currentScore < 500) {
+              scoreDisplay.style.color = '#f87171';
+              scoreDisplay.style.textShadow = '0 0 20px rgba(248,113,113,0.3)';
+            } else if (currentScore < 600) {
+              scoreDisplay.style.color = '#f59e0b';
+              scoreDisplay.style.textShadow = '0 0 20px rgba(245,158,11,0.3)';
+            } else {
+              scoreDisplay.style.color = '#34d399';
+              scoreDisplay.style.textShadow = '0 0 20px rgba(52,211,153,0.3)';
+            }
+          }
+          ticking = false;
+        });
+        ticking = true;
       }
     });
   }
