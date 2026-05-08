@@ -269,28 +269,43 @@ tr:last-child td { border-bottom: none; }
 
   <div class="roadmap-section">
     <h2>Plan de Acción y Fechas Clave</h2>
-    <p class="subtitle">Para demostrar una <strong>mejora real en el aprendizaje</strong>, necesitamos ejecutar los siguientes pasos en las próximas semanas. <strong>Actualmente estamos bloqueados en el Paso 2.</strong></p>
+    <p class="subtitle">Para demostrar una <strong>mejora real en el aprendizaje</strong>, necesitamos ejecutar los siguientes pasos. <strong>El uso en casa es clave para el éxito.</strong></p>
     
-    <div class="roadmap">
+    <div class="roadmap" style="margin-bottom: 4rem;">
       <div class="step active">
         <div class="step-icon">1</div>
-        <h3>Diagnósticos<br><span style="font-size:0.8rem; font-weight:400; color:var(--text-muted)">(8-14 Mayo)</span></h3>
-        <p>Lograr participación total.<br><strong style="color:#34d399">Logrado en 2°M (54%)</strong></p>
+        <h3>1. Diagnósticos Iniciales<br><span style="font-size:0.8rem; font-weight:400; color:var(--text-muted)">(Semana 1: 8-14 Mayo)</span></h3>
+        <p>⏱️ <strong>Máx. 30 minutos</strong></p>
+        <p style="font-size:0.85rem">Nos entrega el puntaje estimado base (Punto de partida inicial).</p>
       </div>
       <div class="step danger">
         <div class="step-icon">2</div>
-        <h3>Impulsar Uso en Casa<br><span style="font-size:0.8rem; font-weight:400; color:var(--text-muted)">(15-21 Mayo)</span></h3>
-        <p>Fomentar estudio autónomo M1.<br><strong style="color:#f87171">Oportunidad de mejora</strong></p>
+        <h3>2. Fomento Uso en Casa<br><span style="font-size:0.8rem; font-weight:400; color:var(--text-muted)">(Semana 1 y 2: 8-21 Mayo)</span></h3>
+        <p>⏱️ <strong>20+ min por sesión</strong></p>
+        <p style="font-size:0.85rem">A medida que toman clases y sesiones en casa, <strong style="color:#f87171">el aprendizaje y el puntaje aumentan.</strong></p>
       </div>
       <div class="step">
         <div class="step-icon">3</div>
-        <h3>Ensayo Completo<br><span style="font-size:0.8rem; font-weight:400; color:var(--text-muted)">(22-28 Mayo)</span></h3>
-        <p>Medir evolución y nuevos átomos aprendidos.</p>
+        <h3>3. Ensayo Completo<br><span style="font-size:0.8rem; font-weight:400; color:var(--text-muted)">(Semana 3: 22-28 Mayo)</span></h3>
+        <p>⏱️ <strong>140 minutos (Real)</strong></p>
+        <p style="font-size:0.85rem">Fundamental para medir la evolución final y validar el aprendizaje logrado.</p>
       </div>
-      <div class="step">
-        <div class="step-icon">4</div>
-        <h3>Evaluar Resultados<br><span style="font-size:0.8rem; font-weight:400; color:var(--text-muted)">(Desde 29 Mayo)</span></h3>
-        <p>Demostrar impacto en puntaje PAES.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom: 5rem; text-align: center; max-width: 800px; margin-left: auto; margin-right: auto; border-color: rgba(59, 130, 246, 0.3); background: linear-gradient(180deg, rgba(24, 24, 27, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);">
+    <h2 style="font-size: 1.5rem; margin-bottom: 1rem; color: #fff;">📈 Simulador de Evolución de Aprendizaje</h2>
+    <p style="color: var(--text-muted); margin-bottom: 2.5rem; font-size: 0.95rem;">Mueve el deslizador para ver cómo el <strong>Estudio Continuo (Paso 2)</strong> impacta directamente en el puntaje proyectado que validaremos finalmente en el <strong>Ensayo Completo (Paso 3)</strong>.</p>
+    
+    <div style="font-size: 4.5rem; font-weight: 800; color: #34d399; line-height: 1; text-shadow: 0 0 20px rgba(52,211,153,0.3); transition: color 0.3s;" id="simScore">450</div>
+    <p style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2.5rem; margin-top: 0.5rem;">Puntaje PAES Estimado</p>
+    
+    <div style="position: relative; padding: 0 10px;">
+      <input type="range" min="0" max="20" value="0" id="simSlider" style="width: 100%; cursor: pointer; accent-color: #10b981; height: 8px; border-radius: 4px; outline: none;">
+      <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.8rem; margin-top: 1rem; font-weight: 500;">
+        <span style="text-align: left;"><strong>Paso 1: Diagnóstico</strong><br>0 sesiones M1</span>
+        <span style="text-align: center; color: #fff;"><span id="simSessions" style="font-size: 1.2rem; font-weight: 700;">0</span><br>sesiones en casa</span>
+        <span style="text-align: right;"><strong>Paso 3: Ensayo Completo</strong><br>20+ sesiones M1</span>
       </div>
     </div>
   </div>
@@ -470,6 +485,42 @@ window.addEventListener('DOMContentLoaded', () => {
   fetch('pilot-data.json').then(r => r.json()).then(init).catch(e => {
     document.body.innerHTML += `<div style="max-width:800px;margin:50px auto;padding:20px;background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.3);border-radius:12px;"><strong>Error:</strong> ${e.message}</div>`;
   });
+
+  // Simulator Logic
+  const slider = document.getElementById('simSlider');
+  const scoreDisplay = document.getElementById('simScore');
+  const sessionsDisplay = document.getElementById('simSessions');
+  const baseScore = 450;
+  const maxScore = 720;
+  
+  if (slider) {
+    slider.addEventListener('input', (e) => {
+      const sessions = parseInt(e.target.value);
+      sessionsDisplay.textContent = sessions;
+      
+      // Calculate score with a logarithmic curve (diminishing returns)
+      // Max sessions = 20. Diff = 270.
+      let currentScore = baseScore;
+      if (sessions > 0) {
+        const factor = Math.log(sessions + 1) / Math.log(21);
+        currentScore = Math.floor(baseScore + (factor * (maxScore - baseScore)));
+      }
+      
+      scoreDisplay.textContent = currentScore;
+      
+      // Color change based on score
+      if (currentScore < 500) {
+        scoreDisplay.style.color = '#f87171'; // Red
+        scoreDisplay.style.textShadow = '0 0 20px rgba(248,113,113,0.3)';
+      } else if (currentScore < 600) {
+        scoreDisplay.style.color = '#f59e0b'; // Orange
+        scoreDisplay.style.textShadow = '0 0 20px rgba(245,158,11,0.3)';
+      } else {
+        scoreDisplay.style.color = '#34d399'; // Green
+        scoreDisplay.style.textShadow = '0 0 20px rgba(52,211,153,0.3)';
+      }
+    });
+  }
 });
 </script>
 </body>
