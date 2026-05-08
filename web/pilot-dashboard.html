@@ -246,25 +246,54 @@ tr:last-child td { border-bottom: none; }
   </div>
 
   <!-- Insights adaptados a las indicaciones -->
-  <div class="grid-2">
-    <div class="card insight-box">
-      <h3><span>🔍</span> Resumen del Piloto</h3>
-      <ul class="insight-list" id="insightList"></ul>
+  <div class="card insight-box" style="margin-bottom: 2rem;">
+    <h3><span>🔍</span> Resumen del Piloto</h3>
+    <ul class="insight-list" id="insightList"></ul>
+  </div>
+
+  <!-- Alerta de Uso en Casa -->
+  <div class="card" style="border-color: rgba(245, 158, 11, 0.4); background: linear-gradient(135deg, rgba(30, 20, 0, 0.8) 0%, rgba(60, 20, 0, 0.9) 100%); margin-bottom: 3rem; box-shadow: 0 0 30px rgba(245, 158, 11, 0.1);">
+    <h3 style="color: #fcd34d; margin-bottom: 1.5rem; font-size: 1.35rem; font-weight: 600; display: flex; align-items: center; gap: 0.75rem;">
+      <span style="font-size: 1.75rem;">🚨</span> Alerta Crítica: Ausencia de Estudio Autónomo
+    </h3>
+    <div class="grid-4" style="margin-bottom: 1.5rem; gap: 1rem;">
+       <div style="background: rgba(0,0,0,0.4); padding: 1.25rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); text-align: center;">
+         <div style="font-size: 2.25rem; font-weight: 800; color: #ef4444; line-height: 1;">0%</div>
+         <div style="font-size: 0.85rem; color: #a1a1aa; margin-top: 0.5rem;">Actividad fuera del horario escolar</div>
+       </div>
+       <div style="background: rgba(0,0,0,0.4); padding: 1.25rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); text-align: center;">
+         <div style="font-size: 2.25rem; font-weight: 800; color: #f59e0b; line-height: 1;">100%</div>
+         <div style="font-size: 0.85rem; color: #a1a1aa; margin-top: 0.5rem;">Uso dependiente de la sala de clases</div>
+       </div>
+       <div style="background: rgba(0,0,0,0.4); padding: 1.25rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); text-align: center;">
+         <div style="font-size: 2.25rem; font-weight: 800; color: #ef4444; line-height: 1;">0</div>
+         <div style="font-size: 0.85rem; color: #a1a1aa; margin-top: 0.5rem;">Miniclases completadas en casa</div>
+       </div>
+       <div style="background: rgba(0,0,0,0.4); padding: 1.25rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); text-align: center;">
+         <div style="font-size: 2.25rem; font-weight: 800; color: #ef4444; line-height: 1;">79</div>
+         <div style="font-size: 0.85rem; color: #a1a1aa; margin-top: 0.5rem;">Alumnos de 4°M sin diagnóstico</div>
+       </div>
     </div>
-    <div class="card insight-box">
-      <h3><span>💡</span> Ideas para Impulsar el Uso</h3>
-      <ul class="insight-list">
-        <li><strong>Fomentar el estudio autónomo:</strong> Recordarle a los alumnos que pueden (y deben) usar Arbor <strong>en cualquier momento desde sus casas</strong>. La mayor actividad se concentra solo en los horarios asignados en el colegio.</li>
-        <li><strong>Sugerir metas semanales:</strong> A modo de recomendación, podría ser útil plantearles a los alumnos el objetivo de realizar unas 5 sesiones de átomos por semana.</li>
-        <li><strong>Diagnóstico en 4° Medio:</strong> Encontrar un espacio breve presencial para que este nivel rompa el hielo y complete su primer ensayo diagnóstico.</li>
-      </ul>
+    <div style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid #f59e0b; padding: 1rem 1.5rem; border-radius: 0 8px 8px 0;">
+      <p style="color: #fef3c7; line-height: 1.6; font-size: 1.05rem;">
+        <strong>La plataforma no funciona por sí sola.</strong> Los alumnos están asumiendo que Arbor es solo una actividad presencial de la sala de clases. Para lograr un aprendizaje real, observar mejoras en los puntajes y que este piloto tenga sentido, <strong>es imperativo que los profesores impulsen el uso autónomo en casa</strong> y exijan la plataforma como complemento de estudio.
+      </p>
     </div>
   </div>
 
   <!-- Mutual Benefit Highlight -->
   <div class="mutual-benefit">
     <h3>🤝 Un Beneficio Mutuo</h3>
-    <p>El uso constante de Arbor genera una sinergia clave: a nosotros nos permite recopilar datos valiosos para validar y perfeccionar la plataforma, y <strong>a ustedes (los profesores) les entrega analíticas detalladas y en tiempo real sobre el verdadero progreso y las brechas de aprendizaje de sus alumnos.</strong></p>
+    <p>El uso constante de Arbor genera una sinergia clave: a nosotros nos permite recopilar datos valiosos para perfeccionar la plataforma, y <strong>a ustedes (los profesores) les entrega analíticas detalladas y en tiempo real sobre el verdadero progreso de sus alumnos.</strong></p>
+  </div>
+
+  <div class="card insight-box" style="margin-bottom: 3rem;">
+    <h3><span>💡</span> Ideas para Impulsar el Uso</h3>
+    <ul class="insight-list">
+      <li><strong>Fomentar el estudio autónomo:</strong> Recordarle a los alumnos que usar Arbor <strong>en cualquier momento desde sus casas</strong> es vital. La mayor actividad se concentra solo en el colegio.</li>
+      <li><strong>Sugerir metas semanales:</strong> A modo de recomendación, plantearles a los alumnos el objetivo de realizar unas 5 miniclases de M1 por semana.</li>
+      <li><strong>Diagnóstico en 4° Medio:</strong> Encontrar un espacio breve presencial para que este nivel rompa el hielo y complete su primer ensayo diagnóstico.</li>
+    </ul>
   </div>
 
   <div class="roadmap-section">
@@ -382,8 +411,8 @@ function init(d) {
   // Insights
   document.getElementById('insightList').innerHTML = `
     <li>Contamos con <strong>${S.totalStudents} alumnos registrados exitosamente</strong>, un gran primer paso.</li>
-    <li>De ellos, el <strong>${activationPct}% ya probó la plataforma</strong> realizando al menos un intento diagnóstico.</li>
-    <li>En <strong>2° Medio</strong> la adopción inicial fue fuerte (${Math.round(active2M/total2M*100)}%), pero en 4° Medio aún no hay registros de actividad.</li>
+    <li>Sin embargo, a la fecha <strong>solo un bajo ${activationPct}% de los alumnos</strong> ha probado la plataforma realizando un intento diagnóstico, lo cual es una señal de alerta.</li>
+    <li>Mientras en <strong>2° Medio</strong> vemos un interés inicial de (${Math.round(active2M/total2M*100)}%), en <strong>4° Medio la participación es nula</strong> (0%), a pesar de ser quienes más urgente necesitan prepararse.</li>
   `;
 
   // KPIs
