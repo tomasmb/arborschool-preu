@@ -294,14 +294,25 @@ tr:last-child td { border-bottom: none; }
   </div>
 
   <div class="card" id="evolutionSimContainer" style="margin-bottom: 5rem; text-align: center; max-width: 800px; margin-left: auto; margin-right: auto; border-color: rgba(59, 130, 246, 0.3); background: linear-gradient(180deg, rgba(24, 24, 27, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);">
-    <h2 style="font-size: 1.5rem; margin-bottom: 1rem; color: #fff;">📈 Evolución de Aprendizaje (Proyectada)</h2>
-    <p style="color: var(--text-muted); margin-bottom: 2.5rem; font-size: 0.95rem;">Sigue bajando para observar cómo el <strong>Estudio Continuo (Paso 2)</strong> impacta directamente en el puntaje proyectado que validaremos finalmente en el <strong>Ensayo Completo (Paso 3)</strong>.</p>
+    <h2 style="font-size: 1.5rem; margin-bottom: 1rem; color: #fff;">📈 Simulador de Impacto: Miniclases en Casa</h2>
+    <p style="color: var(--text-muted); margin-bottom: 2.5rem; font-size: 0.95rem;">Demuestra el poder del <strong>Estudio Continuo</strong>. Haz clic en "Simular" para contrastar qué pasa si el alumno se queda solo con el diagnóstico vs. si completa miniclases en su casa antes del Ensayo Completo.</p>
     
-    <div style="font-size: 4.5rem; font-weight: 800; color: #34d399; line-height: 1; text-shadow: 0 0 20px rgba(52,211,153,0.3); transition: color 0.3s;" id="simScore">450</div>
-    <p style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1.5rem; margin-top: 0.5rem;">Puntaje PAES Estimado</p>
+    <div style="display: flex; justify-content: center; align-items: center; gap: 3rem; margin-bottom: 2rem;">
+      <div style="text-align: center;">
+         <p style="color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase;">Solo Diagnóstico</p>
+         <div style="font-size: 2.5rem; font-weight: 700; color: #ef4444;">450</div>
+      </div>
+      <div style="text-align: center;">
+         <button id="btnSimulate" style="background: #10b981; color: #09090b; border: none; padding: 0.75rem 2rem; border-radius: 999px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(16,185,129,0.4);">▶ Simular Evolución</button>
+      </div>
+      <div style="text-align: center;">
+         <p style="color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase;">Con Miniclases</p>
+         <div style="font-size: 2.5rem; font-weight: 700; color: #ef4444; transition: color 0.3s;" id="simScoreAnimated">450</div>
+      </div>
+    </div>
     
     <div style="position: relative; height: 250px; width: 100%; padding: 0 10px;">
-      <canvas id="scrollChart"></canvas>
+      <canvas id="impactChart"></canvas>
     </div>
   </div>
 
@@ -481,12 +492,14 @@ window.addEventListener('DOMContentLoaded', () => {
     document.body.innerHTML += `<div style="max-width:800px;margin:50px auto;padding:20px;background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.3);border-radius:12px;"><strong>Error:</strong> ${e.message}</div>`;
   });
 
-  // Scroll-driven Chart Simulator Logic
-  const scrollChartCanvas = document.getElementById('scrollChart');
-  if (scrollChartCanvas) {
-    const ctx = scrollChartCanvas.getContext('2d');
+  // Impact Chart Simulator Logic
+  const impactChartCanvas = document.getElementById('impactChart');
+  const btnSimulate = document.getElementById('btnSimulate');
+  const animatedScore = document.getElementById('simScoreAnimated');
+  
+  if (impactChartCanvas && btnSimulate) {
+    const ctx = impactChartCanvas.getContext('2d');
     
-    // Data points for the logarithmic curve
     const totalPoints = 20;
     const baseS = 450;
     const maxS = 720;
@@ -496,82 +509,89 @@ window.addEventListener('DOMContentLoaded', () => {
       fullData.push(Math.floor(baseS + (factor * (maxS - baseS))));
     }
 
-    const scrollChart = new Chart(ctx, {
+    const flatData = Array(totalPoints + 1).fill(baseS);
+
+    let impactChart = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: Array.from({length: totalPoints+1}, (_, i) => i === 0 ? 'Diagnóstico' : i + ' sesiones'),
-        datasets: [{
-          label: 'Puntaje Estimado',
-          data: [baseS], // Start with just the first point
-          borderColor: '#10b981',
-          backgroundColor: 'rgba(16, 185, 129, 0.2)',
-          fill: true,
-          tension: 0.4,
-          borderWidth: 4,
-          pointRadius: 0
-        }]
+        labels: Array.from({length: totalPoints+1}, (_, i) => i === 0 ? 'Diagnóstico' : i + ' miniclases'),
+        datasets: [
+          {
+            label: 'Sin uso en casa',
+            data: flatData,
+            borderColor: '#ef4444',
+            borderDash: [5, 5],
+            borderWidth: 2,
+            pointRadius: 0,
+            fill: false
+          },
+          {
+            label: 'Con Miniclases',
+            data: [baseS], // Starts at base
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.2)',
+            fill: true,
+            tension: 0.4,
+            borderWidth: 4,
+            pointRadius: 0
+          }
+        ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         scales: {
           x: { grid: { display: false }, ticks: { maxTicksLimit: 5 } },
-          y: { min: 400, max: 800, grid: { color: 'rgba(255,255,255,0.05)' }, title: {display: false} }
+          y: { min: 400, max: 800, grid: { color: 'rgba(255,255,255,0.05)' } }
         },
-        plugins: { legend: { display: false }, tooltip: { enabled: false } },
-        animation: { duration: 0 } // Disable default animation for smooth scroll-driven updates
+        plugins: { 
+          legend: { labels: { color: '#fafafa', font: {family: "'Outfit', sans-serif"} } },
+          tooltip: { enabled: true } 
+        },
+        animation: { duration: 200 } 
       }
     });
 
-    const simContainer = document.getElementById('evolutionSimContainer');
-    const scoreDisplay = document.getElementById('simScore');
-    let ticking = false;
+    let animationInterval;
     
-    window.addEventListener('scroll', () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          const rect = simContainer.getBoundingClientRect();
-          const windowHeight = window.innerHeight;
-          
-          // Calculate progress. Start when top of element reaches 85% of screen height.
-          // End when top reaches 15% of screen height.
-          const startPos = windowHeight * 0.85;
-          const endPos = windowHeight * 0.15;
-          
-          let progress = (startPos - rect.top) / (startPos - endPos);
-          progress = Math.max(0, Math.min(1, progress));
-          
-          const pointsToShow = Math.max(1, Math.ceil(progress * (totalPoints + 1)));
-          
-          if (scrollChart.data.datasets[0].data.length !== pointsToShow) {
-            scrollChart.data.datasets[0].data = fullData.slice(0, pointsToShow);
-            
-            // Add point styling: show only the last active point
-            scrollChart.data.datasets[0].pointRadius = fullData.slice(0, pointsToShow).map((_, i) => i === pointsToShow - 1 ? 8 : 0);
-            scrollChart.data.datasets[0].pointBackgroundColor = '#10b981';
-            scrollChart.data.datasets[0].pointBorderColor = '#fff';
-            scrollChart.data.datasets[0].pointBorderWidth = 2;
-            
-            scrollChart.update();
-            
-            const currentScore = fullData[pointsToShow - 1];
-            scoreDisplay.textContent = currentScore;
-            
-            if (currentScore < 500) {
-              scoreDisplay.style.color = '#f87171';
-              scoreDisplay.style.textShadow = '0 0 20px rgba(248,113,113,0.3)';
-            } else if (currentScore < 600) {
-              scoreDisplay.style.color = '#f59e0b';
-              scoreDisplay.style.textShadow = '0 0 20px rgba(245,158,11,0.3)';
-            } else {
-              scoreDisplay.style.color = '#34d399';
-              scoreDisplay.style.textShadow = '0 0 20px rgba(52,211,153,0.3)';
-            }
-          }
-          ticking = false;
-        });
-        ticking = true;
-      }
+    btnSimulate.addEventListener('click', () => {
+      // Disable button
+      btnSimulate.disabled = true;
+      btnSimulate.style.opacity = '0.5';
+      btnSimulate.textContent = 'Simulando...';
+      
+      // Reset chart and score
+      impactChart.data.datasets[1].data = [baseS];
+      impactChart.update();
+      animatedScore.textContent = baseS;
+      animatedScore.style.color = '#f87171';
+      
+      let step = 1;
+      animationInterval = setInterval(() => {
+        if (step > totalPoints) {
+          clearInterval(animationInterval);
+          btnSimulate.disabled = false;
+          btnSimulate.style.opacity = '1';
+          btnSimulate.textContent = '▶ Repetir Simulación';
+          return;
+        }
+        
+        impactChart.data.datasets[1].data.push(fullData[step]);
+        impactChart.update();
+        
+        const currentScore = fullData[step];
+        animatedScore.textContent = currentScore;
+        
+        if (currentScore < 500) {
+          animatedScore.style.color = '#f87171';
+        } else if (currentScore < 600) {
+          animatedScore.style.color = '#f59e0b';
+        } else {
+          animatedScore.style.color = '#34d399';
+        }
+        
+        step++;
+      }, 100); // 100ms per frame
     });
   }
 });
