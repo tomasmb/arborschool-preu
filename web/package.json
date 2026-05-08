@@ -27,7 +27,8 @@
     "verify:recovery-cta-contract": "npx --yes tsx scripts/verifyRecoveryCtaContract.ts",
     "verify:diagnostic-api-auth-contract": "npx --yes tsx scripts/verifyDiagnosticApiAuthContract.ts",
     "verify:email-lifecycle-contract": "npx --yes tsx scripts/verifyEmailLifecycleContract.ts",
-    "verify:portal-release-readiness": "npx --yes tsx scripts/verifyPortalReleaseReadiness.ts"
+    "verify:portal-release-readiness": "npx --yes tsx scripts/verifyPortalReleaseReadiness.ts",
+    "pilot:dashboard": "node scripts/pilot-data-extract.mjs && npx serve -l 5555 ."
   },
   "dependencies": {
     "@sentry/nextjs": "^10.38.0",
