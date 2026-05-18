@@ -597,7 +597,7 @@ export async function applyInactivityDecay(userId: string) {
   await db.execute(sql`
     UPDATE atom_mastery
     SET review_interval_sessions = GREATEST(1,
-      ROUND(review_interval_sessions * ${decayFactor}))
+      ROUND(review_interval_sessions * ${decayFactor}::numeric))::int
     WHERE user_id = ${userId}
       AND is_mastered = true
       AND review_interval_sessions IS NOT NULL
